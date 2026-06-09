@@ -1,9 +1,6 @@
-import { barbers } from "@/lib/data";
 import BarberDashboardClient from "@/components/admin/BarberDashboardClient";
 
-export function generateStaticParams() {
-  return barbers.map((b) => ({ id: b.id }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function BarberPage({ params }) {
   const { id } = await params;

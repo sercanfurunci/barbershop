@@ -98,7 +98,7 @@ export default function Navbar() {
               </button>
 
               <Link
-                href="/admin"
+                href="/barber"
                 className="px-4 py-2 rounded-md transition-all duration-200"
                 style={{ fontSize: "13px", color: C.secondary, letterSpacing: "0.02em" }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = C.primary)}
@@ -172,7 +172,7 @@ export default function Navbar() {
                   {lang === "tr" ? "🇬🇧 Switch to English" : "🇹🇷 Türkçe'ye Geç"}
                 </button>
                 <Link
-                  href="/admin"
+                  href="/barber"
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center justify-center rounded-md transition-colors"
                   style={{ border: `1px solid ${C.border}`, color: C.secondary, fontSize: "13px", minHeight: "48px" }}

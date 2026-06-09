@@ -74,11 +74,18 @@ export default function AdminDashboard() {
   const [globalBarberId, setGlobalBarberId] = useState(null);
   const { lang, setLang }           = useLang();
   const tx = useT(lang);
-  const { logout } = useAuth();
+  const { logout, role, loaded } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => { logout(); router.push("/barber"); };
   const navSections = NAV_SECTIONS(lang);
+
+  useEffect(() => {
+    if (!loaded) return;
+    if (!role) router.replace("/barber");
+  }, [loaded, role, router]);
+
+  if (!loaded || !role) return null;
 
   return (
     <div className="flex min-h-screen" style={{ background: C.bg, fontFamily: "'Outfit', sans-serif" }}>
