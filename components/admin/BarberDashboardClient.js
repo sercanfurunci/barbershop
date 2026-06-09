@@ -412,247 +412,315 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
   const weekAppts   = weekData.reduce((s, d) => s + d.count, 0);
   const maxCount    = Math.max(...weekData.map(d => d.count), 1);
 
-  return (
-    <div style={{ minHeight: "100vh", background: C.bg, overflowX: "hidden" }}>
+  const SIDEBAR_NAV = [
+    { id: "dashboard",    label: "Dashboard",  icon: LayoutDashboard },
+    { id: "schedule",     label: "Program",    icon: CalendarDays    },
+    { id: "appointments", label: "Randevular", icon: List            },
+    { id: "customers",    label: "Müşteriler", icon: Users           },
+  ];
 
-      {/* ── Topbar ── */}
-      <div style={{ minHeight: "56px", background: C.card, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", position: "sticky", top: 0, zIndex: 50 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+  return (
+    <div className="flex min-h-screen" style={{ background: C.bg }}>
+
+      {/* ── Desktop Sidebar ── */}
+      <aside className="hidden lg:flex flex-col fixed top-0 left-0 bottom-0 z-30 w-[220px]"
+        style={{ background: C.card, borderRight: `1px solid ${C.border}` }}>
+
+        {/* Logo / Barber identity */}
+        <div style={{ padding: "20px 20px 16px", borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "36px", height: "36px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+              {barber.avatar}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: "13px", color: C.primary, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{barber.nameTr ?? barber.name}</div>
+              <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
+          {SIDEBAR_NAV.map(({ id, label, icon: Icon }) => {
+            const active = view === id;
+            return (
+              <button key={id} onClick={() => setView(id)}
+                className="w-full flex items-center gap-3 transition-all"
+                style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "2px", background: active ? `${C.red}15` : "transparent", border: `1px solid ${active ? `${C.red}30` : "transparent"}`, cursor: "pointer", textAlign: "left" }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = C.surface; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+              >
+                <Icon size={15} style={{ color: active ? C.red : C.muted, flexShrink: 0 }} />
+                <span style={{ fontSize: "13px", color: active ? C.primary : C.secondary, fontWeight: active ? 500 : 400 }}>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Sidebar footer */}
+        <div style={{ padding: "12px 10px", borderTop: `1px solid ${C.border}` }}>
           {role === "admin" && (
-            <button
-              onClick={() => router.push("/admin")}
-              style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: C.secondary, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            <button onClick={() => router.push("/admin")}
+              className="w-full flex items-center gap-3 transition-all"
+              style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "4px", background: "transparent", border: "1px solid transparent", cursor: "pointer" }}
+              onMouseEnter={e => { e.currentTarget.style.background = C.surface; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
             >
-              <ChevronLeft size={13} /> Admin
+              <ChevronLeft size={15} style={{ color: C.muted }} />
+              <span style={{ fontSize: "13px", color: C.secondary }}>Admin Paneli</span>
             </button>
           )}
-          {role === "admin" && <div style={{ width: "1px", height: "16px", background: C.border }} />}
-          <div style={{ width: "28px", height: "28px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff" }}>
-            {barber.avatar}
-          </div>
-          <div>
-            <div style={{ fontSize: "13px", color: C.primary, fontWeight: 600, lineHeight: 1.2 }}>{barber.nameTr ?? barber.name}</div>
-            <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowModal(true)}
-            className="hidden sm:flex items-center gap-1.5"
-            style={{ background: C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "0 16px", height: "44px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+          <Link href="/"
+            className="w-full flex items-center gap-3 transition-all"
+            style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "4px", display: "flex", textDecoration: "none" }}
+            onMouseEnter={e => { e.currentTarget.style.background = C.surface; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
           >
-            <Plus size={15} /> Randevu Ekle
-          </button>
-          <Link
-            href="/"
-            className="hidden sm:flex"
-            style={{ width: "44px", height: "44px", background: "none", border: `1px solid ${C.border}`, borderRadius: "8px", alignItems: "center", justifyContent: "center", color: C.secondary, textDecoration: "none" }}
-            title="Siteyi Görüntüle"
-          >
-            <ExternalLink size={15} />
+            <ExternalLink size={15} style={{ color: C.muted }} />
+            <span style={{ fontSize: "13px", color: C.secondary }}>Siteyi Gör</span>
           </Link>
-          <button
-            onClick={() => { logout(); router.push("/barber"); }}
-            className="hidden sm:flex"
-            style={{ width: "44px", height: "44px", background: "none", border: `1px solid ${C.border}`, borderRadius: "8px", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}
-            title="Çıkış Yap"
+          <button onClick={() => { logout(); router.push("/barber"); }}
+            className="w-full flex items-center gap-3 transition-all"
+            style={{ padding: "9px 10px", borderRadius: "8px", background: "transparent", border: "1px solid transparent", cursor: "pointer" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(248,113,113,0.06)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
           >
-            <LogOut size={15} />
+            <LogOut size={15} style={{ color: "#f87171" }} />
+            <span style={{ fontSize: "13px", color: "#f87171" }}>Çıkış Yap</span>
           </button>
         </div>
-      </div>
+      </aside>
 
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "16px 16px 0", paddingBottom: "calc(88px + env(safe-area-inset-bottom))" }}>
-
-        {/* ── Today header (Dashboard tab only) ── */}
-        {view === "dashboard" && (
-          <div style={{ marginBottom: "20px" }}>
-            <div style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.015em" }}>
-              {formatDateLong(todayStr)}
-              <span style={{ marginLeft: "10px", fontSize: "10px", color: C.red, fontWeight: 700, letterSpacing: "0.1em", verticalAlign: "middle", textTransform: "uppercase" }}>Bugün</span>
-            </div>
-            <div style={{ fontSize: "11px", color: C.secondary, marginTop: "3px" }}>
-              {wh.start}:00 – {wh.end}:00 · {dayAppts.length} randevu
-            </div>
-          </div>
+      {/* ── Mobile drawer ── */}
+      <AnimatePresence>
+        {moreOpen && (
+          <>
+            <motion.div key="bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 lg:hidden" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+              onClick={() => setMoreOpen(false)} />
+            <motion.aside key="bs" initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed top-0 left-0 bottom-0 z-50 w-[220px] flex flex-col lg:hidden"
+              style={{ background: C.card, borderRight: `1px solid ${C.border}` }}>
+              <div style={{ padding: "20px 20px 16px", borderBottom: `1px solid ${C.border}` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ width: "36px", height: "36px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#fff" }}>{barber.avatar}</div>
+                  <div>
+                    <div style={{ fontSize: "13px", color: C.primary, fontWeight: 600 }}>{barber.nameTr ?? barber.name}</div>
+                    <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr}</div>
+                  </div>
+                </div>
+              </div>
+              <nav style={{ flex: 1, padding: "12px 10px" }}>
+                {SIDEBAR_NAV.map(({ id, label, icon: Icon }) => (
+                  <button key={id} onClick={() => { setView(id); setMoreOpen(false); }}
+                    className="w-full flex items-center gap-3"
+                    style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "2px", background: view === id ? `${C.red}15` : "transparent", border: `1px solid ${view === id ? `${C.red}30` : "transparent"}`, cursor: "pointer" }}>
+                    <Icon size={15} style={{ color: view === id ? C.red : C.muted }} />
+                    <span style={{ fontSize: "13px", color: view === id ? C.primary : C.secondary }}>{label}</span>
+                  </button>
+                ))}
+              </nav>
+              <div style={{ padding: "12px 10px", borderTop: `1px solid ${C.border}` }}>
+                <button onClick={() => { logout(); router.push("/barber"); }}
+                  className="w-full flex items-center gap-3"
+                  style={{ padding: "9px 10px", borderRadius: "8px", background: "transparent", border: "none", cursor: "pointer" }}>
+                  <LogOut size={15} style={{ color: "#f87171" }} />
+                  <span style={{ fontSize: "13px", color: "#f87171" }}>Çıkış Yap</span>
+                </button>
+              </div>
+            </motion.aside>
+          </>
         )}
+      </AnimatePresence>
 
-        {/* ── Date nav (Takvim tab only) ── */}
-        {view === "schedule" && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "20px" }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: "18px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {formatDateLong(viewing)}
-              {isViewingToday && <span style={{ marginLeft: "8px", fontSize: "10px", color: C.red, fontWeight: 600, letterSpacing: "0.08em", verticalAlign: "middle" }}>BUGÜN</span>}
-            </div>
-            <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>
-              {wh.start}:00 – {wh.end}:00 çalışma saati
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-            <button onClick={() => setDate(d => addDays(d, -1))} style={{ width: "44px", height: "44px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
-              <ChevronLeft size={16} />
-            </button>
-            {!isViewingToday && (
-              <button onClick={() => setDate(todayStr)} style={{ height: "44px", padding: "0 14px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>
-                Bugün
-              </button>
+      {/* ── Main area ── */}
+      <div className="flex-1 min-w-0 lg:ml-[220px] flex flex-col min-h-screen overflow-x-hidden">
+
+        {/* Topbar */}
+        <header className="h-14 flex items-center gap-4 px-5 lg:px-7 sticky top-0 z-20"
+          style={{ background: `${C.bg}e8`, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}>
+          <button onClick={() => setMoreOpen(true)} className="lg:hidden flex items-center justify-center w-9 h-9"
+            style={{ background: "none", border: "none", cursor: "pointer", color: C.secondary }}>
+            <MoreHorizontal size={18} />
+          </button>
+          <div style={{ flex: 1 }} />
+          <button onClick={() => setShowModal(true)}
+            className="flex items-center gap-1.5"
+            style={{ background: C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "0 16px", height: "36px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+            <Plus size={14} /> Randevu Ekle
+          </button>
+        </header>
+
+        {/* Page content */}
+        <div style={{ padding: "28px 28px 40px" }}>
+
+        {/* Page header */}
+        <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
+          <div>
+            {(view === "dashboard" || view === "schedule") && (
+              <>
+                <h1 style={{ fontSize: "clamp(20px, 2.5vw, 26px)", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "4px" }}>
+                  {view === "dashboard" ? formatDateLong(todayStr) : formatDateLong(viewing)}
+                  {(view === "dashboard" || isViewingToday) && (
+                    <span style={{ marginLeft: "10px", fontSize: "10px", color: C.red, fontWeight: 700, letterSpacing: "0.12em", verticalAlign: "middle", textTransform: "uppercase" }}>Bugün</span>
+                  )}
+                </h1>
+                <p style={{ fontSize: "13px", color: C.secondary }}>{wh.start}:00 – {wh.end}:00 · {dayAppts.length} randevu</p>
+              </>
             )}
-            <button onClick={() => setDate(d => addDays(d, 1))} style={{ width: "44px", height: "44px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
-              <ChevronRight size={16} />
-            </button>
+            {view === "appointments" && <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em" }}>Randevular</h1>}
+            {view === "customers" && <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em" }}>Müşteriler</h1>}
           </div>
+          {view === "schedule" && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+              <button onClick={() => setDate(d => addDays(d, -1))} style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+                <ChevronLeft size={15} />
+              </button>
+              {!isViewingToday && (
+                <button onClick={() => setDate(todayStr)} style={{ height: "36px", padding: "0 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>Bugün</button>
+              )}
+              <button onClick={() => setDate(d => addDays(d, 1))} style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          )}
         </div>
-        )}
 
-        {/* ── Schedule views: dashboard + takvim ── */}
+        {/* ── Dashboard / Schedule view ── */}
         {(view === "dashboard" || view === "schedule") && (
           <>
-            {/* Stat pills */}
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2" style={{ marginBottom: "20px" }}>
+            {/* KPI cards row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-4" style={{ marginBottom: "24px" }}>
               {[
-                { label: "Toplam",   value: dayAppts.length,    color: C.primary,   span: false },
-                { label: "Onaylı",   value: confirmed,           color: "#22c55e",   span: false },
-                { label: "Bekliyor", value: pending,             color: "#f59e0b",   span: false },
-                { label: "Tamam",    value: completed,           color: C.secondary, span: false },
-                { label: "Kasa",     value: `₺${revenue.toLocaleString()}`, color: C.primary, span: true },
+                { label: "Toplam",   value: dayAppts.length,                   color: C.primary   },
+                { label: "Onaylı",   value: confirmed,                          color: "#22c55e"   },
+                { label: "Bekliyor", value: pending,                            color: "#f59e0b"   },
+                { label: "Tamam",    value: completed,                          color: C.secondary },
+                { label: "Bugün Kazanç", value: `₺${revenue.toLocaleString()}`, color: C.primary   },
               ].map((s, i) => (
-                <div key={i} className={s.span ? "col-span-2 sm:col-span-1" : ""} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "10px 12px", textAlign: "center" }}>
-                  <div style={{ fontSize: "16px", color: s.color, fontWeight: 600, lineHeight: 1, marginBottom: "3px" }}>{s.value}</div>
-                  <div style={{ fontSize: "9px", color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase" }}>{s.label}</div>
+                <div key={i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 18px" }}>
+                  <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "8px" }}>{s.label}</div>
+                  <div style={{ fontSize: "24px", color: s.color, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1 }}>{s.value}</div>
                 </div>
               ))}
             </div>
 
-            {/* Next / Active appointment (today only) */}
-            {isViewingToday && (
-              <div style={{ marginBottom: "16px" }}>
-                <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "8px" }}>
-                  {activeAppt ? "Şu An" : "Sonraki Randevu"}
-                </div>
-                <NextAppointmentCard appt={displayNext} onAction={updateStatus} />
-              </div>
-            )}
+            {/* 2-column desktop grid */}
+            <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
 
-            {/* Pending banner */}
-            {pending > 0 && isViewingToday && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{
-                  background: "rgba(245,158,11,0.06)",
-                  border: "1px solid rgba(245,158,11,0.2)",
-                  borderRadius: "8px",
-                  padding: "10px 14px",
-                  marginBottom: "16px",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <AlertCircle size={14} style={{ color: "#f59e0b", flexShrink: 0 }} />
-                  <span style={{ fontSize: "12px", color: "#f59e0b", fontWeight: 500 }}>
-                    {pending} randevu onay bekliyor
-                  </span>
-                </div>
-                <span style={{ fontSize: "11px", color: C.secondary }}>Aşağıdan güncelleyebilirsiniz</span>
-              </motion.div>
-            )}
-
-            {/* Timeline */}
-            <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "10px" }}>
-              {isViewingToday ? "Bugünün Programı" : "Günün Programı"} · {dayAppts.length} randevu
-            </div>
-            {dayAppts.length === 0 ? (
-              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "48px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: "28px", marginBottom: "10px", opacity: 0.2 }}>✂</div>
-                <div style={{ fontSize: "13px", color: C.secondary, marginBottom: "14px" }}>Bu gün için randevu yok</div>
-                <button
-                  onClick={() => setShowModal(true)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "none", border: `1px solid rgba(204,26,26,0.3)`, borderRadius: "6px", padding: "7px 16px", fontSize: "12px", color: C.red, cursor: "pointer" }}
-                >
-                  <Plus size={12} /> Randevu Ekle
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {dayAppts.map((appt, i) => {
-                  const isPast = isViewingToday && appt.time < now && !["in-progress"].includes(appt.status);
-                  const isNext = appt.id === displayNext?.id;
-                  return (
-                    <TimelineItem key={appt.id} appt={appt} isNext={isNext} isPast={isPast} onAction={updateStatus} index={i} />
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Day summary */}
-            {isViewingToday && dayAppts.length > 0 && (
-              <div style={{ marginTop: "24px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "16px 18px" }}>
-                <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "12px" }}>Gün Özeti</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  {[
-                    { label: "Tamamlanan",  value: completed,                      color: C.secondary },
-                    { label: "Kazanç",      value: `₺${revenue.toLocaleString()}`, color: C.primary   },
-                    { label: "Gelmedi",     value: noshow,   color: noshow > 0 ? "#f87171" : C.muted  },
-                    { label: "Müsait Slot", value: `~${freeSlots} slot`,            color: C.muted     },
-                  ].map((s, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "11px", color: C.secondary }}>{s.label}</span>
-                      <span style={{ fontSize: "13px", color: s.color, fontWeight: 500 }}>{s.value}</span>
+              {/* Left: timeline */}
+              <div>
+                {/* Pending banner */}
+                {pending > 0 && isViewingToday && (
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                    style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "10px", padding: "12px 16px", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <AlertCircle size={14} style={{ color: "#f59e0b" }} />
+                      <span style={{ fontSize: "13px", color: "#f59e0b", fontWeight: 500 }}>{pending} randevu onay bekliyor</span>
                     </div>
-                  ))}
+                    <span style={{ fontSize: "11px", color: C.secondary }}>Aşağıdan güncelleyin</span>
+                  </motion.div>
+                )}
+
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", overflow: "hidden" }}>
+                  <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>
+                      {isViewingToday ? "Bugünün Programı" : "Günün Programı"}
+                    </div>
+                    <span style={{ fontSize: "11px", color: C.muted, background: C.surface, padding: "2px 8px", borderRadius: "5px", border: `1px solid ${C.border}` }}>{dayAppts.length} randevu</span>
+                  </div>
+                  <div style={{ padding: "12px" }}>
+                    {dayAppts.length === 0 ? (
+                      <div style={{ padding: "48px 24px", textAlign: "center" }}>
+                        <div style={{ fontSize: "28px", marginBottom: "10px", opacity: 0.2 }}>✂</div>
+                        <div style={{ fontSize: "13px", color: C.secondary, marginBottom: "14px" }}>Bu gün için randevu yok</div>
+                        <button onClick={() => setShowModal(true)}
+                          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "none", border: `1px solid rgba(204,26,26,0.3)`, borderRadius: "6px", padding: "7px 16px", fontSize: "12px", color: C.red, cursor: "pointer" }}>
+                          <Plus size={12} /> Randevu Ekle
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {dayAppts.map((appt, i) => {
+                          const isPast = isViewingToday && appt.time < now && !["in-progress"].includes(appt.status);
+                          const isNext = appt.id === displayNext?.id;
+                          return <TimelineItem key={appt.id} appt={appt} isNext={isNext} isPast={isPast} onAction={updateStatus} index={i} />;
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* Weekly overview — only on dashboard tab */}
-            {view === "dashboard" && (
-              <div style={{ marginTop: "20px" }}>
-                {/* Weekly KPI row */}
-                <div className="grid grid-cols-2 gap-3" style={{ marginBottom: "12px" }}>
-                  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px 16px" }}>
-                    <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "6px" }}>Bu Hafta Kazanç</div>
-                    <div style={{ fontSize: "22px", color: C.primary, fontWeight: 600, letterSpacing: "-0.02em" }}>₺{weekRevenue.toLocaleString()}</div>
-                    <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>{weekAppts} tamamlanan</div>
+              {/* Right: next appt + weekly stats (dashboard only) */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {isViewingToday && (
+                  <div>
+                    <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "10px" }}>
+                      {activeAppt ? "Şu An Koltuğa Aldı" : "Sonraki Randevu"}
+                    </div>
+                    <NextAppointmentCard appt={displayNext} onAction={updateStatus} />
                   </div>
-                  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px 16px" }}>
-                    <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "6px" }}>Ort. Randevu / Gün</div>
-                    <div style={{ fontSize: "22px", color: C.primary, fontWeight: 600, letterSpacing: "-0.02em" }}>{weekAppts > 0 ? (weekAppts / 7).toFixed(1) : "0"}</div>
-                    <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>son 7 gün</div>
-                  </div>
-                </div>
+                )}
 
-                {/* Bar chart */}
-                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "16px" }}>
-                  <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "14px" }}>Haftalık Tamamlanan Randevu</div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "72px" }}>
-                    {weekData.map((d, i) => {
-                      const isToday_ = d.date === todayStr;
-                      const h = maxCount > 0 ? Math.max((d.count / maxCount) * 100, d.count > 0 ? 12 : 4) : 4;
-                      const dayLabel = new Date(d.date + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "narrow" });
-                      return (
-                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", height: "100%" }}>
-                          <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
-                            <motion.div
-                              initial={{ height: 0 }}
-                              animate={{ height: `${h}%` }}
-                              transition={{ delay: i * 0.05, duration: 0.4, ease: "easeOut" }}
-                              style={{
-                                width: "100%",
-                                background: isToday_ ? C.red : d.count > 0 ? "rgba(204,26,26,0.35)" : C.muted,
-                                borderRadius: "4px 4px 0 0",
-                                minHeight: "4px",
-                              }}
-                            />
-                          </div>
-                          <div style={{ fontSize: "9px", color: isToday_ ? C.red : C.muted, fontWeight: isToday_ ? 700 : 400 }}>{dayLabel}</div>
+                {view === "dashboard" && (
+                  <>
+                    {/* Weekly KPIs */}
+                    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "18px" }}>
+                      <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "14px" }}>Bu Hafta</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+                        <div>
+                          <div style={{ fontSize: "20px", color: C.primary, fontWeight: 600, letterSpacing: "-0.02em" }}>₺{weekRevenue.toLocaleString()}</div>
+                          <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>Toplam kazanç</div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                        <div>
+                          <div style={{ fontSize: "20px", color: C.primary, fontWeight: 600, letterSpacing: "-0.02em" }}>{weekAppts}</div>
+                          <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>Tamamlanan</div>
+                        </div>
+                      </div>
+
+                      {/* Mini bar chart */}
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "56px" }}>
+                        {weekData.map((d, i) => {
+                          const isToday_ = d.date === todayStr;
+                          const h = maxCount > 0 ? Math.max((d.count / maxCount) * 100, d.count > 0 ? 15 : 5) : 5;
+                          const dayLabel = new Date(d.date + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "narrow" });
+                          return (
+                            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", height: "100%" }}>
+                              <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
+                                <motion.div
+                                  initial={{ height: 0 }} animate={{ height: `${h}%` }}
+                                  transition={{ delay: i * 0.04, duration: 0.35, ease: "easeOut" }}
+                                  style={{ width: "100%", background: isToday_ ? C.red : d.count > 0 ? "rgba(204,26,26,0.3)" : C.muted, borderRadius: "3px 3px 0 0", minHeight: "3px" }}
+                                />
+                              </div>
+                              <div style={{ fontSize: "8px", color: isToday_ ? C.red : C.muted, fontWeight: isToday_ ? 700 : 400 }}>{dayLabel}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Day summary */}
+                    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "18px" }}>
+                      <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "14px" }}>Gün Özeti</div>
+                      {[
+                        { label: "Tamamlanan",  value: completed,                      color: C.secondary },
+                        { label: "Bugün Kazanç",value: `₺${revenue.toLocaleString()}`, color: C.primary   },
+                        { label: "Gelmedi",     value: noshow,   color: noshow > 0 ? "#f87171" : C.muted  },
+                        { label: "Müsait Slot", value: `~${freeSlots}`,                color: C.muted     },
+                      ].map((s, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: i < 3 ? "10px" : 0 }}>
+                          <span style={{ fontSize: "12px", color: C.secondary }}>{s.label}</span>
+                          <span style={{ fontSize: "13px", color: s.color, fontWeight: 500 }}>{s.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
-            )}
+            </div>
           </>
         )}
 
@@ -666,27 +734,15 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
           <BarberCustomersView barberId={realBarberId ?? barberSlug} appointments={appointments} onNewBooking={() => setShowModal(true)} />
         )}
 
-      </div>
-
-      {/* Floating action button — always visible */}
-      <BarberFAB onNewBooking={() => setShowModal(true)} />
-
-      <BarberBottomNav
-        view={view}
-        setView={setView}
-        moreOpen={moreOpen}
-        setMoreOpen={setMoreOpen}
-        barber={barber}
-        onLogout={() => { logout(); router.push("/barber"); }}
-      />
-
       {showModal && (
         <ManualBookingModal
-          defaultBarberId={barberId}
+          defaultBarberId={barberSlug}
           initialDate={date}
           onClose={() => setShowModal(false)}
         />
       )}
+        </div>
+      </div>
     </div>
   );
 }
