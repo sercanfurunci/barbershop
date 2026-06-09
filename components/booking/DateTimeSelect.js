@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { timeSlots, unavailableSlots } from "@/lib/data";
+import { apiFetch } from "@/lib/api";
 import { format, addDays, startOfDay, isBefore, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 
@@ -47,18 +47,30 @@ export default function DateTimeSelect({ booking, selectedDate, selectedTime, on
     return true;
   };
 
-  const getBarberUnavailableSlots = () => {
-    if (!booking.barber || booking.barber.id === "any") return [];
-    return unavailableSlots[booking.barber.id] || [];
-  };
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
-  const isSlotAvailable = (slot) => !getBarberUnavailableSlots().includes(slot);
+  useEffect(() => {
+    if (!localDate || !booking.barber || !booking.service) return;
+    const barberId  = booking.barber.id === "any" ? null : booking.barber.id;
+    const serviceId = booking.service.id;
+    if (!barberId || !serviceId) return;
+
+    setLoadingSlots(true);
+    setLocalTime(null);
+    apiFetch(`/api/availability?barberId=${barberId}&serviceId=${serviceId}&date=${localDate}`)
+      .then((data) => setAvailableSlots(data.slots ?? []))
+      .catch(() => setAvailableSlots([]))
+      .finally(() => setLoadingSlots(false));
+  }, [localDate, booking.barber?.id, booking.service?.id]);
+
+  const isSlotAvailable = (slot) => availableSlots.includes(slot);
 
   const handleContinue = () => {
     if (localDate && localTime) { onSelect(localDate, localTime); onNext(); }
   };
 
-  const availableCount = timeSlots.filter(isSlotAvailable).length;
+  const availableCount = availableSlots.length;
 
   return (
     <div>
@@ -195,6 +207,16 @@ export default function DateTimeSelect({ booking, selectedDate, selectedTime, on
             </div>
           ) : (
             <AnimatePresence mode="wait">
+              {loadingSlots ? (
+                <div className="flex items-center justify-center" style={{ height: "260px" }}>
+                  <div style={{ fontSize: "13px", color: C.muted }}>{lang === "tr" ? "Yükleniyor..." : "Loading..."}</div>
+                </div>
+              ) : availableSlots.length === 0 ? (
+                <div className="flex flex-col items-center justify-center" style={{ height: "260px", gap: "12px" }}>
+                  <div style={{ fontSize: "32px", opacity: 0.2 }}>✕</div>
+                  <p style={{ fontSize: "13px", color: C.muted }}>{lang === "tr" ? "Bu tarihte müsait slot yok" : "No available slots on this date"}</p>
+                </div>
+              ) : (
               <motion.div
                 key={localDate.toISOString()}
                 initial={{ opacity: 0, y: 8 }}
@@ -204,34 +226,31 @@ export default function DateTimeSelect({ booking, selectedDate, selectedTime, on
                 className="grid grid-cols-3 gap-2 overflow-y-auto"
                 style={{ maxHeight: "280px" }}
               >
-                {timeSlots.map((slot) => {
-                  const available = isSlotAvailable(slot);
+                {availableSlots.map((slot) => {
                   const isSlotSelected = localTime === slot;
                   return (
                     <button
                       key={slot}
-                      disabled={!available}
                       onClick={() => setLocalTime(slot)}
                       className="transition-all duration-150"
                       style={{ minHeight: "44px",
                         fontSize: "13px",
                         borderRadius: "8px",
-                        border: `1px solid ${isSlotSelected ? C.red : available ? C.border : "rgba(255,255,255,0.03)"}`,
-                        background: isSlotSelected ? C.red : available ? "transparent" : "transparent",
-                        color: isSlotSelected ? "#fff" : available ? C.primary : C.muted,
-                        cursor: available ? "pointer" : "not-allowed",
-                        textDecoration: available ? "none" : "line-through",
+                        border: `1px solid ${isSlotSelected ? C.red : C.border}`,
+                        background: isSlotSelected ? C.red : "transparent",
+                        color: isSlotSelected ? "#fff" : C.primary,
+                        cursor: "pointer",
                       }}
                       onMouseEnter={(e) => {
-                        if (available && !isSlotSelected) {
+                        if (!isSlotSelected) {
                           e.currentTarget.style.borderColor = "rgba(204,26,26,0.4)";
                           e.currentTarget.style.color = C.red;
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!isSlotSelected) {
-                          e.currentTarget.style.borderColor = available ? C.border : "rgba(255,255,255,0.03)";
-                          e.currentTarget.style.color = available ? C.primary : C.muted;
+                          e.currentTarget.style.borderColor = C.border;
+                          e.currentTarget.style.color = C.primary;
                         }
                       }}
                     >
@@ -240,6 +259,7 @@ export default function DateTimeSelect({ booking, selectedDate, selectedTime, on
                   );
                 })}
               </motion.div>
+              )}
             </AnimatePresence>
           )}
         </div>

@@ -1,111 +1,93 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { recentAppointments, services, barbers } from "@/lib/data";
+import { apiFetch, normalizeAppointment } from "@/lib/api";
 
 const AppointmentsContext = createContext(null);
 
-const STORAGE_KEY = "makas-appointments";
-
-function seedData() {
-  return recentAppointments.map((a) => {
-    const svc = services.find((s) => s.name.tr === a.service || s.name.en === a.service);
-    const brb = barbers.find((b) => b.name === a.barber);
-    return {
-      ...a,
-      phone: "",
-      serviceId: svc?.id ?? "",
-      barberId: brb?.id ?? "",
-      duration: svc?.duration ?? 45,
-      source: "online",
-      notes: "",
-    };
-  });
-}
-
 export function AppointmentsProvider({ children }) {
   const [appointments, setAppointments] = useState([]);
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded]             = useState(false);
 
-  useEffect(() => {
+  const fetchAll = useCallback(async () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        setAppointments(JSON.parse(raw));
-      } else {
-        const seed = seedData();
-        setAppointments(seed);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-      }
+      const data = await apiFetch("/api/appointments");
+      setAppointments(data.map(normalizeAppointment));
     } catch {
-      setAppointments(seedData());
+      // silently keep current state
+    } finally {
+      setLoaded(true);
     }
-    setLoaded(true);
   }, []);
 
-  const persist = useCallback((list) => {
-    setAppointments(list);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  }, []);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const addAppointment = useCallback((appt) => {
-    const newAppt = {
-      ...appt,
-      id: `APT-${Date.now()}`,
-      source: appt.source ?? "phone",
-      status: appt.status ?? "confirmed",
-      notes: appt.notes ?? "",
+  const addAppointment = useCallback(async (appt) => {
+    const payload = {
+      name:      appt.client,
+      phone:     appt.phone,
+      email:     appt.email ?? "",
+      serviceId: appt.serviceId,
+      barberId:  appt.barberId,
+      date:      appt.date,
+      time:      appt.time,
+      notes:     appt.notes ?? "",
+      source:    (appt.source ?? "PHONE").toUpperCase(),
     };
-    setAppointments((prev) => {
-      const next = [newAppt, ...prev];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
+
+    const created = await apiFetch("/api/appointments", {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
-    return newAppt;
+
+    const normalized = normalizeAppointment(created);
+    setAppointments((prev) => [normalized, ...prev]);
+    return normalized;
   }, []);
 
-  const updateStatus = useCallback((id, status) => {
-    setAppointments((prev) => {
-      const next = prev.map((a) => (a.id === id ? { ...a, status } : a));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
+  const updateStatus = useCallback(async (id, status) => {
+    // status comes in as lowercase ("confirmed") — convert to API format
+    const apiStatus = status.toUpperCase().replace("-", "_");
+    await apiFetch(`/api/appointments/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: apiStatus }),
     });
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, status } : a))
+    );
   }, []);
 
-  const updateAppointment = useCallback((id, patch) => {
-    setAppointments((prev) => {
-      const next = prev.map((a) => (a.id === id ? { ...a, ...patch } : a));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
+  const updateAppointment = useCallback(async (id, patch) => {
+    await apiFetch(`/api/appointments/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
     });
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, ...patch } : a))
+    );
   }, []);
 
-  const deleteAppointment = useCallback((id) => {
-    setAppointments((prev) => {
-      const next = prev.filter((a) => a.id !== id);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
+  const deleteAppointment = useCallback(async (id) => {
+    await apiFetch(`/api/appointments/${id}`, { method: "DELETE" });
+    setAppointments((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
-  const getByDate = useCallback((date) => {
-    return appointments.filter((a) => a.date === date);
-  }, [appointments]);
+  const getByDate = useCallback(
+    (date) => appointments.filter((a) => a.date === date),
+    [appointments]
+  );
 
-  const getByBarberDate = useCallback((barberId, date) => {
-    return appointments.filter((a) => a.barberId === barberId && a.date === date);
-  }, [appointments]);
+  const getByBarberDate = useCallback(
+    (barberId, date) => appointments.filter((a) => a.barberId === barberId && a.date === date),
+    [appointments]
+  );
 
   return (
     <AppointmentsContext.Provider value={{
-      appointments,
-      loaded,
-      addAppointment,
-      updateStatus,
-      updateAppointment,
-      deleteAppointment,
-      getByDate,
-      getByBarberDate,
+      appointments, loaded,
+      addAppointment, updateStatus, updateAppointment,
+      deleteAppointment, getByDate, getByBarberDate,
+      refresh: fetchAll,
     }}>
       {children}
     </AppointmentsContext.Provider>

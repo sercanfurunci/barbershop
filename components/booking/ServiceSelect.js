@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { services } from "@/lib/data";
+import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
 import { Clock, Check } from "lucide-react";
 
 const C = {
@@ -44,6 +45,18 @@ const badgeBase = {
 
 export default function ServiceSelect({ selected, onSelect, lang = "tr", tx }) {
   const s1 = tx?.booking?.step1 ?? {};
+  const [services, setServices] = useState([]);
+
+  useEffect(() => {
+    apiFetch("/api/services").then((data) => {
+      setServices(data.map((s) => ({
+        ...s,
+        name:        { tr: s.nameTr, en: s.nameEn },
+        description: { tr: s.descTr, en: s.descEn },
+        category:    s.category.toLowerCase(),
+      })));
+    }).catch(() => {});
+  }, []);
 
   return (
     <div>

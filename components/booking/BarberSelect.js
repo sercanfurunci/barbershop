@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { barbers } from "@/lib/data";
+import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
 import { Star, Check } from "lucide-react";
 
 const C = {
@@ -17,6 +18,19 @@ const C = {
 
 export default function BarberSelect({ selected, onSelect, onBack, lang = "tr", tx }) {
   const s2 = tx?.booking?.step2 ?? {};
+  const [barbers, setBarbers] = useState([]);
+
+  useEffect(() => {
+    apiFetch("/api/barbers").then((data) => {
+      setBarbers(data.map((b) => ({
+        ...b,
+        name:    b.nameTr,
+        title:   { tr: b.titleTr, en: b.titleEn },
+        bio:     { tr: b.bioTr,   en: b.bioEn   },
+        reviews: b.reviewCount,
+      })));
+    }).catch(() => {});
+  }, []);
 
   return (
     <div>

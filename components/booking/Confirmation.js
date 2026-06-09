@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 import { toast } from "sonner";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
 
 const C = {
   bg:       "#070707",
@@ -34,10 +35,32 @@ export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-    setSubmitted(true);
-    toast.success(success.confirmed ?? "Randevunuz onaylandı!");
+    try {
+      const dateStr = booking.date instanceof Date
+        ? format(booking.date, "yyyy-MM-dd")
+        : booking.date;
+
+      await apiFetch("/api/appointments", {
+        method: "POST",
+        body: JSON.stringify({
+          name:      form.name,
+          phone:     form.phone,
+          email:     form.email,
+          notes:     form.notes,
+          serviceId: booking.service?.id,
+          barberId:  booking.barber?.id === "any" ? null : booking.barber?.id,
+          date:      dateStr,
+          time:      booking.time,
+          source:    "ONLINE",
+        }),
+      });
+      setSubmitted(true);
+      toast.success(success.confirmed ?? "Randevunuz onaylandı!");
+    } catch (err) {
+      toast.error(err.message ?? "Bir hata oluştu, lütfen tekrar deneyin.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const serviceName = booking.service
