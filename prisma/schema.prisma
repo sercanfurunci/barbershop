@@ -1,0 +1,164 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(BARBER)
+  barberId     String?  @unique
+  barber       Barber?  @relation(fields: [barberId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  BARBER
+  RECEPTIONIST
+}
+
+// ─── Barbers ──────────────────────────────────────────────────────────────────
+
+model Barber {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  nameTr       String
+  nameEn       String
+  titleTr      String
+  titleEn      String
+  bioTr        String        @db.Text
+  bioEn        String        @db.Text
+  avatar       String
+  color        String        @default("#CC1A1A")
+  rating       Float         @default(5.0)
+  reviewCount  Int           @default(0)
+  yearsExp     Int           @default(1)
+  available    Boolean       @default(true)
+  specialties  String[]
+  user         User?
+  appointments Appointment[]
+  workingHours WorkingHours?
+  breaks       BarberBreak[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model WorkingHours {
+  id        String  @id @default(cuid())
+  barberId  String  @unique
+  barber    Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  monStart  Int?
+  monEnd    Int?
+  tueStart  Int?
+  tueEnd    Int?
+  wedStart  Int?
+  wedEnd    Int?
+  thuStart  Int?
+  thuEnd    Int?
+  friStart  Int?
+  friEnd    Int?
+  satStart  Int?
+  satEnd    Int?
+  sunStart  Int?
+  sunEnd    Int?
+}
+
+model BarberBreak {
+  id       String @id @default(cuid())
+  barberId String
+  barber   Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  start    String
+  end      String
+  label    String @default("Mola")
+}
+
+// ─── Services ─────────────────────────────────────────────────────────────────
+
+model Service {
+  id           String          @id @default(cuid())
+  nameTr       String
+  nameEn       String
+  descTr       String
+  descEn       String
+  duration     Int
+  price        Int
+  icon         String          @default("✂️")
+  category     ServiceCategory
+  popular      Boolean         @default(false)
+  active       Boolean         @default(true)
+  appointments Appointment[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+enum ServiceCategory {
+  CUTS
+  BEARD
+  COMBO
+  PREMIUM
+}
+
+// ─── Clients ──────────────────────────────────────────────────────────────────
+
+model Client {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String        @unique
+  email        String?
+  notes        String?       @db.Text
+  noShowCount  Int           @default(0)
+  blocked      Boolean       @default(false)
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+// ─── Appointments ─────────────────────────────────────────────────────────────
+
+model Appointment {
+  id        String            @id @default(cuid())
+  clientId  String
+  client    Client            @relation(fields: [clientId], references: [id])
+  barberId  String
+  barber    Barber            @relation(fields: [barberId], references: [id])
+  serviceId String
+  service   Service           @relation(fields: [serviceId], references: [id])
+  date      String
+  time      String
+  duration  Int
+  price     Int
+  status    AppointmentStatus @default(PENDING)
+  source    BookingSource     @default(ONLINE)
+  notes     String?           @db.Text
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([barberId, date])
+  @@index([clientId])
+  @@index([date])
+  @@index([status])
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NOSHOW
+}
+
+enum BookingSource {
+  ONLINE
+  PHONE
+  WALKIN
+}
