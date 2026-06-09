@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { barbers } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
-import { Crown, Scissors, ArrowRight } from "lucide-react";
+import { apiFetch } from "@/lib/api";
+import { Crown, Scissors, ArrowRight, Loader2 } from "lucide-react";
 
 const C = {
   bg:      "#070707",
@@ -21,6 +21,13 @@ const C = {
 export default function BarberLoginPage() {
   const { login, role, loaded } = useAuth();
   const router = useRouter();
+  const [barbers, setBarbers] = useState([]);
+  const [loggingIn, setLoggingIn] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    apiFetch("/api/barbers").then(setBarbers).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!loaded) return;
@@ -28,18 +35,27 @@ export default function BarberLoginPage() {
     else if (role) router.replace(`/barber/${role}`);
   }, [role, loaded, router]);
 
-  const handleLogin = (r) => {
-    login(r);
-    if (r === "admin") router.push("/admin");
-    else router.push(`/barber/${r}`);
+  const handleLogin = async (emailOrRole) => {
+    setLoggingIn(emailOrRole);
+    setError(null);
+    try {
+      const user = await login(emailOrRole);
+      if (user?.role === "ADMIN") router.push("/admin");
+      else if (user?.barber?.slug) router.push(`/barber/${user.barber.slug}`);
+    } catch (err) {
+      setError(err.message ?? "Giriş başarısız");
+    } finally {
+      setLoggingIn(null);
+    }
   };
+
+  if (!loaded) return null;
 
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6"
       style={{ background: C.bg }}
     >
-      {/* Logo */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -61,37 +77,35 @@ export default function BarberLoginPage() {
       </motion.div>
 
       <div style={{ width: "100%", maxWidth: "720px" }}>
+        {error && (
+          <div style={{ background: "rgba(204,26,26,0.1)", border: "1px solid rgba(204,26,26,0.3)", borderRadius: "8px", padding: "12px 16px", marginBottom: "16px", fontSize: "13px", color: C.red }}>
+            {error}
+          </div>
+        )}
+
         {/* Admin card */}
         <motion.button
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.1 }}
           onClick={() => handleLogin("admin")}
+          disabled={!!loggingIn}
           className="w-full text-left flex items-center gap-5 mb-4"
           style={{
             background: C.card,
             border: `1px solid ${C.border}`,
             borderRadius: "14px",
             padding: "24px 28px",
-            cursor: "pointer",
+            cursor: loggingIn ? "not-allowed" : "pointer",
             transition: "all 0.2s",
+            opacity: loggingIn && loggingIn !== "admin" ? 0.5 : 1,
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "rgba(204,26,26,0.4)";
-            e.currentTarget.style.background = "#121218";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = C.border;
-            e.currentTarget.style.background = C.card;
-          }}
+          onMouseEnter={(e) => { if (!loggingIn) { e.currentTarget.style.borderColor = "rgba(204,26,26,0.4)"; e.currentTarget.style.background = "#121218"; } }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
         >
           <div
             className="flex items-center justify-center shrink-0"
-            style={{
-              width: "52px", height: "52px",
-              background: `linear-gradient(135deg, ${C.red}, #9a1212)`,
-              borderRadius: "12px",
-            }}
+            style={{ width: "52px", height: "52px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "12px" }}
           >
             <Crown size={22} color="#fff" />
           </div>
@@ -99,7 +113,10 @@ export default function BarberLoginPage() {
             <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600, marginBottom: "3px" }}>Süper Admin</div>
             <div style={{ fontSize: "12px", color: C.secondary }}>Tüm randevular, kasa, berber yönetimi</div>
           </div>
-          <ArrowRight size={16} style={{ color: C.red }} />
+          {loggingIn === "admin"
+            ? <Loader2 size={16} style={{ color: C.red, animation: "spin 1s linear infinite" }} />
+            : <ArrowRight size={16} style={{ color: C.red }} />
+          }
         </motion.button>
 
         {/* Divider */}
@@ -122,69 +139,45 @@ export default function BarberLoginPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.25 + i * 0.07 }}
-              onClick={() => handleLogin(barber.id)}
+              onClick={() => handleLogin(barber.slug)}
+              disabled={!!loggingIn}
               className="text-left flex items-center gap-4"
               style={{
                 background: C.card,
                 border: `1px solid ${C.border}`,
                 borderRadius: "12px",
                 padding: "18px 20px",
-                cursor: "pointer",
+                cursor: loggingIn ? "not-allowed" : "pointer",
                 transition: "all 0.2s",
+                opacity: loggingIn && loggingIn !== barber.slug ? 0.5 : 1,
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(204,26,26,0.3)";
-                e.currentTarget.style.background = "#121218";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.background = C.card;
-              }}
+              onMouseEnter={(e) => { if (!loggingIn) { e.currentTarget.style.borderColor = "rgba(204,26,26,0.3)"; e.currentTarget.style.background = "#121218"; } }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
             >
               <div
                 className="flex items-center justify-center font-bold text-white shrink-0"
-                style={{
-                  width: "40px", height: "40px",
-                  background: `linear-gradient(135deg, ${C.red}, #9a1212)`,
-                  borderRadius: "10px",
-                  fontSize: "12px",
-                  letterSpacing: "0.04em",
-                }}
+                style={{ width: "40px", height: "40px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "10px", fontSize: "12px", letterSpacing: "0.04em" }}
               >
                 {barber.avatar}
               </div>
               <div className="flex-1 min-w-0">
-                <div
-                  style={{
-                    fontSize: "13px", color: C.primary, fontWeight: 500,
-                    marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}
-                >
-                  {barber.name}
+                <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500, marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {barber.nameTr}
                 </div>
-                <div
-                  style={{
-                    fontSize: "10px", color: barber.available ? "#22c55e" : C.muted,
-                    display: "flex", alignItems: "center", gap: "4px",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "5px", height: "5px", borderRadius: "50%",
-                      background: barber.available ? "#22c55e" : C.muted,
-                      flexShrink: 0,
-                    }}
-                  />
+                <div style={{ fontSize: "10px", color: barber.available ? "#22c55e" : C.muted, display: "flex", alignItems: "center", gap: "4px" }}>
+                  <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: barber.available ? "#22c55e" : C.muted, flexShrink: 0 }} />
                   {barber.available ? "Müsait" : "İzinli"}
                 </div>
               </div>
-              <Scissors size={13} style={{ color: C.muted, flexShrink: 0 }} />
+              {loggingIn === barber.slug
+                ? <Loader2 size={13} style={{ color: C.muted, flexShrink: 0, animation: "spin 1s linear infinite" }} />
+                : <Scissors size={13} style={{ color: C.muted, flexShrink: 0 }} />
+              }
             </motion.button>
           ))}
         </div>
       </div>
 
-      {/* Back to site */}
       <motion.a
         href="/"
         initial={{ opacity: 0 }}
@@ -196,6 +189,8 @@ export default function BarberLoginPage() {
       >
         ← Siteye dön
       </motion.a>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
