@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { barbers, services, workingHours } from "@/lib/data";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { apiFetch } from "@/lib/api";
 import ManualBookingModal from "@/components/admin/ManualBookingModal";
 import Link from "next/link";
 import {
@@ -327,31 +327,46 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function BarberDashboardClient({ barberId }) {
+export default function BarberDashboardClient({ barberId: barberSlug }) {
   const router = useRouter();
-  const { role, logout, loaded: authLoaded } = useAuth();
+  const { role, user, logout, loaded: authLoaded } = useAuth();
   const { appointments, updateStatus } = useAppointments();
   const [date, setDate]       = useState(new Date().toISOString().split("T")[0]);
   const [view, setView]       = useState("dashboard");
   const [moreOpen, setMoreOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [barberData, setBarberData] = useState(null);
   const [tick, setTick]     = useState(0);
+  const [mounted, setMounted] = useState(false);
 
-  // Refresh time every minute for "next appointment" accuracy
+  useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(id);
   }, []);
 
-  const barber = barbers.find(b => b.id === barberId);
+  // Fetch real barber data from API
+  useEffect(() => {
+    apiFetch("/api/barbers").then(list => {
+      const found = list.find(b => b.slug === barberSlug);
+      if (found) setBarberData(found);
+    }).catch(() => {});
+  }, [barberSlug]);
 
   useEffect(() => {
     if (!authLoaded) return;
     if (!role) { router.replace("/barber"); return; }
-    if (role !== "admin" && role !== barberId) router.replace(`/barber/${role}`);
-  }, [role, authLoaded, barberId, router]);
+    if (role !== "admin" && role !== barberSlug) router.replace(`/barber/${role}`);
+  }, [role, authLoaded, barberSlug, router]);
 
-  if (!barber) return null;
+  // Block render until auth is confirmed
+  if (!authLoaded || !role) return null;
+
+  // Real DB barberId: for logged-in barber use user.barber.id; for admin viewing use barberData.id
+  const realBarberId = user?.barber?.slug === barberSlug ? user.barber.id : barberData?.id;
+  const barber = barberData ?? (user?.barber?.slug === barberSlug ? { ...user.barber, nameTr: user.barber.nameTr ?? user.barber.name, name: user.barber.nameTr ?? user.barber.name, title: { tr: "Berber", en: "Barber" }, avatar: user.barber.avatar } : null);
+
+  if (!barber || !mounted) return null;
 
   const todayStr       = new Date().toISOString().split("T")[0];
   const viewDate       = view === "dashboard" ? todayStr : date;
@@ -359,7 +374,7 @@ export default function BarberDashboardClient({ barberId }) {
   const isViewingToday = isToday(viewing);
 
   const dayAppts = appointments
-    .filter(a => a.barberId === barberId && a.date === viewing && a.status !== "cancelled")
+    .filter(a => (realBarberId ? a.barberId === realBarberId : a.barberId === barberSlug) && a.date === viewing && a.status !== "cancelled")
     .sort((a, b) => a.time.localeCompare(b.time));
 
   const now = nowTimeStr();
@@ -380,9 +395,22 @@ export default function BarberDashboardClient({ barberId }) {
   const completed = dayAppts.filter(a => a.status === "completed").length;
   const noshow    = dayAppts.filter(a => a.status === "noshow").length;
   const revenue   = dayAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
-  const wh        = workingHours[barberId] ?? { start: 9, end: 18 };
-  const totalSlots = (wh.end - wh.start) * 2; // 30min slots
+  const wh        = barberData?.workingHours ? { start: barberData.workingHours.monStart ?? 9, end: barberData.workingHours.monEnd ?? 18 } : { start: 9, end: 18 };
+  const totalSlots = (wh.end - wh.start) * 2;
   const freeSlots  = Math.max(0, totalSlots - dayAppts.length * 1.5 | 0);
+
+  // Weekly stats (last 7 days)
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+    return d.toISOString().split("T")[0];
+  });
+  const weekData = weekDays.map(d => {
+    const appts = appointments.filter(a => (realBarberId ? a.barberId === realBarberId : true) && a.date === d && a.status === "completed");
+    return { date: d, count: appts.length, revenue: appts.reduce((s, a) => s + (a.price || 0), 0) };
+  });
+  const weekRevenue = weekData.reduce((s, d) => s + d.revenue, 0);
+  const weekAppts   = weekData.reduce((s, d) => s + d.count, 0);
+  const maxCount    = Math.max(...weekData.map(d => d.count), 1);
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, overflowX: "hidden" }}>
@@ -403,8 +431,8 @@ export default function BarberDashboardClient({ barberId }) {
             {barber.avatar}
           </div>
           <div>
-            <div style={{ fontSize: "13px", color: C.primary, fontWeight: 600, lineHeight: 1.2 }}>{barber.name}</div>
-            <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.title.tr}</div>
+            <div style={{ fontSize: "13px", color: C.primary, fontWeight: 600, lineHeight: 1.2 }}>{barber.nameTr ?? barber.name}</div>
+            <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -576,17 +604,66 @@ export default function BarberDashboardClient({ barberId }) {
                 </div>
               </div>
             )}
+
+            {/* Weekly overview — only on dashboard tab */}
+            {view === "dashboard" && (
+              <div style={{ marginTop: "20px" }}>
+                {/* Weekly KPI row */}
+                <div className="grid grid-cols-2 gap-3" style={{ marginBottom: "12px" }}>
+                  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px 16px" }}>
+                    <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "6px" }}>Bu Hafta Kazanç</div>
+                    <div style={{ fontSize: "22px", color: C.primary, fontWeight: 600, letterSpacing: "-0.02em" }}>₺{weekRevenue.toLocaleString()}</div>
+                    <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>{weekAppts} tamamlanan</div>
+                  </div>
+                  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px 16px" }}>
+                    <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "6px" }}>Ort. Randevu / Gün</div>
+                    <div style={{ fontSize: "22px", color: C.primary, fontWeight: 600, letterSpacing: "-0.02em" }}>{weekAppts > 0 ? (weekAppts / 7).toFixed(1) : "0"}</div>
+                    <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>son 7 gün</div>
+                  </div>
+                </div>
+
+                {/* Bar chart */}
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "16px" }}>
+                  <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "14px" }}>Haftalık Tamamlanan Randevu</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "72px" }}>
+                    {weekData.map((d, i) => {
+                      const isToday_ = d.date === todayStr;
+                      const h = maxCount > 0 ? Math.max((d.count / maxCount) * 100, d.count > 0 ? 12 : 4) : 4;
+                      const dayLabel = new Date(d.date + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "narrow" });
+                      return (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", height: "100%" }}>
+                          <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
+                            <motion.div
+                              initial={{ height: 0 }}
+                              animate={{ height: `${h}%` }}
+                              transition={{ delay: i * 0.05, duration: 0.4, ease: "easeOut" }}
+                              style={{
+                                width: "100%",
+                                background: isToday_ ? C.red : d.count > 0 ? "rgba(204,26,26,0.35)" : C.muted,
+                                borderRadius: "4px 4px 0 0",
+                                minHeight: "4px",
+                              }}
+                            />
+                          </div>
+                          <div style={{ fontSize: "9px", color: isToday_ ? C.red : C.muted, fontWeight: isToday_ ? 700 : 400 }}>{dayLabel}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
         {/* ── Randevular view ── */}
         {view === "appointments" && (
-          <BarberAppointmentsList barberId={barberId} appointments={appointments} onAction={updateStatus} onNewBooking={() => setShowModal(true)} />
+          <BarberAppointmentsList barberId={realBarberId ?? barberSlug} appointments={appointments} onAction={updateStatus} onNewBooking={() => setShowModal(true)} />
         )}
 
         {/* ── Müşteriler view ── */}
         {view === "customers" && (
-          <BarberCustomersView barberId={barberId} appointments={appointments} onNewBooking={() => setShowModal(true)} />
+          <BarberCustomersView barberId={realBarberId ?? barberSlug} appointments={appointments} onNewBooking={() => setShowModal(true)} />
         )}
 
       </div>
@@ -679,8 +756,8 @@ function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogou
                 {barber?.avatar}
               </div>
               <div>
-                <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{barber?.name}</div>
-                <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: "2px" }}>{barber?.title?.tr}</div>
+                <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{barber?.nameTr ?? barber?.name}</div>
+                <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: "2px" }}>{barber?.titleTr ?? barber?.title?.tr}</div>
               </div>
             </div>
 

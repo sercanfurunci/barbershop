@@ -76,6 +76,9 @@ export default function AdminDashboard() {
   const tx = useT(lang);
   const { logout, role, loaded } = useAuth();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const handleLogout = () => { logout(); router.push("/barber"); };
   const navSections = NAV_SECTIONS(lang);
@@ -85,7 +88,7 @@ export default function AdminDashboard() {
     if (!role) router.replace("/barber");
   }, [loaded, role, router]);
 
-  if (!loaded || !role) return null;
+  if (!mounted || !loaded || !role) return null;
 
   return (
     <div className="flex min-h-screen" style={{ background: C.bg, fontFamily: "'Outfit', sans-serif" }}>
