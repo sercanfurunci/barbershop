@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const revalidate = 300; // 5-minute cache
+
 export async function GET() {
   try {
     const barbers = await prisma.barber.findMany({
@@ -8,7 +10,9 @@ export async function GET() {
       include: { workingHours: true, breaks: true },
       orderBy: { createdAt: "asc" },
     });
-    return NextResponse.json(barbers);
+    const res = NextResponse.json(barbers);
+    res.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=60");
+    return res;
   } catch (err) {
     console.error("[GET /api/barbers]", err);
     return NextResponse.json({ error: "Sunucu hatası", detail: err.message }, { status: 500 });

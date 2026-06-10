@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check } from "lucide-react";
 import ServiceSelect from "./ServiceSelect";
@@ -9,6 +9,7 @@ import DateTimeSelect from "./DateTimeSelect";
 import Confirmation from "./Confirmation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
+import { apiFetch } from "@/lib/api";
 import Link from "next/link";
 
 const C = {
@@ -27,6 +28,33 @@ export default function BookingFlow() {
   const [booking, setBooking] = useState({ service: null, barber: null, date: null, time: null });
   const { lang } = useLang();
   const tx = useT(lang);
+
+  // ── Fetch services + barbers once at top level ──────────────────────────────
+  const [services, setServices] = useState([]);
+  const [barbers, setBarbers]   = useState([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      apiFetch("/api/services"),
+      apiFetch("/api/barbers"),
+    ]).then(([svcData, brbrData]) => {
+      setServices(svcData.map((s) => ({
+        ...s,
+        name:        { tr: s.nameTr, en: s.nameEn },
+        description: { tr: s.descTr, en: s.descEn },
+        category:    s.category.toLowerCase(),
+      })));
+      setBarbers(brbrData.map((b) => ({
+        ...b,
+        name:    b.nameTr,
+        title:   { tr: b.titleTr, en: b.titleEn },
+        bio:     { tr: b.bioTr,   en: b.bioEn   },
+        reviews: b.reviewCount,
+      })));
+      setDataLoaded(true);
+    }).catch(() => setDataLoaded(true));
+  }, []);
 
   const updateBooking = (key, value) => setBooking((prev) => ({ ...prev, [key]: value }));
   const nextStep = () => setStep((s) => Math.min(s + 1, 4));
@@ -61,7 +89,6 @@ export default function BookingFlow() {
                       minHeight: "52px",
                     }}
                   >
-                    {/* Step circle */}
                     <div
                       className="flex items-center justify-center shrink-0 transition-all duration-200"
                       style={{
@@ -76,7 +103,6 @@ export default function BookingFlow() {
                     >
                       {done ? <Check size={11} /> : idx}
                     </div>
-                    {/* Label — visible from sm up; on mobile show only on active step */}
                     <div className={`min-w-0 ${active ? "block" : "hidden sm:block"}`}>
                       <div style={{ fontSize: "12px", fontWeight: active ? 600 : 400, letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
                         {s.label}
@@ -85,7 +111,6 @@ export default function BookingFlow() {
                         {s.desc}
                       </div>
                     </div>
-                    {/* Active bottom line */}
                     {active && (
                       <motion.div
                         layoutId="step-indicator"
@@ -109,7 +134,6 @@ export default function BookingFlow() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-14">
 
-        {/* Breadcrumb progress summary */}
         {booking.service && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
@@ -147,6 +171,8 @@ export default function BookingFlow() {
           >
             {step === 1 && (
               <ServiceSelect
+                services={services}
+                loaded={dataLoaded}
                 selected={booking.service}
                 onSelect={(s) => { updateBooking("service", s); nextStep(); }}
                 lang={lang} tx={tx}
@@ -154,6 +180,8 @@ export default function BookingFlow() {
             )}
             {step === 2 && (
               <BarberSelect
+                barbers={barbers}
+                loaded={dataLoaded}
                 selected={booking.barber}
                 onSelect={(b) => { updateBooking("barber", b); nextStep(); }}
                 onBack={prevStep}
@@ -163,9 +191,14 @@ export default function BookingFlow() {
             {step === 3 && (
               <DateTimeSelect
                 booking={booking}
+                allBarbers={barbers}
                 selectedDate={booking.date}
                 selectedTime={booking.time}
-                onSelect={(date, time) => { updateBooking("date", date); updateBooking("time", time); }}
+                onSelect={(date, time, resolvedBarber) => {
+                  updateBooking("date", date);
+                  updateBooking("time", time);
+                  if (resolvedBarber) updateBooking("barber", resolvedBarber);
+                }}
                 onNext={nextStep}
                 onBack={prevStep}
                 lang={lang} tx={tx}

@@ -18,7 +18,7 @@ const C = {
   red:      "#CC1A1A",
 };
 
-export default function DateTimeSelect({ booking, selectedDate, selectedTime, onSelect, onNext, onBack, lang = "tr", tx }) {
+export default function DateTimeSelect({ booking, allBarbers = [], selectedDate, selectedTime, onSelect, onNext, onBack, lang = "tr", tx }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [localDate, setLocalDate] = useState(selectedDate);
   const [localTime, setLocalTime] = useState(selectedTime);
@@ -43,31 +43,69 @@ export default function DateTimeSelect({ booking, selectedDate, selectedTime, on
     const d = startOfDay(date);
     if (isBefore(d, today)) return false;
     if (isBefore(maxDate, d)) return false;
-    if (getDay(date) === 0) return false;
     return true;
   };
 
   const [availableSlots, setAvailableSlots] = useState([]);
+  // slotBarberMap: { "09:00": barberId } — used when "any" barber is selected
+  const [slotBarberMap, setSlotBarberMap] = useState({});
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   useEffect(() => {
     if (!localDate || !booking.barber || !booking.service) return;
-    const barberId  = booking.barber.id === "any" ? null : booking.barber.id;
     const serviceId = booking.service.id;
-    if (!barberId || !serviceId) return;
+    const isAny = booking.barber.id === "any";
+    const dateStr = format(localDate, "yyyy-MM-dd");
 
     setLoadingSlots(true);
     setLocalTime(null);
-    apiFetch(`/api/availability?barberId=${barberId}&serviceId=${serviceId}&date=${localDate}`)
-      .then((data) => setAvailableSlots(data.slots ?? []))
-      .catch(() => setAvailableSlots([]))
-      .finally(() => setLoadingSlots(false));
+    setAvailableSlots([]);
+    setSlotBarberMap({});
+
+    if (!isAny) {
+      // Single barber — simple fetch
+      apiFetch(`/api/availability?barberId=${booking.barber.id}&serviceId=${serviceId}&date=${dateStr}`)
+        .then((data) => setAvailableSlots(data.slots ?? []))
+        .catch(() => setAvailableSlots([]))
+        .finally(() => setLoadingSlots(false));
+    } else {
+      // "Any" — fetch all barbers in parallel, merge slots
+      const barberList = allBarbers.filter(b => b.available);
+      if (barberList.length === 0) { setLoadingSlots(false); return; }
+
+      Promise.all(
+        barberList.map(b =>
+          apiFetch(`/api/availability?barberId=${b.id}&serviceId=${serviceId}&date=${dateStr}`)
+            .then(data => ({ barberId: b.id, slots: data.slots ?? [] }))
+            .catch(() => ({ barberId: b.id, slots: [] }))
+        )
+      ).then(results => {
+        // Build slot→first available barber map
+        const map = {};
+        for (const { barberId, slots } of results) {
+          for (const slot of slots) {
+            if (!map[slot]) map[slot] = barberId;
+          }
+        }
+        const sorted = Object.keys(map).sort();
+        setSlotBarberMap(map);
+        setAvailableSlots(sorted);
+      }).finally(() => setLoadingSlots(false));
+    }
   }, [localDate, booking.barber?.id, booking.service?.id]);
 
   const isSlotAvailable = (slot) => availableSlots.includes(slot);
 
   const handleContinue = () => {
-    if (localDate && localTime) { onSelect(localDate, localTime); onNext(); }
+    if (!localDate || !localTime) return;
+    // If "any" barber, resolve to the actual barber who has this slot
+    let resolvedBarber = null;
+    if (booking.barber?.id === "any" && slotBarberMap[localTime]) {
+      const b = allBarbers.find(b => b.id === slotBarberMap[localTime]);
+      if (b) resolvedBarber = b;
+    }
+    onSelect(localDate, localTime, resolvedBarber);
+    onNext();
   };
 
   const availableCount = availableSlots.length;
