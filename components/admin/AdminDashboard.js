@@ -18,6 +18,7 @@ import BarbersManagement from "./BarbersManagement";
 import AreaChart from "./AreaChart";
 import CalendarView from "./CalendarView";
 import ManualBookingModal from "./ManualBookingModal";
+import SettingsPage from "./SettingsPage";
 import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
@@ -250,7 +251,7 @@ export default function AdminDashboard() {
                 {tab === "customers"     && <CustomersPage barberId={globalBarberId} />}
                 {tab === "services-mgmt" && <ServicesMgmtPage />}
                 {tab === "revenue"       && <RevenuePage tx={tx} barberId={globalBarberId} />}
-                {tab === "settings"      && <SettingsPage tx={tx} handleLogout={handleLogout} />}
+                {tab === "settings"      && <SettingsPage />}
                 {tab === "barber-ops"    && <BarberOpsPage barberId={globalBarberId} />}
               </motion.div>
             </AnimatePresence>
@@ -1667,29 +1668,6 @@ function RevenuePage({ tx, barberId }) {
 }
 
 /* ─── Settings Page ───────────────────────────────────────────────────────── */
-function SettingsPage({ tx, handleLogout }) {
-  const sections = tx.admin.settings.sections;
-  const p = tx.admin.pages.settings;
-  return (
-    <div className="space-y-5 max-w-2xl">
-      <PageHeader title={p.title} sub={p.sub} />
-      {sections.map((s) => (
-        <div key={s.title} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "20px" }}>
-          <p style={{ fontSize: "10px", letterSpacing: "0.3em", textTransform: "uppercase", color: C.red, marginBottom: "16px" }}>{s.title}</p>
-          <div className="space-y-0">
-            {s.fields.map((f, i) => (
-              <div key={f.label} className="flex items-center justify-between" style={{ padding: "11px 0", borderBottom: i < s.fields.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                <span style={{ fontSize: "13px", color: C.secondary }}>{f.label}</span>
-                <span style={{ fontSize: "13px", color: C.primary }}>{f.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /* ─── Page Header ─────────────────────────────────────────────────────────── */
 function PageHeader({ title, sub }) {
   return (

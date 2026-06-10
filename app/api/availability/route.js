@@ -14,41 +14,34 @@ function minToTime(m) {
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
-// Returns array of "HH:MM" slot start times available for a barber on a date
+// WorkingHours values are stored as minutes from midnight (540 = 09:00)
 function computeSlots(workingHours, breaks, bookedAppointments, date, serviceDuration) {
-  const dow = DAY_MAP[new Date(date + "T12:00:00").getDay()];
-  const startH = workingHours[`${dow}Start`];
-  const endH   = workingHours[`${dow}End`];
+  const dow      = new Date(date + "T12:00:00").getDay(); // 0=Sun … 6=Sat
+  const dowKey   = DAY_MAP[dow];
+  const dayStart = workingHours[`${dowKey}Start`]; // already in minutes
+  const dayEnd   = workingHours[`${dowKey}End`];
 
-  // Day off
-  if (startH == null || endH == null) return [];
+  if (dayStart == null || dayEnd == null) return []; // day off
 
-  const dayStart = startH * 60;
-  const dayEnd   = endH   * 60;
+  // Blocked intervals: breaks filtered by dayOfWeek
+  const blocked = breaks
+    .filter(b => b.dayOfWeek == null || b.dayOfWeek === dow)
+    .map(b => ({ start: timeToMin(b.start), end: timeToMin(b.end) }));
 
-  // Build blocked intervals from breaks
-  const blocked = breaks.map(b => ({
-    start: timeToMin(b.start),
-    end:   timeToMin(b.end),
-  }));
-
-  // Add booked appointments as blocked intervals
+  // Add booked appointments
   for (const appt of bookedAppointments) {
-    if (["cancelled", "noshow"].includes(appt.status.toLowerCase())) continue;
+    if (["CANCELLED", "NOSHOW"].includes(appt.status)) continue;
     const s = timeToMin(appt.time);
     blocked.push({ start: s, end: s + appt.duration });
   }
 
   const now = new Date();
   const isToday = date === now.toISOString().split("T")[0];
-  const nowMin  = isToday ? now.getHours() * 60 + now.getMinutes() + 60 : 0; // +60 min buffer
+  const nowMin  = isToday ? now.getHours() * 60 + now.getMinutes() + 60 : 0;
 
   const slots = [];
   for (let t = dayStart; t + serviceDuration <= dayEnd; t += SLOT_INTERVAL) {
-    // Past check
     if (t < nowMin) continue;
-
-    // Overlap check: slot [t, t+serviceDuration) must not overlap any blocked interval
     const slotEnd = t + serviceDuration;
     const overlaps = blocked.some(b => t < b.end && slotEnd > b.start);
     if (!overlaps) slots.push(minToTime(t));
@@ -60,34 +53,43 @@ function computeSlots(workingHours, breaks, bookedAppointments, date, serviceDur
 // GET /api/availability?barberId=brb-1&serviceId=svc-1&date=2026-06-10
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const barberId    = searchParams.get("barberId");
-  const serviceId   = searchParams.get("serviceId");
-  const date        = searchParams.get("date");
+  const barberId  = searchParams.get("barberId");
+  const serviceId = searchParams.get("serviceId");
+  const date      = searchParams.get("date");
 
   if (!barberId || !serviceId || !date) {
     return NextResponse.json({ error: "barberId, serviceId ve date gerekli" }, { status: 400 });
   }
-
-  // Validate date format
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "Geçersiz tarih formatı (YYYY-MM-DD)" }, { status: 400 });
   }
 
-  const [barber, service, bookedAppointments] = await Promise.all([
+  const [barber, service, bookedAppointments, holidays] = await Promise.all([
     prisma.barber.findUnique({
       where: { id: barberId },
       include: { workingHours: true, breaks: true },
     }),
     prisma.service.findUnique({ where: { id: serviceId } }),
     prisma.appointment.findMany({
-      where: { barberId, date, status: { notIn: ["CANCELLED", "NOSHOW"] } },
+      where: { barberId, date },
       select: { time: true, duration: true, status: true },
+    }),
+    prisma.holiday.findMany({
+      where: {
+        date,
+        OR: [{ barberId }, { barberId: null }],
+      },
     }),
   ]);
 
-  if (!barber) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
-  if (!service) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
+  if (!barber)   return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
+  if (!service)  return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
   if (!barber.workingHours) return NextResponse.json({ slots: [] });
+
+  // Holiday = no slots
+  if (holidays.length > 0) {
+    return NextResponse.json({ slots: [], holiday: holidays[0].label });
+  }
 
   const slots = computeSlots(
     barber.workingHours,

@@ -13,8 +13,11 @@ model User {
   email        String   @unique
   passwordHash String
   role         Role     @default(BARBER)
+  tokenVersion Int      @default(0)   // increment on logout to invalidate all tokens
   barberId     String?  @unique
   barber       Barber?  @relation(fields: [barberId], references: [id])
+  clientId     String?  @unique        // set when role = CUSTOMER
+  client       Client?  @relation(fields: [clientId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -23,34 +26,38 @@ enum Role {
   ADMIN
   BARBER
   RECEPTIONIST
+  CUSTOMER
 }
 
 // ─── Barbers ──────────────────────────────────────────────────────────────────
 
 model Barber {
-  id           String        @id @default(cuid())
-  slug         String        @unique
+  id           String         @id @default(cuid())
+  slug         String         @unique
   nameTr       String
   nameEn       String
   titleTr      String
   titleEn      String
-  bioTr        String        @db.Text
-  bioEn        String        @db.Text
+  bioTr        String         @db.Text
+  bioEn        String         @db.Text
   avatar       String
-  color        String        @default("#CC1A1A")
-  rating       Float         @default(5.0)
-  reviewCount  Int           @default(0)
-  yearsExp     Int           @default(1)
-  available    Boolean       @default(true)
+  color        String         @default("#CC1A1A")
+  rating       Float          @default(5.0)
+  reviewCount  Int            @default(0)
+  yearsExp     Int            @default(1)
+  available    Boolean        @default(true)
   specialties  String[]
   user         User?
   appointments Appointment[]
   workingHours WorkingHours?
   breaks       BarberBreak[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  holidays     Holiday[]
+  services     BarberService[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }
 
+// Working hours: values stored as minutes from midnight (540 = 09:00, 570 = 09:30)
 model WorkingHours {
   id        String  @id @default(cuid())
   barberId  String  @unique
@@ -72,12 +79,13 @@ model WorkingHours {
 }
 
 model BarberBreak {
-  id       String @id @default(cuid())
-  barberId String
-  barber   Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  start    String
-  end      String
-  label    String @default("Mola")
+  id        String  @id @default(cuid())
+  barberId  String
+  barber    Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  start     String  // "HH:MM"
+  end       String  // "HH:MM"
+  label     String  @default("Mola")
+  dayOfWeek Int?    // 0=Sun … 6=Sat, null = every day
 }
 
 // ─── Services ─────────────────────────────────────────────────────────────────
@@ -95,6 +103,7 @@ model Service {
   popular      Boolean         @default(false)
   active       Boolean         @default(true)
   appointments Appointment[]
+  barbers      BarberService[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 }
@@ -106,44 +115,63 @@ enum ServiceCategory {
   PREMIUM
 }
 
+// Barber ↔ Service many-to-many (which services a barber can perform)
+model BarberService {
+  barberId  String
+  serviceId String
+  barber    Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([barberId, serviceId])
+}
+
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
 model Client {
-  id           String        @id @default(cuid())
-  name         String
-  phone        String        @unique
-  email        String?
-  notes        String?       @db.Text
-  noShowCount  Int           @default(0)
-  blocked      Boolean       @default(false)
-  appointments Appointment[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id            String         @id @default(cuid())
+  name          String
+  phone         String         @unique
+  email         String?
+  notes         String?        @db.Text
+  photos        String[]       // URLs or storage keys for client reference photos
+  noShowCount   Int            @default(0)
+  blocked       Boolean        @default(false)
+  appointments  Appointment[]
+  notifications Notification[]
+  user          User?          // set if client has a CUSTOMER account
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([name])
 }
 
 // ─── Appointments ─────────────────────────────────────────────────────────────
 
 model Appointment {
-  id        String            @id @default(cuid())
-  clientId  String
-  client    Client            @relation(fields: [clientId], references: [id])
-  barberId  String
-  barber    Barber            @relation(fields: [barberId], references: [id])
-  serviceId String
-  service   Service           @relation(fields: [serviceId], references: [id])
-  date      String
-  time      String
-  duration  Int
-  price     Int
-  status    AppointmentStatus @default(PENDING)
-  source    BookingSource     @default(ONLINE)
-  notes     String?           @db.Text
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id            String            @id @default(cuid())
+  clientId      String
+  client        Client            @relation(fields: [clientId], references: [id])
+  barberId      String
+  barber        Barber            @relation(fields: [barberId], references: [id])
+  serviceId     String
+  service       Service           @relation(fields: [serviceId], references: [id])
+  date          String            // "YYYY-MM-DD"
+  time          String            // "HH:MM"
+  duration      Int
+  price         Int
+  status        AppointmentStatus @default(PENDING)
+  source        BookingSource     @default(ONLINE)
+  notes         String?           @db.Text
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
+  @@unique([barberId, date, time])      // race condition guard
   @@index([barberId, date])
   @@index([clientId])
   @@index([date])
+  @@index([date, status])               // revenue reports
   @@index([status])
 }
 
@@ -160,4 +188,57 @@ enum BookingSource {
   ONLINE
   PHONE
   WALKIN
+}
+
+// ─── Holidays ─────────────────────────────────────────────────────────────────
+
+model Holiday {
+  id        String   @id @default(cuid())
+  barberId  String?              // null = shop-wide (all barbers)
+  barber    Barber?  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  date      String               // "YYYY-MM-DD"
+  label     String   @default("Tatil")
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@index([barberId, date])
+}
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id            String       @id @default(cuid())
+  entity        String       // "appointment", "barber", etc.
+  entityId      String
+  action        String       // "status_change", "reschedule", "delete", "create"
+  before        Json?
+  after         Json?
+  userId        String?      // who performed the action (null = system / public)
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id            String       @id @default(cuid())
+  clientId      String?
+  client        Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  type          String       // "reminder", "confirmation", "cancellation", "reschedule"
+  channel       String       // "sms", "email", "push"
+  body          String?      @db.Text
+  sentAt        DateTime?
+  status        String       @default("pending") // "pending", "sent", "failed"
+  createdAt     DateTime     @default(now())
+
+  @@index([clientId])
+  @@index([appointmentId])
+  @@index([status])
 }

@@ -395,9 +395,14 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
   const completed = dayAppts.filter(a => a.status === "completed").length;
   const noshow    = dayAppts.filter(a => a.status === "noshow").length;
   const revenue   = dayAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
-  const wh        = barberData?.workingHours ? { start: barberData.workingHours.monStart ?? 9, end: barberData.workingHours.monEnd ?? 18 } : { start: 9, end: 18 };
-  const totalSlots = (wh.end - wh.start) * 2;
-  const freeSlots  = Math.max(0, totalSlots - dayAppts.length * 1.5 | 0);
+  // WorkingHours are in minutes (540 = 09:00); derive today's dow for accurate hours
+  const todayDow = ["sun","mon","tue","wed","thu","fri","sat"][new Date().getDay()];
+  const whRaw    = barberData?.workingHours;
+  const whStart  = whRaw ? (whRaw[`${todayDow}Start`] ?? 540)  : 540;
+  const whEnd    = whRaw ? (whRaw[`${todayDow}End`]   ?? 1080) : 1080;
+  const wh       = { start: whStart, end: whEnd };
+  const totalSlots = Math.floor((wh.end - wh.start) / 30);
+  const freeSlots  = Math.max(0, totalSlots - dayAppts.length);
 
   // Weekly stats (last 7 days)
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -566,7 +571,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                     <span style={{ marginLeft: "10px", fontSize: "10px", color: C.red, fontWeight: 700, letterSpacing: "0.12em", verticalAlign: "middle", textTransform: "uppercase" }}>Bugün</span>
                   )}
                 </h1>
-                <p style={{ fontSize: "13px", color: C.secondary }}>{wh.start}:00 – {wh.end}:00 · {dayAppts.length} randevu</p>
+                <p style={{ fontSize: "13px", color: C.secondary }}>{String(Math.floor(wh.start/60)).padStart(2,"0")}:{String(wh.start%60).padStart(2,"0")} – {String(Math.floor(wh.end/60)).padStart(2,"0")}:{String(wh.end%60).padStart(2,"0")} · {dayAppts.length} randevu</p>
               </>
             )}
             {view === "appointments" && <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em" }}>Randevular</h1>}
