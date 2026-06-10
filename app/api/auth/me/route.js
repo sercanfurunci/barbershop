@@ -9,7 +9,7 @@ export async function GET(request) {
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
     select: {
-      id: true, email: true, role: true,
+      id: true, email: true, username: true, displayName: true, role: true,
       barber: { select: { id: true, slug: true, nameTr: true, avatar: true } },
     },
   });
@@ -19,7 +19,13 @@ export async function GET(request) {
 }
 
 export async function DELETE(request) {
-  // logout — clear cookie
+  const payload = await requireAuth(request);
+  if (payload?.userId) {
+    await prisma.user.update({
+      where: { id: payload.userId },
+      data: { tokenVersion: { increment: 1 } },
+    }).catch(() => {});
+  }
   const response = NextResponse.json({ ok: true });
   response.cookies.set("makas-token", "", { maxAge: 0, path: "/" });
   return response;

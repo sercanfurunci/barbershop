@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser]     = useState(null); // { id, email, role, barber }
+  const [user, setUser]     = useState(null); // { id, email, username, displayName, role, barber }
   const [loaded, setLoaded] = useState(false);
 
   // Restore session from cookie on mount
@@ -46,8 +46,16 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    const u = await apiFetch("/api/auth/me").catch(() => null);
+    if (u) setUser(u);
+    return u;
+  };
+
+  const updateUser = (patch) => setUser(prev => prev ? { ...prev, ...patch } : prev);
+
   return (
-    <AuthContext.Provider value={{ user, role, loaded, login, logout }}>
+    <AuthContext.Provider value={{ user, role, loaded, login, logout, refreshUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

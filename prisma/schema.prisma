@@ -11,6 +11,8 @@ datasource db {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
+  username     String?  @unique     // login identifier shown in UI
+  displayName  String?              // optional display name override
   passwordHash String
   role         Role     @default(BARBER)
   tokenVersion Int      @default(0)   // increment on logout to invalidate all tokens

@@ -21,12 +21,14 @@ async function main() {
   ]);
   console.log("✓ Services");
 
+  // Working hours: 10:00-21:30 (600-1290), Sunday closed
+  const wh = { monStart:600,monEnd:1290,tueStart:600,tueEnd:1290,wedStart:600,wedEnd:1290,thuStart:600,thuEnd:1290,friStart:600,friEnd:1290,satStart:600,satEnd:1290,sunStart:null,sunEnd:null };
+
   const barberData = [
-    // WorkingHours stored as minutes from midnight (540 = 09:00, 600 = 10:00, 1080 = 18:00)
-    { id: "brb-1", slug: "mehmet", nameTr: "Mehmet Yılmaz", nameEn: "Mehmet Yilmaz", titleTr: "Baş Berber", titleEn: "Master Barber", bioTr: "20 yıllık deneyim ile her kesimi bir sanat eseri olarak ele alır.", bioEn: "With 20 years of experience, treats every cut as a work of art.", avatar: "MY", yearsExp: 20, specialties: ["Fade", "Sakal", "Klasik Kesim"], hours: { monStart:540,monEnd:1140,tueStart:540,tueEnd:1140,wedStart:540,wedEnd:1140,thuStart:540,thuEnd:1140,friStart:540,friEnd:1140,satStart:600,satEnd:1020,sunStart:null,sunEnd:null } },
-    { id: "brb-2", slug: "emre", nameTr: "Emre Kaya", nameEn: "Emre Kaya", titleTr: "Sakal Uzmanı", titleEn: "Beard Specialist", bioTr: "Sakal sanatını yeni bir seviyeye taşıyan deneyimli uzman.", bioEn: "Experienced specialist taking beard art to a new level.", avatar: "EK", yearsExp: 8, specialties: ["Sakal", "Ustura", "Şekillendirme"], hours: { monStart:600,monEnd:1200,tueStart:600,tueEnd:1200,wedStart:600,wedEnd:1200,thuStart:600,thuEnd:1200,friStart:600,friEnd:1200,satStart:600,satEnd:1080,sunStart:null,sunEnd:null } },
-    { id: "brb-3", slug: "burak", nameTr: "Burak Demir", nameEn: "Burak Demir", titleTr: "Modern Kesim Uzmanı", titleEn: "Modern Cut Specialist", bioTr: "Trendy ve modern kesim teknikleriyle öne çıkan genç yetenekli berber.", bioEn: "Young talented barber standing out with trendy modern cutting techniques.", avatar: "BD", yearsExp: 5, specialties: ["Fade", "Tekstür", "Modern Stil"], hours: { monStart:540,monEnd:1080,tueStart:540,tueEnd:1080,wedStart:540,wedEnd:1080,thuStart:540,thuEnd:1080,friStart:540,friEnd:1080,satStart:540,satEnd:960,sunStart:null,sunEnd:null } },
-    { id: "brb-4", slug: "can", nameTr: "Can Arslan", nameEn: "Can Arslan", titleTr: "Klasik Berber", titleEn: "Classic Barber", bioTr: "Geleneksel berberlerin ustası, klasik tekniklerde rakipsiz.", bioEn: "Master of traditional barbering, unmatched in classic techniques.", avatar: "CA", yearsExp: 12, specialties: ["Klasik", "Pompadour", "Vintage"], hours: { monStart:540,monEnd:1080,tueStart:540,tueEnd:1080,wedStart:540,wedEnd:1080,thuStart:540,thuEnd:1080,friStart:540,friEnd:1080,satStart:null,satEnd:null,sunStart:null,sunEnd:null } },
+    { id: "brb-1", slug: "abdurrahman", nameTr: "Abdurrahman Çelik", nameEn: "Abdurrahman Celik", titleTr: "Salon Sahibi & Baş Berber", titleEn: "Owner & Master Barber", bioTr: "Yılların deneyimi ve tutkusuyla her müşterisine özel bir bakım deneyimi sunar.", bioEn: "With years of experience and passion, offers a personalized grooming experience to every client.", avatar: "AÇ", yearsExp: 15, specialties: ["Fade", "Sakal", "Klasik Kesim"], hours: wh },
+    { id: "brb-2", slug: "egemen",       nameTr: "Egemen Çelik",        nameEn: "Egemen Celik",        titleTr: "Kıdemli Berber",              titleEn: "Senior Barber",         bioTr: "Modern kesim teknikleri ve sakal tasarımında uzmanlaşmış deneyimli berber.", bioEn: "Experienced barber specializing in modern cutting techniques and beard design.", avatar: "EÇ", yearsExp: 8,  specialties: ["Modern Kesim", "Sakal", "Fade"], hours: wh },
+    { id: "brb-3", slug: "omerefe",      nameTr: "Ömer Efe Furunci",    nameEn: "Omer Efe Furunci",    titleTr: "Berber",                     titleEn: "Barber",                bioTr: "Trendleri takip eden, yaratıcı ve dinamik berber.", bioEn: "Creative and dynamic barber who keeps up with the latest trends.", avatar: "ÖF", yearsExp: 4,  specialties: ["Tekstür", "Modern Stil", "Fade"], hours: wh },
+    { id: "brb-4", slug: "emin",         nameTr: "Emin Fırtına",        nameEn: "Emin Firtina",        titleTr: "Berber",                     titleEn: "Barber",                bioTr: "Hassas çalışması ve müşteri memnuniyetine verdiği önemle tanınan genç berber.", bioEn: "Young barber known for his precise work and dedication to customer satisfaction.", avatar: "EF", yearsExp: 3,  specialties: ["Klasik Kesim", "Sakal", "Şekillendirme"], hours: wh },
   ];
 
   for (const b of barberData) {
@@ -39,7 +41,7 @@ async function main() {
   const adminHash = await bcrypt.hash("admin123", 10);
   await prisma.user.upsert({ where: { email: "admin@makas.com" }, update: {}, create: { email: "admin@makas.com", passwordHash: adminHash, role: "ADMIN" } });
 
-  for (const [slug, id] of [["mehmet","brb-1"],["emre","brb-2"],["burak","brb-3"],["can","brb-4"]]) {
+  for (const [slug, id] of [["abdurrahman","brb-1"],["egemen","brb-2"],["omerefe","brb-3"],["emin","brb-4"]]) {
     const h = await bcrypt.hash("barber123", 10);
     await prisma.user.upsert({ where: { email: `${slug}@makas.com` }, update: {}, create: { email: `${slug}@makas.com`, passwordHash: h, role: "BARBER", barberId: id } });
   }
@@ -47,7 +49,7 @@ async function main() {
 
   console.log("\n✓ Seed complete");
   console.log("  Admin:  admin@makas.com / admin123");
-  console.log("  Berber: mehmet@makas.com / barber123");
+  console.log("  Berber: abdurrahman@makas.com / barber123");
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());

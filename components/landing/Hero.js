@@ -6,12 +6,14 @@ import { motion } from "framer-motion";
 import { services, barbers } from "@/lib/data";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
-import { Check, Star, ChevronRight } from "lucide-react";
+import { Check, Star, ChevronRight, Clock } from "lucide-react";
 
 const C = {
   bg:       "#070707",
   card:     "#0f0f14",
+  cardHi:   "#141419",
   border:   "rgba(255,255,255,0.07)",
+  borderHi: "rgba(255,255,255,0.12)",
   surface:  "#16161e",
   primary:  "#F0EDE8",
   secondary:"#6b6870",
@@ -19,11 +21,70 @@ const C = {
   red:      "#CC1A1A",
 };
 
+function StatusCard({ lang }) {
+  return (
+    <div style={{
+      background: C.card,
+      border: `1px solid ${C.borderHi}`,
+      borderRadius: "12px",
+      padding: "14px 16px",
+      marginBottom: "12px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "10px",
+    }}>
+      {/* Row 1: Open status + hours */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px rgba(34,197,94,0.5)", flexShrink: 0 }} />
+          <span style={{ fontSize: "12px", color: "#22c55e", fontWeight: 600, letterSpacing: "0.03em" }}>
+            {lang === "tr" ? "Şu an açık" : "Open now"}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <Clock size={11} style={{ color: C.muted }} />
+          <span style={{ fontSize: "11px", color: C.secondary, fontFamily: "monospace", letterSpacing: "0.03em" }}>10:00 – 21:30</span>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ height: "1px", background: C.border }} />
+
+      {/* Row 2: Barber avatars */}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          {barbers.map((b, i) => (
+            <div key={b.id} style={{
+              width: "26px", height: "26px", borderRadius: "50%",
+              background: `linear-gradient(135deg, ${C.red}, #9a1212)`,
+              border: `2px solid ${C.bg}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "8px", fontWeight: 700, color: "#fff",
+              letterSpacing: "0.02em", flexShrink: 0,
+              marginLeft: i > 0 ? "-8px" : "0",
+            }}>
+              {b.avatar}
+            </div>
+          ))}
+        </div>
+        <span style={{ fontSize: "12px", color: C.secondary }}>
+          {lang === "tr" ? "4 berber müsait" : "4 barbers available"}
+        </span>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: C.red, flexShrink: 0 }} />
+          <span style={{ fontSize: "11px", color: C.muted }}>
+            {lang === "tr" ? "Bugün 14:00" : "Today 14:00"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BookingWidget({ lang, tx }) {
   const [selectedService, setSelectedService] = useState(null);
   const [selectedBarber, setSelectedBarber]   = useState(null);
   const [dateLabels, setDateLabels] = useState(["Bugün", "Yarın", "---"]);
-  const s = tx.hero;
 
   useEffect(() => {
     const d = new Date(); d.setDate(d.getDate() + 2);
@@ -35,166 +96,129 @@ function BookingWidget({ lang, tx }) {
   const serviceList = services.slice(0, 5);
 
   return (
-    <div
-      className="w-full max-w-md mx-auto lg:mx-0"
-      style={{
-        background: C.card,
-        border: `1px solid ${C.border}`,
-        borderRadius: "16px",
-        overflow: "hidden",
-      }}
-    >
+    <div style={{
+      background: C.card,
+      border: `1px solid ${C.borderHi}`,
+      borderRadius: "16px",
+      overflow: "hidden",
+      boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)",
+    }}>
       {/* Widget header */}
-      <div
-        className="px-5 py-4 flex items-center justify-between"
-        style={{ borderBottom: `1px solid ${C.border}`, background: "rgba(255,255,255,0.02)" }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 flex items-center justify-center" style={{ background: C.red, borderRadius: "4px" }}>
-            <span className="font-bold text-white" style={{ fontSize: "9px" }}>M</span>
+      <div style={{
+        padding: "16px 20px",
+        borderBottom: `1px solid ${C.border}`,
+        background: "rgba(255,255,255,0.025)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", background: C.red, borderRadius: "5px" }}>
+            <span style={{ fontWeight: 700, color: "#fff", fontSize: "10px" }}>A</span>
           </div>
           <span style={{ fontSize: "13px", fontWeight: 600, color: C.primary, letterSpacing: "0.02em" }}>
             {lang === "tr" ? "Randevu Planla" : "Book Appointment"}
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full" style={{ background: "#22c55e" }} />
-          <span style={{ fontSize: "10px", color: "#22c55e", letterSpacing: "0.05em" }}>
-            {lang === "tr" ? "Müsait" : "Available"}
-          </span>
+        <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.05em" }}>
+          {lang === "tr" ? "Ücretsiz · Anında Onay" : "Free · Instant Confirm"}
         </div>
       </div>
 
-      <div className="p-5 space-y-5">
+      <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "20px" }}>
         {/* Step 1: Service */}
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <div
-              className="w-4 h-4 flex items-center justify-center text-white"
-              style={{ background: selectedService ? C.red : C.muted, borderRadius: "50%", fontSize: "9px", fontWeight: 700, flexShrink: 0 }}
-            >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+            <div style={{ width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center", background: selectedService ? C.red : C.muted, borderRadius: "50%", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
               {selectedService ? <Check size={9} /> : "1"}
             </div>
-            <span style={{ fontSize: "11px", fontWeight: 500, color: selectedService ? C.primary : C.secondary, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            <span style={{ fontSize: "10px", fontWeight: 600, color: selectedService ? C.primary : C.secondary, letterSpacing: "0.1em", textTransform: "uppercase" }}>
               {lang === "tr" ? "Hizmet" : "Service"}
             </span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
             {serviceList.map((svc) => (
-              <button
-                key={svc.id}
+              <button key={svc.id}
                 onClick={() => setSelectedService(svc.id === selectedService ? null : svc.id)}
-                className="transition-all duration-150"
                 style={{
-                  padding: "5px 12px",
-                  borderRadius: "6px",
-                  fontSize: "11px",
-                  fontWeight: 500,
+                  padding: "6px 13px", borderRadius: "6px", fontSize: "11px", fontWeight: 500,
                   border: `1px solid ${selectedService === svc.id ? C.red : C.border}`,
                   background: selectedService === svc.id ? `${C.red}18` : "transparent",
                   color: selectedService === svc.id ? C.red : C.secondary,
-                  letterSpacing: "0.02em",
-                }}
-              >
+                  letterSpacing: "0.02em", cursor: "pointer", transition: "all 0.15s",
+                }}>
                 {svc.name[lang]}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Divider */}
         <div style={{ height: "1px", background: C.border }} />
 
         {/* Step 2: Barber */}
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <div
-              className="w-4 h-4 flex items-center justify-center text-white"
-              style={{ background: selectedBarber ? C.red : C.muted, borderRadius: "50%", fontSize: "9px", fontWeight: 700, flexShrink: 0 }}
-            >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+            <div style={{ width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center", background: selectedBarber ? C.red : C.muted, borderRadius: "50%", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
               {selectedBarber ? <Check size={9} /> : "2"}
             </div>
-            <span style={{ fontSize: "11px", fontWeight: 500, color: selectedBarber ? C.primary : C.secondary, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            <span style={{ fontSize: "10px", fontWeight: 600, color: selectedBarber ? C.primary : C.secondary, letterSpacing: "0.1em", textTransform: "uppercase" }}>
               {lang === "tr" ? "Berber" : "Barber"}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             {barbers.map((b) => (
-              <button
-                key={b.id}
+              <button key={b.id}
                 onClick={() => setSelectedBarber(b.id === selectedBarber ? null : b.id)}
-                className="relative flex flex-col items-center gap-1 transition-all duration-150"
-                title={b.name}
-              >
-                <div
-                  className="w-9 h-9 flex items-center justify-center font-bold text-white transition-all"
-                  style={{
-                    borderRadius: "10px",
-                    background: selectedBarber === b.id ? C.red : C.surface,
-                    fontSize: "10px",
-                    border: `2px solid ${selectedBarber === b.id ? C.red : "transparent"}`,
-                    letterSpacing: "0.03em",
-                  }}
-                >
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", cursor: "pointer", background: "none", border: "none" }}
+                title={b.name}>
+                <div style={{
+                  width: "38px", height: "38px", borderRadius: "10px",
+                  background: selectedBarber === b.id ? C.red : C.surface,
+                  fontSize: "10px", fontWeight: 700, color: "#fff",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  border: `2px solid ${selectedBarber === b.id ? C.red : "transparent"}`,
+                  letterSpacing: "0.03em", transition: "all 0.15s",
+                }}>
                   {b.avatar}
                 </div>
-                <span style={{ fontSize: "8px", color: selectedBarber === b.id ? C.red : C.muted, letterSpacing: "0.04em" }}>
+                <span style={{ fontSize: "9px", color: selectedBarber === b.id ? C.red : C.muted, letterSpacing: "0.03em" }}>
                   {b.name.split(" ")[0]}
                 </span>
               </button>
             ))}
             <button
               onClick={() => setSelectedBarber(selectedBarber === "any" ? null : "any")}
-              className="flex flex-col items-center gap-1 transition-all duration-150"
-            >
-              <div
-                className="w-9 h-9 flex items-center justify-center transition-all"
-                style={{
-                  borderRadius: "10px",
-                  background: selectedBarber === "any" ? C.red : C.surface,
-                  border: `2px solid ${selectedBarber === "any" ? C.red : C.border}`,
-                  fontSize: "14px",
-                }}
-              >
-                ✦
-              </div>
-              <span style={{ fontSize: "8px", color: selectedBarber === "any" ? C.red : C.muted, letterSpacing: "0.04em" }}>
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", cursor: "pointer", background: "none", border: "none" }}>
+              <div style={{
+                width: "38px", height: "38px", borderRadius: "10px",
+                background: selectedBarber === "any" ? C.red : C.surface,
+                border: `2px solid ${selectedBarber === "any" ? C.red : C.border}`,
+                fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s",
+              }}>✦</div>
+              <span style={{ fontSize: "9px", color: selectedBarber === "any" ? C.red : C.muted, letterSpacing: "0.03em" }}>
                 {lang === "tr" ? "Herhangi" : "Any"}
               </span>
             </button>
           </div>
         </div>
 
-        {/* Divider */}
         <div style={{ height: "1px", background: C.border }} />
 
-        {/* Step 3: Date hint */}
+        {/* Step 3: Date */}
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <div
-              className="w-4 h-4 flex items-center justify-center text-white"
-              style={{ background: C.muted, borderRadius: "50%", fontSize: "9px", fontWeight: 700, flexShrink: 0 }}
-            >
-              3
-            </div>
-            <span style={{ fontSize: "11px", fontWeight: 500, color: C.secondary, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+            <div style={{ width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center", background: C.muted, borderRadius: "50%", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>3</div>
+            <span style={{ fontSize: "10px", fontWeight: 600, color: C.secondary, letterSpacing: "0.1em", textTransform: "uppercase" }}>
               {lang === "tr" ? "Tarih & Saat" : "Date & Time"}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
             {dateLabels.map((label, i) => (
-              <button
-                key={label}
-                className="py-2 text-center transition-all"
-                style={{
-                  borderRadius: "6px",
-                  background: i === 0 ? `${C.red}15` : C.surface,
-                  border: `1px solid ${i === 0 ? `${C.red}40` : C.border}`,
-                  fontSize: "11px",
-                  color: i === 0 ? C.red : C.secondary,
-                  fontWeight: i === 0 ? 600 : 400,
-                }}
-              >
+              <button key={label} style={{
+                padding: "10px 0", textAlign: "center", borderRadius: "7px", cursor: "pointer",
+                background: i === 0 ? `${C.red}18` : C.surface,
+                border: `1px solid ${i === 0 ? `${C.red}50` : C.border}`,
+                fontSize: "11px", color: i === 0 ? C.red : C.secondary,
+                fontWeight: i === 0 ? 600 : 400,
+              }}>
                 {label}
               </button>
             ))}
@@ -202,26 +226,20 @@ function BookingWidget({ lang, tx }) {
         </div>
 
         {/* CTA */}
-        <Link
-          href="/book"
-          className="flex items-center justify-center gap-2 w-full transition-all duration-200"
-          style={{
-            background: C.red,
-            color: "#fff",
-            padding: "13px 24px",
-            borderRadius: "8px",
-            fontSize: "13px",
-            fontWeight: 600,
-            letterSpacing: "0.04em",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#e02020")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = C.red)}
+        <Link href="/book" style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+          background: C.red, color: "#fff", padding: "15px 24px", borderRadius: "9px",
+          fontSize: "14px", fontWeight: 700, letterSpacing: "0.04em", textDecoration: "none",
+          boxShadow: `0 8px 24px rgba(204,26,26,0.35)`, transition: "all 0.2s",
+        }}
+          onMouseEnter={e => { e.currentTarget.style.background = "#e02020"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(204,26,26,0.5)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = C.red; e.currentTarget.style.boxShadow = "0 8px 24px rgba(204,26,26,0.35)"; }}
         >
           {lang === "tr" ? "Randevu Al" : "Book Now"}
-          <ChevronRight size={14} />
+          <ChevronRight size={15} />
         </Link>
 
-        <p style={{ fontSize: "10px", color: C.muted, textAlign: "center", letterSpacing: "0.04em" }}>
+        <p style={{ fontSize: "10px", color: C.muted, textAlign: "center", letterSpacing: "0.04em", marginTop: "-8px" }}>
           {lang === "tr" ? "Ücretsiz iptal · İşlem ücreti yok · Anında onay" : "Free cancellation · No booking fees · Instant confirmation"}
         </p>
       </div>
@@ -243,192 +261,143 @@ export default function Hero() {
     : [
         { value: "4.9", label: "Avg. Rating", icon: "★" },
         { value: "3,200+", label: "Happy Clients", icon: null },
-        { value: "12+", label: "Years Experience", icon: null },
+        { value: "12+", label: "Years Exp.", icon: null },
         { value: "4", label: "Master Barbers", icon: null },
       ];
 
   return (
-    <section
-      className="relative min-h-screen flex flex-col"
-      style={{ background: C.bg }}
-    >
-      {/* Subtle background gradient */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 60% at 0% 50%, rgba(204,26,26,0.06) 0%, transparent 60%), radial-gradient(ellipse 50% 80% at 100% 20%, rgba(180,120,60,0.04) 0%, transparent 60%)",
-        }}
-      />
+    <section className="relative min-h-screen flex flex-col" style={{ background: C.bg }}>
 
-      {/* Content */}
-      <div className="relative z-10 flex-1 flex items-center">
-        <div className="w-full max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 py-24 lg:py-0">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center min-h-[calc(100vh-72px)]">
+      {/* Background gradient */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: "radial-gradient(ellipse 70% 60% at 0% 50%, rgba(204,26,26,0.06) 0%, transparent 60%), radial-gradient(ellipse 50% 80% at 100% 20%, rgba(180,120,60,0.04) 0%, transparent 60%)",
+      }} />
 
-            {/* LEFT — 6 columns */}
-            <div className="lg:col-span-6 xl:col-span-5 flex flex-col justify-center py-10 lg:py-20">
+      <div className="relative z-10 flex-1 flex items-start lg:items-center">
+        <div className="w-full max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 pt-10 pb-12 lg:pt-0 lg:pb-0">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center"
+            style={{ minHeight: "calc(100vh - 72px)", paddingTop: "clamp(0px, 4vh, 40px)", paddingBottom: "clamp(16px, 4vh, 40px)" }}>
+
+            {/* ── LEFT ── */}
+            <div className="lg:col-span-5 xl:col-span-5 flex flex-col justify-center">
 
               {/* Badge */}
               <motion.div
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="inline-flex items-center gap-2.5 mb-8 w-fit"
+                style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "28px", width: "fit-content" }}
               >
-                <div className="flex gap-0.5">
-                  {[1,2,3,4,5].map(i => (
-                    <Star key={i} size={11} fill={C.red} style={{ color: C.red }} />
-                  ))}
+                <div style={{ display: "flex", gap: "2px" }}>
+                  {[1,2,3,4,5].map(i => <Star key={i} size={10} fill={C.red} style={{ color: C.red }} />)}
                 </div>
-                <span style={{ fontSize: "12px", color: C.secondary, letterSpacing: "0.04em" }}>
+                <span style={{ fontSize: "11px", color: C.secondary, letterSpacing: "0.04em" }}>
                   4.9 · 400+ {lang === "tr" ? "değerlendirme" : "reviews"}
                 </span>
                 <span style={{ width: "1px", height: "12px", background: C.border, display: "inline-block" }} />
-                <span
-                  style={{ fontSize: "11px", color: C.red, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500 }}
-                >
-                  {lang === "tr" ? "İstanbul · Premium Berber" : "Istanbul · Premium Barber"}
+                <span style={{ fontSize: "10px", color: C.red, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600 }}>
+                  {lang === "tr" ? "Darıca · Premium Berber" : "Darıca · Premium Barber"}
                 </span>
               </motion.div>
 
-              {/* Headline */}
-              <div className="mb-6 overflow-hidden">
-                <motion.h1
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                  className="font-display font-light leading-none"
-                  style={{ letterSpacing: "-0.025em" }}
-                >
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: "clamp(48px, 6.5vw, 88px)",
-                      color: C.primary,
-                      lineHeight: 0.95,
-                    }}
-                  >
-                    {lang === "tr" ? "Ustalar" : "Masters"}
-                  </span>
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: "clamp(48px, 6.5vw, 88px)",
-                      color: C.primary,
-                      lineHeight: 0.95,
-                      fontStyle: "italic",
-                    }}
-                  >
-                    {lang === "tr" ? "sizi" : "await"}
-                  </span>
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: "clamp(48px, 6.5vw, 88px)",
-                      color: C.red,
-                      lineHeight: 0.95,
-                    }}
-                  >
-                    {lang === "tr" ? "bekliyor." : "you."}
-                  </span>
-                </motion.h1>
-              </div>
-
-              {/* Supporting copy */}
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
+              {/* Headline — padding-bottom gives descenders breathing room */}
+              <motion.h1
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                style={{ fontSize: "15px", color: C.secondary, lineHeight: 1.7, maxWidth: "420px", marginBottom: "36px" }}
+                transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="font-display font-light"
+                style={{ letterSpacing: "-0.025em", marginBottom: "20px", paddingBottom: "4px" }}
+              >
+                <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 90px)", color: C.primary, lineHeight: 1.0 }}>
+                  {lang === "tr" ? "Ustalar" : "Masters"}
+                </span>
+                <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 90px)", color: C.primary, lineHeight: 1.0, fontStyle: "italic" }}>
+                  {lang === "tr" ? "sizi" : "await"}
+                </span>
+                {/* Extra paddingBottom on last line ensures descenders on "y","j","g" aren't clipped */}
+                <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 90px)", color: C.red, lineHeight: 1.0, paddingBottom: "0.2em" }}>
+                  {lang === "tr" ? "bekliyor." : "you."}
+                </span>
+              </motion.h1>
+
+              {/* Sub-copy */}
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.38 }}
+                style={{ fontSize: "14px", color: C.secondary, lineHeight: 1.75, maxWidth: "400px", marginBottom: "32px" }}
               >
                 {lang === "tr"
-                  ? "İstanbul'un en seçkin berberleri ile premium saç ve sakal bakımı. Online randevu alın, bekleme yok."
-                  : "Premium haircuts and grooming with Istanbul's finest barbers. Book online, no waiting."}
+                  ? "Abdurrahman Çelik Exclusive Salon'da premium saç ve sakal bakımı. Online randevu alın, bekleme yok."
+                  : "Premium haircuts and grooming at Abdurrahman Çelik Exclusive Salon. Book online, no waiting."}
               </motion.p>
 
-              {/* Primary + Secondary CTAs */}
+              {/* Desktop CTAs */}
               <motion.div
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="flex-col sm:flex-row gap-3 mb-10 hidden sm:flex"
+                transition={{ duration: 0.5, delay: 0.48 }}
+                className="hidden sm:flex flex-col sm:flex-row gap-3 mb-10"
               >
-                <Link
-                  href="/book"
-                  className="inline-flex items-center justify-center gap-2 transition-all duration-200"
-                  style={{
-                    background: C.red,
-                    color: "#fff",
-                    padding: "14px 32px",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    letterSpacing: "0.02em",
-                    whiteSpace: "nowrap",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#e02020")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = C.red)}
+                <Link href="/book" style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  background: C.red, color: "#fff", padding: "13px 28px", borderRadius: "8px",
+                  fontSize: "14px", fontWeight: 600, letterSpacing: "0.02em", whiteSpace: "nowrap", textDecoration: "none",
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#e02020"}
+                  onMouseLeave={e => e.currentTarget.style.background = C.red}
                 >
                   {lang === "tr" ? "Randevu Al" : "Book Now"}
-                  <ChevronRight size={15} />
-                </Link>
-                <a
-                  href="#services"
-                  className="inline-flex items-center justify-center gap-2 transition-all duration-200"
-                  style={{
-                    background: "transparent",
-                    color: C.secondary,
-                    padding: "14px 24px",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    letterSpacing: "0.02em",
-                    border: `1px solid ${C.border}`,
-                    whiteSpace: "nowrap",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = C.secondary; e.currentTarget.style.borderColor = C.border; }}
-                >
-                  {lang === "tr" ? "Hizmetleri Gör" : "View Services"}
-                </a>
-              </motion.div>
-              {/* Mobile: just a secondary explore link (sticky bar handles Book Now) */}
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="flex sm:hidden mb-8"
-              >
-                <a
-                  href="#services"
-                  className="inline-flex items-center gap-2 transition-all duration-200"
-                  style={{ color: C.secondary, fontSize: "14px", fontWeight: 500, letterSpacing: "0.02em" }}
-                >
-                  {lang === "tr" ? "Hizmetleri Gör" : "View Services"}
                   <ChevronRight size={14} />
+                </Link>
+                <a href="#services" style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  background: "transparent", color: C.secondary, padding: "13px 22px", borderRadius: "8px",
+                  fontSize: "14px", fontWeight: 500, letterSpacing: "0.02em",
+                  border: `1px solid ${C.border}`, whiteSpace: "nowrap", textDecoration: "none", transition: "all 0.2s",
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = C.secondary; e.currentTarget.style.borderColor = C.border; }}
+                >
+                  {lang === "tr" ? "Hizmetleri Gör" : "View Services"}
                 </a>
               </motion.div>
 
-              {/* Trust metrics */}
+              {/* Mobile: explore link */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.65 }}
-                className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-0"
-                style={{ borderTop: `1px solid ${C.border}`, paddingTop: "24px" }}
+                transition={{ duration: 0.5, delay: 0.48 }}
+                className="flex sm:hidden mb-6"
+              >
+                <a href="#services" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: C.secondary, fontSize: "13px", fontWeight: 500, textDecoration: "none" }}>
+                  {lang === "tr" ? "Hizmetleri Gör" : "View Services"}
+                  <ChevronRight size={13} />
+                </a>
+              </motion.div>
+
+              {/* Trust bar */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+                className="hidden sm:grid grid-cols-4 gap-0"
+                style={{ borderTop: `1px solid ${C.border}`, paddingTop: "20px" }}
               >
                 {TRUST.map((item, i) => (
-                  <div
-                    key={item.label}
-                    className="flex flex-col sm:[&:not(:last-child)]:pr-4 sm:[&:not(:last-child)]:border-r sm:[&:not(:first-child)]:pl-4"
-                    style={{ borderColor: C.border }}
+                  <div key={item.label}
+                    className="flex flex-col"
+                    style={{
+                      paddingRight: i < 3 ? "16px" : "0",
+                      paddingLeft: i > 0 ? "16px" : "0",
+                      borderRight: i < 3 ? `1px solid ${C.border}` : "none",
+                    }}
                   >
-                    <span className="font-display font-light" style={{ fontSize: "22px", color: C.primary, lineHeight: 1, letterSpacing: "-0.02em" }}>
-                      {item.icon && <span style={{ color: C.red, fontSize: "14px", marginRight: "2px" }}>{item.icon}</span>}
+                    <span className="font-display font-light" style={{ fontSize: "20px", color: C.primary, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+                      {item.icon && <span style={{ color: C.red, fontSize: "13px", marginRight: "2px" }}>{item.icon}</span>}
                       {item.value}
                     </span>
-                    <span style={{ fontSize: "10px", color: C.muted, marginTop: "4px", letterSpacing: "0.04em", lineHeight: 1.3 }}>
+                    <span style={{ fontSize: "9px", color: C.muted, marginTop: "3px", letterSpacing: "0.04em", lineHeight: 1.4 }}>
                       {item.label}
                     </span>
                   </div>
@@ -436,51 +405,16 @@ export default function Hero() {
               </motion.div>
             </div>
 
-            {/* RIGHT — 6 columns: Booking widget */}
+            {/* ── RIGHT ── */}
             <motion.div
-              initial={{ opacity: 0, x: 32 }}
+              initial={{ opacity: 0, x: 28 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="lg:col-span-6 xl:col-span-7 flex items-center justify-center lg:justify-end py-10 lg:py-20"
+              transition={{ duration: 0.7, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
+              className="lg:col-span-7 xl:col-span-7 flex items-center justify-center lg:justify-end"
             >
-              <div className="w-full max-w-[440px] lg:max-w-none xl:max-w-[480px]">
-                {/* Decorative context above card */}
-                <div className="flex items-center justify-between mb-4 px-1">
-                  <div className="flex items-center gap-2">
-                    <div className="flex -space-x-2">
-                      {barbers.map((b) => (
-                        <div
-                          key={b.id}
-                          className="w-7 h-7 flex items-center justify-center font-bold text-white text-[9px] border-2"
-                          style={{ borderRadius: "50%", background: C.red, borderColor: C.bg, letterSpacing: "0.03em" }}
-                        >
-                          {b.avatar}
-                        </div>
-                      ))}
-                    </div>
-                    <span style={{ fontSize: "12px", color: C.secondary }}>
-                      {lang === "tr" ? "4 berber müsait" : "4 barbers available"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: "20px" }}>
-                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#22c55e" }} />
-                    <span style={{ fontSize: "10px", color: "#22c55e", fontWeight: 500, letterSpacing: "0.05em" }}>
-                      {lang === "tr" ? "Şu an açık" : "Open now"}
-                    </span>
-                  </div>
-                </div>
-
+              <div style={{ width: "100%", maxWidth: "520px" }}>
+                <StatusCard lang={lang} />
                 <BookingWidget lang={lang} tx={tx} />
-
-                {/* Next available slot hint */}
-                <div className="flex items-center gap-2 mt-4 px-1">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: C.red }} />
-                  <span style={{ fontSize: "11px", color: C.muted }}>
-                    {lang === "tr"
-                      ? "En yakın müsait slot: Bugün 14:00 — Mehmet Yılmaz"
-                      : "Next available: Today at 14:00 — Mehmet Yılmaz"}
-                  </span>
-                </div>
               </div>
             </motion.div>
 

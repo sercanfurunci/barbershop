@@ -11,24 +11,29 @@ export async function POST(request) {
       return NextResponse.json({ error: "Email ve şifre gerekli" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+    const identifier = email.toLowerCase().trim();
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: identifier }, { username: identifier }],
+      },
       include: { barber: { select: { id: true, slug: true, nameTr: true, avatar: true } } },
     });
 
     if (!user) {
-      return NextResponse.json({ error: "Geçersiz email veya şifre" }, { status: 401 });
+      return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      return NextResponse.json({ error: "Geçersiz email veya şifre" }, { status: 401 });
+      return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
     }
 
     const token = await signToken({
       userId: user.id,
       role: user.role,
       barberId: user.barberId ?? null,
+      tokenVersion: user.tokenVersion,
     });
 
     const response = NextResponse.json({
@@ -36,6 +41,8 @@ export async function POST(request) {
       user: {
         id: user.id,
         email: user.email,
+        username: user.username ?? null,
+        displayName: user.displayName ?? null,
         role: user.role,
         barber: user.barber ?? null,
       },
@@ -45,7 +52,7 @@ export async function POST(request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
 

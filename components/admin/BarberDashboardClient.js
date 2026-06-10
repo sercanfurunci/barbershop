@@ -12,6 +12,7 @@ import {
   Plus, LogOut, ChevronLeft, ChevronRight, ExternalLink,
   Phone, UserCheck, Clock, CheckCircle, XCircle, AlertCircle, ArrowRight,
   CalendarDays, List, User, X, LayoutDashboard, Users, MoreHorizontal,
+  Settings, Eye, EyeOff, Save, Loader2, AtSign,
 } from "lucide-react";
 
 const C = {
@@ -422,6 +423,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
     { id: "schedule",     label: "Program",    icon: CalendarDays    },
     { id: "appointments", label: "Randevular", icon: List            },
     { id: "customers",    label: "Müşteriler", icon: Users           },
+    { id: "profil",       label: "Profil",     icon: Settings        },
   ];
 
   return (
@@ -576,6 +578,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
             )}
             {view === "appointments" && <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em" }}>Randevular</h1>}
             {view === "customers" && <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em" }}>Müşteriler</h1>}
+            {view === "profil" && <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em" }}>Profil</h1>}
           </div>
           {view === "schedule" && (
             <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
@@ -739,6 +742,9 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
           <BarberCustomersView barberId={realBarberId ?? barberSlug} appointments={appointments} onNewBooking={() => setShowModal(true)} />
         )}
 
+        {/* ── Profil view ── */}
+        {view === "profil" && <ProfileTab />}
+
       {showModal && (
         <ManualBookingModal
           defaultBarberId={barberSlug}
@@ -747,6 +753,190 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
         />
       )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Profile Tab ────────────────────────────────────────────────────────── */
+
+function ProfileTab() {
+  const { user, updateUser } = useAuth();
+
+  const [username, setUsername]       = useState(user?.username ?? "");
+  const [displayName, setDisplayName] = useState(user?.displayName ?? "");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg]   = useState(null); // { ok, text }
+
+  const [curPwd, setCurPwd]   = useState("");
+  const [newPwd, setNewPwd]   = useState("");
+  const [confPwd, setConfPwd] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [pwdMsg, setPwdMsg]   = useState(null);
+
+  const saveProfile = async (e) => {
+    e.preventDefault();
+    if (username && !/^[a-z0-9_]{3,20}$/.test(username)) {
+      setProfileMsg({ ok: false, text: "Kullanıcı adı 3-20 karakter, sadece küçük harf/rakam/_ olabilir" });
+      return;
+    }
+    setProfileSaving(true);
+    setProfileMsg(null);
+    try {
+      const updated = await apiFetch("/api/auth/profile", {
+        method: "PATCH",
+        body: JSON.stringify({ username: username || null, displayName: displayName || null }),
+      });
+      updateUser({ username: updated.username, displayName: updated.displayName });
+      setProfileMsg({ ok: true, text: "Profil güncellendi" });
+    } catch (err) {
+      setProfileMsg({ ok: false, text: err.message ?? "Bir hata oluştu" });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    if (newPwd.length < 6) { setPwdMsg({ ok: false, text: "Yeni şifre en az 6 karakter olmalı" }); return; }
+    if (newPwd !== confPwd) { setPwdMsg({ ok: false, text: "Şifreler eşleşmiyor" }); return; }
+    setPwdSaving(true);
+    setPwdMsg(null);
+    try {
+      await apiFetch("/api/auth/change-password", {
+        method: "PATCH",
+        body: JSON.stringify({ currentPassword: curPwd, newPassword: newPwd }),
+      });
+      setCurPwd(""); setNewPwd(""); setConfPwd("");
+      setPwdMsg({ ok: true, text: "Şifre başarıyla değiştirildi" });
+    } catch (err) {
+      setPwdMsg({ ok: false, text: err.message ?? "Bir hata oluştu" });
+    } finally {
+      setPwdSaving(false);
+    }
+  };
+
+  const inputStyle = (hasError) => ({
+    width: "100%", background: C.card, border: `1px solid ${hasError ? "rgba(204,26,26,0.5)" : C.border}`,
+    borderRadius: "10px", padding: "12px 14px", fontSize: "14px", color: C.primary,
+    outline: "none", caretColor: C.red, boxSizing: "border-box",
+  });
+
+  return (
+    <div>
+      {/* Identity card */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "20px 24px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "16px" }}>
+        <div style={{ width: "48px", height: "48px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+          {user?.barber?.avatar ?? "A"}
+        </div>
+        <div>
+          <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600 }}>{user?.displayName ?? user?.barber?.nameTr ?? "Admin"}</div>
+          <div style={{ fontSize: "12px", color: C.secondary, marginTop: "2px" }}>{user?.username ? `@${user.username}` : user?.email}</div>
+        </div>
+      </div>
+
+      {/* Profile info form */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "20px 24px", marginBottom: "16px" }}>
+        <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "18px" }}>Profil Bilgileri</div>
+        <form onSubmit={saveProfile}>
+          <div style={{ marginBottom: "14px" }}>
+            <label style={{ display: "block", fontSize: "11px", color: C.muted, marginBottom: "6px", letterSpacing: "0.05em" }}>KULLANICI ADI</label>
+            <div style={{ position: "relative" }}>
+              <span style={{ position: "absolute", left: "13px", top: "50%", transform: "translateY(-50%)", color: C.muted, pointerEvents: "none" }}>
+                <AtSign size={14} />
+              </span>
+              <input
+                type="text"
+                placeholder="kullanici_adi"
+                value={username}
+                onChange={e => setUsername(e.target.value.toLowerCase())}
+                style={{ ...inputStyle(false), paddingLeft: "34px" }}
+                onFocus={e => { e.target.style.borderColor = `${C.red}60`; }}
+                onBlur={e => { e.target.style.borderColor = C.border; }}
+              />
+            </div>
+            <div style={{ fontSize: "10px", color: C.muted, marginTop: "5px" }}>3-20 karakter, küçük harf/rakam/_ · Kullanıcı adıyla da giriş yapabilirsin</div>
+          </div>
+
+          <div style={{ marginBottom: "18px" }}>
+            <label style={{ display: "block", fontSize: "11px", color: C.muted, marginBottom: "6px", letterSpacing: "0.05em" }}>GÖRÜNEN AD</label>
+            <input
+              type="text"
+              placeholder="Görünür isim (opsiyonel)"
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
+              style={inputStyle(false)}
+              onFocus={e => { e.target.style.borderColor = `${C.red}60`; }}
+              onBlur={e => { e.target.style.borderColor = C.border; }}
+            />
+          </div>
+
+          {profileMsg && (
+            <div style={{ background: profileMsg.ok ? "rgba(34,197,94,0.08)" : "rgba(204,26,26,0.08)", border: `1px solid ${profileMsg.ok ? "rgba(34,197,94,0.25)" : "rgba(204,26,26,0.25)"}`, borderRadius: "8px", padding: "9px 13px", marginBottom: "14px", fontSize: "12px", color: profileMsg.ok ? "#22c55e" : C.red }}>
+              {profileMsg.text}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={profileSaving}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: C.red, color: "#fff", border: "none", borderRadius: "9px", padding: "11px 20px", fontSize: "13px", fontWeight: 600, cursor: profileSaving ? "not-allowed" : "pointer", opacity: profileSaving ? 0.7 : 1 }}
+          >
+            {profileSaving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}
+            Kaydet
+          </button>
+        </form>
+      </div>
+
+      {/* Password change form */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "20px 24px" }}>
+        <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "18px" }}>Şifre Değiştir</div>
+        <form onSubmit={changePassword}>
+          {[
+            { label: "MEVCUT ŞİFRE", val: curPwd, set: setCurPwd },
+            { label: "YENİ ŞİFRE",   val: newPwd, set: setNewPwd },
+            { label: "YENİ ŞİFRE (TEKRAR)", val: confPwd, set: setConfPwd },
+          ].map(({ label, val, set }, i) => (
+            <div key={label} style={{ marginBottom: i < 2 ? "12px" : "18px" }}>
+              <label style={{ display: "block", fontSize: "11px", color: C.muted, marginBottom: "6px", letterSpacing: "0.05em" }}>{label}</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPwd ? "text" : "password"}
+                  value={val}
+                  onChange={e => set(e.target.value)}
+                  style={{ ...inputStyle(false), paddingRight: "44px" }}
+                  onFocus={e => { e.target.style.borderColor = `${C.red}60`; }}
+                  onBlur={e => { e.target.style.borderColor = C.border; }}
+                />
+                {i === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd(v => !v)}
+                    style={{ position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex" }}
+                  >
+                    {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {pwdMsg && (
+            <div style={{ background: pwdMsg.ok ? "rgba(34,197,94,0.08)" : "rgba(204,26,26,0.08)", border: `1px solid ${pwdMsg.ok ? "rgba(34,197,94,0.25)" : "rgba(204,26,26,0.25)"}`, borderRadius: "8px", padding: "9px 13px", marginBottom: "14px", fontSize: "12px", color: pwdMsg.ok ? "#22c55e" : C.red }}>
+              {pwdMsg.text}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={pwdSaving || !curPwd || !newPwd || !confPwd}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: C.red, color: "#fff", border: "none", borderRadius: "9px", padding: "11px 20px", fontSize: "13px", fontWeight: 600, cursor: (pwdSaving || !curPwd || !newPwd || !confPwd) ? "not-allowed" : "pointer", opacity: (pwdSaving || !curPwd || !newPwd || !confPwd) ? 0.5 : 1 }}
+          >
+            {pwdSaving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}
+            Şifreyi Değiştir
+          </button>
+        </form>
       </div>
     </div>
   );

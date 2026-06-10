@@ -52,14 +52,19 @@ export default function Navbar() {
                 className="flex items-center justify-center transition-all duration-200 group-hover:opacity-90"
                 style={{ width: "32px", height: "32px", background: C.red, borderRadius: "6px" }}
               >
-                <span className="font-display font-bold text-white" style={{ fontSize: "14px" }}>M</span>
+                <span className="font-display font-bold text-white" style={{ fontSize: "14px" }}>A</span>
               </div>
-              <span
-                className="font-display font-light"
-                style={{ fontSize: "18px", letterSpacing: "0.3em", textTransform: "uppercase", color: C.primary }}
-              >
-                Makas
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+                <span
+                  className="font-display font-light"
+                  style={{ fontSize: "13px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.primary }}
+                >
+                  Abdurrahman Çelik
+                </span>
+                <span style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#CC1A1A", marginTop: "2px" }}>
+                  Exclusive Salon
+                </span>
+              </div>
             </Link>
 
             {/* Desktop links */}
