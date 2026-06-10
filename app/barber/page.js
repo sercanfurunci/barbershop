@@ -62,8 +62,8 @@ export default function BarberLoginPage() {
     setLoading(true);
     setError(null);
     try {
-      const emailOrRole = selected.type === "admin" ? "admin" : selected.slug;
-      const user = await login(emailOrRole, password);
+      const email = selected.type === "admin" ? "admin@makas.com" : `${selected.slug}@makas.com`;
+      const user = await login(email, password);
       if (user?.role === "ADMIN") router.push("/admin");
       else if (user?.barber?.slug) router.push(`/barber/${user.barber.slug}`);
     } catch (err) {
