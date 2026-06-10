@@ -5,7 +5,7 @@ import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 // GET /api/appointments?date=2026-06-10&barberId=brb-1&status=PENDING
 export async function GET(request) {
   const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+  if (!payload) return NextResponse.json([]);
 
   const { searchParams } = new URL(request.url);
   const date     = searchParams.get("date");

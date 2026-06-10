@@ -22,7 +22,15 @@ const C = {
 function BookingWidget({ lang, tx }) {
   const [selectedService, setSelectedService] = useState(null);
   const [selectedBarber, setSelectedBarber]   = useState(null);
+  const [dateLabels, setDateLabels] = useState(["Bugün", "Yarın", "---"]);
   const s = tx.hero;
+
+  useEffect(() => {
+    const d = new Date(); d.setDate(d.getDate() + 2);
+    const dayTr = d.toLocaleDateString("tr-TR", { weekday: "short" });
+    const dayEn = d.toLocaleDateString("en-US", { weekday: "short" });
+    setDateLabels(lang === "tr" ? ["Bugün", "Yarın", dayTr] : ["Today", "Tomorrow", dayEn]);
+  }, [lang]);
 
   const serviceList = services.slice(0, 5);
 
@@ -174,12 +182,7 @@ function BookingWidget({ lang, tx }) {
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {(() => {
-              const d = new Date(); d.setDate(d.getDate() + 2);
-              const dayTr = d.toLocaleDateString("tr-TR", { weekday: "short" });
-              const dayEn = d.toLocaleDateString("en-US", { weekday: "short" });
-              return lang === "tr" ? ["Bugün", "Yarın", dayTr] : ["Today", "Tomorrow", dayEn];
-            })().map((label, i) => (
+            {dateLabels.map((label, i) => (
               <button
                 key={label}
                 className="py-2 text-center transition-all"

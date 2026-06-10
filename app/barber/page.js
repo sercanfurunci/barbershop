@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
-import { Crown, Scissors, ArrowRight, Loader2 } from "lucide-react";
+import { Crown, Scissors, ArrowRight, Loader2, Eye, EyeOff, ChevronLeft } from "lucide-react";
 
 const C = {
   bg:      "#070707",
@@ -22,8 +22,12 @@ export default function BarberLoginPage() {
   const { login, role, loaded } = useAuth();
   const router = useRouter();
   const [barbers, setBarbers] = useState([]);
-  const [loggingIn, setLoggingIn] = useState(null);
+  const [selected, setSelected] = useState(null); // { type: "admin"|"barber", slug?, nameTr?, avatar? }
+  const [password, setPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const pwdRef = useRef(null);
 
   useEffect(() => {
     apiFetch("/api/barbers").then(setBarbers).catch(() => {});
@@ -35,27 +39,46 @@ export default function BarberLoginPage() {
     else if (role) router.replace(`/barber/${role}`);
   }, [role, loaded, router]);
 
-  const handleLogin = async (emailOrRole) => {
-    setLoggingIn(emailOrRole);
+  // Focus password field when step changes
+  useEffect(() => {
+    if (selected) setTimeout(() => pwdRef.current?.focus(), 120);
+  }, [selected]);
+
+  const handleSelect = (account) => {
+    setSelected(account);
+    setPassword("");
+    setError(null);
+  };
+
+  const handleBack = () => {
+    setSelected(null);
+    setPassword("");
+    setError(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!password.trim()) { setError("Şifre boş olamaz"); return; }
+    setLoading(true);
     setError(null);
     try {
-      const user = await login(emailOrRole);
+      const emailOrRole = selected.type === "admin" ? "admin" : selected.slug;
+      const user = await login(emailOrRole, password);
       if (user?.role === "ADMIN") router.push("/admin");
       else if (user?.barber?.slug) router.push(`/barber/${user.barber.slug}`);
     } catch (err) {
-      setError(err.message ?? "Giriş başarısız");
+      setError(err.message ?? "Şifre yanlış");
     } finally {
-      setLoggingIn(null);
+      setLoading(false);
     }
   };
 
   if (!loaded) return null;
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center px-6"
-      style={{ background: C.bg }}
-    >
+    <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: C.bg }}>
+
+      {/* Logo */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -65,127 +88,189 @@ export default function BarberLoginPage() {
         <div style={{ fontSize: "11px", letterSpacing: "0.3em", color: C.red, textTransform: "uppercase", fontWeight: 600, marginBottom: "6px" }}>
           MAKAS
         </div>
-        <h1
-          className="font-display font-light"
-          style={{ fontSize: "clamp(28px, 4vw, 40px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1 }}
-        >
+        <h1 className="font-display font-light" style={{ fontSize: "clamp(28px, 4vw, 40px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
           Çalışan <span style={{ fontStyle: "italic", color: C.red }}>Girişi</span>
         </h1>
         <p style={{ fontSize: "13px", color: C.secondary, marginTop: "8px" }}>
-          Devam etmek için hesabınızı seçin
+          {selected ? "Şifrenizi girin" : "Hesabınızı seçin"}
         </p>
       </motion.div>
 
-      <div style={{ width: "100%", maxWidth: "720px" }}>
-        {error && (
-          <div style={{ background: "rgba(204,26,26,0.1)", border: "1px solid rgba(204,26,26,0.3)", borderRadius: "8px", padding: "12px 16px", marginBottom: "16px", fontSize: "13px", color: C.red }}>
-            {error}
-          </div>
-        )}
+      <div style={{ width: "100%", maxWidth: "480px" }}>
+        <AnimatePresence mode="wait">
 
-        {/* Admin card */}
-        <motion.button
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.1 }}
-          onClick={() => handleLogin("admin")}
-          disabled={!!loggingIn}
-          className="w-full text-left flex items-center gap-5 mb-4"
-          style={{
-            background: C.card,
-            border: `1px solid ${C.border}`,
-            borderRadius: "14px",
-            padding: "24px 28px",
-            cursor: loggingIn ? "not-allowed" : "pointer",
-            transition: "all 0.2s",
-            opacity: loggingIn && loggingIn !== "admin" ? 0.5 : 1,
-          }}
-          onMouseEnter={(e) => { if (!loggingIn) { e.currentTarget.style.borderColor = "rgba(204,26,26,0.4)"; e.currentTarget.style.background = "#121218"; } }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
-        >
-          <div
-            className="flex items-center justify-center shrink-0"
-            style={{ width: "52px", height: "52px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "12px" }}
-          >
-            <Crown size={22} color="#fff" />
-          </div>
-          <div className="flex-1">
-            <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600, marginBottom: "3px" }}>Süper Admin</div>
-            <div style={{ fontSize: "12px", color: C.secondary }}>Tüm randevular, kasa, berber yönetimi</div>
-          </div>
-          {loggingIn === "admin"
-            ? <Loader2 size={16} style={{ color: C.red, animation: "spin 1s linear infinite" }} />
-            : <ArrowRight size={16} style={{ color: C.red }} />
-          }
-        </motion.button>
-
-        {/* Divider */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="flex items-center gap-3 mb-4"
-        >
-          <div style={{ flex: 1, height: "1px", background: C.border }} />
-          <span style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.08em" }}>BERBERLER</span>
-          <div style={{ flex: 1, height: "1px", background: C.border }} />
-        </motion.div>
-
-        {/* Barber cards grid */}
-        <div className="grid grid-cols-2 gap-3">
-          {barbers.map((barber, i) => (
-            <motion.button
-              key={barber.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.25 + i * 0.07 }}
-              onClick={() => handleLogin(barber.slug)}
-              disabled={!!loggingIn}
-              className="text-left flex items-center gap-4"
-              style={{
-                background: C.card,
-                border: `1px solid ${C.border}`,
-                borderRadius: "12px",
-                padding: "18px 20px",
-                cursor: loggingIn ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
-                opacity: loggingIn && loggingIn !== barber.slug ? 0.5 : 1,
-              }}
-              onMouseEnter={(e) => { if (!loggingIn) { e.currentTarget.style.borderColor = "rgba(204,26,26,0.3)"; e.currentTarget.style.background = "#121218"; } }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
+          {/* ── Step 1: Account selection ── */}
+          {!selected && (
+            <motion.div
+              key="select"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25 }}
             >
-              <div
-                className="flex items-center justify-center font-bold text-white shrink-0"
-                style={{ width: "40px", height: "40px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "10px", fontSize: "12px", letterSpacing: "0.04em" }}
+              {/* Admin */}
+              <motion.button
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 }}
+                onClick={() => handleSelect({ type: "admin", nameTr: "Süper Admin" })}
+                className="w-full text-left flex items-center gap-5 mb-4"
+                style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px 24px", cursor: "pointer", transition: "all 0.2s" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(204,26,26,0.4)"; e.currentTarget.style.background = "#121218"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
               >
-                {barber.avatar}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500, marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {barber.nameTr}
+                <div className="flex items-center justify-center shrink-0" style={{ width: "48px", height: "48px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "12px" }}>
+                  <Crown size={20} color="#fff" />
                 </div>
-                <div style={{ fontSize: "10px", color: barber.available ? "#22c55e" : C.muted, display: "flex", alignItems: "center", gap: "4px" }}>
-                  <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: barber.available ? "#22c55e" : C.muted, flexShrink: 0 }} />
-                  {barber.available ? "Müsait" : "İzinli"}
+                <div className="flex-1">
+                  <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600, marginBottom: "2px" }}>Süper Admin</div>
+                  <div style={{ fontSize: "12px", color: C.secondary }}>Tüm randevular, kasa, berber yönetimi</div>
                 </div>
+                <ArrowRight size={16} style={{ color: C.red }} />
+              </motion.button>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 mb-4">
+                <div style={{ flex: 1, height: "1px", background: C.border }} />
+                <span style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.08em" }}>BERBERLER</span>
+                <div style={{ flex: 1, height: "1px", background: C.border }} />
               </div>
-              {loggingIn === barber.slug
-                ? <Loader2 size={13} style={{ color: C.muted, flexShrink: 0, animation: "spin 1s linear infinite" }} />
-                : <Scissors size={13} style={{ color: C.muted, flexShrink: 0 }} />
-              }
-            </motion.button>
-          ))}
-        </div>
+
+              {/* Barber grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {barbers.map((barber, i) => (
+                  <motion.button
+                    key={barber.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.14 + i * 0.06 }}
+                    onClick={() => handleSelect({ type: "barber", slug: barber.slug, nameTr: barber.nameTr, avatar: barber.avatar, titleTr: barber.titleTr })}
+                    className="text-left flex items-center gap-4"
+                    style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 18px", cursor: "pointer", transition: "all 0.2s" }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(204,26,26,0.3)"; e.currentTarget.style.background = "#121218"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
+                  >
+                    <div className="flex items-center justify-center font-bold text-white shrink-0" style={{ width: "38px", height: "38px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "10px", fontSize: "11px" }}>
+                      {barber.avatar}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500, marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {barber.nameTr}
+                      </div>
+                      <div style={{ fontSize: "10px", color: barber.available ? "#22c55e" : C.muted, display: "flex", alignItems: "center", gap: "4px" }}>
+                        <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: barber.available ? "#22c55e" : C.muted, flexShrink: 0 }} />
+                        {barber.available ? "Müsait" : "İzinli"}
+                      </div>
+                    </div>
+                    <ArrowRight size={13} style={{ color: C.muted, flexShrink: 0 }} />
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Step 2: Password ── */}
+          {selected && (
+            <motion.div
+              key="password"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+            >
+              {/* Selected account card */}
+              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "20px 24px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "16px" }}>
+                <div className="flex items-center justify-center shrink-0" style={{ width: "48px", height: "48px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "12px" }}>
+                  {selected.type === "admin"
+                    ? <Crown size={20} color="#fff" />
+                    : <span style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>{selected.avatar}</span>
+                  }
+                </div>
+                <div className="flex-1">
+                  <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600 }}>{selected.nameTr}</div>
+                  <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>
+                    {selected.type === "admin" ? "admin@makas.com" : `${selected.slug}@makas.com`}
+                  </div>
+                </div>
+                <button onClick={handleBack} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex", alignItems: "center", gap: "4px", fontSize: "12px" }}>
+                  <ChevronLeft size={14} /> Geri
+                </button>
+              </div>
+
+              {/* Password form */}
+              <form onSubmit={handleSubmit}>
+                {error && (
+                  <div style={{ background: "rgba(204,26,26,0.1)", border: "1px solid rgba(204,26,26,0.3)", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px", fontSize: "13px", color: C.red }}>
+                    {error}
+                  </div>
+                )}
+
+                <div style={{ position: "relative", marginBottom: "14px" }}>
+                  <input
+                    ref={pwdRef}
+                    type={showPwd ? "text" : "password"}
+                    placeholder="Şifre"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    disabled={loading}
+                    style={{
+                      width: "100%",
+                      background: C.card,
+                      border: `1px solid ${error ? "rgba(204,26,26,0.5)" : C.border}`,
+                      borderRadius: "10px",
+                      padding: "14px 48px 14px 16px",
+                      fontSize: "15px",
+                      color: C.primary,
+                      outline: "none",
+                      caretColor: C.red,
+                      boxSizing: "border-box",
+                    }}
+                    onFocus={e => { e.target.style.borderColor = `${C.red}60`; }}
+                    onBlur={e => { e.target.style.borderColor = error ? "rgba(204,26,26,0.5)" : C.border; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd(v => !v)}
+                    style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex" }}
+                  >
+                    {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || !password}
+                  className="w-full flex items-center justify-center gap-2"
+                  style={{
+                    background: loading || !password ? C.muted : C.red,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "10px",
+                    padding: "14px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: loading || !password ? "not-allowed" : "pointer",
+                    transition: "background 0.2s",
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  {loading ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : null}
+                  {loading ? "Giriş yapılıyor…" : "Giriş Yap"}
+                </button>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <motion.a
         href="/"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.5 }}
         style={{ fontSize: "12px", color: C.muted, marginTop: "40px", textDecoration: "none" }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = C.secondary; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = C.muted; }}
+        onMouseEnter={e => { e.currentTarget.style.color = C.secondary; }}
+        onMouseLeave={e => { e.currentTarget.style.color = C.muted; }}
       >
         ← Siteye dön
       </motion.a>
