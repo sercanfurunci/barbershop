@@ -17,7 +17,10 @@ export async function POST(request) {
       where: {
         OR: [{ email: identifier }, { username: identifier }],
       },
-      include: { barber: { select: { id: true, slug: true, nameTr: true, avatar: true } } },
+      include: {
+        barber: { select: { id: true, slug: true, nameTr: true, avatar: true } },
+        shop:   { select: { id: true, slug: true, name: true, status: true } },
+      },
     });
 
     if (!user) {
@@ -29,9 +32,15 @@ export async function POST(request) {
       return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
     }
 
+    // Block logins to suspended shops (except SUPER_ADMIN, who has no shop)
+    if (user.shop && user.shop.status === "SUSPENDED") {
+      return NextResponse.json({ error: "Bu salon askıya alındı. Yöneticinizle iletişime geçin." }, { status: 403 });
+    }
+
     const token = await signToken({
       userId: user.id,
       role: user.role,
+      shopId: user.shopId ?? null,
       barberId: user.barberId ?? null,
       tokenVersion: user.tokenVersion,
     });
@@ -45,6 +54,7 @@ export async function POST(request) {
         displayName: user.displayName ?? null,
         role: user.role,
         barber: user.barber ?? null,
+        shop: user.shop ?? null,
       },
     });
 

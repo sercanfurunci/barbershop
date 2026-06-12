@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { todayStr, nowMinutes } from "@/lib/utils";
+import { getDefaultShopId } from "@/lib/shop";
 
 const SLOT_INTERVAL = 30; // minutes
 
@@ -64,18 +65,21 @@ export async function GET(request) {
     return NextResponse.json({ error: "Geçersiz tarih formatı (YYYY-MM-DD)" }, { status: 400 });
   }
 
+  const shopId = await getDefaultShopId();
+
   const [barber, service, bookedAppointments, holidays] = await Promise.all([
-    prisma.barber.findUnique({
-      where: { id: barberId },
+    prisma.barber.findFirst({
+      where: { id: barberId, shopId },
       include: { workingHours: true, breaks: true },
     }),
-    prisma.service.findUnique({ where: { id: serviceId } }),
+    prisma.service.findFirst({ where: { id: serviceId, shopId } }),
     prisma.appointment.findMany({
-      where: { barberId, date },
+      where: { shopId, barberId, date },
       select: { time: true, duration: true, status: true },
     }),
     prisma.holiday.findMany({
       where: {
+        shopId,
         date,
         OR: [{ barberId }, { barberId: null }],
       },

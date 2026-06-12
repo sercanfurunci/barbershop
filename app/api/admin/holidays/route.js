@@ -6,12 +6,22 @@ import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 export async function GET(request) {
   const payload = await requireAuth(request);
   if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST") return forbidden();
+  if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST" && payload.role !== "SUPER_ADMIN") return forbidden();
 
   const { searchParams } = new URL(request.url);
   const barberId = searchParams.get("barberId");
 
-  const where = barberId ? { OR: [{ barberId }, { barberId: null }] } : {};
+  // SUPER_ADMIN sees all shops; others scoped to their shop
+  const shopFilter =
+    payload.role === "SUPER_ADMIN"
+      ? (searchParams.get("shopId") ? { shopId: searchParams.get("shopId") } : {})
+      : { shopId: payload.shopId };
+
+  const where = {
+    ...shopFilter,
+    ...(barberId ? { OR: [{ barberId }, { barberId: null }] } : {}),
+  };
+
   const holidays = await prisma.holiday.findMany({
     where,
     orderBy: { date: "asc" },
@@ -26,6 +36,7 @@ export async function POST(request) {
   const payload = await requireAuth(request);
   if (!payload) return unauthorized();
   if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST") return forbidden();
+  if (!payload.shopId) return forbidden();
 
   const { date, label, barberId } = await request.json();
 
@@ -33,10 +44,20 @@ export async function POST(request) {
     return NextResponse.json({ error: "Geçerli tarih gerekli (YYYY-MM-DD)" }, { status: 400 });
   }
 
+  // If a barber is specified, ensure they belong to the caller's shop
+  if (barberId) {
+    const barber = await prisma.barber.findFirst({
+      where: { id: barberId, shopId: payload.shopId },
+      select: { id: true },
+    });
+    if (!barber) return forbidden();
+  }
+
   const holiday = await prisma.holiday.create({
     data: {
+      shopId:  payload.shopId,
       date,
-      label: label || "Tatil",
+      label:   label || "Tatil",
       barberId: barberId || null,
     },
     include: { barber: { select: { id: true, nameTr: true } } },

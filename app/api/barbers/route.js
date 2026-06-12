@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getDefaultShopId } from "@/lib/shop";
 
 export const revalidate = 300; // 5-minute cache
 
 export async function GET() {
   try {
+    const shopId = await getDefaultShopId();
     const barbers = await prisma.barber.findMany({
-      where: { available: true },
+      where: { shopId, available: true },
       include: { workingHours: true, breaks: true },
       orderBy: { createdAt: "asc" },
     });

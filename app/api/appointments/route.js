@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth";
+import { getDefaultShopId } from "@/lib/shop";
 
 // GET /api/appointments?date=2026-06-10&barberId=brb-1&status=PENDING
 export async function GET(request) {
@@ -13,11 +14,20 @@ export async function GET(request) {
   const status   = searchParams.get("status");
   const limit    = parseInt(searchParams.get("limit") ?? "200");
 
+  // SUPER_ADMIN can scope to any shop via ?shopId=; everyone else uses their own.
+  const shopId =
+    payload.role === "SUPER_ADMIN"
+      ? (searchParams.get("shopId") ?? null)
+      : payload.shopId;
+
+  if (!shopId) return NextResponse.json([]);
+
   // Barbers can only see their own appointments
   const effectiveBarberId =
     payload.role === "BARBER" ? payload.barberId : (barberId ?? undefined);
 
   const where = {
+    shopId,
     ...(date        && { date }),
     ...(effectiveBarberId && { barberId: effectiveBarberId }),
     ...(status      && { status }),
@@ -47,15 +57,18 @@ export async function POST(request) {
       return NextResponse.json({ error: "Eksik alanlar var" }, { status: 400 });
     }
 
-    // Validate date/time
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json({ error: "Geçersiz tarih" }, { status: 400 });
     }
 
-    const service = await prisma.service.findUnique({ where: { id: serviceId } });
+    // Public booking goes through the default shop. When tenant routing exists,
+    // this resolves from the request hostname / pathname instead.
+    const shopId = await getDefaultShopId();
+
+    const service = await prisma.service.findFirst({ where: { id: serviceId, shopId } });
     if (!service) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
 
-    const barber = await prisma.barber.findUnique({ where: { id: barberId } });
+    const barber = await prisma.barber.findFirst({ where: { id: barberId, shopId } });
     if (!barber) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
 
     // Conflict check
@@ -64,7 +77,7 @@ export async function POST(request) {
     const endMin   = startMin + service.duration;
 
     const existing = await prisma.appointment.findMany({
-      where: { barberId, date, status: { notIn: ["CANCELLED", "NOSHOW"] } },
+      where: { shopId, barberId, date, status: { notIn: ["CANCELLED", "NOSHOW"] } },
       select: { time: true, duration: true },
     });
 
@@ -78,15 +91,16 @@ export async function POST(request) {
       return NextResponse.json({ error: "Bu saat dilimi dolu" }, { status: 409 });
     }
 
-    // Upsert client by phone
+    // Upsert client by (shopId, phone) — clients are scoped per shop
     const client = await prisma.client.upsert({
-      where: { phone },
+      where: { shopId_phone: { shopId, phone } },
       update: { name, ...(email && { email }) },
-      create: { name, phone, email: email ?? null },
+      create: { shopId, name, phone, email: email ?? null },
     });
 
     const appointment = await prisma.appointment.create({
       data: {
+        shopId,
         clientId:  client.id,
         barberId,
         serviceId,

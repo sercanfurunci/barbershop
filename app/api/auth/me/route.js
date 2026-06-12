@@ -10,7 +10,9 @@ export async function GET(request) {
     where: { id: payload.userId },
     select: {
       id: true, email: true, username: true, displayName: true, role: true,
+      shopId: true,
       barber: { select: { id: true, slug: true, nameTr: true, avatar: true } },
+      shop:   { select: { id: true, slug: true, name: true, status: true } },
     },
   });
 

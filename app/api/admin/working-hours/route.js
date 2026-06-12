@@ -4,22 +4,37 @@ import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 
 const DAYS = ["mon","tue","wed","thu","fri","sat","sun"];
 
+// Shop-scoped: only barbers in the caller's shop are visible/editable.
+function shopGuard(payload) {
+  if (!payload) return { error: unauthorized() };
+  if (payload.role === "SUPER_ADMIN") return { shopFilter: {} }; // platform-wide
+  if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST") return { error: forbidden() };
+  if (!payload.shopId) return { error: forbidden() };
+  return { shopFilter: { shopId: payload.shopId } };
+}
+
 // GET /api/admin/working-hours?barberId=brb-1
 export async function GET(request) {
   const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST") return forbidden();
+  const guard = shopGuard(payload);
+  if (guard.error) return guard.error;
 
   const { searchParams } = new URL(request.url);
   const barberId = searchParams.get("barberId");
 
   if (barberId) {
+    // Verify the barber belongs to the caller's shop
+    const barber = await prisma.barber.findFirst({
+      where: { id: barberId, ...guard.shopFilter },
+      select: { id: true },
+    });
+    if (!barber) return NextResponse.json({}, { status: 404 });
     const wh = await prisma.workingHours.findUnique({ where: { barberId } });
     return NextResponse.json(wh ?? {});
   }
 
-  // Return all barbers with their working hours
   const barbers = await prisma.barber.findMany({
+    where: guard.shopFilter,
     include: { workingHours: true, breaks: true },
     orderBy: { createdAt: "asc" },
   });
@@ -30,13 +45,20 @@ export async function GET(request) {
 // body: { barberId, mon: { start: 540, end: 1080 }, ... }
 export async function PATCH(request) {
   const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST") return forbidden();
+  const guard = shopGuard(payload);
+  if (guard.error) return guard.error;
 
   const body = await request.json();
   const { barberId, ...days } = body;
 
   if (!barberId) return NextResponse.json({ error: "barberId gerekli" }, { status: 400 });
+
+  // Verify barber belongs to caller's shop before mutating
+  const barber = await prisma.barber.findFirst({
+    where: { id: barberId, ...guard.shopFilter },
+    select: { id: true },
+  });
+  if (!barber) return forbidden();
 
   const data = {};
   for (const day of DAYS) {

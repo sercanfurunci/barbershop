@@ -35,6 +35,7 @@ export async function PATCH(request) {
   const token = await signToken({
     userId: payload.userId,
     role: payload.role,
+    shopId: payload.shopId ?? null,
     barberId: payload.barberId ?? null,
     tokenVersion: updated.tokenVersion,
   });

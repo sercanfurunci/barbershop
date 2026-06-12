@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser]     = useState(null); // { id, email, username, displayName, role, barber }
+  const [user, setUser]     = useState(null); // { id, email, username, displayName, role, barber, shop }
   const [loaded, setLoaded] = useState(false);
 
   // Restore session from cookie on mount
@@ -18,9 +18,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   // role helpers — keep compatible with existing code
-  const role = user?.role === "ADMIN" ? "admin"
+  const role = user?.role === "SUPER_ADMIN" ? "superadmin"
+    : user?.role === "ADMIN" ? "admin"
     : user?.role === "BARBER" ? (user.barber?.slug ?? "barber")
     : null;
+
+  const shopId = user?.shopId ?? user?.shop?.id ?? null;
 
   const login = async (emailOrRole, password) => {
     // Support legacy one-click login (dev shortcut) → map to real credentials
@@ -55,7 +58,7 @@ export function AuthProvider({ children }) {
   const updateUser = (patch) => setUser(prev => prev ? { ...prev, ...patch } : prev);
 
   return (
-    <AuthContext.Provider value={{ user, role, loaded, login, logout, refreshUser, updateUser }}>
+    <AuthContext.Provider value={{ user, role, shopId, loaded, login, logout, refreshUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

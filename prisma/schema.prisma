@@ -6,6 +6,48 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Tenants (Shops) ──────────────────────────────────────────────────────────
+//
+// A Shop is a single barber shop tenant. Every business entity (users, barbers,
+// services, clients, appointments) belongs to exactly one shop, providing strict
+// data isolation between tenants. SUPER_ADMIN users have shopId = null and can
+// see/manage all shops; everyone else is scoped to their shop.
+//
+// slug: shop URL-safe identifier (future: tenant routing)
+// status: SUSPENDED shops cannot accept new bookings or admin logins
+
+model Shop {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  logo        String?
+  address     String?    @db.Text
+  phone       String?
+  email       String?
+  description String?    @db.Text
+  social      Json?      // { instagram, facebook, tiktok, twitter, website }
+  status      ShopStatus @default(ACTIVE)
+  timezone    String     @default("Europe/Istanbul")
+  currency    String     @default("TRY")
+
+  users        User[]
+  barbers      Barber[]
+  services     Service[]
+  clients      Client[]
+  appointments Appointment[]
+  holidays     Holiday[]
+  auditLogs    AuditLog[]
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ShopStatus {
+  ACTIVE
+  SUSPENDED
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 model User {
@@ -16,15 +58,20 @@ model User {
   passwordHash String
   role         Role     @default(BARBER)
   tokenVersion Int      @default(0)   // increment on logout to invalidate all tokens
+  shopId       String?              // null for SUPER_ADMIN; required for everyone else (enforced in app)
+  shop         Shop?    @relation(fields: [shopId], references: [id], onDelete: Cascade)
   barberId     String?  @unique
   barber       Barber?  @relation(fields: [barberId], references: [id])
   clientId     String?  @unique        // set when role = CUSTOMER
   client       Client?  @relation(fields: [clientId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([shopId])
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   BARBER
   RECEPTIONIST
@@ -35,7 +82,9 @@ enum Role {
 
 model Barber {
   id           String         @id @default(cuid())
-  slug         String         @unique
+  shopId       String
+  shop         Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  slug         String
   nameTr       String
   nameEn       String
   titleTr      String
@@ -57,6 +106,9 @@ model Barber {
   services     BarberService[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+
+  @@unique([shopId, slug])
+  @@index([shopId])
 }
 
 // Working hours: values stored as minutes from midnight (540 = 09:00, 570 = 09:30)
@@ -94,6 +146,8 @@ model BarberBreak {
 
 model Service {
   id           String          @id @default(cuid())
+  shopId       String
+  shop         Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
   nameTr       String
   nameEn       String
   descTr       String
@@ -108,6 +162,8 @@ model Service {
   barbers      BarberService[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
+
+  @@index([shopId])
 }
 
 enum ServiceCategory {
@@ -131,8 +187,10 @@ model BarberService {
 
 model Client {
   id            String         @id @default(cuid())
+  shopId        String
+  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
   name          String
-  phone         String         @unique
+  phone         String
   email         String?
   notes         String?        @db.Text
   photos        String[]       // URLs or storage keys for client reference photos
@@ -144,13 +202,16 @@ model Client {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  @@index([name])
+  @@unique([shopId, phone])
+  @@index([shopId, name])
 }
 
 // ─── Appointments ─────────────────────────────────────────────────────────────
 
 model Appointment {
   id            String            @id @default(cuid())
+  shopId        String
+  shop          Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
   clientId      String
   client        Client            @relation(fields: [clientId], references: [id])
   barberId      String
@@ -170,6 +231,8 @@ model Appointment {
   updatedAt     DateTime          @updatedAt
 
   @@unique([barberId, date, time])      // race condition guard
+  @@index([shopId, date])
+  @@index([shopId, status])
   @@index([barberId, date])
   @@index([clientId])
   @@index([date])
@@ -196,12 +259,15 @@ enum BookingSource {
 
 model Holiday {
   id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   barberId  String?              // null = shop-wide (all barbers)
   barber    Barber?  @relation(fields: [barberId], references: [id], onDelete: Cascade)
   date      String               // "YYYY-MM-DD"
   label     String   @default("Tatil")
   createdAt DateTime @default(now())
 
+  @@index([shopId, date])
   @@index([date])
   @@index([barberId, date])
 }
@@ -210,6 +276,8 @@ model Holiday {
 
 model AuditLog {
   id            String       @id @default(cuid())
+  shopId        String?      // null for platform-level actions by SUPER_ADMIN
+  shop          Shop?        @relation(fields: [shopId], references: [id], onDelete: Cascade)
   entity        String       // "appointment", "barber", etc.
   entityId      String
   action        String       // "status_change", "reschedule", "delete", "create"
@@ -220,6 +288,7 @@ model AuditLog {
   appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   createdAt     DateTime     @default(now())
 
+  @@index([shopId, createdAt])
   @@index([entity, entityId])
   @@index([userId])
   @@index([createdAt])
@@ -229,6 +298,8 @@ model AuditLog {
 
 model Notification {
   id            String       @id @default(cuid())
+  shopId        String
+  shop          Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
   clientId      String?
   client        Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
   appointmentId String?
@@ -240,6 +311,7 @@ model Notification {
   status        String       @default("pending") // "pending", "sent", "failed"
   createdAt     DateTime     @default(now())
 
+  @@index([shopId, status])
   @@index([clientId])
   @@index([appointmentId])
   @@index([status])

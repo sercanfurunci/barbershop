@@ -18,6 +18,8 @@ export async function PATCH(request, { params }) {
   const appt = await prisma.appointment.findUnique({ where: { id: params.id } });
   if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
 
+  // Shop isolation
+  if (payload.role !== "SUPER_ADMIN" && appt.shopId !== payload.shopId) return forbidden();
   if (payload.role === "BARBER" && appt.barberId !== payload.barberId) return forbidden();
 
   // Track no-shows: increment client counter

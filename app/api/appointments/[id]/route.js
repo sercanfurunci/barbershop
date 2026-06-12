@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 
+// Shop isolation helper — true if the caller may access this appointment.
+function canAccess(payload, appt) {
+  if (payload.role === "SUPER_ADMIN") return true;
+  if (appt.shopId !== payload.shopId) return false;
+  if (payload.role === "BARBER" && appt.barberId !== payload.barberId) return false;
+  return true;
+}
+
 // GET /api/appointments/:id
 export async function GET(request, { params }) {
   const payload = await requireAuth(request);
@@ -17,9 +25,7 @@ export async function GET(request, { params }) {
   });
 
   if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
-
-  // Barbers can only see their own
-  if (payload.role === "BARBER" && appt.barberId !== payload.barberId) return forbidden();
+  if (!canAccess(payload, appt)) return forbidden();
 
   return NextResponse.json(appt);
 }
@@ -31,13 +37,12 @@ export async function PATCH(request, { params }) {
 
   const appt = await prisma.appointment.findUnique({ where: { id: params.id } });
   if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
-
-  if (payload.role === "BARBER" && appt.barberId !== payload.barberId) return forbidden();
+  if (!canAccess(payload, appt)) return forbidden();
 
   const body = await request.json();
   const { notes, date, time } = body;
 
-  // If rescheduling, re-check conflicts
+  // If rescheduling, re-check conflicts within the same shop
   if (date || time) {
     const newDate = date ?? appt.date;
     const newTime = time ?? appt.time;
@@ -47,6 +52,7 @@ export async function PATCH(request, { params }) {
 
     const existing = await prisma.appointment.findMany({
       where: {
+        shopId:   appt.shopId,
         barberId: appt.barberId,
         date:     newDate,
         status:   { notIn: ["CANCELLED", "NOSHOW"] },
@@ -85,7 +91,11 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   const payload = await requireAuth(request);
   if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN") return forbidden();
+  if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN") return forbidden();
+
+  const appt = await prisma.appointment.findUnique({ where: { id: params.id } });
+  if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
+  if (!canAccess(payload, appt)) return forbidden();
 
   await prisma.appointment.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });

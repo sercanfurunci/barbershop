@@ -8,20 +8,49 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+const SHOP_ID   = "shop-abdurrahman";
+const SHOP_SLUG = "abdurrahman";
+
 async function main() {
   console.log("Seeding...");
 
-  await Promise.all([
-    prisma.service.upsert({ where: { id: "svc-1" }, update: {}, create: { id: "svc-1", nameTr: "Klasik Kesim", nameEn: "Classic Cut", descTr: "Zamansız kesim tekniği", descEn: "Timeless cut technique", duration: 30, price: 450, icon: "✂️", category: "CUTS", popular: true } }),
-    prisma.service.upsert({ where: { id: "svc-2" }, update: {}, create: { id: "svc-2", nameTr: "Fade & Taper", nameEn: "Fade & Taper", descTr: "Gradyan geçiş", descEn: "Gradient blend", duration: 45, price: 550, icon: "💈", category: "CUTS" } }),
-    prisma.service.upsert({ where: { id: "svc-3" }, update: {}, create: { id: "svc-3", nameTr: "Sakal Şekillendirme", nameEn: "Beard Sculpt", descTr: "Hassas sakal şekillendirme", descEn: "Precision beard sculpting", duration: 30, price: 350, icon: "🪒", category: "BEARD" } }),
-    prisma.service.upsert({ where: { id: "svc-4" }, update: {}, create: { id: "svc-4", nameTr: "Kraliyet Tıraşı", nameEn: "Royal Shave", descTr: "Klasik ustura tıraşı", descEn: "Classic straight razor shave", duration: 45, price: 600, icon: "👑", category: "BEARD", popular: true } }),
-    prisma.service.upsert({ where: { id: "svc-5" }, update: {}, create: { id: "svc-5", nameTr: "Kesim & Sakal", nameEn: "Cut & Beard", descTr: "Kombo bakım paketi", descEn: "Complete combo package", duration: 75, price: 750, icon: "⚡", category: "COMBO" } }),
-    prisma.service.upsert({ where: { id: "svc-6" }, update: {}, create: { id: "svc-6", nameTr: "VIP Grooming", nameEn: "VIP Grooming", descTr: "Tam premium bakım deneyimi", descEn: "Full premium grooming experience", duration: 120, price: 1650, icon: "💎", category: "PREMIUM" } }),
-  ]);
+  // ── Shop ───────────────────────────────────────────────────────────────
+  await prisma.shop.upsert({
+    where: { id: SHOP_ID },
+    update: {},
+    create: {
+      id:          SHOP_ID,
+      slug:        SHOP_SLUG,
+      name:        "Abdurrahman Çelik Exclusive Salon",
+      address:     "Darıca, Kocaeli, Türkiye",
+      description: "Premium berber salonu — klasik tıraş, modern stil.",
+      status:      "ACTIVE",
+      timezone:    "Europe/Istanbul",
+      currency:    "TRY",
+    },
+  });
+  console.log("✓ Shop");
+
+  // ── Services ───────────────────────────────────────────────────────────
+  const services = [
+    { id: "svc-1", nameTr: "Saç Kesimi",                 nameEn: "Haircut",                       descTr: "Klasik saç kesimi",            descEn: "Classic haircut",                   duration: 30,  price: 200,  icon: "✂️", category: "CUTS",    popular: true },
+    { id: "svc-2", nameTr: "Sakal",                       nameEn: "Beard",                         descTr: "Sakal düzeltme ve şekillendirme", descEn: "Beard trim and shaping",         duration: 20,  price: 150,  icon: "🪒", category: "BEARD" },
+    { id: "svc-3", nameTr: "Sakal & Saç",                 nameEn: "Beard & Haircut",               descTr: "Saç kesimi ve sakal birlikte", descEn: "Haircut and beard together",       duration: 45,  price: 350,  icon: "💈", category: "COMBO",   popular: true },
+    { id: "svc-4", nameTr: "Saç + Sakal + Yıkama + Fön", nameEn: "Cut + Beard + Wash + Blowdry",  descTr: "Eksiksiz bakım paketi",         descEn: "Complete grooming package",        duration: 75,  price: 400,  icon: "💆", category: "COMBO" },
+    { id: "svc-5", nameTr: "Maske",                       nameEn: "Mask",                          descTr: "Cilt bakım maskesi",           descEn: "Facial care mask",                  duration: 20,  price: 75,   icon: "🧴", category: "PREMIUM" },
+    { id: "svc-6", nameTr: "Damat Tıraşı",                nameEn: "Groom Package",                 descTr: "Özel gün için tam bakım",       descEn: "Full treatment for your special day", duration: 120, price: 1500, icon: "🤵", category: "PREMIUM" },
+  ];
+  await Promise.all(services.map(s =>
+    prisma.service.upsert({
+      where:  { id: s.id },
+      update: { ...s, shopId: SHOP_ID },
+      create: { ...s, shopId: SHOP_ID },
+    })
+  ));
   console.log("✓ Services");
 
-  // Working hours: 10:00-21:30 (600-1290), Sunday closed
+  // ── Barbers + working hours ────────────────────────────────────────────
+  // 10:00-21:30 (600-1290), Sunday closed
   const wh = { monStart:600,monEnd:1290,tueStart:600,tueEnd:1290,wedStart:600,wedEnd:1290,thuStart:600,thuEnd:1290,friStart:600,friEnd:1290,satStart:600,satEnd:1290,sunStart:null,sunEnd:null };
 
   const barberData = [
@@ -33,17 +62,30 @@ async function main() {
 
   for (const b of barberData) {
     const { hours, ...rest } = b;
-    await prisma.barber.upsert({ where: { id: rest.id }, update: {}, create: rest });
+    await prisma.barber.upsert({
+      where:  { id: rest.id },
+      update: { ...rest, shopId: SHOP_ID },
+      create: { ...rest, shopId: SHOP_ID },
+    });
     await prisma.workingHours.upsert({ where: { barberId: rest.id }, update: {}, create: { barberId: rest.id, ...hours } });
   }
   console.log("✓ Barbers");
 
+  // ── Users ──────────────────────────────────────────────────────────────
   const adminHash = await bcrypt.hash("admin123", 10);
-  await prisma.user.upsert({ where: { email: "admin@makas.com" }, update: {}, create: { email: "admin@makas.com", passwordHash: adminHash, role: "ADMIN" } });
+  await prisma.user.upsert({
+    where:  { email: "admin@makas.com" },
+    update: { shopId: SHOP_ID },
+    create: { email: "admin@makas.com", passwordHash: adminHash, role: "ADMIN", shopId: SHOP_ID },
+  });
 
   for (const [slug, id] of [["abdurrahman","brb-1"],["egemen","brb-2"],["omerefe","brb-3"],["emin","brb-4"]]) {
     const h = await bcrypt.hash("barber123", 10);
-    await prisma.user.upsert({ where: { email: `${slug}@makas.com` }, update: {}, create: { email: `${slug}@makas.com`, passwordHash: h, role: "BARBER", barberId: id } });
+    await prisma.user.upsert({
+      where:  { email: `${slug}@makas.com` },
+      update: { shopId: SHOP_ID },
+      create: { email: `${slug}@makas.com`, passwordHash: h, role: "BARBER", barberId: id, shopId: SHOP_ID },
+    });
   }
   console.log("✓ Users");
 

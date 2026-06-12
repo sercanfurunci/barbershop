@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getDefaultShopId } from "@/lib/shop";
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import Hero from "@/components/landing/Hero";
@@ -10,13 +11,14 @@ import CTA from "@/components/landing/CTA";
 export const revalidate = 300;
 
 export default async function Home() {
+  const shopId = await getDefaultShopId();
   const [dbServices, dbBarbers] = await Promise.all([
     prisma.service.findMany({
-      where: { active: true },
+      where: { shopId, active: true },
       orderBy: [{ category: "asc" }, { price: "asc" }],
     }),
     prisma.barber.findMany({
-      where: { available: true },
+      where: { shopId, available: true },
       orderBy: { createdAt: "asc" },
     }),
   ]);
