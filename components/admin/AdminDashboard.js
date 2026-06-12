@@ -573,7 +573,7 @@ function BarberOpsPage({ barberId }) {
   const [date, setDate]               = useState(todayStr());
   const [showBooking, setShowBooking] = useState(false);
   const { appointments, updateStatus } = useAppointments();
-  const todayStr = todayStr();
+  const today = todayStr();
 
   const selectedBarber = selectedId ? barbers.find(b => b.id === selectedId) : null;
 
@@ -597,8 +597,8 @@ function BarberOpsPage({ barberId }) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {barbers.map((b) => {
             const active       = selectedId === b.id;
-            const todayCount   = appointments.filter(a => a.barberId === b.id && a.date === todayStr && a.status !== "cancelled").length;
-            const activeNow    = appointments.some(a => a.barberId === b.id && a.date === todayStr && a.status === "in-progress");
+            const todayCount   = appointments.filter(a => a.barberId === b.id && a.date === today && a.status !== "cancelled").length;
+            const activeNow    = appointments.some(a => a.barberId === b.id && a.date === today && a.status === "in-progress");
             return (
               <button
                 key={b.id}
@@ -715,8 +715,8 @@ function BarberOpsPage({ barberId }) {
 /* ─── Schedule Section (date nav + BarberDayView) ────────────────────────── */
 
 function BarberScheduleSection({ barberId, date, setDate, appointments, updateStatus }) {
-  const todayStr      = todayStr();
-  const isViewingToday = date === todayStr;
+  const today          = todayStr();
+  const isViewingToday = date === today;
   const wh            = workingHours[barberId] ?? { start: 9, end: 18 };
 
   return (
@@ -739,7 +739,7 @@ function BarberScheduleSection({ barberId, date, setDate, appointments, updateSt
             <ChevronLeft size={15} />
           </button>
           {!isViewingToday && (
-            <button onClick={() => setDate(todayStr)} style={{ height: "36px", padding: "0 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>
+            <button onClick={() => setDate(today)} style={{ height: "36px", padding: "0 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>
               Bugün
             </button>
           )}

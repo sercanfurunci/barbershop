@@ -334,7 +334,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
   const { appointments, updateStatus } = useAppointments();
   const [date, setDate]       = useState(todayStr());
   const [view, setView]       = useState("dashboard");
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [moreSheet, setMoreSheet] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [barberData, setBarberData] = useState(null);
   const [tick, setTick]     = useState(0);
@@ -498,45 +498,43 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
         </div>
       </aside>
 
-      {/* ── Mobile drawer ── */}
+      {/* ── Mobile bottom nav ── */}
+      <BottomNav view={view} setView={setView} moreSheet={moreSheet} setMoreSheet={setMoreSheet} className="lg:hidden" />
+
+      {/* ── More sheet (mobile) ── */}
       <AnimatePresence>
-        {moreOpen && (
+        {moreSheet && (
           <>
-            <motion.div key="bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 lg:hidden" style={{ background: "rgba(17,17,17,0.35)", backdropFilter: "blur(4px)" }}
-              onClick={() => setMoreOpen(false)} />
-            <motion.aside key="bs" initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
-              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-0 left-0 bottom-0 z-50 w-[220px] flex flex-col lg:hidden"
-              style={{ background: C.card, borderRight: `1px solid ${C.border}` }}>
-              <div style={{ padding: "20px 20px 16px", borderBottom: `1px solid ${C.border}` }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div style={{ width: "36px", height: "36px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#fff" }}>{barber.avatar}</div>
-                  <div>
-                    <div style={{ fontSize: "13px", color: C.primary, fontWeight: 600 }}>{barber.nameTr ?? barber.name}</div>
-                    <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr}</div>
-                  </div>
+            <motion.div key="ms-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 lg:hidden" style={{ background: "rgba(17,17,17,0.4)", backdropFilter: "blur(4px)" }}
+              onClick={() => setMoreSheet(false)} />
+            <motion.div key="ms-panel"
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed left-0 right-0 bottom-0 z-50 lg:hidden rounded-t-2xl"
+              style={{ background: C.card, border: `1px solid ${C.border}`, paddingBottom: "env(safe-area-inset-bottom, 16px)" }}>
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: C.dim }} />
+              </div>
+              {/* Identity */}
+              <div style={{ padding: "12px 20px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ width: "38px", height: "38px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>{barber.avatar}</div>
+                <div>
+                  <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{barber.nameTr ?? barber.name}</div>
+                  <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
                 </div>
               </div>
-              <nav style={{ flex: 1, padding: "12px 10px" }}>
-                {SIDEBAR_NAV.map(({ id, label, icon: Icon }) => (
-                  <button key={id} onClick={() => { setView(id); setMoreOpen(false); }}
-                    className="w-full flex items-center gap-3"
-                    style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "2px", background: view === id ? `${C.red}15` : "transparent", border: `1px solid ${view === id ? `${C.red}30` : "transparent"}`, cursor: "pointer" }}>
-                    <Icon size={15} style={{ color: view === id ? C.red : C.muted }} />
-                    <span style={{ fontSize: "13px", color: view === id ? C.primary : C.secondary }}>{label}</span>
-                  </button>
-                ))}
-              </nav>
-              <div style={{ padding: "12px 10px", borderTop: `1px solid ${C.border}` }}>
-                <button onClick={() => { logout(); router.push("/barber"); }}
-                  className="w-full flex items-center gap-3"
-                  style={{ padding: "9px 10px", borderRadius: "8px", background: "transparent", border: "none", cursor: "pointer" }}>
-                  <LogOut size={15} style={{ color: "#B91C1C" }} />
-                  <span style={{ fontSize: "13px", color: "#B91C1C" }}>Çıkış Yap</span>
-                </button>
+              {/* Actions */}
+              <div style={{ padding: "8px 12px" }}>
+                <SheetItem icon={Settings} label="Profil" onClick={() => { setView("profil"); setMoreSheet(false); }} />
+                {role === "admin" && (
+                  <SheetItem icon={ChevronLeft} label="Admin Paneli" onClick={() => router.push("/admin")} />
+                )}
+                <SheetItem icon={ExternalLink} label="Siteyi Gör" onClick={() => window.open("/", "_blank")} />
+                <SheetItem icon={LogOut} label="Çıkış Yap" danger onClick={() => { logout(); router.push("/barber"); }} />
               </div>
-            </motion.aside>
+            </motion.div>
           </>
         )}
       </AnimatePresence>
@@ -545,22 +543,25 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
       <div className="flex-1 min-w-0 lg:ml-[220px] flex flex-col min-h-screen overflow-x-hidden">
 
         {/* Topbar */}
-        <header className="h-14 flex items-center gap-4 px-5 lg:px-7 sticky top-0 z-20"
+        <header className="h-14 flex items-center gap-4 px-4 lg:px-7 sticky top-0 z-20"
           style={{ background: `${C.bg}e8`, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}>
-          <button onClick={() => setMoreOpen(true)} className="lg:hidden flex items-center justify-center w-9 h-9"
-            style={{ background: "none", border: "none", cursor: "pointer", color: C.secondary }}>
-            <MoreHorizontal size={18} />
-          </button>
+          {/* Barber identity — mobile only, replaces hamburger */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <div style={{ width: "28px", height: "28px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+              {barber.avatar}
+            </div>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: C.primary }}>{barber.nameTr ?? barber.name}</span>
+          </div>
           <div style={{ flex: 1 }} />
           <button onClick={() => setShowModal(true)}
             className="flex items-center gap-1.5"
-            style={{ background: C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "0 16px", height: "36px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-            <Plus size={14} /> Randevu Ekle
+            style={{ background: C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "0 14px", height: "36px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+            <Plus size={14} /> <span className="hidden sm:inline">Randevu Ekle</span><span className="sm:hidden">Ekle</span>
           </button>
         </header>
 
-        {/* Page content */}
-        <div style={{ padding: "28px 28px 40px" }}>
+        {/* Page content — extra bottom padding so content clears mobile bottom nav */}
+        <div className="px-4 pt-5 pb-24 lg:px-7 lg:pt-7 lg:pb-10">
 
         {/* Page header */}
         <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
@@ -1367,5 +1368,70 @@ export function BarberCustomersView({ barberId, appointments, onNewBooking }) {
         })}
       </div>
     </div>
+  );
+}
+
+/* ─── Bottom Navigation (mobile only) ───────────────────────────────────── */
+const BOTTOM_TABS = [
+  { id: "dashboard",    label: "Anasayfa",   icon: LayoutDashboard },
+  { id: "appointments", label: "Randevular", icon: List            },
+  { id: "schedule",     label: "Takvim",     icon: CalendarDays    },
+  { id: "customers",    label: "Müşteriler", icon: Users           },
+  { id: "__more",       label: "Daha Fazla", icon: MoreHorizontal  },
+];
+
+function BottomNav({ view, setView, moreSheet, setMoreSheet }) {
+  return (
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-30 lg:hidden"
+      style={{
+        background: "rgba(255,255,255,0.97)",
+        backdropFilter: "blur(20px)",
+        borderTop: `1px solid ${C.border}`,
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
+    >
+      <div className="grid grid-cols-5 h-[56px]">
+        {BOTTOM_TABS.map(({ id, label, icon: Icon }) => {
+          const isMore = id === "__more";
+          const active = isMore ? moreSheet : view === id;
+          return (
+            <button
+              key={id}
+              onClick={() => {
+                if (isMore) { setMoreSheet((o) => !o); }
+                else { setView(id); setMoreSheet(false); }
+              }}
+              className="flex flex-col items-center justify-center gap-[3px] transition-colors"
+              style={{ background: "none", border: "none", cursor: "pointer" }}
+            >
+              <Icon
+                size={20}
+                style={{ color: active ? C.red : C.muted, transition: "color 0.15s" }}
+                strokeWidth={active ? 2.2 : 1.8}
+              />
+              <span style={{ fontSize: "9px", color: active ? C.red : C.muted, fontWeight: active ? 600 : 400, letterSpacing: "0.01em", transition: "color 0.15s" }}>
+                {label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+function SheetItem({ icon: Icon, label, onClick, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors"
+      style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+      onTouchStart={(e) => { e.currentTarget.style.background = C.surface; }}
+      onTouchEnd={(e) => { e.currentTarget.style.background = "none"; }}
+    >
+      <Icon size={17} style={{ color: danger ? "#B91C1C" : C.secondary, flexShrink: 0 }} />
+      <span style={{ fontSize: "15px", color: danger ? "#B91C1C" : C.primary }}>{label}</span>
+    </button>
   );
 }
