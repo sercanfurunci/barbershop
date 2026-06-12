@@ -36,7 +36,8 @@ export default function BarberLoginPage() {
 
   useEffect(() => {
     if (!loaded) return;
-    if (role === "admin") router.replace("/admin");
+    if (role === "superadmin") router.replace("/superadmin");
+    else if (role === "admin") router.replace("/admin");
     else if (role) router.replace(`/barber/${role}`);
   }, [role, loaded, router]);
 
@@ -65,7 +66,8 @@ export default function BarberLoginPage() {
     try {
       const email = selected.type === "admin" ? "admin@makas.com" : `${selected.slug}@makas.com`;
       const user = await login(email, password);
-      if (user?.role === "ADMIN") router.push("/admin");
+      if (user?.role === "SUPER_ADMIN") router.push("/superadmin");
+      else if (user?.role === "ADMIN") router.push("/admin");
       else if (user?.barber?.slug) router.push(`/barber/${user.barber.slug}`);
     } catch (err) {
       setError(err.message ?? "Şifre yanlış");
