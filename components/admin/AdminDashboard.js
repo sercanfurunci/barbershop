@@ -19,12 +19,13 @@ import AreaChart from "./AreaChart";
 import CalendarView from "./CalendarView";
 import ManualBookingModal from "./ManualBookingModal";
 import SettingsPage from "./SettingsPage";
+import ServicesManagement from "./ServicesManagement";
 import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { barbers, services, clients, workingHours } from "@/lib/data";
+import { barbers, clients, workingHours } from "@/lib/data";
 import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 
@@ -251,7 +252,7 @@ export default function AdminDashboard() {
                 {tab === "appointments"  && <AppointmentsPage tx={tx} barberId={globalBarberId} />}
                 {tab === "barbers"       && <BarbersPage tx={tx} />}
                 {tab === "customers"     && <CustomersPage barberId={globalBarberId} />}
-                {tab === "services-mgmt" && <ServicesMgmtPage />}
+                {tab === "services-mgmt" && <ServicesManagement />}
                 {tab === "revenue"       && <RevenuePage tx={tx} barberId={globalBarberId} />}
                 {tab === "settings"      && <SettingsPage />}
                 {tab === "barber-ops"    && <BarberOpsPage barberId={globalBarberId} />}
@@ -1532,85 +1533,6 @@ function CustomersPage({ barberId }) {
               <span style={{ fontSize: "11px", color: C.muted }}>{c.lastVisit}</span>
               {c.noShows > 0 && <span style={{ fontSize: "11px", color: "#B91C1C" }}>{c.noShows} no-show</span>}
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Services Management Page ────────────────────────────────────────────── */
-function ServicesMgmtPage() {
-  const CATEGORY_LABELS = {
-    cuts: "Kesim", beard: "Sakal", combo: "Kombo", premium: "Premium",
-  };
-  const CATEGORY_COLORS = {
-    cuts: "#2563EB", beard: "#B45309", combo: "#B91C1C", premium: "#6D28D9",
-  };
-
-  return (
-    <div>
-      <div style={{ marginBottom: "16px" }}>
-        <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>Hizmetler</h1>
-        <p style={{ fontSize: "12px", color: C.secondary, marginTop: "2px" }}>{services.length} hizmet</p>
-      </div>
-      {/* Desktop table */}
-      <div className="hidden md:block" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-              {["Hizmet", "Kategori", "Süre", "Fiyat"].map(h => (
-                <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: C.muted, fontWeight: 400 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {services.map((s, i) => (
-              <tr key={s.id} style={{ borderBottom: i < services.length - 1 ? `1px solid ${C.border}` : "none" }}
-                onMouseEnter={e => e.currentTarget.style.background = C.surface + "80"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-              >
-                <td style={{ padding: "12px 16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "16px" }}>{s.icon}</span>
-                    <div>
-                      <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{s.name.tr}</div>
-                      {s.popular && <span style={{ fontSize: "9px", color: "#C62828", letterSpacing: "0.06em" }}>POPÜLER</span>}
-                    </div>
-                  </div>
-                </td>
-                <td style={{ padding: "12px 16px" }}>
-                  <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "4px", background: `${CATEGORY_COLORS[s.category]}18`, color: CATEGORY_COLORS[s.category], border: `1px solid ${CATEGORY_COLORS[s.category]}30` }}>
-                    {CATEGORY_LABELS[s.category]}
-                  </span>
-                </td>
-                <td style={{ padding: "12px 16px" }}><span style={{ fontSize: "12px", color: C.secondary }}>{s.duration} dk</span></td>
-                <td style={{ padding: "12px 16px" }}><span style={{ fontSize: "15px", color: C.primary, fontWeight: 600, letterSpacing: "-0.01em" }}>₺{s.price.toLocaleString()}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {/* Mobile card list */}
-      <div className="md:hidden" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-        {services.map((s, i) => (
-          <div key={s.id} style={{ padding: "14px 16px", borderBottom: i < services.length - 1 ? `1px solid ${C.border}` : "none", display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ width: "40px", height: "40px", background: C.surface, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>
-              {s.icon}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
-                <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{s.name.tr}</div>
-                {s.popular && <span style={{ fontSize: "8px", color: C.red, letterSpacing: "0.06em", fontWeight: 600 }}>POPÜLER</span>}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "4px", background: `${CATEGORY_COLORS[s.category]}18`, color: CATEGORY_COLORS[s.category] }}>
-                  {CATEGORY_LABELS[s.category]}
-                </span>
-                <span style={{ fontSize: "11px", color: C.muted }}>{s.duration} dk</span>
-              </div>
-            </div>
-            <div style={{ fontSize: "16px", color: C.primary, fontWeight: 600, flexShrink: 0 }}>₺{s.price.toLocaleString()}</div>
           </div>
         ))}
       </div>

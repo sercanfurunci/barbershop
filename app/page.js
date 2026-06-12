@@ -8,7 +8,7 @@ import Barbers from "@/components/landing/Barbers";
 import Testimonials from "@/components/landing/Testimonials";
 import CTA from "@/components/landing/CTA";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const shopId = await getDefaultShopId();

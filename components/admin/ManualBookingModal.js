@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { barbers, services } from "@/lib/data";
 import { todayStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import { X, Check, Phone, User, Calendar, Clock } from "lucide-react";
@@ -71,6 +70,13 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
   });
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [services, setServices] = useState([]);
+  const [barbers, setBarbers] = useState([]);
+
+  useEffect(() => {
+    fetch("/api/services").then(r => r.json()).then(data => setServices(Array.isArray(data) ? data : [])).catch(() => {});
+    fetch("/api/admin/barbers").then(r => r.json()).then(data => setBarbers(Array.isArray(data) ? data : [])).catch(() => {});
+  }, []);
 
   const selectedService = services.find((s) => s.id === form.serviceId);
   const selectedBarber = barbers.find((b) => b.id === form.barberId);
@@ -91,9 +97,9 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
       client: form.client.trim(),
       phone: form.phone.trim(),
       serviceId: form.serviceId,
-      service: selectedService?.name.tr ?? form.serviceId,
+      service: selectedService?.nameTr ?? form.serviceId,
       barberId: form.barberId,
-      barber: selectedBarber?.name ?? form.barberId,
+      barber: selectedBarber?.nameTr ?? form.barberId,
       date: form.date,
       time: form.time,
       duration: selectedService?.duration ?? 45,
@@ -227,7 +233,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                     <option value="">Hizmet Seçin</option>
                     {services.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name.tr} — ₺{s.price.toLocaleString()} ({s.duration}dk)
+                        {s.nameTr} — ₺{s.price.toLocaleString()} ({s.duration}dk)
                       </option>
                     ))}
                   </select>
@@ -243,7 +249,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                     <option value="">Berber Seçin</option>
                     {barbers.map((b) => (
                       <option key={b.id} value={b.id}>
-                        {b.name}{!b.available ? " (İzinli)" : ""}
+                        {b.nameTr}{!b.available ? " (İzinli)" : ""}
                       </option>
                     ))}
                   </select>
@@ -299,7 +305,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                     }}
                   >
                     <div style={{ fontSize: "12px", color: C.secondary }}>
-                      {selectedService.name.tr} · {selectedService.duration}dk
+                      {selectedService.nameTr} · {selectedService.duration}dk
                     </div>
                     <div style={{ fontSize: "16px", color: C.primary, fontWeight: 600 }}>
                       ₺{selectedService.price.toLocaleString()}

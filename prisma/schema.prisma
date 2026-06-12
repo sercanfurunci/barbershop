@@ -155,9 +155,11 @@ model Service {
   duration     Int
   price        Int
   icon         String          @default("✂️")
+  image        String?
   category     ServiceCategory
   popular      Boolean         @default(false)
   active       Boolean         @default(true)
+  sortOrder    Int             @default(0)
   appointments Appointment[]
   barbers      BarberService[]
   createdAt    DateTime        @default(now())
