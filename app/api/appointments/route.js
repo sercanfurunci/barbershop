@@ -91,12 +91,21 @@ export async function POST(request) {
       return NextResponse.json({ error: "Bu saat dilimi dolu" }, { status: 409 });
     }
 
-    // Upsert client by (shopId, phone) — clients are scoped per shop
-    const client = await prisma.client.upsert({
+    // Find-or-create client — upsert avoided because PrismaNeonHttp (HTTP mode)
+    // does not support implicit transactions that Prisma uses for upsert.
+    let client = await prisma.client.findUnique({
       where: { shopId_phone: { shopId, phone } },
-      update: { name, ...(email && { email }) },
-      create: { shopId, name, phone, email: email ?? null },
     });
+    if (client) {
+      client = await prisma.client.update({
+        where: { id: client.id },
+        data: { name, ...(email && { email }) },
+      });
+    } else {
+      client = await prisma.client.create({
+        data: { shopId, name, phone, email: email ?? null },
+      });
+    }
 
     const appointment = await prisma.appointment.create({
       data: {

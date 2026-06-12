@@ -68,11 +68,10 @@ export async function PATCH(request) {
     }
   }
 
-  const wh = await prisma.workingHours.upsert({
-    where: { barberId },
-    update: data,
-    create: { barberId, ...data },
-  });
+  const existing = await prisma.workingHours.findUnique({ where: { barberId } });
+  const wh = existing
+    ? await prisma.workingHours.update({ where: { barberId }, data })
+    : await prisma.workingHours.create({ data: { barberId, ...data } });
 
   return NextResponse.json(wh);
 }
