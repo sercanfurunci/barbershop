@@ -3,25 +3,25 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { services, barbers } from "@/lib/data";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { Check, Star, ChevronRight, Clock } from "lucide-react";
 
 const C = {
-  bg:       "#070707",
-  card:     "#0f0f14",
-  cardHi:   "#141419",
-  border:   "rgba(255,255,255,0.07)",
-  borderHi: "rgba(255,255,255,0.12)",
-  surface:  "#16161e",
-  primary:  "#F0EDE8",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#F6F3EE",
+  card:     "#FFFFFF",
+  cardHi:   "#FAFAF8",
+  border:   "#E5DFD6",
+  borderHi: "#D4CECC",
+  surface:  "#EFEAE2",
+  primary:  "#111111",
+  secondary:"#44403C",
+  muted:    "#6B7280",
+  dim:      "#D4CECC",
+  red:      "#C62828",
 };
 
-function StatusCard({ lang }) {
+function StatusCard({ lang, barbers }) {
   return (
     <div style={{
       background: C.card,
@@ -36,8 +36,8 @@ function StatusCard({ lang }) {
       {/* Row 1: Open status + hours */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px rgba(34,197,94,0.5)", flexShrink: 0 }} />
-          <span style={{ fontSize: "12px", color: "#22c55e", fontWeight: 600, letterSpacing: "0.03em" }}>
+          <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#16a34a", boxShadow: "0 0 6px rgba(22,163,74,0.3)", flexShrink: 0 }} />
+          <span style={{ fontSize: "12px", color: "#16a34a", fontWeight: 600, letterSpacing: "0.03em" }}>
             {lang === "tr" ? "Şu an açık" : "Open now"}
           </span>
         </div>
@@ -56,7 +56,7 @@ function StatusCard({ lang }) {
           {barbers.map((b, i) => (
             <div key={b.id} style={{
               width: "26px", height: "26px", borderRadius: "50%",
-              background: `linear-gradient(135deg, ${C.red}, #9a1212)`,
+              background: `linear-gradient(135deg, ${C.red}, #7f1d1d)`,
               border: `2px solid ${C.bg}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "8px", fontWeight: 700, color: "#fff",
@@ -68,7 +68,7 @@ function StatusCard({ lang }) {
           ))}
         </div>
         <span style={{ fontSize: "12px", color: C.secondary }}>
-          {lang === "tr" ? "4 berber müsait" : "4 barbers available"}
+          {lang === "tr" ? `${barbers.length} berber müsait` : `${barbers.length} barbers available`}
         </span>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px" }}>
           <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: C.red, flexShrink: 0 }} />
@@ -81,7 +81,7 @@ function StatusCard({ lang }) {
   );
 }
 
-function BookingWidget({ lang, tx }) {
+function BookingWidget({ lang, tx, services, barbers }) {
   const [selectedService, setSelectedService] = useState(null);
   const [selectedBarber, setSelectedBarber]   = useState(null);
   const [dateLabels, setDateLabels] = useState(["Bugün", "Yarın", "---"]);
@@ -101,13 +101,13 @@ function BookingWidget({ lang, tx }) {
       border: `1px solid ${C.borderHi}`,
       borderRadius: "16px",
       overflow: "hidden",
-      boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)",
+      boxShadow: "0 8px 40px rgba(17,17,17,0.08)",
     }}>
       {/* Widget header */}
       <div style={{
         padding: "16px 20px",
         borderBottom: `1px solid ${C.border}`,
-        background: "rgba(255,255,255,0.025)",
+        background: C.surface,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -127,7 +127,7 @@ function BookingWidget({ lang, tx }) {
         {/* Step 1: Service */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-            <div style={{ width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center", background: selectedService ? C.red : C.muted, borderRadius: "50%", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+            <div style={{ width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center", background: selectedService ? C.red : C.dim, borderRadius: "50%", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
               {selectedService ? <Check size={9} /> : "1"}
             </div>
             <span style={{ fontSize: "10px", fontWeight: 600, color: selectedService ? C.primary : C.secondary, letterSpacing: "0.1em", textTransform: "uppercase" }}>
@@ -156,7 +156,7 @@ function BookingWidget({ lang, tx }) {
         {/* Step 2: Barber */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-            <div style={{ width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center", background: selectedBarber ? C.red : C.muted, borderRadius: "50%", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+            <div style={{ width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center", background: selectedBarber ? C.red : C.dim, borderRadius: "50%", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
               {selectedBarber ? <Check size={9} /> : "2"}
             </div>
             <span style={{ fontSize: "10px", fontWeight: 600, color: selectedBarber ? C.primary : C.secondary, letterSpacing: "0.1em", textTransform: "uppercase" }}>
@@ -171,8 +171,9 @@ function BookingWidget({ lang, tx }) {
                 title={b.name}>
                 <div style={{
                   width: "38px", height: "38px", borderRadius: "10px",
-                  background: selectedBarber === b.id ? C.red : C.surface,
-                  fontSize: "10px", fontWeight: 700, color: "#fff",
+                  background: selectedBarber === b.id ? C.red : C.border,
+                  fontSize: "10px", fontWeight: 700,
+                  color: selectedBarber === b.id ? "#fff" : C.secondary,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   border: `2px solid ${selectedBarber === b.id ? C.red : "transparent"}`,
                   letterSpacing: "0.03em", transition: "all 0.15s",
@@ -189,8 +190,8 @@ function BookingWidget({ lang, tx }) {
               style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", cursor: "pointer", background: "none", border: "none" }}>
               <div style={{
                 width: "38px", height: "38px", borderRadius: "10px",
-                background: selectedBarber === "any" ? C.red : C.surface,
-                border: `2px solid ${selectedBarber === "any" ? C.red : C.border}`,
+                background: selectedBarber === "any" ? C.red : C.border,
+                border: `2px solid ${selectedBarber === "any" ? C.red : "transparent"}`,
                 fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s",
               }}>✦</div>
               <span style={{ fontSize: "9px", color: selectedBarber === "any" ? C.red : C.muted, letterSpacing: "0.03em" }}>
@@ -205,7 +206,7 @@ function BookingWidget({ lang, tx }) {
         {/* Step 3: Date */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-            <div style={{ width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center", background: C.muted, borderRadius: "50%", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>3</div>
+            <div style={{ width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center", background: C.dim, borderRadius: "50%", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>3</div>
             <span style={{ fontSize: "10px", fontWeight: 600, color: C.secondary, letterSpacing: "0.1em", textTransform: "uppercase" }}>
               {lang === "tr" ? "Tarih & Saat" : "Date & Time"}
             </span>
@@ -230,10 +231,10 @@ function BookingWidget({ lang, tx }) {
           display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
           background: C.red, color: "#fff", padding: "15px 24px", borderRadius: "9px",
           fontSize: "14px", fontWeight: 700, letterSpacing: "0.04em", textDecoration: "none",
-          boxShadow: `0 8px 24px rgba(204,26,26,0.35)`, transition: "all 0.2s",
+          boxShadow: `0 8px 24px rgba(198,40,40,0.3)`, transition: "all 0.2s",
         }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#e02020"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(204,26,26,0.5)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = C.red; e.currentTarget.style.boxShadow = "0 8px 24px rgba(204,26,26,0.35)"; }}
+          onMouseEnter={e => { e.currentTarget.style.background = "#B91C1C"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(198,40,40,0.4)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = C.red; e.currentTarget.style.boxShadow = "0 8px 24px rgba(198,40,40,0.3)"; }}
         >
           {lang === "tr" ? "Randevu Al" : "Book Now"}
           <ChevronRight size={15} />
@@ -247,22 +248,22 @@ function BookingWidget({ lang, tx }) {
   );
 }
 
-export default function Hero() {
+export default function Hero({ services = [], barbers = [] }) {
   const { lang } = useLang();
   const tx = useT(lang);
 
   const TRUST = lang === "tr"
     ? [
         { value: "4.9", label: "Ortalama Puan", icon: "★" },
-        { value: "3.200+", label: "Mutlu Müşteri", icon: null },
+        { value: "176", label: "Google Yorumu", icon: null },
         { value: "12+", label: "Yıllık Deneyim", icon: null },
-        { value: "4", label: "Usta Berber", icon: null },
+        { value: String(barbers.length), label: "Usta Berber", icon: null },
       ]
     : [
         { value: "4.9", label: "Avg. Rating", icon: "★" },
-        { value: "3,200+", label: "Happy Clients", icon: null },
+        { value: "176", label: "Google Reviews", icon: null },
         { value: "12+", label: "Years Exp.", icon: null },
-        { value: "4", label: "Master Barbers", icon: null },
+        { value: String(barbers.length), label: "Master Barbers", icon: null },
       ];
 
   return (
@@ -270,7 +271,7 @@ export default function Hero() {
 
       {/* Background gradient */}
       <div className="absolute inset-0 pointer-events-none" style={{
-        background: "radial-gradient(ellipse 70% 60% at 0% 50%, rgba(204,26,26,0.06) 0%, transparent 60%), radial-gradient(ellipse 50% 80% at 100% 20%, rgba(180,120,60,0.04) 0%, transparent 60%)",
+        background: "radial-gradient(ellipse 60% 70% at 100% 0%, #EDE8E0 0%, transparent 55%), radial-gradient(ellipse 40% 50% at 0% 100%, rgba(198,40,40,0.04) 0%, transparent 50%)",
       }} />
 
       <div className="relative z-10 flex-1 flex items-start lg:items-center">
@@ -292,7 +293,7 @@ export default function Hero() {
                   {[1,2,3,4,5].map(i => <Star key={i} size={10} fill={C.red} style={{ color: C.red }} />)}
                 </div>
                 <span style={{ fontSize: "11px", color: C.secondary, letterSpacing: "0.04em" }}>
-                  4.9 · 400+ {lang === "tr" ? "değerlendirme" : "reviews"}
+                  4.9 · 176 {lang === "tr" ? "değerlendirme" : "reviews"}
                 </span>
                 <span style={{ width: "1px", height: "12px", background: C.border, display: "inline-block" }} />
                 <span style={{ fontSize: "10px", color: C.red, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600 }}>
@@ -344,7 +345,7 @@ export default function Hero() {
                   background: C.red, color: "#fff", padding: "13px 28px", borderRadius: "8px",
                   fontSize: "14px", fontWeight: 600, letterSpacing: "0.02em", whiteSpace: "nowrap", textDecoration: "none",
                 }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#e02020"}
+                  onMouseEnter={e => e.currentTarget.style.background = "#B91C1C"}
                   onMouseLeave={e => e.currentTarget.style.background = C.red}
                 >
                   {lang === "tr" ? "Randevu Al" : "Book Now"}
@@ -356,7 +357,7 @@ export default function Hero() {
                   fontSize: "14px", fontWeight: 500, letterSpacing: "0.02em",
                   border: `1px solid ${C.border}`, whiteSpace: "nowrap", textDecoration: "none", transition: "all 0.2s",
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
+                  onMouseEnter={e => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = C.primary; }}
                   onMouseLeave={e => { e.currentTarget.style.color = C.secondary; e.currentTarget.style.borderColor = C.border; }}
                 >
                   {lang === "tr" ? "Hizmetleri Gör" : "View Services"}
@@ -413,8 +414,8 @@ export default function Hero() {
               className="lg:col-span-7 xl:col-span-7 flex items-center justify-center lg:justify-end"
             >
               <div style={{ width: "100%", maxWidth: "520px" }}>
-                <StatusCard lang={lang} />
-                <BookingWidget lang={lang} tx={tx} />
+                <StatusCard lang={lang} barbers={barbers} />
+                <BookingWidget lang={lang} tx={tx} services={services} barbers={barbers} />
               </div>
             </motion.div>
 

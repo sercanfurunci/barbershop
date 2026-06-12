@@ -63,7 +63,7 @@ export default function StatsCards() {
 
             {/* Icon */}
             <div className={`w-9 h-9 flex items-center justify-center mb-4 ${i === 0 ? "bg-[#CC1A1A]" : "bg-[#1a1a1a] border border-[#242424]"}`}>
-              <Icon size={15} className={i === 0 ? "text-white" : "text-[#6B6660]"} />
+              <Icon size={15} className={i === 0 ? "text-white" : "text-[#A39E96]"} />
             </div>
 
             {/* Value */}
@@ -72,7 +72,7 @@ export default function StatsCards() {
             </div>
 
             {/* Label */}
-            <div className="text-xs text-[#6B6660] tracking-wider mb-3">{card.label}</div>
+            <div className="text-xs text-[#A39E96] tracking-wider mb-3">{card.label}</div>
 
             {/* Change indicator */}
             <div className={`flex items-center gap-1 text-xs ${isPositive ? "text-emerald-400" : "text-red-400"}`}>

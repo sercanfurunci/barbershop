@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { barbers, workingHours, breaks } from "@/lib/data";
+import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import ManualBookingModal from "./ManualBookingModal";
 import {
@@ -11,14 +12,14 @@ import {
 } from "lucide-react";
 
 const C = {
-  bg:       "#0b0b0f",
-  card:     "#111118",
-  border:   "rgba(255,255,255,0.06)",
-  surface:  "#16161e",
-  primary:  "#f1f0ed",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#F8F6F2",
+  card:     "#FFFFFF",
+  border:   "rgba(17,17,17,0.08)",
+  surface:  "#F1EEE8",
+  primary:  "#111111",
+  secondary:"#57514B",
+  muted:    "#6E6760",
+  red:      "#C62828",
 };
 
 const SLOT_H    = 48;
@@ -30,11 +31,11 @@ const TIME_COL_W  = 52;
 const COL_MIN_W   = 172;
 
 const SC = {
-  pending:       { label: "Bekleniyor",  short: "Bkl",  color: "#f59e0b", bg: "rgba(245,158,11,0.15)",  icon: Timer        },
-  confirmed:     { label: "Onaylandı",   short: "Ona",  color: "#22c55e", bg: "rgba(34,197,94,0.15)",   icon: CheckCircle2 },
-  "in-progress": { label: "Devam Ediyor",short: "Dev",  color: "#60a5fa", bg: "rgba(96,165,250,0.15)",  icon: Clock        },
-  completed:     { label: "Tamamlandı",  short: "Tam",  color: "#6b6870", bg: "rgba(107,104,112,0.15)", icon: Check        },
-  noshow:        { label: "Gelmedi",     short: "Gel",  color: "#CC1A1A", bg: "rgba(204,26,26,0.15)",   icon: AlertCircle  },
+  pending:       { label: "Bekleniyor",  short: "Bkl",  color: "#B45309", bg: "rgba(245,158,11,0.15)",  icon: Timer        },
+  confirmed:     { label: "Onaylandı",   short: "Ona",  color: "#15803D", bg: "rgba(34,197,94,0.15)",   icon: CheckCircle2 },
+  "in-progress": { label: "Devam Ediyor",short: "Dev",  color: "#2563EB", bg: "rgba(96,165,250,0.15)",  icon: Clock        },
+  completed:     { label: "Tamamlandı",  short: "Tam",  color: "#57514B", bg: "rgba(107,104,112,0.15)", icon: Check        },
+  noshow:        { label: "Gelmedi",     short: "Gel",  color: "#C62828", bg: "rgba(198,40,40,0.15)",   icon: AlertCircle  },
   cancelled:     { label: "İptal",       short: "İpt",  color: "#52525b", bg: "rgba(82,82,91,0.15)",    icon: Ban          },
 };
 
@@ -46,11 +47,11 @@ function timeToMin(t) {
 function addDays(dateStr, n) {
   const d = new Date(dateStr + "T12:00:00");
   d.setDate(d.getDate() + n);
-  return d.toISOString().split("T")[0];
+  return toDateStr(d);
 }
 
 function isToday(dateStr) {
-  return dateStr === new Date().toISOString().split("T")[0];
+  return dateStr === todayStr();
 }
 
 function fmtCurrency(v) {
@@ -83,7 +84,6 @@ function AppointmentBlock({ appt, onStatusChange }) {
           right:  "3px",
           background: C.card,
           border:     `1px solid ${sc.color}45`,
-          borderLeft: `3px solid ${sc.color}`,
           borderRadius: "6px",
           overflow: "hidden",
           cursor: "pointer",
@@ -148,13 +148,13 @@ function AppointmentBlock({ appt, onStatusChange }) {
                 position: "fixed", top: "50%", left: "50%",
                 transform: "translate(-50%, -50%)",
                 zIndex: 300,
-                background: "#15151d",
+                background: "#FFFFFF",
                 border: `1px solid ${C.border}`,
                 borderTop: `2px solid ${sc.color}`,
                 borderRadius: "12px",
                 padding: "18px 20px",
                 width: "300px",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.7)",
+                boxShadow: "0 20px 60px rgba(17,17,17,0.18)",
               }}
             >
               {/* Header */}
@@ -233,8 +233,8 @@ function BreakBlock({ brk }) {
         position: "absolute",
         top: `${topOffset}px`, height: `${heightPx}px`,
         left: "3px", right: "3px",
-        background: "repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0, rgba(255,255,255,0.015) 2px, transparent 2px, transparent 8px)",
-        border: `1px dashed rgba(255,255,255,0.08)`,
+        background: "repeating-linear-gradient(45deg, rgba(17,17,17,0.02) 0, rgba(17,17,17,0.02) 2px, transparent 2px, transparent 8px)",
+        border: `1px dashed rgba(17,17,17,0.12)`,
         borderRadius: "5px",
         display: "flex", alignItems: "center", justifyContent: "center",
         zIndex: 5, pointerEvents: "none",
@@ -266,8 +266,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
         animate={{ opacity: 1, y: 0 }}
         onClick={() => setSelectedAppt(appt)}
         style={{
-          background: C.card, border: `1px solid ${C.border}`,
-          borderLeft: `3px solid ${sc.color}`,
+          background: C.card, border: `1px solid ${sc.color}40`,
           borderRadius: "10px", padding: "12px 14px",
           cursor: "pointer", marginBottom: "8px",
         }}
@@ -326,7 +325,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
             <ChevronRight size={15} />
           </button>
           {!isToday(date) && (
-            <button onClick={() => setDate(new Date().toISOString().split("T")[0])} style={{ height: "32px", padding: "0 10px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "11px", color: C.secondary, cursor: "pointer", flexShrink: 0 }}>
+            <button onClick={() => setDate(todayStr())} style={{ height: "32px", padding: "0 10px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "11px", color: C.secondary, cursor: "pointer", flexShrink: 0 }}>
               Bugün
             </button>
           )}
@@ -339,8 +338,8 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
         <div style={{ display: "flex", gap: "6px", marginTop: "10px" }}>
           {[
             { label: "Toplam", val: totalToday, color: C.secondary },
-            { label: "Onaylı", val: confirmedCnt, color: "#22c55e" },
-            { label: "Bekliyor", val: pendingCnt, color: "#f59e0b" },
+            { label: "Onaylı", val: confirmedCnt, color: "#15803D" },
+            { label: "Bekliyor", val: pendingCnt, color: "#B45309" },
             { label: "Kasa", val: `₺${todayRevenue.toLocaleString()}`, color: C.primary },
           ].map(s => (
             <div key={s.label} style={{ flex: 1, background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "6px 8px", textAlign: "center" }}>
@@ -354,7 +353,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
       {/* Barber filter chips */}
       <div style={{ flexShrink: 0, background: C.card, borderBottom: `1px solid ${C.border}`, padding: "8px 16px", display: "flex", gap: "6px", overflowX: "auto", scrollbarWidth: "none" }}>
         {[{ id: "all", label: "Tümü" }, ...barbers.map(b => ({ id: b.id, label: b.name.split(" ")[0] }))].map(b => (
-          <button key={b.id} onClick={() => setActiveBarber(b.id)} style={{ height: "26px", padding: "0 12px", borderRadius: "13px", background: activeBarber === b.id ? "rgba(204,26,26,0.12)" : "none", border: `1px solid ${activeBarber === b.id ? "rgba(204,26,26,0.4)" : C.border}`, fontSize: "11px", color: activeBarber === b.id ? C.red : C.secondary, cursor: "pointer", fontWeight: activeBarber === b.id ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0 }}>
+          <button key={b.id} onClick={() => setActiveBarber(b.id)} style={{ height: "26px", padding: "0 12px", borderRadius: "13px", background: activeBarber === b.id ? "rgba(198,40,40,0.12)" : "none", border: `1px solid ${activeBarber === b.id ? "rgba(198,40,40,0.4)" : C.border}`, fontSize: "11px", color: activeBarber === b.id ? C.red : C.secondary, cursor: "pointer", fontWeight: activeBarber === b.id ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0 }}>
             {b.label}
           </button>
         ))}
@@ -398,13 +397,13 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
           const sc = SC[appt.status] ?? SC.pending;
           return (
             <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAppt(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200 }} />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAppt(null)} style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.35)", zIndex: 200 }} />
               <motion.div
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 300, background: "#15151d", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))" }}
+                style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 300, background: "#FFFFFF", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))" }}
               >
                 {/* Handle */}
                 <div style={{ width: "36px", height: "3px", background: C.border, borderRadius: "2px", margin: "0 auto 16px" }} />
@@ -453,7 +452,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function CalendarView() {
   const { appointments, updateStatus } = useAppointments();
-  const [date, setDate]             = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate]             = useState(todayStr());
   const [showModal, setShowModal]   = useState(false);
   const [modalBarberId, setModalBarberId] = useState("");
   const [statusFilter, setStatusFilter]   = useState("all");
@@ -559,7 +558,7 @@ export default function CalendarView() {
             </button>
             {!isToday(date) && (
               <button
-                onClick={() => setDate(new Date().toISOString().split("T")[0])}
+                onClick={() => setDate(todayStr())}
                 style={{ height: "28px", padding: "0 10px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "6px", fontSize: "11px", color: C.secondary, cursor: "pointer" }}
               >
                 Bugün
@@ -571,8 +570,8 @@ export default function CalendarView() {
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "8px" }}>
             {[
               { label: `${totalToday} randevu`,          color: C.secondary },
-              { label: `${confirmedCnt} onaylı`,         color: "#22c55e"   },
-              { label: `${pendingCnt} bekliyor`,         color: "#f59e0b"   },
+              { label: `${confirmedCnt} onaylı`,         color: "#15803D"   },
+              { label: `${pendingCnt} bekliyor`,         color: "#B45309"   },
               { label: fmtCurrency(todayRevenue) + " kasa", color: C.primary },
             ].map((s, i) => (
               <span
@@ -591,8 +590,8 @@ export default function CalendarView() {
             onClick={() => setListOpen(v => !v)}
             style={{
               height: "28px", padding: "0 10px",
-              background: listOpen ? "rgba(204,26,26,0.1)" : C.surface,
-              border: `1px solid ${listOpen ? "rgba(204,26,26,0.3)" : C.border}`,
+              background: listOpen ? "rgba(198,40,40,0.1)" : C.surface,
+              border: `1px solid ${listOpen ? "rgba(198,40,40,0.3)" : C.border}`,
               borderRadius: "6px", fontSize: "11px",
               color: listOpen ? C.red : C.secondary, cursor: "pointer",
               display: "flex", alignItems: "center", gap: "5px",
@@ -627,8 +626,8 @@ export default function CalendarView() {
                 onClick={() => setActiveBarber(b.id)}
                 style={{
                   height: "24px", padding: "0 10px", borderRadius: "20px",
-                  background: activeBarber === b.id ? "rgba(204,26,26,0.12)" : "none",
-                  border: `1px solid ${activeBarber === b.id ? "rgba(204,26,26,0.35)" : C.border}`,
+                  background: activeBarber === b.id ? "rgba(198,40,40,0.12)" : "none",
+                  border: `1px solid ${activeBarber === b.id ? "rgba(198,40,40,0.35)" : C.border}`,
                   fontSize: "11px", color: activeBarber === b.id ? C.red : C.secondary,
                   cursor: "pointer", fontWeight: activeBarber === b.id ? 600 : 400,
                   whiteSpace: "nowrap",
@@ -707,8 +706,8 @@ export default function CalendarView() {
                         {bAppts.length > 0 && (
                           <>
                             <span style={{ fontSize: "9px", color: C.muted }}>·</span>
-                            <span style={{ fontSize: "9px", color: "#22c55e" }}>{bConfirmed} ona</span>
-                            {bPending > 0 && <span style={{ fontSize: "9px", color: "#f59e0b" }}>{bPending} bkl</span>}
+                            <span style={{ fontSize: "9px", color: "#15803D" }}>{bConfirmed} ona</span>
+                            {bPending > 0 && <span style={{ fontSize: "9px", color: "#B45309" }}>{bPending} bkl</span>}
                             {bRevenue > 0 && <span style={{ fontSize: "9px", color: C.secondary }}>{fmtCurrency(bRevenue)}</span>}
                           </>
                         )}
@@ -717,7 +716,7 @@ export default function CalendarView() {
                   </div>
                   <button
                     onClick={() => openModal(barber.id)}
-                    style={{ width: "22px", height: "22px", background: "rgba(204,26,26,0.08)", border: "1px solid rgba(204,26,26,0.18)", borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.red, flexShrink: 0 }}
+                    style={{ width: "22px", height: "22px", background: "rgba(198,40,40,0.08)", border: "1px solid rgba(198,40,40,0.18)", borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.red, flexShrink: 0 }}
                   >
                     <Plus size={11} />
                   </button>
@@ -755,15 +754,15 @@ export default function CalendarView() {
                   >
                     {/* Slot lines */}
                     {Array.from({ length: TOTAL_SLOTS }).map((_, i) => (
-                      <div key={i} style={{ position: "absolute", top: `${i * SLOT_H}px`, left: 0, right: 0, height: "1px", background: i % 2 === 0 ? C.border : "rgba(255,255,255,0.02)" }} />
+                      <div key={i} style={{ position: "absolute", top: `${i * SLOT_H}px`, left: 0, right: 0, height: "1px", background: i % 2 === 0 ? C.border : "rgba(17,17,17,0.03)" }} />
                     ))}
 
                     {/* Off-hours */}
                     {offBeforeH > 0 && (
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: `${offBeforeH}px`, background: "rgba(0,0,0,0.3)", zIndex: 2, pointerEvents: "none" }} />
+                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: `${offBeforeH}px`, background: "rgba(17,17,17,0.05)", zIndex: 2, pointerEvents: "none" }} />
                     )}
                     {offAfterH > 0 && (
-                      <div style={{ position: "absolute", top: `${offAfterTop}px`, left: 0, right: 0, height: `${offAfterH}px`, background: "rgba(0,0,0,0.3)", zIndex: 2, pointerEvents: "none" }} />
+                      <div style={{ position: "absolute", top: `${offAfterTop}px`, left: 0, right: 0, height: `${offAfterH}px`, background: "rgba(17,17,17,0.05)", zIndex: 2, pointerEvents: "none" }} />
                     )}
 
                     {barberBreaks.map((brk, i) => <BreakBlock key={i} brk={brk} />)}

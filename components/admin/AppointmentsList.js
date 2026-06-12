@@ -11,23 +11,23 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 
 const C = {
-  card:      "#111118",
-  border:    "rgba(255,255,255,0.06)",
-  surface:   "#16161e",
-  primary:   "#f1f0ed",
-  secondary: "#6b6870",
-  muted:     "#2e2d35",
-  red:       "#CC1A1A",
+  card:      "#FFFFFF",
+  border:    "rgba(17,17,17,0.08)",
+  surface:   "#F1EEE8",
+  primary:   "#111111",
+  secondary: "#57514B",
+  muted:     "#6E6760",
+  red:       "#C62828",
 };
 
 function getStatusStyle(status) {
   const map = {
-    confirmed:     { dot: "#3b82f6", bg: "rgba(59,130,246,0.1)",  text: "#60a5fa" },
-    "in-progress": { dot: "#CC1A1A", bg: "rgba(204,26,26,0.12)", text: "#f87171", pulse: true },
-    pending:       { dot: "#f59e0b", bg: "rgba(245,158,11,0.1)",  text: "#fbbf24" },
-    completed:     { dot: "#22c55e", bg: "rgba(34,197,94,0.1)",   text: "#4ade80" },
+    confirmed:     { dot: "#2563EB", bg: "rgba(59,130,246,0.1)",  text: "#2563EB" },
+    "in-progress": { dot: "#C62828", bg: "rgba(198,40,40,0.12)", text: "#B91C1C", pulse: true },
+    pending:       { dot: "#B45309", bg: "rgba(245,158,11,0.1)",  text: "#B45309" },
+    completed:     { dot: "#15803D", bg: "rgba(34,197,94,0.1)",   text: "#15803D" },
     cancelled:     { dot: "#52525b", bg: "rgba(82,82,91,0.15)",   text: "#71717a" },
-    noshow:        { dot: "#CC1A1A", bg: "rgba(204,26,26,0.1)",   text: "#f87171" },
+    noshow:        { dot: "#C62828", bg: "rgba(198,40,40,0.1)",   text: "#B91C1C" },
   };
   return map[status] || map.pending;
 }
@@ -163,7 +163,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                       <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{appt.client}</div>
                       {appt.source === "phone" && (
-                        <span style={{ fontSize: "8px", padding: "1px 4px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#60a5fa", border: "1px solid rgba(96,165,250,0.2)", letterSpacing: "0.05em", fontWeight: 600 }}>TEL</span>
+                        <span style={{ fontSize: "8px", padding: "1px 4px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", letterSpacing: "0.05em", fontWeight: 600 }}>TEL</span>
                       )}
                     </div>
                     <div style={{ fontSize: "11px", color: C.secondary }}>{appt.service}</div>
@@ -238,7 +238,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500, lineHeight: 1.3 }}>{appt.client}</div>
                           {appt.source === "phone" && (
-                            <span style={{ fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#60a5fa", border: "1px solid rgba(96,165,250,0.2)", letterSpacing: "0.06em", fontWeight: 600 }}>
+                            <span style={{ fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", letterSpacing: "0.06em", fontWeight: 600 }}>
                               TEL
                             </span>
                           )}
@@ -277,7 +277,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
-                        style={{ background: "#1a1a22", border: `1px solid ${C.border}`, borderRadius: "8px", minWidth: "160px" }}
+                        style={{ background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "8px", minWidth: "160px" }}
                       >
                         {[
                           { label: "Onaylandı",      action: () => updateStatus(appt.id, "confirmed"),   icon: Eye,    danger: false },
@@ -289,7 +289,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                             key={label}
                             onSelect={action}
                             className="flex items-center gap-2.5 cursor-pointer"
-                            style={{ padding: "7px 12px", fontSize: "12px", color: danger ? "#f87171" : C.secondary, borderRadius: "5px" }}
+                            style={{ padding: "7px 12px", fontSize: "12px", color: danger ? "#B91C1C" : C.secondary, borderRadius: "5px" }}
                           >
                             <Icon size={12} />
                             {label}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { todayStr, nowMinutes } from "@/lib/utils";
 
 const SLOT_INTERVAL = 30; // minutes
 
@@ -35,9 +36,8 @@ function computeSlots(workingHours, breaks, bookedAppointments, date, serviceDur
     blocked.push({ start: s, end: s + appt.duration });
   }
 
-  const now = new Date();
-  const isToday = date === now.toISOString().split("T")[0];
-  const nowMin  = isToday ? now.getHours() * 60 + now.getMinutes() + 60 : 0;
+  const isToday = date === todayStr();
+  const nowMin  = isToday ? nowMinutes() + 60 : 0;
 
   const slots = [];
   for (let t = dayStart; t + serviceDuration <= dayEnd; t += SLOT_INTERVAL) {

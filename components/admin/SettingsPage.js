@@ -3,19 +3,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/lib/api";
+import { todayStr } from "@/lib/utils";
 import { Clock, Calendar, Plus, Trash2, Save, CheckCircle, AlertCircle, ChevronDown } from "lucide-react";
 
 const C = {
-  bg:       "#0b0b0f",
-  card:     "#111118",
-  cardHi:   "#14141c",
-  border:   "rgba(255,255,255,0.06)",
-  borderHi: "rgba(255,255,255,0.12)",
-  surface:  "#16161e",
-  primary:  "#f1f0ed",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#F8F6F2",
+  card:     "#FFFFFF",
+  cardHi:   "#FBF7F0",
+  border:   "rgba(17,17,17,0.08)",
+  borderHi: "rgba(17,17,17,0.18)",
+  surface:  "#F1EEE8",
+  primary:  "#111111",
+  secondary:"#57514B",
+  muted:    "#6E6760",
+  dim:      "#C9C2B7",
+  red:      "#C62828",
 };
 
 const DAYS = [
@@ -72,7 +74,7 @@ export default function SettingsPage() {
               color: activeTab === id ? C.primary : C.secondary,
               fontSize: "13px", fontWeight: activeTab === id ? 500 : 400,
               transition: "all 0.15s",
-              boxShadow: activeTab === id ? "0 1px 4px rgba(0,0,0,0.3)" : "none",
+              boxShadow: activeTab === id ? "0 1px 4px rgba(17,17,17,0.12)" : "none",
             }}
           >
             <Icon size={13} />
@@ -180,7 +182,6 @@ function WorkingHoursTab() {
             className="w-full flex items-center gap-3"
             style={{
               padding: "12px 14px", background: b.id === selectedId ? `${C.red}12` : "transparent",
-              borderLeft: `3px solid ${b.id === selectedId ? C.red : "transparent"}`,
               border: "none", cursor: "pointer", transition: "all 0.15s", textAlign: "left",
             }}
             onMouseEnter={e => { if (b.id !== selectedId) e.currentTarget.style.background = C.surface; }}
@@ -207,12 +208,12 @@ function WorkingHoursTab() {
                 <div style={{ fontSize: "11px", color: C.secondary, marginTop: "1px" }}>Haftalık çalışma saatleri</div>
               </div>
               {toast === "success" && (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-2" style={{ fontSize: "12px", color: "#22c55e" }}>
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-2" style={{ fontSize: "12px", color: "#15803D" }}>
                   <CheckCircle size={14} /> Kaydedildi
                 </motion.div>
               )}
               {toast === "error" && (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-2" style={{ fontSize: "12px", color: "#f87171" }}>
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-2" style={{ fontSize: "12px", color: "#B91C1C" }}>
                   <AlertCircle size={14} /> Hata
                 </motion.div>
               )}
@@ -232,7 +233,7 @@ function WorkingHoursTab() {
                     {/* Toggle */}
                     <button onClick={() => toggleDayOff(d.key)}
                       style={{ width: "38px", height: "20px", borderRadius: "10px", border: "none", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s",
-                        background: isOff ? C.muted : C.red }}
+                        background: isOff ? C.dim : C.red }}
                     >
                       <div style={{ position: "absolute", top: "2px", width: "16px", height: "16px", borderRadius: "50%", background: "#fff", transition: "left 0.2s", left: isOff ? "2px" : "20px" }} />
                     </button>
@@ -260,7 +261,7 @@ function WorkingHoursTab() {
           <button onClick={save} disabled={saving}
             className="flex items-center gap-2"
             style={{
-              background: saving ? C.muted : C.red, color: "#fff", border: "none",
+              background: saving ? C.dim : C.red, color: "#fff", border: "none",
               borderRadius: "8px", padding: "10px 20px", fontSize: "13px",
               fontWeight: 600, cursor: saving ? "not-allowed" : "pointer",
             }}
@@ -346,7 +347,7 @@ function HolidaysTab() {
     return acc;
   }, {});
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
   const upcoming = holidays.filter(h => h.date >= today);
   const past     = holidays.filter(h => h.date < today);
 
@@ -391,7 +392,7 @@ function HolidaysTab() {
 
         <form onSubmit={addHoliday} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {error && (
-            <div style={{ background: "rgba(204,26,26,0.1)", border: "1px solid rgba(204,26,26,0.3)", borderRadius: "6px", padding: "8px 12px", fontSize: "12px", color: C.red }}>
+            <div style={{ background: "rgba(198,40,40,0.1)", border: "1px solid rgba(198,40,40,0.3)", borderRadius: "6px", padding: "8px 12px", fontSize: "12px", color: C.red }}>
               {error}
             </div>
           )}
@@ -427,7 +428,7 @@ function HolidaysTab() {
 
           <button type="submit" disabled={adding || !date}
             className="flex items-center justify-center gap-2 w-full"
-            style={{ background: adding || !date ? C.muted : C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "11px", fontSize: "13px", fontWeight: 600, cursor: adding || !date ? "not-allowed" : "pointer" }}
+            style={{ background: adding || !date ? C.dim : C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "11px", fontSize: "13px", fontWeight: 600, cursor: adding || !date ? "not-allowed" : "pointer" }}
           >
             <Plus size={14} />
             {adding ? "Ekleniyor…" : "Tatil Ekle"}
@@ -457,7 +458,7 @@ function HolidayRow({ h, onDelete, last }) {
       {confirming ? (
         <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
           <button onClick={() => { onDelete(h.id); setConfirming(false); }}
-            style={{ padding: "5px 10px", borderRadius: "6px", background: "rgba(204,26,26,0.15)", border: "1px solid rgba(204,26,26,0.3)", fontSize: "11px", color: C.red, cursor: "pointer", fontWeight: 600 }}>
+            style={{ padding: "5px 10px", borderRadius: "6px", background: "rgba(198,40,40,0.15)", border: "1px solid rgba(198,40,40,0.3)", fontSize: "11px", color: C.red, cursor: "pointer", fontWeight: 600 }}>
             Sil
           </button>
           <button onClick={() => setConfirming(false)}
@@ -468,7 +469,7 @@ function HolidayRow({ h, onDelete, last }) {
       ) : (
         <button onClick={() => setConfirming(true)}
           style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: `1px solid ${C.border}`, borderRadius: "6px", cursor: "pointer", color: C.muted, flexShrink: 0 }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(204,26,26,0.3)"; e.currentTarget.style.color = C.red; }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.3)"; e.currentTarget.style.color = C.red; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; }}
         >
           <Trash2 size={13} />
@@ -562,7 +563,7 @@ function RulesTab() {
           Kaydet
         </button>
         {saved && (
-          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 justify-center" style={{ fontSize: "12px", color: "#22c55e" }}>
+          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 justify-center" style={{ fontSize: "12px", color: "#15803D" }}>
             <CheckCircle size={13} /> Kaydedildi
           </motion.div>
         )}

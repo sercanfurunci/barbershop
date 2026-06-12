@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 
 const C = {
-  bg:      "rgba(7,7,7,0.96)",
-  border:  "rgba(255,255,255,0.06)",
-  primary: "#F0EDE8",
-  secondary:"#6b6870",
-  red:     "#CC1A1A",
+  bg:       "rgba(246,243,238,0.97)",
+  border:   "#E5DFD6",
+  primary:  "#111111",
+  secondary:"#6B7280",
+  red:      "#C62828",
 };
 
 export default function Navbar() {
@@ -20,6 +21,8 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen]   = useState(false);
   const { lang, setLang }         = useLang();
   const tx = useT(lang);
+  const pathname = usePathname();
+  const isBookPage = pathname?.startsWith("/book");
 
   const navLinks = [
     { label: tx.nav.services, href: "#services" },
@@ -38,8 +41,8 @@ export default function Navbar() {
       <nav
         className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
         style={{
-          background: scrolled ? C.bg : "rgba(7,7,7,0.7)",
-          backdropFilter: "blur(20px)",
+          background: scrolled ? C.bg : "rgba(246,243,238,0)",
+          backdropFilter: scrolled ? "blur(20px)" : "none",
           borderBottom: `1px solid ${scrolled ? C.border : "transparent"}`,
         }}
       >
@@ -61,7 +64,7 @@ export default function Navbar() {
                 >
                   Abdurrahman Çelik
                 </span>
-                <span style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#CC1A1A", marginTop: "2px" }}>
+                <span style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#C62828", marginTop: "2px" }}>
                   Exclusive Salon
                 </span>
               </div>
@@ -152,7 +155,7 @@ export default function Navbar() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.22 }}
             className="fixed left-0 right-0 z-40 md:hidden"
-            style={{ top: "68px", background: "rgba(7,7,7,0.98)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${C.border}` }}
+            style={{ top: "68px", background: "rgba(246,243,238,0.98)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${C.border}` }}
           >
             <div className="max-w-7xl mx-auto px-6 py-4 space-y-1">
               {navLinks.map((link) => (
@@ -190,11 +193,11 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
-      {/* Mobile sticky bottom book bar */}
-      <div
+      {/* Mobile sticky bottom book bar — hidden on booking pages */}
+      {!isBookPage && <div
         className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
         style={{
-          background: "rgba(7,7,7,0.97)",
+          background: "rgba(246,243,238,0.97)",
           backdropFilter: "blur(20px)",
           borderTop: `1px solid ${C.border}`,
           padding: "10px 16px",
@@ -214,7 +217,7 @@ export default function Navbar() {
         >
           {tx.nav.bookNow}
         </Link>
-      </div>
+      </div>}
     </>
   );
 }

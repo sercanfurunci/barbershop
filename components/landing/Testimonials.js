@@ -8,14 +8,14 @@ import { useT } from "@/lib/translations";
 import { Star } from "lucide-react";
 
 const C = {
-  bg:       "#070707",
-  card:     "#0f0f14",
-  border:   "rgba(255,255,255,0.07)",
-  surface:  "#16161e",
-  primary:  "#F0EDE8",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#FFFFFF",
+  card:     "#FFFFFF",
+  border:   "#E5DFD6",
+  surface:  "#EFEAE2",
+  primary:  "#111111",
+  secondary:"#44403C",
+  muted:    "#6B7280",
+  red:      "#C62828",
 };
 
 function ReviewCard({ item, active, onClick, lang, isGoogle }) {
@@ -29,8 +29,8 @@ function ReviewCard({ item, active, onClick, lang, isGoogle }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        background: active ? "#141420" : C.card,
-        border: `1px solid ${active ? "rgba(204,26,26,0.2)" : C.border}`,
+        background: active ? "#FEF2F2" : C.card,
+        border: `1px solid ${active ? "rgba(198,40,40,0.25)" : C.border}`,
         borderRadius: "12px",
         padding: "24px",
         cursor: "pointer",
@@ -120,7 +120,7 @@ export default function Testimonials() {
 
   return (
     <section id="testimonials" ref={ref} style={{ background: C.bg }}>
-      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)" }} />
+      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, #E5DFD6, transparent)" }} />
       <div className="max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 py-24 lg:py-32">
 
         {/* Header */}

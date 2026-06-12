@@ -7,14 +7,14 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 
 const C = {
-  card:      "#111118",
-  border:    "rgba(255,255,255,0.06)",
-  surface:   "#16161e",
-  grid:      "rgba(255,255,255,0.04)",
-  primary:   "#f1f0ed",
-  secondary: "#6b6870",
-  muted:     "#2e2d35",
-  red:       "#CC1A1A",
+  card:      "#FFFFFF",
+  border:    "rgba(17,17,17,0.08)",
+  surface:   "#F1EEE8",
+  grid:      "rgba(17,17,17,0.05)",
+  primary:   "#111111",
+  secondary: "#57514B",
+  muted:     "#6E6760",
+  red:       "#C62828",
 };
 
 const PERIODS_TR = [
@@ -186,8 +186,8 @@ export default function AreaChart() {
 
           {tooltip && (
             <g>
-              <line x1={tooltip.x} y1={PAD.t} x2={tooltip.x} y2={PAD.t + CH} stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="3 3" />
-              <circle cx={tooltip.x} cy={tooltip.y} r="4" fill={C.red} stroke="#0b0b0f" strokeWidth="2" />
+              <line x1={tooltip.x} y1={PAD.t} x2={tooltip.x} y2={PAD.t + CH} stroke="rgba(17,17,17,0.18)" strokeWidth="1" strokeDasharray="3 3" />
+              <circle cx={tooltip.x} cy={tooltip.y} r="4" fill={C.red} stroke="#F8F6F2" strokeWidth="2" />
             </g>
           )}
         </svg>

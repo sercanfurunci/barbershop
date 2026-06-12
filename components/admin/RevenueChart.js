@@ -10,7 +10,7 @@ export default function RevenueChart() {
     <div className="bg-[#111111] border border-[#242424] p-6 h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <div className="text-xs tracking-widest uppercase text-[#6B6660] mb-1">Weekly Revenue</div>
+          <div className="text-xs tracking-widest uppercase text-[#A39E96] mb-1">Weekly Revenue</div>
           <div className="font-display text-2xl text-[#F8F6F1]">
             £{weeklyRevenue.reduce((a, b) => a + b.revenue, 0).toLocaleString()}
           </div>
@@ -46,7 +46,7 @@ export default function RevenueChart() {
                   </div>
                 </motion.div>
               </div>
-              <span className="text-[10px] text-[#6B6660]">{item.day}</span>
+              <span className="text-[10px] text-[#A39E96]">{item.day}</span>
             </div>
           );
         })}

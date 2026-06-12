@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function BookPage() {
   return (
-    <div className="min-h-screen bg-[#080808] pb-[72px] md:pb-0">
+    <div style={{ background: "#F6F3EE", minHeight: "100vh" }}>
       <Navbar />
       <BookingFlow />
     </div>

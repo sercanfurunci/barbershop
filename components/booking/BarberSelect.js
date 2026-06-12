@@ -4,131 +4,175 @@ import { motion } from "framer-motion";
 import { Star, Check } from "lucide-react";
 
 const C = {
-  bg:       "#070707",
-  card:     "#0f0f14",
-  border:   "rgba(255,255,255,0.07)",
-  surface:  "#16161e",
-  primary:  "#F0EDE8",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#F6F3EE",
+  card:     "#FFFFFF",
+  border:   "#E5DFD6",
+  surface:  "#EFEAE2",
+  primary:  "#111111",
+  secondary:"#44403C",
+  muted:    "#6B7280",
+  red:      "#C62828",
 };
 
-function SkeletonCard() {
+function SkeletonRow() {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "24px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
-        <div style={{ width: "52px", height: "52px", background: C.surface, borderRadius: "12px" }} />
-        <div style={{ width: "60px", height: "24px", background: C.surface, borderRadius: "20px" }} />
+    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: C.card }}>
+      <div style={{ width: "46px", height: "46px", background: C.surface, borderRadius: "50%", flexShrink: 0 }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ height: "14px", width: "48%", background: C.surface, borderRadius: "4px", marginBottom: "6px" }} />
+        <div style={{ height: "10px", width: "32%", background: C.surface, borderRadius: "4px" }} />
       </div>
-      <div style={{ height: "20px", background: C.surface, borderRadius: "4px", marginBottom: "8px", width: "60%" }} />
-      <div style={{ height: "12px", background: C.surface, borderRadius: "4px", marginBottom: "16px", width: "40%" }} />
-      <div style={{ height: "13px", background: C.surface, borderRadius: "4px", marginBottom: "6px" }} />
-      <div style={{ height: "13px", background: C.surface, borderRadius: "4px", width: "75%" }} />
+      <div style={{ width: "50px", height: "20px", background: C.surface, borderRadius: "20px" }} />
     </div>
   );
 }
 
-export default function BarberSelect({ barbers, loaded, selected, onSelect, onBack, lang = "tr", tx }) {
+export default function BarberSelect({ barbers, loaded, selected, onSelect, onBack, lang = "tr", tx, compact = false }) {
   const s2 = tx?.booking?.step2 ?? {};
 
+  const anyOption = {
+    id: "any",
+    name: s2.noPreference ?? "Tercih Yok",
+    title: { tr: "Otomatik Atama", en: "Auto-assigned" },
+    isSpecial: true,
+  };
+
+  const allItems = loaded ? [anyOption, ...barbers] : [];
+
   return (
-    <div>
-      <div className="mb-10">
-        <div className="flex items-center gap-2.5 mb-4">
-          <div style={{ width: "20px", height: "2px", background: C.red, borderRadius: "1px" }} />
-          <span style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: C.red, fontWeight: 500 }}>
-            {s2.eyebrow}
-          </span>
+    <div style={compact ? { padding: "12px 16px 16px" } : {}}>
+      {/* Header — hidden in compact (mobile) mode */}
+      {!compact && (
+        <div style={{ marginBottom: "14px" }}>
+          <h1
+            className="font-display font-light"
+            style={{ fontSize: "clamp(26px, 4vw, 40px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "5px" }}
+          >
+            {s2.title?.[0]}{" "}
+            <span style={{ fontStyle: "italic", color: C.red }}>{s2.title?.[1]}</span>
+          </h1>
+          <p style={{ fontSize: "13px", color: C.muted }}>{s2.subtitle}</p>
         </div>
-        <h1 className="font-display font-light" style={{ fontSize: "clamp(32px, 4.5vw, 48px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "10px" }}>
-          {s2.title?.[0]}{" "}<span style={{ fontStyle: "italic", color: C.red }}>{s2.title?.[1]}</span>
-        </h1>
-        <p style={{ fontSize: "14px", color: C.secondary, lineHeight: 1.6 }}>{s2.subtitle}</p>
-      </div>
+      )}
 
-      {/* No preference */}
-      <motion.button
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        onClick={() => onSelect({ id: "any", name: s2.noPreference ?? "En İyi Uygun", title: { tr: "Otomatik", en: "Auto-assigned" } })}
-        className="w-full text-left flex items-center gap-4 mb-6"
-        style={{ background: selected?.id === "any" ? "#141420" : C.card, border: `1px solid ${selected?.id === "any" ? "rgba(204,26,26,0.35)" : C.border}`, borderRadius: "12px", padding: "20px 24px", cursor: "pointer", transition: "all 0.2s" }}
-        onMouseEnter={(e) => { if (selected?.id !== "any") { e.currentTarget.style.borderColor = "rgba(204,26,26,0.25)"; e.currentTarget.style.background = "#121218"; } }}
-        onMouseLeave={(e) => { if (selected?.id !== "any") { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; } }}
-      >
-        <div className="flex items-center justify-center shrink-0" style={{ width: "48px", height: "48px", background: C.surface, borderRadius: "10px", fontSize: "20px", border: `1px dashed ${selected?.id === "any" ? C.red : "rgba(255,255,255,0.15)"}` }}>
-          ✦
-        </div>
-        <div className="flex-1">
-          <div style={{ fontSize: "14px", color: C.primary, fontWeight: 500, marginBottom: "2px" }}>{s2.noPreference}</div>
-          <div style={{ fontSize: "12px", color: C.secondary }}>{s2.noPreferenceDesc}</div>
-        </div>
-        {selected?.id === "any" && (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center justify-center shrink-0" style={{ width: "22px", height: "22px", background: C.red, borderRadius: "50%" }}>
-            <Check size={11} color="#fff" />
-          </motion.div>
-        )}
-      </motion.button>
-
-      {/* Barbers grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {!loaded
-          ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-          : barbers.map((barber, i) => {
+      {/* Barber list */}
+      <div style={{ borderRadius: "12px", overflow: "hidden", border: `1px solid ${C.border}` }}>
+        {!loaded ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ borderBottom: i < 3 ? `1px solid ${C.border}` : "none" }}>
+              <SkeletonRow />
+            </div>
+          ))
+        ) : (
+          allItems.map((barber, i) => {
             const isSelected = selected?.id === barber.id;
+            const isAny = barber.id === "any";
+            const selectArg = isAny
+              ? { id: "any", name: s2.noPreference ?? "Tercih Yok", title: { tr: "Otomatik", en: "Auto-assigned" } }
+              : barber;
+
             return (
-              <motion.div key={barber.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.05 + i * 0.08, ease: [0.16, 1, 0.3, 1] }} className="flex flex-col">
-                <button
-                  onClick={() => onSelect(barber)}
-                  className="relative text-left flex flex-col flex-1"
-                  style={{ background: isSelected ? "#141420" : C.card, border: `1px solid ${isSelected ? "rgba(204,26,26,0.35)" : C.border}`, borderRadius: "12px", padding: "24px", cursor: "pointer", transition: "all 0.2s" }}
-                  onMouseEnter={(e) => { if (!isSelected) { e.currentTarget.style.borderColor = "rgba(204,26,26,0.3)"; e.currentTarget.style.background = "#121218"; } }}
-                  onMouseLeave={(e) => { if (!isSelected) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; } }}
-                >
-                  <div className="flex items-start justify-between mb-5">
-                    <div className="flex items-center justify-center font-bold text-white shrink-0" style={{ width: "52px", height: "52px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "12px", fontSize: "15px", letterSpacing: "0.04em" }}>
-                      {barber.avatar}
-                    </div>
-                    <div className="flex items-center gap-1" style={{ height: "24px", padding: "0 8px", background: barber.available ? "rgba(34,197,94,0.08)" : "rgba(82,82,91,0.15)", borderRadius: "20px", border: `1px solid ${barber.available ? "rgba(34,197,94,0.15)" : "rgba(82,82,91,0.2)"}` }}>
-                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: barber.available ? "#22c55e" : "#52525b" }} />
-                      <span style={{ fontSize: "10px", color: barber.available ? "#22c55e" : C.secondary, fontWeight: 500 }}>
-                        {barber.available ? (lang === "tr" ? "Müsait" : "Available") : (lang === "tr" ? "İzinli" : "Off")}
-                      </span>
-                    </div>
+              <motion.button
+                key={barber.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.28 }}
+                onClick={() => onSelect(selectArg)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "12px",
+                  width: "100%", textAlign: "left",
+                  padding: "14px 16px",
+                  background: isSelected ? "#FEF2F2" : C.card,
+                  borderLeft: `3px solid ${isSelected ? C.red : "transparent"}`,
+                  borderBottom: i < allItems.length - 1 ? `1px solid ${C.border}` : "none",
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                  minHeight: "72px",
+                }}
+              >
+                {/* Avatar */}
+                {isAny ? (
+                  <div style={{
+                    width: "46px", height: "46px", flexShrink: 0,
+                    background: isSelected ? `${C.red}18` : C.surface,
+                    borderRadius: "50%",
+                    border: `1.5px dashed ${isSelected ? C.red : C.border}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "17px",
+                    transition: "all 0.15s",
+                  }}>
+                    ✦
                   </div>
-                  <div className="mb-3">
-                    <h3 className="font-display font-light" style={{ fontSize: "18px", color: isSelected ? C.red : C.primary, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: "4px" }}>
-                      {barber.name}
-                    </h3>
-                    <p style={{ fontSize: "11px", color: C.red, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500 }}>
-                      {barber.title[lang]}
-                    </p>
+                ) : (
+                  <div style={{
+                    width: "46px", height: "46px", flexShrink: 0,
+                    background: `linear-gradient(135deg, ${C.red}, #7f1d1d)`,
+                    borderRadius: "50%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#fff", fontWeight: 700, fontSize: "13px",
+                    letterSpacing: "0.04em",
+                  }}>
+                    {barber.avatar}
                   </div>
-                  <p className="line-clamp-2" style={{ fontSize: "12px", color: C.secondary, lineHeight: 1.6 }}>
-                    {barber.bio[lang]}
-                  </p>
-                  <div style={{ flex: 1, minHeight: "16px" }} />
-                  <div className="flex items-center justify-between pt-4" style={{ borderTop: `1px solid ${C.border}` }}>
-                    <div className="flex items-center gap-1.5">
-                      <Star size={11} fill={C.red} style={{ color: C.red }} />
-                      <span style={{ fontSize: "13px", fontWeight: 600, color: C.primary }}>{barber.rating}</span>
-                      <span style={{ fontSize: "11px", color: C.muted }}>· {barber.reviews}</span>
-                    </div>
-                    <span style={{ fontSize: "11px", color: C.muted }}>
-                      {barber.yearsExp} {tx?.barbers?.yearsExp ?? "yıl"}
-                    </span>
+                )}
+
+                {/* Name + title */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: "14px", fontWeight: 500,
+                    color: isSelected ? C.red : C.primary,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    marginBottom: "2px",
+                  }}>
+                    {barber.name}
                   </div>
+                  <div style={{
+                    fontSize: isAny ? "11px" : "10px",
+                    color: isAny ? C.muted : C.red,
+                    letterSpacing: isAny ? 0 : "0.07em",
+                    textTransform: isAny ? "none" : "uppercase",
+                    fontWeight: isAny ? 400 : 500,
+                  }}>
+                    {barber.title[lang]}
+                  </div>
+                </div>
+
+                {/* Right side */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "5px", flexShrink: 0 }}>
+                  {!isAny && (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+                        <Star size={10} fill={C.red} style={{ color: C.red }} />
+                        <span style={{ fontSize: "12px", fontWeight: 600, color: C.primary }}>{barber.rating}</span>
+                        <span style={{ fontSize: "10px", color: C.muted }}>({barber.reviews})</span>
+                      </div>
+                      <div style={{
+                        fontSize: "9px", fontWeight: 600, letterSpacing: "0.03em",
+                        color: barber.available ? "#166534" : "#6B7280",
+                        background: barber.available ? "#F0FDF4" : "#F3F4F6",
+                        border: `1px solid ${barber.available ? "#BBF7D0" : "#E5E7EB"}`,
+                        padding: "2px 8px", borderRadius: "20px",
+                      }}>
+                        {barber.available
+                          ? (lang === "tr" ? "Müsait" : "Available")
+                          : (lang === "tr" ? "İzinli" : "Off")}
+                      </div>
+                    </>
+                  )}
                   {isSelected && (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-4 right-4 flex items-center justify-center" style={{ width: "22px", height: "22px", background: C.red, borderRadius: "50%" }}>
-                      <Check size={11} color="#fff" />
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      style={{ width: "20px", height: "20px", background: C.red, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginTop: isAny ? 0 : "-2px" }}
+                    >
+                      <Check size={10} color="#fff" />
                     </motion.div>
                   )}
-                </button>
-              </motion.div>
+                </div>
+              </motion.button>
             );
-          })}
+          })
+        )}
       </div>
     </div>
   );

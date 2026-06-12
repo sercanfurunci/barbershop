@@ -8,14 +8,14 @@ import { useT } from "@/lib/translations";
 import { ArrowRight, Phone, Calendar, Clock, Shield } from "lucide-react";
 
 const C = {
-  bg:       "#070707",
-  card:     "#0f0f14",
-  border:   "rgba(255,255,255,0.07)",
-  surface:  "#16161e",
-  primary:  "#F0EDE8",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#F6F3EE",
+  card:     "#FFFFFF",
+  border:   "#E5DFD6",
+  surface:  "#EFEAE2",
+  primary:  "#111111",
+  secondary:"#44403C",
+  muted:    "#6B7280",
+  red:      "#C62828",
 };
 
 export default function CTA() {
@@ -40,7 +40,7 @@ export default function CTA() {
     <section ref={ref} style={{ background: C.bg }}>
       <div
         className="h-px w-full"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, #E5DFD6, transparent)" }}
       />
 
       {/* Main CTA block */}
@@ -105,7 +105,7 @@ export default function CTA() {
                     fontWeight: 700,
                     letterSpacing: "0.01em",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#F0EDE8")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#F6F3EE")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
                 >
                   {tx.cta.bookButton}

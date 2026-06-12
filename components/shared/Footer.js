@@ -38,7 +38,7 @@ const MAPS_EMBED = "https://maps.google.com/maps?q=Abdurrahman+%C3%87elik+Exclus
 const MAPS_LINK  = "https://www.google.com/maps/search/Abdurrahman+%C3%87elik+Exclusive+Salon+Dar%C4%B1ca";
 
 const serviceNames = {
-  tr: ["Klasik Kesim", "Soluk & Kıvrım", "Sakal Şekillendirme", "Usta Tıraşı", "Kesim & Sakal", "VIP Bakım"],
+  tr: ["Klasik Kesim", "Fade & Taper", "Sakal Şekillendirme", "Usta Tıraşı", "Kesim & Sakal", "VIP Bakım"],
   en: ["Classic Cut", "Fade & Taper", "Beard Sculpt", "Royal Shave", "Cut & Beard", "VIP Grooming"],
 };
 
@@ -54,13 +54,13 @@ export default function Footer() {
   const ft = tx.footer;
 
   return (
-    <footer style={{ background: "#080808" }}>
+    <footer style={{ background: "#111111" }}>
 
       {/* ─── Location Section ─────────────────────────────────────────────── */}
-      <section style={{ borderTop: "1px solid #1a1a1a", position: "relative", overflow: "hidden" }}>
+      <section style={{ borderTop: "1px solid #1E1E1E", position: "relative", overflow: "hidden" }}>
 
         {/* Top fade from previous section */}
-        <div style={{ position: "absolute", inset: "0 0 auto 0", height: "80px", background: "linear-gradient(to bottom, #080808 0%, transparent 100%)", zIndex: 2, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: "0 0 auto 0", height: "80px", background: "linear-gradient(to bottom, #111111 0%, transparent 100%)", zIndex: 2, pointerEvents: "none" }} />
 
         <div className="max-w-7xl mx-auto" style={{ padding: "0 24px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 0 }} className="lg:!grid-cols-[420px_1fr]">
@@ -70,47 +70,47 @@ export default function Footer() {
               padding: "72px 0 72px",
               display: "flex", flexDirection: "column", justifyContent: "center",
               borderRight: "none", position: "relative", zIndex: 3,
-            }} className="lg:!border-r lg:!border-[#1a1a1a] lg:!pr-16">
+            }} className="lg:!border-r lg:!border-[#1E1E1E] lg:!pr-16">
 
               {/* Eyebrow */}
-              <div style={{ fontSize: "10px", letterSpacing: "0.25em", color: "#CC1A1A", textTransform: "uppercase", fontWeight: 600, marginBottom: "28px" }}>
+              <div style={{ fontSize: "10px", letterSpacing: "0.25em", color: "#C62828", textTransform: "uppercase", fontWeight: 600, marginBottom: "28px" }}>
                 {lang === "tr" ? "Bizi Ziyaret Edin" : "Visit Us"}
               </div>
 
               {/* Salon name */}
-              <h2 style={{ fontSize: "clamp(22px, 2.8vw, 32px)", color: "#F8F6F1", fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "32px" }}>
+              <h2 style={{ fontSize: "clamp(22px, 2.8vw, 32px)", color: "#F6F3EE", fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "32px" }}>
                 Abdurrahman Çelik<br />
-                <span style={{ fontStyle: "italic", color: "#9a9490" }}>Exclusive Salon</span>
+                <span style={{ fontStyle: "italic", color: "#6A6560" }}>Exclusive Salon</span>
               </h2>
 
               {/* Divider */}
-              <div style={{ width: "32px", height: "1px", background: "#CC1A1A", marginBottom: "32px" }} />
+              <div style={{ width: "32px", height: "1px", background: "#C62828", marginBottom: "32px" }} />
 
               {/* Details */}
               <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "40px" }}>
                 <div style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
-                  <MapPin size={13} style={{ color: "#CC1A1A", flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ fontSize: "13px", color: "#6B6660", lineHeight: 1.7, whiteSpace: "pre-line" }}>
+                  <MapPin size={13} style={{ color: "#C62828", flexShrink: 0, marginTop: "2px" }} />
+                  <span style={{ fontSize: "13px", color: "#9A9490", lineHeight: 1.7, whiteSpace: "pre-line" }}>
                     {lang === "tr" ? ADDRESS_TR : ADDRESS_EN}
                   </span>
                 </div>
 
                 <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
-                  <Phone size={13} style={{ color: "#CC1A1A", flexShrink: 0 }} />
+                  <Phone size={13} style={{ color: "#C62828", flexShrink: 0 }} />
                   <a href={`tel:${PHONE.replace(/\s/g, "")}`}
-                    style={{ fontSize: "13px", color: "#6B6660", textDecoration: "none", letterSpacing: "0.03em", transition: "color 0.2s" }}
-                    onMouseEnter={e => e.currentTarget.style.color = "#F8F6F1"}
-                    onMouseLeave={e => e.currentTarget.style.color = "#6B6660"}>
+                    style={{ fontSize: "13px", color: "#9A9490", textDecoration: "none", letterSpacing: "0.03em", transition: "color 0.2s" }}
+                    onMouseEnter={e => e.currentTarget.style.color = "#F6F3EE"}
+                    onMouseLeave={e => e.currentTarget.style.color = "#9A9490"}>
                     {PHONE}
                   </a>
                 </div>
 
                 <div style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
-                  <Clock size={13} style={{ color: "#CC1A1A", flexShrink: 0, marginTop: "2px" }} />
-                  <div style={{ fontSize: "13px", color: "#6B6660", lineHeight: 1.7 }}>
+                  <Clock size={13} style={{ color: "#C62828", flexShrink: 0, marginTop: "2px" }} />
+                  <div style={{ fontSize: "13px", color: "#9A9490", lineHeight: 1.7 }}>
                     {ft.hours.weekdays}
                     {ft.hours.sat && <><br />{ft.hours.sat}</>}
-                    <br /><span style={{ color: "#3a3a3a" }}>{ft.hours.sun}</span>
+                    <br /><span style={{ color: "#3E3C3A" }}>{ft.hours.sun}</span>
                   </div>
                 </div>
               </div>
@@ -123,15 +123,15 @@ export default function Footer() {
                 style={{
                   display: "inline-flex", alignItems: "center", gap: "10px",
                   fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase",
-                  color: "#F8F6F1", textDecoration: "none", fontWeight: 500,
-                  paddingBottom: "8px", borderBottom: "1px solid #CC1A1A",
+                  color: "#F6F3EE", textDecoration: "none", fontWeight: 500,
+                  paddingBottom: "8px", borderBottom: "1px solid #C62828",
                   alignSelf: "flex-start", transition: "opacity 0.2s",
                 }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
                 {lang === "tr" ? "Yol Tarifi Al" : "Get Directions"}
-                <ArrowUpRight size={13} style={{ color: "#CC1A1A" }} />
+                <ArrowUpRight size={13} style={{ color: "#C62828" }} />
               </a>
             </div>
 
@@ -154,52 +154,52 @@ export default function Footer() {
               />
 
               {/* Left fade — blends into info panel on desktop */}
-              <div style={{ position: "absolute", inset: "0 auto 0 0", width: "120px", background: "linear-gradient(to right, #080808, transparent)", pointerEvents: "none", zIndex: 1 }} className="hidden lg:block" />
+              <div style={{ position: "absolute", inset: "0 auto 0 0", width: "120px", background: "linear-gradient(to right, #111111, transparent)", pointerEvents: "none", zIndex: 1 }} className="hidden lg:block" />
               {/* Top fade */}
-              <div style={{ position: "absolute", inset: "0 0 auto 0", height: "80px", background: "linear-gradient(to bottom, #080808, transparent)", pointerEvents: "none", zIndex: 1 }} />
+              <div style={{ position: "absolute", inset: "0 0 auto 0", height: "80px", background: "linear-gradient(to bottom, #111111, transparent)", pointerEvents: "none", zIndex: 1 }} />
               {/* Bottom fade */}
-              <div style={{ position: "absolute", inset: "auto 0 0 0", height: "80px", background: "linear-gradient(to top, #080808, transparent)", pointerEvents: "none", zIndex: 1 }} />
+              <div style={{ position: "absolute", inset: "auto 0 0 0", height: "80px", background: "linear-gradient(to top, #111111, transparent)", pointerEvents: "none", zIndex: 1 }} />
               {/* Right fade */}
-              <div style={{ position: "absolute", inset: "0 0 0 auto", width: "60px", background: "linear-gradient(to left, #080808, transparent)", pointerEvents: "none", zIndex: 1 }} />
+              <div style={{ position: "absolute", inset: "0 0 0 auto", width: "60px", background: "linear-gradient(to left, #111111, transparent)", pointerEvents: "none", zIndex: 1 }} />
 
               {/* Mobile top fade */}
-              <div style={{ position: "absolute", inset: "0 0 auto 0", height: "40px", background: "linear-gradient(to bottom, #080808, transparent)", pointerEvents: "none", zIndex: 2 }} className="lg:hidden" />
+              <div style={{ position: "absolute", inset: "0 0 auto 0", height: "40px", background: "linear-gradient(to bottom, #111111, transparent)", pointerEvents: "none", zIndex: 2 }} className="lg:hidden" />
             </div>
 
           </div>
         </div>
 
         {/* Bottom fade into footer grid */}
-        <div style={{ position: "absolute", inset: "auto 0 0 0", height: "60px", background: "linear-gradient(to top, #080808, transparent)", zIndex: 2, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: "auto 0 0 0", height: "60px", background: "linear-gradient(to top, #111111, transparent)", zIndex: 2, pointerEvents: "none" }} />
       </section>
 
       {/* ─── Footer grid ──────────────────────────────────────────────────── */}
-      <div style={{ borderTop: "1px solid #141414" }}>
+      <div style={{ borderTop: "1px solid #1E1E1E" }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-16 pb-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-16" style={{ borderBottom: "1px solid #1a1a1a" }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-16" style={{ borderBottom: "1px solid #1E1E1E" }}>
 
             {/* Brand */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                <div style={{ width: "32px", height: "32px", background: "#CC1A1A", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: "32px", height: "32px", background: "#C62828", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span style={{ fontFamily: "var(--font-display, serif)", fontSize: "14px", fontWeight: 700, color: "#fff" }}>A</span>
                 </div>
                 <div>
-                  <div style={{ fontSize: "11px", letterSpacing: "0.2em", color: "#F8F6F1", textTransform: "uppercase", fontWeight: 600, lineHeight: 1 }}>Abdurrahman Çelik</div>
-                  <div style={{ fontSize: "9px", letterSpacing: "0.15em", color: "#CC1A1A", textTransform: "uppercase", marginTop: "3px" }}>Exclusive Salon</div>
+                  <div style={{ fontSize: "11px", letterSpacing: "0.2em", color: "#F6F3EE", textTransform: "uppercase", fontWeight: 600, lineHeight: 1 }}>Abdurrahman Çelik</div>
+                  <div style={{ fontSize: "9px", letterSpacing: "0.15em", color: "#C62828", textTransform: "uppercase", marginTop: "3px" }}>Exclusive Salon</div>
                 </div>
               </div>
-              <p style={{ fontSize: "12px", color: "#4a4a4a", lineHeight: 1.8, marginBottom: "24px" }}>{ft.tagline}</p>
+              <p style={{ fontSize: "12px", color: "#888582", lineHeight: 1.8, marginBottom: "24px" }}>{ft.tagline}</p>
               <div style={{ display: "flex", gap: "8px" }}>
                 {SOCIAL.map(({ href, icon, label }) => (
                   <a key={href} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
                     style={{
-                      width: "34px", height: "34px", border: "1px solid #1e1e1e",
+                      width: "34px", height: "34px", border: "1px solid #2a2a2a",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      color: "#4a4a4a", textDecoration: "none", transition: "all 0.2s",
+                      color: "#888582", textDecoration: "none", transition: "all 0.2s",
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.color = "#F8F6F1"; e.currentTarget.style.borderColor = "#CC1A1A"; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = "#4a4a4a"; e.currentTarget.style.borderColor = "#1e1e1e"; }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "#F6F3EE"; e.currentTarget.style.borderColor = "#C62828"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "#888582"; e.currentTarget.style.borderColor = "#2a2a2a"; }}
                   >
                     {icon}
                   </a>
@@ -209,13 +209,13 @@ export default function Footer() {
 
             {/* Services */}
             <div>
-              <h4 style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#CC1A1A", marginBottom: "20px", fontWeight: 600 }}>{ft.services}</h4>
+              <h4 style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#C62828", marginBottom: "20px", fontWeight: 600 }}>{ft.services}</h4>
               <ul style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {serviceNames[lang].map((s) => (
                   <li key={s}>
-                    <Link href="/book" style={{ fontSize: "12px", color: "#4a4a4a", textDecoration: "none", transition: "color 0.2s", letterSpacing: "0.01em" }}
-                      onMouseEnter={e => e.currentTarget.style.color = "#F8F6F1"}
-                      onMouseLeave={e => e.currentTarget.style.color = "#4a4a4a"}>
+                    <Link href="/book" style={{ fontSize: "12px", color: "#888582", textDecoration: "none", transition: "color 0.2s", letterSpacing: "0.01em" }}
+                      onMouseEnter={e => e.currentTarget.style.color = "#F6F3EE"}
+                      onMouseLeave={e => e.currentTarget.style.color = "#888582"}>
                       {s}
                     </Link>
                   </li>
@@ -225,13 +225,13 @@ export default function Footer() {
 
             {/* Company */}
             <div>
-              <h4 style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#CC1A1A", marginBottom: "20px", fontWeight: 600 }}>{ft.company}</h4>
+              <h4 style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#C62828", marginBottom: "20px", fontWeight: 600 }}>{ft.company}</h4>
               <ul style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {ft.companyLinks.map((item) => (
                   <li key={item.href}>
-                    <Link href={item.href} style={{ fontSize: "12px", color: "#4a4a4a", textDecoration: "none", transition: "color 0.2s" }}
-                      onMouseEnter={e => e.currentTarget.style.color = "#F8F6F1"}
-                      onMouseLeave={e => e.currentTarget.style.color = "#4a4a4a"}>
+                    <Link href={item.href} style={{ fontSize: "12px", color: "#888582", textDecoration: "none", transition: "color 0.2s" }}
+                      onMouseEnter={e => e.currentTarget.style.color = "#F6F3EE"}
+                      onMouseLeave={e => e.currentTarget.style.color = "#888582"}>
                       {item.label}
                     </Link>
                   </li>
@@ -241,28 +241,28 @@ export default function Footer() {
 
             {/* Contact repeat — compact */}
             <div>
-              <h4 style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#CC1A1A", marginBottom: "20px", fontWeight: 600 }}>{ft.visit}</h4>
+              <h4 style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#C62828", marginBottom: "20px", fontWeight: 600 }}>{ft.visit}</h4>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                  <MapPin size={11} style={{ color: "#CC1A1A", flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ fontSize: "12px", color: "#4a4a4a", lineHeight: 1.7, whiteSpace: "pre-line" }}>
+                  <MapPin size={11} style={{ color: "#C62828", flexShrink: 0, marginTop: "2px" }} />
+                  <span style={{ fontSize: "12px", color: "#888582", lineHeight: 1.7, whiteSpace: "pre-line" }}>
                     {lang === "tr" ? ADDRESS_TR : ADDRESS_EN}
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  <Phone size={11} style={{ color: "#CC1A1A", flexShrink: 0 }} />
-                  <a href={`tel:${PHONE.replace(/\s/g, "")}`} style={{ fontSize: "12px", color: "#4a4a4a", textDecoration: "none", transition: "color 0.2s" }}
-                    onMouseEnter={e => e.currentTarget.style.color = "#F8F6F1"}
-                    onMouseLeave={e => e.currentTarget.style.color = "#4a4a4a"}>
+                  <Phone size={11} style={{ color: "#C62828", flexShrink: 0 }} />
+                  <a href={`tel:${PHONE.replace(/\s/g, "")}`} style={{ fontSize: "12px", color: "#888582", textDecoration: "none", transition: "color 0.2s" }}
+                    onMouseEnter={e => e.currentTarget.style.color = "#F6F3EE"}
+                    onMouseLeave={e => e.currentTarget.style.color = "#888582"}>
                     {PHONE}
                   </a>
                 </div>
                 <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                  <Clock size={11} style={{ color: "#CC1A1A", flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ fontSize: "12px", color: "#4a4a4a", lineHeight: 1.7 }}>
+                  <Clock size={11} style={{ color: "#C62828", flexShrink: 0, marginTop: "2px" }} />
+                  <span style={{ fontSize: "12px", color: "#888582", lineHeight: 1.7 }}>
                     {ft.hours.weekdays}
                     {ft.hours.sat && <><br />{ft.hours.sat}</>}
-                    <br /><span style={{ color: "#2e2e2e" }}>{ft.hours.sun}</span>
+                    <br /><span style={{ color: "#555250" }}>{ft.hours.sun}</span>
                   </span>
                 </div>
               </div>
@@ -271,14 +271,14 @@ export default function Footer() {
 
           {/* Bottom bar */}
           <div style={{ paddingTop: "28px", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }} className="sm:!flex-row sm:!justify-between">
-            <p style={{ fontSize: "10px", color: "#2e2e2e", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            <p style={{ fontSize: "10px", color: "#555250", letterSpacing: "0.1em", textTransform: "uppercase" }}>
               © 2026 Abdurrahman Çelik Exclusive Salon
             </p>
             <div style={{ display: "flex", gap: "24px" }}>
               {[ft.privacy, ft.terms, ft.cookies].map((item) => (
-                <a key={item} href="#" style={{ fontSize: "10px", color: "#2e2e2e", textDecoration: "none", letterSpacing: "0.08em", transition: "color 0.2s" }}
-                  onMouseEnter={e => e.currentTarget.style.color = "#6B6660"}
-                  onMouseLeave={e => e.currentTarget.style.color = "#2e2e2e"}>
+                <a key={item} href="#" style={{ fontSize: "10px", color: "#555250", textDecoration: "none", letterSpacing: "0.08em", transition: "color 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#9A9490"}
+                  onMouseLeave={e => e.currentTarget.style.color = "#555250"}>
                   {item}
                 </a>
               ))}

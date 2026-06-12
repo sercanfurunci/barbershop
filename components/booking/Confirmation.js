@@ -10,19 +10,21 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 
 const C = {
-  bg:       "#070707",
-  card:     "#0f0f14",
-  border:   "rgba(255,255,255,0.07)",
-  surface:  "#16161e",
-  primary:  "#F0EDE8",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#F6F3EE",
+  card:     "#FFFFFF",
+  border:   "#E5DFD6",
+  surface:  "#EFEAE2",
+  primary:  "#111111",
+  secondary:"#44403C",
+  muted:    "#6B7280",
+  red:      "#C62828",
 };
 
-export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
+export default function Confirmation({ booking, onBack, onLoadingChange, onSuccess, lang = "tr", tx, compact = false }) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const setLoadingState = (v) => { setLoading(v); onLoadingChange?.(v); };
   const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
   const s4 = tx?.booking?.step4 ?? {};
   const success = tx?.booking?.success ?? {};
@@ -34,7 +36,7 @@ export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
       toast.error(s4.errorMsg ?? "Lütfen tüm zorunlu alanları doldurun");
       return;
     }
-    setLoading(true);
+    setLoadingState(true);
     try {
       const dateStr = booking.date instanceof Date
         ? format(booking.date, "yyyy-MM-dd")
@@ -55,11 +57,12 @@ export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
         }),
       });
       setSubmitted(true);
+      onSuccess?.();
       toast.success(success.confirmed ?? "Randevunuz onaylandı!");
     } catch (err) {
-      toast.error(err.message ?? "Bir hata oluştu, lütfen tekrar deneyin.");
+      toast.error(err.message ?? "Randevu oluşturulamadı. Bağlantınızı kontrol edip tekrar deneyin.");
     } finally {
-      setLoading(false);
+      setLoadingState(false);
     }
   };
 
@@ -141,7 +144,7 @@ export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
                 fontSize: "13px",
                 fontWeight: 500,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; e.currentTarget.style.color = C.primary; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.color = C.primary; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.secondary; }}
             >
               {success.backHome}
@@ -157,7 +160,7 @@ export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
                 fontSize: "13px",
                 fontWeight: 600,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#E02020"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#B91C1C"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = C.red; }}
             >
               {success.bookAgain}
@@ -171,27 +174,49 @@ export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-10">
-        <div className="flex items-center gap-2.5 mb-4">
-          <div style={{ width: "20px", height: "2px", background: C.red, borderRadius: "1px" }} />
-          <span style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: C.red, fontWeight: 500 }}>
-            {s4.eyebrow}
-          </span>
+      {/* Header — hidden in compact (mobile) mode */}
+      {!compact && (
+        <div className="mb-10">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div style={{ width: "20px", height: "2px", background: C.red, borderRadius: "1px" }} />
+            <span style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: C.red, fontWeight: 500 }}>
+              {s4.eyebrow}
+            </span>
+          </div>
+          <h1
+            className="font-display font-light"
+            style={{ fontSize: "clamp(32px, 4.5vw, 48px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "10px" }}
+          >
+            {s4.title?.[0]}{" "}
+            <span style={{ fontStyle: "italic", color: C.red }}>{s4.title?.[1]}</span>
+          </h1>
+          <p style={{ fontSize: "14px", color: C.secondary, lineHeight: 1.6 }}>{s4.subtitle}</p>
         </div>
-        <h1
-          className="font-display font-light"
-          style={{ fontSize: "clamp(32px, 4.5vw, 48px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "10px" }}
-        >
-          {s4.title?.[0]}{" "}
-          <span style={{ fontStyle: "italic", color: C.red }}>{s4.title?.[1]}</span>
-        </h1>
-        <p style={{ fontSize: "14px", color: C.secondary, lineHeight: 1.6 }}>{s4.subtitle}</p>
+      )}
+
+      {/* Mobile-only compact booking summary */}
+      <div
+        className="lg:hidden mb-5 flex items-center justify-between gap-4"
+        style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 20px" }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: "14px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {serviceName}
+          </div>
+          <div style={{ fontSize: "12px", color: C.muted, marginTop: "2px" }}>
+            {barberName && `${barberName} · `}
+            {booking.date ? format(booking.date, "d MMM", { locale }) : ""}
+            {booking.time ? ` · ${booking.time}` : ""}
+          </div>
+        </div>
+        <span className="font-display font-light shrink-0" style={{ fontSize: "24px", color: C.primary, letterSpacing: "-0.02em" }}>
+          ₺{booking.service?.price?.toLocaleString()}
+        </span>
       </div>
 
       <div className="grid lg:grid-cols-5 gap-6">
-        {/* Booking summary sidebar */}
-        <div className="lg:col-span-2">
+        {/* Booking summary sidebar — desktop only */}
+        <div className="hidden lg:block lg:col-span-2">
           <div
             className="sticky top-24"
             style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "24px" }}
@@ -220,7 +245,7 @@ export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="lg:col-span-3 space-y-5">
+        <form id="booking-confirm-form" onSubmit={handleSubmit} className="lg:col-span-3 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               label={s4.formLabels?.name}
@@ -271,7 +296,7 @@ export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
                 transition: "border-color 0.15s",
                 lineHeight: 1.6,
               }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(204,26,26,0.5)"; }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.5)"; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
             />
           </div>
@@ -279,7 +304,7 @@ export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2.5 transition-all duration-200"
+            className="hidden md:flex w-full items-center justify-center gap-2.5 transition-all duration-200"
             style={{
               background: loading ? C.surface : C.red,
               color: loading ? C.secondary : "#fff",
@@ -291,7 +316,7 @@ export default function Confirmation({ booking, onBack, lang = "tr", tx }) {
               cursor: loading ? "not-allowed" : "pointer",
               letterSpacing: "0.01em",
             }}
-            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "#E02020"; }}
+            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "#B91C1C"; }}
             onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = C.red; }}
           >
             {loading ? (
@@ -354,7 +379,7 @@ function FormField({ label, placeholder, value, onChange, type = "text", icon, r
             transition: "border-color 0.15s",
             height: "44px",
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(204,26,26,0.5)"; }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.5)"; }}
           onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
         />
       </div>

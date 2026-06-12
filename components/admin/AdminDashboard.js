@@ -25,18 +25,20 @@ import { useT } from "@/lib/translations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { barbers, services, clients, workingHours } from "@/lib/data";
+import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 
 const C = {
-  bg:       "#0b0b0f",
-  sidebar:  "#0d0d13",
-  card:     "#111118",
-  border:   "rgba(255,255,255,0.06)",
-  surface:  "#16161e",
-  primary:  "#f1f0ed",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#F8F6F2",
+  sidebar:  "#FFFFFF",
+  card:     "#FFFFFF",
+  border:   "rgba(17,17,17,0.08)",
+  surface:  "#F1EEE8",
+  primary:  "#111111",
+  secondary:"#57514B",
+  muted:    "#6E6760",
+  dim:      "#C9C2B7",
+  red:      "#C62828",
 };
 
 const NAV_SECTIONS = (lang) => [
@@ -109,7 +111,7 @@ export default function AdminDashboard() {
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="fixed inset-0 z-40 lg:hidden"
-              style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+              style={{ background: "rgba(17,17,17,0.35)", backdropFilter: "blur(4px)" }}
               onClick={() => setDrawer(false)}
             />
             <motion.aside
@@ -174,7 +176,7 @@ export default function AdminDashboard() {
                 cursor: "pointer", letterSpacing: "0.02em",
                 transition: "all 0.15s",
               }}
-              onMouseEnter={(e) => { if (tab !== "barber-ops") { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; } }}
+              onMouseEnter={(e) => { if (tab !== "barber-ops") { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = "rgba(17,17,17,0.25)"; } }}
               onMouseLeave={(e) => { if (tab !== "barber-ops") { e.currentTarget.style.color = C.secondary; e.currentTarget.style.borderColor = C.border; } }}
             >
               <Activity size={11} />
@@ -193,7 +195,7 @@ export default function AdminDashboard() {
               {userMenu && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 100 }} onClick={() => setUserMenu(false)} />
-                  <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "#1a1a22", border: `1px solid ${C.border}`, borderRadius: "10px", padding: "6px", zIndex: 200, minWidth: "160px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+                  <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "10px", padding: "6px", zIndex: 200, minWidth: "160px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 8px 24px rgba(17,17,17,0.12)" }}>
                     <div style={{ padding: "8px 10px 10px", borderBottom: `1px solid ${C.border}`, marginBottom: "4px" }}>
                       <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>Mehmet Yılmaz</div>
                       <div style={{ fontSize: "10px", color: C.secondary }}>Süper Admin</div>
@@ -211,8 +213,8 @@ export default function AdminDashboard() {
                       </button>
                     ))}
                     <div style={{ height: "1px", background: C.border, margin: "4px 0" }} />
-                    <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "7px 10px", borderRadius: "6px", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#f87171", textAlign: "left" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(204,26,26,0.08)"; }}
+                    <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "7px 10px", borderRadius: "6px", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#B91C1C", textAlign: "left" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(198,40,40,0.08)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
                     >
                       <LogOut size={12} />
@@ -360,7 +362,7 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             className="fixed inset-0 z-40 lg:hidden"
-            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(3px)" }}
+            style={{ background: "rgba(17,17,17,0.35)", backdropFilter: "blur(3px)" }}
             onClick={() => setMoreOpen(false)}
           />
         )}
@@ -382,12 +384,12 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
               borderTop: `1px solid ${C.border}`,
               borderRadius: "20px 20px 0 0",
               padding: "0 0 4px",
-              boxShadow: "0 -8px 40px rgba(0,0,0,0.5)",
+              boxShadow: "0 -8px 40px rgba(17,17,17,0.15)",
             }}
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
-              <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: C.muted }} />
+              <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: C.dim }} />
             </div>
 
             {/* Sheet header */}
@@ -568,10 +570,10 @@ function BarberOpsPage({ barberId }) {
   useEffect(() => {
     if (barberId !== undefined) setSelectedId(barberId);
   }, [barberId]);
-  const [date, setDate]               = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate]               = useState(todayStr());
   const [showBooking, setShowBooking] = useState(false);
   const { appointments, updateStatus } = useAppointments();
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayStr();
 
   const selectedBarber = selectedId ? barbers.find(b => b.id === selectedId) : null;
 
@@ -609,7 +611,7 @@ function BarberOpsPage({ barberId }) {
                   transition: "all 0.15s",
                   position: "relative", overflow: "hidden",
                 }}
-                onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.background = C.surface; } }}
+                onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = "rgba(17,17,17,0.18)"; e.currentTarget.style.background = C.surface; } }}
                 onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; } }}
               >
                 {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: `linear-gradient(90deg, ${C.red}, #9a1212, transparent)` }} />}
@@ -619,7 +621,7 @@ function BarberOpsPage({ barberId }) {
                 <div style={{ fontSize: "13px", color: active ? C.primary : C.secondary, fontWeight: active ? 600 : 400, lineHeight: 1.3, marginBottom: "2px" }}>{b.name}</div>
                 <div style={{ fontSize: "10px", color: active ? C.red : C.muted, letterSpacing: "0.04em" }}>{b.title?.tr}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "8px" }}>
-                  {activeNow && <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#60a5fa", display: "inline-block", animation: "pulse 1.5s infinite" }} />}
+                  {activeNow && <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#2563EB", display: "inline-block", animation: "pulse 1.5s infinite" }} />}
                   <span style={{ fontSize: "10px", color: C.muted }}>
                     {activeNow ? "Şu an koltukta" : `${todayCount} randevu bugün`}
                   </span>
@@ -713,7 +715,7 @@ function BarberOpsPage({ barberId }) {
 /* ─── Schedule Section (date nav + BarberDayView) ────────────────────────── */
 
 function BarberScheduleSection({ barberId, date, setDate, appointments, updateStatus }) {
-  const todayStr      = new Date().toISOString().split("T")[0];
+  const todayStr      = todayStr();
   const isViewingToday = date === todayStr;
   const wh            = workingHours[barberId] ?? { start: 9, end: 18 };
 
@@ -755,7 +757,7 @@ function BarberScheduleSection({ barberId, date, setDate, appointments, updateSt
 /* ─── Performance View ───────────────────────────────────────────────────── */
 
 function BarberPerformanceView({ barberId, appointments }) {
-  const today      = new Date().toISOString().split("T")[0];
+  const today      = todayStr();
   const thisMonth  = today.slice(0, 7);
   const barberAppts = appointments.filter(a => a.barberId === barberId);
   const monthAppts  = barberAppts.filter(a => a.date.startsWith(thisMonth));
@@ -772,7 +774,7 @@ function BarberPerformanceView({ barberId, appointments }) {
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d  = new Date(today + "T12:00:00");
     d.setDate(d.getDate() - (6 - i));
-    const ds = d.toISOString().split("T")[0];
+    const ds = toDateStr(d);
     const da = barberAppts.filter(a => a.date === ds);
     return {
       date: ds,
@@ -800,8 +802,8 @@ function BarberPerformanceView({ barberId, appointments }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "Toplam Randevu", value: monthAppts.length,           sub: monthLabel,                  color: C.primary  },
-          { label: "Gelir",          value: `₺${monthRev.toLocaleString()}`, sub: `${completed.length} tamamlandı`, color: "#22c55e"  },
-          { label: "Tamamlanma",     value: `%${compRate}`,               sub: `${noShows.length} gelmedi`, color: compRate >= 80 ? "#22c55e" : "#f59e0b" },
+          { label: "Gelir",          value: `₺${monthRev.toLocaleString()}`, sub: `${completed.length} tamamlandı`, color: "#15803D"  },
+          { label: "Tamamlanma",     value: `%${compRate}`,               sub: `${noShows.length} gelmedi`, color: compRate >= 80 ? "#15803D" : "#B45309" },
           { label: "Ort. Sepet",     value: `₺${avgRev.toLocaleString()}`, sub: "tamamlanan/randevu",        color: C.primary  },
         ].map((k, i) => (
           <div key={i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "16px" }}>
@@ -827,7 +829,6 @@ function BarberPerformanceView({ barberId, appointments }) {
                   height: `${Math.max((day.revenue / maxRev) * 100, day.revenue > 0 ? 5 : 0)}%`,
                   background: day.date === today ? C.red : `${C.red}40`,
                   borderRadius: "3px 3px 0 0",
-                  transition: "height 0.3s",
                 }} />
               </div>
               <div style={{ fontSize: "9px", color: day.date === today ? C.primary : C.muted, fontWeight: day.date === today ? 600 : 400 }}>{day.label}</div>
@@ -859,7 +860,7 @@ function BarberPerformanceView({ barberId, appointments }) {
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "18px" }}>
           <div style={{ fontSize: "11px", color: C.secondary, fontWeight: 500, marginBottom: "14px" }}>Durum Dağılımı · {monthLabel}</div>
           {[
-            { label: "Tamamlandı", count: completed.length,  color: "#22c55e" },
+            { label: "Tamamlandı", count: completed.length,  color: "#15803D" },
             { label: "Gelmedi",    count: noShows.length,    color: C.red     },
             { label: "İptal",      count: cancelled.length,  color: "#52525b" },
           ].map(({ label, count, color }) => {
@@ -878,7 +879,7 @@ function BarberPerformanceView({ barberId, appointments }) {
           })}
           <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: "11px", color: C.secondary }}>Tekrar Eden Müşteri</span>
-            <span style={{ fontSize: "14px", color: retention >= 50 ? "#22c55e" : "#f59e0b", fontWeight: 700 }}>%{retention}</span>
+            <span style={{ fontSize: "14px", color: retention >= 50 ? "#15803D" : "#B45309", fontWeight: 700 }}>%{retention}</span>
           </div>
         </div>
       </div>
@@ -892,7 +893,7 @@ function BarberPerformanceView({ barberId, appointments }) {
 /* ─── Available Slots ────────────────────────────────────────────────────── */
 
 function BarberAvailableSlots({ barberId, appointments }) {
-  const today    = new Date().toISOString().split("T")[0];
+  const today    = todayStr();
   const now      = nowTimeStr();
   const wh       = workingHours[barberId] ?? { start: 9, end: 18 };
   const slots    = [];
@@ -910,7 +911,7 @@ function BarberAvailableSlots({ barberId, appointments }) {
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
         <span style={{ fontSize: "11px", color: C.secondary, fontWeight: 500 }}>Bugün Müsait Slotlar</span>
-        <span style={{ fontSize: "12px", color: "#22c55e", fontWeight: 700 }}>{futureAvail} müsait</span>
+        <span style={{ fontSize: "12px", color: "#15803D", fontWeight: 700 }}>{futureAvail} müsait</span>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
         {slots.map((slot) => {
@@ -924,7 +925,7 @@ function BarberAvailableSlots({ barberId, appointments }) {
                 fontFamily: "'DM Mono', monospace",
                 background: isPast ? "transparent" : isBooked ? `${C.red}12` : "rgba(34,197,94,0.08)",
                 border: `1px solid ${isPast ? "transparent" : isBooked ? `${C.red}28` : "rgba(34,197,94,0.2)"}`,
-                color: isPast ? C.muted : isBooked ? "#f87171" : "#4ade80",
+                color: isPast ? C.muted : isBooked ? "#B91C1C" : "#15803D",
                 opacity: isPast ? 0.35 : 1,
               }}
             >
@@ -1020,7 +1021,7 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout }) 
 /* ─── Business KPIs ───────────────────────────────────────────────────────── */
 function BusinessKPIs({ barberId }) {
   const { appointments } = useAppointments();
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
 
   const todayAppts  = appointments.filter(a => a.date === today && a.status !== "cancelled" && (!barberId || a.barberId === barberId));
   const completed   = todayAppts.filter(a => a.status === "completed");
@@ -1036,8 +1037,8 @@ function BusinessKPIs({ barberId }) {
   const cards = [
     { label: "Bugün Kasa",     value: `₺${todayRevenue.toLocaleString()}`, sub: `${completed.length} işlem tamamlandı`, hero: true },
     { label: "Toplam Randevu", value: todayAppts.length,                    sub: `${barbers.filter(b => b.available).length} berber aktif` },
-    { label: "Koltuk Doluluk", value: `${chairOcc}%`,                       sub: `${usedSlots}/${totalCap} slot`, valueColor: chairOcc > 70 ? "#22c55e" : chairOcc > 40 ? "#f59e0b" : C.primary },
-    { label: "No-Show Oranı",  value: `${noShowRate}%`,                     sub: `${noshows.length} gelmedi`,     valueColor: noShowRate > 15 ? "#f87171" : C.primary },
+    { label: "Koltuk Doluluk", value: `${chairOcc}%`,                       sub: `${usedSlots}/${totalCap} slot`, valueColor: chairOcc > 70 ? "#15803D" : chairOcc > 40 ? "#B45309" : C.primary },
+    { label: "No-Show Oranı",  value: `${noShowRate}%`,                     sub: `${noshows.length} gelmedi`,     valueColor: noShowRate > 15 ? "#B91C1C" : C.primary },
     { label: "Onay Bekliyor",  value: pending.length,                       sub: pending.length > 0 ? "hemen işlem yap" : "tümü onaylandı", alert: pending.length > 0 },
   ];
 
@@ -1053,7 +1054,7 @@ function BusinessKPIs({ barberId }) {
           <div style={{ fontSize: "9px", color: c.hero ? "rgba(255,255,255,0.55)" : C.secondary, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "8px" }}>{c.label}</div>
           <div style={{ fontSize: c.hero ? "26px" : "22px", color: c.hero ? "#fff" : (c.valueColor || C.primary), fontWeight: c.hero ? 700 : 300, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: "4px" }}>{c.value}</div>
           <div style={{ fontSize: "10px", color: c.hero ? "rgba(255,255,255,0.45)" : C.muted }}>{c.sub}</div>
-          {c.alert && <div style={{ position: "absolute", top: "10px", right: "10px", width: "6px", height: "6px", borderRadius: "50%", background: "#f59e0b" }} />}
+          {c.alert && <div style={{ position: "absolute", top: "10px", right: "10px", width: "6px", height: "6px", borderRadius: "50%", background: "#B45309" }} />}
         </div>
       ))}
     </div>
@@ -1063,7 +1064,7 @@ function BusinessKPIs({ barberId }) {
 /* ─── Staff Performance Cards ─────────────────────────────────────────────── */
 function StaffPerformance({ barberId }) {
   const { appointments } = useAppointments();
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
   const todayAppts = appointments.filter(a => a.date === today && a.status !== "cancelled");
   const TOTAL_SLOTS = 24;
   const visibleBarbers = barberId ? barbers.filter(b => b.id === barberId) : barbers;
@@ -1085,18 +1086,18 @@ function StaffPerformance({ barberId }) {
           return (
             <div key={b.id} style={{ background: C.surface, borderRadius: "8px", padding: "12px 14px", border: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-                <div style={{ width: "30px", height: "30px", background: `linear-gradient(135deg, #CC1A1A, #9a1212)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                <div style={{ width: "30px", height: "30px", background: `linear-gradient(135deg, #C62828, #9a1212)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                   {b.avatar}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.name.split(" ")[0]}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-                    <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: b.available ? "#22c55e" : C.muted }} />
-                    <span style={{ fontSize: "9px", color: b.available ? "#22c55e" : C.muted }}>{b.available ? "Aktif" : "İzinli"}</span>
+                    <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: b.available ? "#15803D" : C.muted }} />
+                    <span style={{ fontSize: "9px", color: b.available ? "#15803D" : C.muted }}>{b.available ? "Aktif" : "İzinli"}</span>
                   </div>
                 </div>
                 {pendingCt > 0 && (
-                  <span style={{ fontSize: "9px", background: "rgba(245,158,11,0.15)", color: "#f59e0b", borderRadius: "4px", padding: "1px 5px", flexShrink: 0 }}>{pendingCt} bekl</span>
+                  <span style={{ fontSize: "9px", background: "rgba(245,158,11,0.15)", color: "#B45309", borderRadius: "4px", padding: "1px 5px", flexShrink: 0 }}>{pendingCt} bekl</span>
                 )}
               </div>
               <div style={{ display: "flex", gap: "10px", marginBottom: "8px", minWidth: 0 }}>
@@ -1112,10 +1113,10 @@ function StaffPerformance({ barberId }) {
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
                   <span style={{ fontSize: "9px", color: C.muted }}>Doluluk</span>
-                  <span style={{ fontSize: "9px", color: util > 50 ? "#22c55e" : C.secondary }}>{util}%</span>
+                  <span style={{ fontSize: "9px", color: util > 50 ? "#15803D" : C.secondary }}>{util}%</span>
                 </div>
                 <div style={{ height: "3px", background: C.border, borderRadius: "2px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${util}%`, background: util > 70 ? "#22c55e" : util > 40 ? "#f59e0b" : C.red, borderRadius: "2px" }} />
+                  <div style={{ height: "100%", width: `${util}%`, background: util > 70 ? "#15803D" : util > 40 ? "#B45309" : C.red, borderRadius: "2px" }} />
                 </div>
               </div>
             </div>
@@ -1129,7 +1130,7 @@ function StaffPerformance({ barberId }) {
 /* ─── Pending Confirmations + Day Summary ─────────────────────────────────── */
 function PendingConfirmations({ onNewBooking, barberId }) {
   const { appointments, updateStatus } = useAppointments();
-  const today  = new Date().toISOString().split("T")[0];
+  const today  = todayStr();
   const now    = new Date();
   const nowStr = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
 
@@ -1155,10 +1156,10 @@ function PendingConfirmations({ onNewBooking, barberId }) {
         <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: "7px" }}>
           <span style={{ fontSize: "12px", fontWeight: 500, color: C.primary }}>Onay Bekliyor</span>
           {pending.length > 0
-            ? <span style={{ fontSize: "10px", background: "rgba(245,158,11,0.15)", color: "#f59e0b", borderRadius: "4px", padding: "1px 6px" }}>{pending.length}</span>
-            : <span style={{ fontSize: "10px", background: "rgba(34,197,94,0.1)", color: "#22c55e", borderRadius: "4px", padding: "1px 6px" }}>✓</span>
+            ? <span style={{ fontSize: "10px", background: "rgba(245,158,11,0.15)", color: "#B45309", borderRadius: "4px", padding: "1px 6px" }}>{pending.length}</span>
+            : <span style={{ fontSize: "10px", background: "rgba(34,197,94,0.1)", color: "#15803D", borderRadius: "4px", padding: "1px 6px" }}>✓</span>
           }
-          <button onClick={onNewBooking} style={{ marginLeft: "auto", fontSize: "11px", color: C.red, background: "none", border: `1px solid rgba(204,26,26,0.25)`, borderRadius: "5px", padding: "3px 10px", cursor: "pointer" }}>+ Ekle</button>
+          <button onClick={onNewBooking} style={{ marginLeft: "auto", fontSize: "11px", color: C.red, background: "none", border: `1px solid rgba(198,40,40,0.25)`, borderRadius: "5px", padding: "3px 10px", cursor: "pointer" }}>+ Ekle</button>
         </div>
         {pending.length === 0 ? (
           <div style={{ padding: "14px 18px" }}>
@@ -1177,11 +1178,11 @@ function PendingConfirmations({ onNewBooking, barberId }) {
                   </div>
                   <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
                     <button onClick={() => updateStatus(appt.id, "confirmed")}
-                      style={{ width: "26px", height: "26px", background: "rgba(34,197,94,0.12)", border: `1px solid rgba(34,197,94,0.25)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#22c55e", fontSize: "13px", lineHeight: 1 }}
+                      style={{ width: "26px", height: "26px", background: "rgba(34,197,94,0.12)", border: `1px solid rgba(34,197,94,0.25)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#15803D", fontSize: "13px", lineHeight: 1 }}
                       title="Onayla"
                     >✓</button>
                     <button onClick={() => updateStatus(appt.id, "cancelled")}
-                      style={{ width: "26px", height: "26px", background: "rgba(248,113,113,0.08)", border: `1px solid rgba(248,113,113,0.2)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#f87171", fontSize: "13px", lineHeight: 1 }}
+                      style={{ width: "26px", height: "26px", background: "rgba(248,113,113,0.08)", border: `1px solid rgba(248,113,113,0.2)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#B91C1C", fontSize: "13px", lineHeight: 1 }}
                       title="İptal"
                     >✕</button>
                   </div>
@@ -1202,9 +1203,9 @@ function PendingConfirmations({ onNewBooking, barberId }) {
         {/* Stats strip */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1px", background: C.border }}>
           {[
-            { label: "Kazanç",       value: `₺${revenue.toLocaleString()}`, color: revenue > 0 ? "#22c55e" : C.secondary },
+            { label: "Kazanç",       value: `₺${revenue.toLocaleString()}`, color: revenue > 0 ? "#15803D" : C.secondary },
             { label: "Tamamlanan",   value: todayDone.length,               color: C.primary },
-            { label: "Koltuğa Aldı", value: todayInProgress.length,         color: todayInProgress.length > 0 ? "#60a5fa" : C.muted },
+            { label: "Koltuğa Aldı", value: todayInProgress.length,         color: todayInProgress.length > 0 ? "#2563EB" : C.muted },
           ].map((s, i) => (
             <div key={i} style={{ background: C.card, padding: "12px 10px", textAlign: "center" }}>
               <div style={{ fontSize: "18px", color: s.color, fontWeight: 300, lineHeight: 1, marginBottom: "3px" }}>{s.value}</div>
@@ -1224,7 +1225,7 @@ function PendingConfirmations({ onNewBooking, barberId }) {
               const isActive = appt.status === "in-progress";
               return (
                 <div key={appt.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px", borderTop: `1px solid ${C.border}` }}>
-                  <span style={{ fontSize: "11px", color: isActive ? "#60a5fa" : C.primary, fontWeight: 600, minWidth: "38px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
+                  <span style={{ fontSize: "11px", color: isActive ? "#2563EB" : C.primary, fontWeight: 600, minWidth: "38px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
                   <div style={{ width: "18px", height: "18px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                     {brb?.avatar ?? "?"}
                   </div>
@@ -1232,7 +1233,7 @@ function PendingConfirmations({ onNewBooking, barberId }) {
                     <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
                     <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}</div>
                   </div>
-                  {isActive && <span style={{ fontSize: "9px", color: "#60a5fa", background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.2)", padding: "2px 6px", borderRadius: "4px", flexShrink: 0 }}>Devam</span>}
+                  {isActive && <span style={{ fontSize: "9px", color: "#2563EB", background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.2)", padding: "2px 6px", borderRadius: "4px", flexShrink: 0 }}>Devam</span>}
                 </div>
               );
             })}
@@ -1250,17 +1251,17 @@ function PendingConfirmations({ onNewBooking, barberId }) {
 /* ─── Today Schedule ──────────────────────────────────────────────────────── */
 function TodaySchedule({ onNewBooking, barberId }) {
   const { appointments } = useAppointments();
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
   const todayAppts = appointments
     .filter(a => a.date === today && a.status !== "cancelled" && (!barberId || a.barberId === barberId))
     .sort((a, b) => a.time.localeCompare(b.time));
 
   const SC = {
-    pending:       { color: "#f59e0b" },
-    confirmed:     { color: "#22c55e" },
-    "in-progress": { color: "#60a5fa" },
-    completed:     { color: "#6b6870" },
-    noshow:        { color: "#CC1A1A" },
+    pending:       { color: "#B45309" },
+    confirmed:     { color: "#15803D" },
+    "in-progress": { color: "#2563EB" },
+    completed:     { color: "#57514B" },
+    noshow:        { color: "#C62828" },
     cancelled:     { color: "#52525b" },
   };
 
@@ -1273,7 +1274,7 @@ function TodaySchedule({ onNewBooking, barberId }) {
       {todayAppts.length === 0 ? (
         <div style={{ padding: "32px 18px", textAlign: "center" }}>
           <div style={{ fontSize: "11px", color: C.muted, marginBottom: "10px" }}>Bugün randevu yok</div>
-          <button onClick={onNewBooking} style={{ fontSize: "11px", color: C.red, background: "none", border: `1px solid rgba(204,26,26,0.3)`, borderRadius: "6px", padding: "5px 12px", cursor: "pointer" }}>+ Randevu Ekle</button>
+          <button onClick={onNewBooking} style={{ fontSize: "11px", color: C.red, background: "none", border: `1px solid rgba(198,40,40,0.3)`, borderRadius: "6px", padding: "5px 12px", cursor: "pointer" }}>+ Randevu Ekle</button>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))" }}>
@@ -1283,7 +1284,7 @@ function TodaySchedule({ onNewBooking, barberId }) {
             return (
               <div key={appt.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 18px", borderRight: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
                 <span style={{ fontSize: "11px", color: C.primary, fontWeight: 600, minWidth: "38px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
-                <div style={{ width: "20px", height: "20px", background: `linear-gradient(135deg, #CC1A1A, #9a1212)`, borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                <div style={{ width: "20px", height: "20px", background: `linear-gradient(135deg, #C62828, #9a1212)`, borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                   {brb?.avatar ?? "??"}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1303,19 +1304,19 @@ function TodaySchedule({ onNewBooking, barberId }) {
 /* ─── Recent Activity Feed (xl third column) ─────────────────────────────── */
 function RecentActivityFeed() {
   const { appointments } = useAppointments();
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
 
   const recent = [...appointments]
     .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
     .slice(0, 8);
 
   const STATUS_COLOR = {
-    confirmed:     "#22c55e",
-    "in-progress": "#60a5fa",
-    pending:       "#f59e0b",
-    completed:     "#6b6870",
+    confirmed:     "#15803D",
+    "in-progress": "#2563EB",
+    pending:       "#B45309",
+    completed:     "#57514B",
     cancelled:     "#52525b",
-    noshow:        "#CC1A1A",
+    noshow:        "#C62828",
   };
   const STATUS_LABEL = {
     confirmed: "Onaylandı", "in-progress": "Devam", pending: "Bekliyor",
@@ -1331,7 +1332,7 @@ function RecentActivityFeed() {
       <div style={{ overflowY: "auto", maxHeight: "360px" }}>
         {recent.map((appt, i) => {
           const brb = barbers.find(b => b.id === appt.barberId);
-          const color = STATUS_COLOR[appt.status] ?? "#6b6870";
+          const color = STATUS_COLOR[appt.status] ?? "#57514B";
           const isToday = appt.date === today;
           return (
             <div key={appt.id} style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 18px", borderBottom: i < recent.length - 1 ? `1px solid ${C.border}` : "none" }}>
@@ -1413,7 +1414,7 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, barberId }) {
             key={t}
             onClick={() => setTab(t)}
             style={{ padding: "11px 16px", borderRadius: "8px", background: C.card, border: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "7px", fontSize: "12px", color: C.secondary }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(204,26,26,0.2)"; e.currentTarget.style.color = C.primary; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.2)"; e.currentTarget.style.color = C.primary; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.secondary; }}
           >
             <Icon size={13} style={{ color: C.red }} />
@@ -1506,7 +1507,7 @@ function CustomersPage({ barberId }) {
                 <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: C.secondary, fontFamily: "'DM Mono', monospace" }}>{c.phone}</span></td>
                 <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "13px", color: C.primary }}>{c.visits}</span></td>
                 <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>₺{c.totalSpent.toLocaleString()}</span></td>
-                <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: c.noShows > 0 ? "#f87171" : C.secondary }}>{c.noShows}</span></td>
+                <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: c.noShows > 0 ? "#B91C1C" : C.secondary }}>{c.noShows}</span></td>
                 <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: C.secondary }}>{c.lastVisit}</span></td>
               </tr>
             ))}
@@ -1529,7 +1530,7 @@ function CustomersPage({ barberId }) {
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: "11px", color: C.muted }}>{c.lastVisit}</span>
-              {c.noShows > 0 && <span style={{ fontSize: "11px", color: "#f87171" }}>{c.noShows} no-show</span>}
+              {c.noShows > 0 && <span style={{ fontSize: "11px", color: "#B91C1C" }}>{c.noShows} no-show</span>}
             </div>
           </div>
         ))}
@@ -1544,7 +1545,7 @@ function ServicesMgmtPage() {
     cuts: "Kesim", beard: "Sakal", combo: "Kombo", premium: "Premium",
   };
   const CATEGORY_COLORS = {
-    cuts: "#60a5fa", beard: "#fbbf24", combo: "#f87171", premium: "#a78bfa",
+    cuts: "#2563EB", beard: "#B45309", combo: "#B91C1C", premium: "#6D28D9",
   };
 
   return (
@@ -1574,7 +1575,7 @@ function ServicesMgmtPage() {
                     <span style={{ fontSize: "16px" }}>{s.icon}</span>
                     <div>
                       <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{s.name.tr}</div>
-                      {s.popular && <span style={{ fontSize: "9px", color: "#CC1A1A", letterSpacing: "0.06em" }}>POPÜLER</span>}
+                      {s.popular && <span style={{ fontSize: "9px", color: "#C62828", letterSpacing: "0.06em" }}>POPÜLER</span>}
                     </div>
                   </div>
                 </td>
@@ -1621,7 +1622,7 @@ function ServicesMgmtPage() {
 function RevenuePage({ tx, barberId }) {
   const { appointments } = useAppointments();
   const activeBarber = barberId ? barbers.find(b => b.id === barberId) : null;
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
   const thisMonth = today.slice(0, 7);
 
   const filtered = barberId ? appointments.filter(a => a.barberId === barberId) : null;

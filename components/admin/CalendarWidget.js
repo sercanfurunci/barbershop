@@ -17,8 +17,8 @@ const C = {
   border:    "rgba(255,255,255,0.06)",
   surface:   "#16161e",
   primary:   "#f1f0ed",
-  secondary: "#6b6870",
-  muted:     "#2e2d35",
+  secondary: "#9A96A0",
+  muted:     "#8E8A93",
   red:       "#CC1A1A",
 };
 
@@ -49,7 +49,7 @@ export default function CalendarWidget() {
   const todayAppts = [
     { time: "10:00", name: "Ahmet Yıldız",   service: lang === "tr" ? "VIP Bakım"       : "VIP Grooming"  },
     { time: "11:30", name: "Mert Çelik",      service: lang === "tr" ? "Usta Tıraşı"    : "Royal Shave"   },
-    { time: "13:00", name: "Burak Öztürk",    service: lang === "tr" ? "Soluk & Kıvrım" : "Fade & Taper"  },
+    { time: "13:00", name: "Burak Öztürk",    service: "Fade & Taper"  },
     { time: "14:30", name: "Can Polat",        service: lang === "tr" ? "Kesim & Sakal"  : "Cut & Beard"   },
     { time: "15:00", name: "Kemal Arslan",     service: lang === "tr" ? "Klasik Kesim"   : "Classic Cut"   },
   ].slice(0, todayCount);

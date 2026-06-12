@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
+import { todayStr, toDateStr } from "@/lib/utils";
 import ManualBookingModal from "@/components/admin/ManualBookingModal";
 import Link from "next/link";
 import {
@@ -16,32 +17,33 @@ import {
 } from "lucide-react";
 
 const C = {
-  bg:       "#08080c",
-  card:     "#0f0f15",
-  cardHi:   "#13131a",
-  border:   "rgba(255,255,255,0.07)",
-  borderHi: "rgba(255,255,255,0.12)",
-  surface:  "#17171f",
-  primary:  "#f0ede8",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#F8F6F2",
+  card:     "#FFFFFF",
+  cardHi:   "#FBF7F0",
+  border:   "rgba(17,17,17,0.08)",
+  borderHi: "rgba(17,17,17,0.18)",
+  surface:  "#F1EEE8",
+  primary:  "#111111",
+  secondary:"#57514B",
+  muted:    "#6E6760",
+  dim:      "#C9C2B7",
+  red:      "#C62828",
 };
 
 // Arrival-focused status config — workflow order: pending→confirmed→in-progress→completed
 export const FLOW = [
-  { key: "confirmed",    label: "Onaylandı",  shortLabel: "Onay",   color: "#22c55e", bg: "rgba(34,197,94,0.12)"   },
-  { key: "in-progress",  label: "Koltuğa Aldı", shortLabel: "Devam", color: "#60a5fa", bg: "rgba(96,165,250,0.12)" },
-  { key: "completed",    label: "Tamamlandı", shortLabel: "Tamam",  color: "#6b6870", bg: "rgba(107,104,112,0.12)" },
-  { key: "noshow",       label: "Gelmedi",    shortLabel: "Gelmedi",color: "#CC1A1A", bg: "rgba(204,26,26,0.12)"   },
+  { key: "confirmed",    label: "Onaylandı",  shortLabel: "Onay",   color: "#15803D", bg: "rgba(34,197,94,0.12)"   },
+  { key: "in-progress",  label: "Koltuğa Aldı", shortLabel: "Devam", color: "#2563EB", bg: "rgba(96,165,250,0.12)" },
+  { key: "completed",    label: "Tamamlandı", shortLabel: "Tamam",  color: "#57514B", bg: "rgba(107,104,112,0.12)" },
+  { key: "noshow",       label: "Gelmedi",    shortLabel: "Gelmedi",color: "#C62828", bg: "rgba(198,40,40,0.12)"   },
 ];
 
 export const ALL_STATUS = {
-  pending:       { label: "Bekleniyor",    color: "#f59e0b", bg: "rgba(245,158,11,0.1)"   },
-  confirmed:     { label: "Onaylandı",     color: "#22c55e", bg: "rgba(34,197,94,0.1)"    },
-  "in-progress": { label: "Koltuğa Aldı", color: "#60a5fa", bg: "rgba(96,165,250,0.1)"   },
-  completed:     { label: "Tamamlandı",   color: "#6b6870", bg: "rgba(107,104,112,0.1)"  },
-  noshow:        { label: "Gelmedi",      color: "#CC1A1A", bg: "rgba(204,26,26,0.1)"    },
+  pending:       { label: "Bekleniyor",    color: "#B45309", bg: "rgba(245,158,11,0.1)"   },
+  confirmed:     { label: "Onaylandı",     color: "#15803D", bg: "rgba(34,197,94,0.1)"    },
+  "in-progress": { label: "Koltuğa Aldı", color: "#2563EB", bg: "rgba(96,165,250,0.1)"   },
+  completed:     { label: "Tamamlandı",   color: "#57514B", bg: "rgba(107,104,112,0.1)"  },
+  noshow:        { label: "Gelmedi",      color: "#C62828", bg: "rgba(198,40,40,0.1)"    },
   cancelled:     { label: "İptal",        color: "#52525b", bg: "rgba(82,82,91,0.1)"     },
 };
 
@@ -53,11 +55,11 @@ function timeToMin(t) {
 export function addDays(dateStr, n) {
   const d = new Date(dateStr + "T12:00:00");
   d.setDate(d.getDate() + n);
-  return d.toISOString().split("T")[0];
+  return toDateStr(d);
 }
 
 export function isToday(dateStr) {
-  return dateStr === new Date().toISOString().split("T")[0];
+  return dateStr === todayStr();
 }
 
 export function formatDateLong(dateStr) {
@@ -92,9 +94,8 @@ export function NextAppointmentCard({ appt, onAction }) {
     <motion.div
       layout
       style={{
-        background: isActive ? "#131320" : C.card,
-        border: `1px solid ${isActive ? "rgba(96,165,250,0.25)" : C.border}`,
-        borderLeft: `4px solid ${sc.color}`,
+        background: isActive ? "#EFF4FD" : C.card,
+        border: `1px solid ${isActive ? "rgba(96,165,250,0.25)" : sc.color + "40"}`,
         borderRadius: "12px",
         padding: "16px 20px",
         position: "relative",
@@ -102,7 +103,7 @@ export function NextAppointmentCard({ appt, onAction }) {
       }}
     >
       {isActive && (
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, #60a5fa, transparent)", opacity: 0.6 }} />
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, #2563EB, transparent)", opacity: 0.6 }} />
       )}
       <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
         <div style={{ textAlign: "center", flexShrink: 0 }}>
@@ -169,8 +170,7 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
         onClick={() => !isDone && setExpanded(v => !v)}
         style={{
           background: isNext ? C.cardHi : C.card,
-          border: `1px solid ${isNext ? C.borderHi : C.border}`,
-          borderLeft: `3px solid ${isNext ? sc.color : isDone ? C.muted : C.border}`,
+          border: `1px solid ${isNext ? sc.color + "55" : C.border}`,
           borderRadius: "10px",
           padding: "14px 16px",
           cursor: isDone ? "default" : "pointer",
@@ -178,8 +178,8 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
           transition: "all 0.15s",
           position: "relative",
         }}
-        onMouseEnter={e => { if (!isDone) { e.currentTarget.style.borderLeftColor = sc.color; e.currentTarget.style.background = C.cardHi; }}}
-        onMouseLeave={e => { if (!isDone) { e.currentTarget.style.borderLeftColor = isNext ? sc.color : C.border; e.currentTarget.style.background = isNext ? C.cardHi : C.card; }}}
+        onMouseEnter={e => { if (!isDone) { e.currentTarget.style.borderColor = sc.color + "55"; e.currentTarget.style.background = C.cardHi; }}}
+        onMouseLeave={e => { if (!isDone) { e.currentTarget.style.borderColor = isNext ? sc.color + "55" : C.border; e.currentTarget.style.background = isNext ? C.cardHi : C.card; }}}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {/* Time */}
@@ -197,7 +197,7 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
             <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {appt.client}
               {appt.source === "phone" && (
-                <span style={{ marginLeft: "6px", fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#60a5fa", border: "1px solid rgba(96,165,250,0.2)", fontWeight: 600, verticalAlign: "middle" }}>TEL</span>
+                <span style={{ marginLeft: "6px", fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", fontWeight: 600, verticalAlign: "middle" }}>TEL</span>
               )}
             </div>
             <div style={{ fontSize: "11px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "1px" }}>
@@ -275,8 +275,8 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2" style={{ marginBottom: "16px" }}>
         {[
           { label: "Toplam",   value: dayAppts.length,    color: C.primary,   span: false },
-          { label: "Onaylı",   value: confirmed,           color: "#22c55e",   span: false },
-          { label: "Bekliyor", value: pending,             color: "#f59e0b",   span: false },
+          { label: "Onaylı",   value: confirmed,           color: "#15803D",   span: false },
+          { label: "Bekliyor", value: pending,             color: "#B45309",   span: false },
           { label: "Tamam",    value: completed,           color: C.secondary, span: false },
           { label: "Kasa",     value: `₺${revenue.toLocaleString()}`, color: C.primary, span: true },
         ].map((s, i) => (
@@ -300,8 +300,8 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
       {/* Pending banner */}
       {pending > 0 && isToday_ && (
         <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-          <AlertCircle size={14} style={{ color: "#f59e0b", flexShrink: 0 }} />
-          <span style={{ fontSize: "12px", color: "#f59e0b", fontWeight: 500 }}>{pending} randevu onay bekliyor</span>
+          <AlertCircle size={14} style={{ color: "#B45309", flexShrink: 0 }} />
+          <span style={{ fontSize: "12px", color: "#B45309", fontWeight: 500 }}>{pending} randevu onay bekliyor</span>
         </div>
       )}
 
@@ -332,7 +332,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
   const router = useRouter();
   const { role, user, logout, loaded: authLoaded } = useAuth();
   const { appointments, updateStatus } = useAppointments();
-  const [date, setDate]       = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate]       = useState(todayStr());
   const [view, setView]       = useState("dashboard");
   const [moreOpen, setMoreOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -369,8 +369,8 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
 
   if (!barber || !mounted) return null;
 
-  const todayStr       = new Date().toISOString().split("T")[0];
-  const viewDate       = view === "dashboard" ? todayStr : date;
+  const today          = todayStr();
+  const viewDate       = view === "dashboard" ? today : date;
   const viewing        = viewDate;
   const isViewingToday = isToday(viewing);
 
@@ -408,7 +408,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
   // Weekly stats (last 7 days)
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i));
-    return d.toISOString().split("T")[0];
+    return toDateStr(d);
   });
   const weekData = weekDays.map(d => {
     const appts = appointments.filter(a => (realBarberId ? a.barberId === realBarberId : true) && a.date === d && a.status === "completed");
@@ -492,8 +492,8 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(248,113,113,0.06)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
           >
-            <LogOut size={15} style={{ color: "#f87171" }} />
-            <span style={{ fontSize: "13px", color: "#f87171" }}>Çıkış Yap</span>
+            <LogOut size={15} style={{ color: "#B91C1C" }} />
+            <span style={{ fontSize: "13px", color: "#B91C1C" }}>Çıkış Yap</span>
           </button>
         </div>
       </aside>
@@ -503,7 +503,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
         {moreOpen && (
           <>
             <motion.div key="bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 lg:hidden" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+              className="fixed inset-0 z-40 lg:hidden" style={{ background: "rgba(17,17,17,0.35)", backdropFilter: "blur(4px)" }}
               onClick={() => setMoreOpen(false)} />
             <motion.aside key="bs" initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
@@ -532,8 +532,8 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                 <button onClick={() => { logout(); router.push("/barber"); }}
                   className="w-full flex items-center gap-3"
                   style={{ padding: "9px 10px", borderRadius: "8px", background: "transparent", border: "none", cursor: "pointer" }}>
-                  <LogOut size={15} style={{ color: "#f87171" }} />
-                  <span style={{ fontSize: "13px", color: "#f87171" }}>Çıkış Yap</span>
+                  <LogOut size={15} style={{ color: "#B91C1C" }} />
+                  <span style={{ fontSize: "13px", color: "#B91C1C" }}>Çıkış Yap</span>
                 </button>
               </div>
             </motion.aside>
@@ -568,7 +568,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
             {(view === "dashboard" || view === "schedule") && (
               <>
                 <h1 style={{ fontSize: "clamp(20px, 2.5vw, 26px)", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "4px" }}>
-                  {view === "dashboard" ? formatDateLong(todayStr) : formatDateLong(viewing)}
+                  {view === "dashboard" ? formatDateLong(today) : formatDateLong(viewing)}
                   {(view === "dashboard" || isViewingToday) && (
                     <span style={{ marginLeft: "10px", fontSize: "10px", color: C.red, fontWeight: 700, letterSpacing: "0.12em", verticalAlign: "middle", textTransform: "uppercase" }}>Bugün</span>
                   )}
@@ -586,7 +586,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                 <ChevronLeft size={15} />
               </button>
               {!isViewingToday && (
-                <button onClick={() => setDate(todayStr)} style={{ height: "36px", padding: "0 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>Bugün</button>
+                <button onClick={() => setDate(today)} style={{ height: "36px", padding: "0 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>Bugün</button>
               )}
               <button onClick={() => setDate(d => addDays(d, 1))} style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
                 <ChevronRight size={15} />
@@ -602,8 +602,8 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
             <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-4" style={{ marginBottom: "24px" }}>
               {[
                 { label: "Toplam",   value: dayAppts.length,                   color: C.primary   },
-                { label: "Onaylı",   value: confirmed,                          color: "#22c55e"   },
-                { label: "Bekliyor", value: pending,                            color: "#f59e0b"   },
+                { label: "Onaylı",   value: confirmed,                          color: "#15803D"   },
+                { label: "Bekliyor", value: pending,                            color: "#B45309"   },
                 { label: "Tamam",    value: completed,                          color: C.secondary },
                 { label: "Bugün Kazanç", value: `₺${revenue.toLocaleString()}`, color: C.primary   },
               ].map((s, i) => (
@@ -624,8 +624,8 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                   <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                     style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "10px", padding: "12px 16px", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <AlertCircle size={14} style={{ color: "#f59e0b" }} />
-                      <span style={{ fontSize: "13px", color: "#f59e0b", fontWeight: 500 }}>{pending} randevu onay bekliyor</span>
+                      <AlertCircle size={14} style={{ color: "#B45309" }} />
+                      <span style={{ fontSize: "13px", color: "#B45309", fontWeight: 500 }}>{pending} randevu onay bekliyor</span>
                     </div>
                     <span style={{ fontSize: "11px", color: C.secondary }}>Aşağıdan güncelleyin</span>
                   </motion.div>
@@ -644,7 +644,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                         <div style={{ fontSize: "28px", marginBottom: "10px", opacity: 0.2 }}>✂</div>
                         <div style={{ fontSize: "13px", color: C.secondary, marginBottom: "14px" }}>Bu gün için randevu yok</div>
                         <button onClick={() => setShowModal(true)}
-                          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "none", border: `1px solid rgba(204,26,26,0.3)`, borderRadius: "6px", padding: "7px 16px", fontSize: "12px", color: C.red, cursor: "pointer" }}>
+                          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "none", border: `1px solid rgba(198,40,40,0.3)`, borderRadius: "6px", padding: "7px 16px", fontSize: "12px", color: C.red, cursor: "pointer" }}>
                           <Plus size={12} /> Randevu Ekle
                         </button>
                       </div>
@@ -691,7 +691,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                       {/* Mini bar chart */}
                       <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "56px" }}>
                         {weekData.map((d, i) => {
-                          const isToday_ = d.date === todayStr;
+                          const isToday_ = d.date === today;
                           const h = maxCount > 0 ? Math.max((d.count / maxCount) * 100, d.count > 0 ? 15 : 5) : 5;
                           const dayLabel = new Date(d.date + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "narrow" });
                           return (
@@ -700,7 +700,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                                 <motion.div
                                   initial={{ height: 0 }} animate={{ height: `${h}%` }}
                                   transition={{ delay: i * 0.04, duration: 0.35, ease: "easeOut" }}
-                                  style={{ width: "100%", background: isToday_ ? C.red : d.count > 0 ? "rgba(204,26,26,0.3)" : C.muted, borderRadius: "3px 3px 0 0", minHeight: "3px" }}
+                                  style={{ width: "100%", background: isToday_ ? C.red : d.count > 0 ? "rgba(198,40,40,0.3)" : C.dim, borderRadius: "3px 3px 0 0", minHeight: "3px" }}
                                 />
                               </div>
                               <div style={{ fontSize: "8px", color: isToday_ ? C.red : C.muted, fontWeight: isToday_ ? 700 : 400 }}>{dayLabel}</div>
@@ -716,8 +716,8 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                       {[
                         { label: "Tamamlanan",  value: completed,                      color: C.secondary },
                         { label: "Bugün Kazanç",value: `₺${revenue.toLocaleString()}`, color: C.primary   },
-                        { label: "Gelmedi",     value: noshow,   color: noshow > 0 ? "#f87171" : C.muted  },
-                        { label: "Müsait Slot", value: `~${freeSlots}`,                color: C.muted     },
+                        { label: "Gelmedi",     value: noshow,   color: noshow > 0 ? "#B91C1C" : C.muted  },
+                        { label: "Tahmini Müsait Slot", value: freeSlots,                color: C.muted     },
                       ].map((s, i) => (
                         <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: i < 3 ? "10px" : 0 }}>
                           <span style={{ fontSize: "12px", color: C.secondary }}>{s.label}</span>
@@ -791,7 +791,7 @@ function ProfileTab() {
       updateUser({ username: updated.username, displayName: updated.displayName });
       setProfileMsg({ ok: true, text: "Profil güncellendi" });
     } catch (err) {
-      setProfileMsg({ ok: false, text: err.message ?? "Bir hata oluştu" });
+      setProfileMsg({ ok: false, text: err.message ?? "Profil kaydedilemedi. Tekrar deneyin." });
     } finally {
       setProfileSaving(false);
     }
@@ -811,14 +811,14 @@ function ProfileTab() {
       setCurPwd(""); setNewPwd(""); setConfPwd("");
       setPwdMsg({ ok: true, text: "Şifre başarıyla değiştirildi" });
     } catch (err) {
-      setPwdMsg({ ok: false, text: err.message ?? "Bir hata oluştu" });
+      setPwdMsg({ ok: false, text: err.message ?? "Şifre değiştirilemedi. Tekrar deneyin." });
     } finally {
       setPwdSaving(false);
     }
   };
 
   const inputStyle = (hasError) => ({
-    width: "100%", background: C.card, border: `1px solid ${hasError ? "rgba(204,26,26,0.5)" : C.border}`,
+    width: "100%", background: C.card, border: `1px solid ${hasError ? "rgba(198,40,40,0.5)" : C.border}`,
     borderRadius: "10px", padding: "12px 14px", fontSize: "14px", color: C.primary,
     outline: "none", caretColor: C.red, boxSizing: "border-box",
   });
@@ -873,7 +873,7 @@ function ProfileTab() {
           </div>
 
           {profileMsg && (
-            <div style={{ background: profileMsg.ok ? "rgba(34,197,94,0.08)" : "rgba(204,26,26,0.08)", border: `1px solid ${profileMsg.ok ? "rgba(34,197,94,0.25)" : "rgba(204,26,26,0.25)"}`, borderRadius: "8px", padding: "9px 13px", marginBottom: "14px", fontSize: "12px", color: profileMsg.ok ? "#22c55e" : C.red }}>
+            <div style={{ background: profileMsg.ok ? "rgba(34,197,94,0.08)" : "rgba(198,40,40,0.08)", border: `1px solid ${profileMsg.ok ? "rgba(34,197,94,0.25)" : "rgba(198,40,40,0.25)"}`, borderRadius: "8px", padding: "9px 13px", marginBottom: "14px", fontSize: "12px", color: profileMsg.ok ? "#15803D" : C.red }}>
               {profileMsg.text}
             </div>
           )}
@@ -923,7 +923,7 @@ function ProfileTab() {
           ))}
 
           {pwdMsg && (
-            <div style={{ background: pwdMsg.ok ? "rgba(34,197,94,0.08)" : "rgba(204,26,26,0.08)", border: `1px solid ${pwdMsg.ok ? "rgba(34,197,94,0.25)" : "rgba(204,26,26,0.25)"}`, borderRadius: "8px", padding: "9px 13px", marginBottom: "14px", fontSize: "12px", color: pwdMsg.ok ? "#22c55e" : C.red }}>
+            <div style={{ background: pwdMsg.ok ? "rgba(34,197,94,0.08)" : "rgba(198,40,40,0.08)", border: `1px solid ${pwdMsg.ok ? "rgba(34,197,94,0.25)" : "rgba(198,40,40,0.25)"}`, borderRadius: "8px", padding: "9px 13px", marginBottom: "14px", fontSize: "12px", color: pwdMsg.ok ? "#15803D" : C.red }}>
               {pwdMsg.text}
             </div>
           )}
@@ -969,7 +969,7 @@ function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogou
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             className="fixed inset-0 z-40"
-            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(3px)" }}
+            style={{ background: "rgba(17,17,17,0.35)", backdropFilter: "blur(3px)" }}
             onClick={() => setMoreOpen(false)}
           />
         )}
@@ -988,12 +988,12 @@ function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogou
               background: C.card,
               borderTop: `1px solid ${C.border}`,
               borderRadius: "20px 20px 0 0",
-              boxShadow: "0 -8px 40px rgba(0,0,0,0.6)",
+              boxShadow: "0 -8px 40px rgba(17,17,17,0.15)",
             }}
           >
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-2">
-              <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: C.muted }} />
+              <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: C.dim }} />
             </div>
 
             {/* Barber mini card */}
@@ -1045,10 +1045,10 @@ function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogou
                 onMouseLeave={e => e.currentTarget.style.background = "none"}
               >
                 <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <LogOut size={16} style={{ color: "#f87171" }} />
+                  <LogOut size={16} style={{ color: "#B91C1C" }} />
                 </div>
                 <div style={{ textAlign: "left" }}>
-                  <div style={{ fontSize: "13px", color: "#f87171", fontWeight: 500 }}>Çıkış Yap</div>
+                  <div style={{ fontSize: "13px", color: "#B91C1C", fontWeight: 500 }}>Çıkış Yap</div>
                   <div style={{ fontSize: "11px", color: C.muted, marginTop: "1px" }}>Oturumu kapat</div>
                 </div>
               </button>
@@ -1116,7 +1116,7 @@ function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogou
 /* ─── Appointments List View ─────────────────────────────────────────────── */
 
 export function BarberAppointmentsList({ barberId, appointments, onAction, onNewBooking }) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
   const upcoming = appointments
     .filter(a => a.barberId === barberId && a.status !== "cancelled" && a.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
@@ -1222,7 +1222,7 @@ function BarberFAB({ onNewBooking }) {
         border: "none", borderRadius: "18px",
         display: "flex", alignItems: "center", justifyContent: "center",
         cursor: "pointer",
-        boxShadow: "0 4px 24px rgba(204,26,26,0.55), 0 2px 8px rgba(0,0,0,0.4)",
+        boxShadow: "0 4px 24px rgba(198,40,40,0.35), 0 2px 8px rgba(17,17,17,0.15)",
         zIndex: 35,
       }}
       aria-label="Yeni randevu ekle"
@@ -1258,7 +1258,7 @@ export function BarberCustomersView({ barberId, appointments, onNewBooking }) {
 
   const initials = (name) => name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
   const hue      = (name) => name.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
-  const today    = new Date().toISOString().split("T")[0];
+  const today    = todayStr();
 
   return (
     <div>
@@ -1324,7 +1324,7 @@ export function BarberCustomersView({ barberId, appointments, onNewBooking }) {
                       {c.name}
                     </span>
                     {isRegular && (
-                      <span style={{ fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.2)", fontWeight: 700, flexShrink: 0 }}>
+                      <span style={{ fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: "rgba(34,197,94,0.12)", color: "#15803D", border: "1px solid rgba(34,197,94,0.2)", fontWeight: 700, flexShrink: 0 }}>
                         SADIK
                       </span>
                     )}
@@ -1355,7 +1355,7 @@ export function BarberCustomersView({ barberId, appointments, onNewBooking }) {
                   {c.phone && (
                     <a
                       href={`tel:${c.phone}`}
-                      style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 10px", borderRadius: "7px", background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.2)", fontSize: "11px", color: "#60a5fa", textDecoration: "none", fontWeight: 600 }}
+                      style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 10px", borderRadius: "7px", background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.2)", fontSize: "11px", color: "#2563EB", textDecoration: "none", fontWeight: 600 }}
                     >
                       <Phone size={11} /> Ara
                     </a>

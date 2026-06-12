@@ -3,19 +3,20 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { barbers, services } from "@/lib/data";
+import { todayStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import { X, Check, Phone, User, Calendar, Clock } from "lucide-react";
 
 const C = {
-  bg:      "#070707",
-  card:    "#0f0f14",
-  modal:   "#111117",
-  border:  "rgba(255,255,255,0.07)",
-  surface: "#16161e",
-  primary: "#F0EDE8",
-  secondary:"#6b6870",
-  muted:   "#2e2d35",
-  red:     "#CC1A1A",
+  bg:      "#F8F6F2",
+  card:    "#FFFFFF",
+  modal:   "#FFFFFF",
+  border:  "rgba(17,17,17,0.08)",
+  surface: "#F1EEE8",
+  primary: "#111111",
+  secondary:"#57514B",
+  muted:   "#6E6760",
+  red:     "#C62828",
 };
 
 function Field({ label, icon: Icon, children }) {
@@ -64,7 +65,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
     phone: "",
     serviceId: "",
     barberId: defaultBarberId,
-    date: initialDate || new Date().toISOString().split("T")[0],
+    date: initialDate || todayStr(),
     time: "",
     notes: "",
   });
@@ -115,7 +116,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
         exit={{ opacity: 0 }}
         style={{
           position: "fixed", inset: 0,
-          background: "rgba(0,0,0,0.7)",
+          background: "rgba(17,17,17,0.4)",
           zIndex: 200,
           display: "flex", alignItems: "center", justifyContent: "center",
           padding: "20px",
@@ -307,7 +308,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                 )}
 
                 {error && (
-                  <div style={{ fontSize: "12px", color: C.red, padding: "8px 12px", background: "rgba(204,26,26,0.08)", borderRadius: "6px", border: "1px solid rgba(204,26,26,0.2)" }}>
+                  <div style={{ fontSize: "12px", color: C.red, padding: "8px 12px", background: "rgba(198,40,40,0.08)", borderRadius: "6px", border: "1px solid rgba(198,40,40,0.2)" }}>
                     {error}
                   </div>
                 )}

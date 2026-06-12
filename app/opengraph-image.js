@@ -71,7 +71,7 @@ export default function OgImage() {
             border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: "40px",
           }}>
-            <span style={{ color: "#6b6870", fontSize: "13px", letterSpacing: "0.04em" }}>
+            <span style={{ color: "#9A96A0", fontSize: "13px", letterSpacing: "0.04em" }}>
               Darıca, Kocaeli
             </span>
           </div>
@@ -107,7 +107,7 @@ export default function OgImage() {
               sizi bekliyor.
             </span>
           </div>
-          <span style={{ color: "#6b6870", fontSize: "18px", lineHeight: 1.5, maxWidth: "600px" }}>
+          <span style={{ color: "#9A96A0", fontSize: "18px", lineHeight: 1.5, maxWidth: "600px" }}>
             Darıca'nın en seçkin berberi. Premium saç &amp; sakal bakımı. Online randevu alın, bekleme yok.
           </span>
         </div>
@@ -129,7 +129,7 @@ export default function OgImage() {
               <span style={{ color: "#F0EDE8", fontSize: "28px", fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1 }}>
                 {stat.value}
               </span>
-              <span style={{ color: "#2e2d35", fontSize: "11px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              <span style={{ color: "#8E8A93", fontSize: "11px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                 {stat.label}
               </span>
             </div>

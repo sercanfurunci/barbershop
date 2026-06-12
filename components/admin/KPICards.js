@@ -8,13 +8,13 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 
 const C = {
-  card:      "#111118",
-  border:    "rgba(255,255,255,0.06)",
-  surface:   "#16161e",
-  primary:   "#f1f0ed",
-  secondary: "#6b6870",
-  muted:     "#2e2d35",
-  red:       "#CC1A1A",
+  card:      "#FFFFFF",
+  border:    "rgba(17,17,17,0.08)",
+  surface:   "#F1EEE8",
+  primary:   "#111111",
+  secondary: "#57514B",
+  muted:     "#6E6760",
+  red:       "#C62828",
 };
 
 function buildSparkPath(data, w, h) {
@@ -85,7 +85,7 @@ function KPICard({ card, delay, vsLabel }) {
             fontSize: "10px",
             fontWeight: 600,
             background: positive ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
-            color: positive ? "#22c55e" : "#ef4444",
+            color: positive ? "#15803D" : "#B91C1C",
           }}
         >
           {positive ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
@@ -138,7 +138,7 @@ export default function KPICards() {
       change: adminStats.revenueChange,
       format: (v) => `₺${Math.round(v).toLocaleString()}`,
       spark:  kpiSparklines.revenue,
-      accent: "#CC1A1A",
+      accent: "#C62828",
     },
     {
       key:    "appointments",
@@ -147,7 +147,7 @@ export default function KPICards() {
       change: adminStats.appointmentsChange,
       format: (v) => Math.round(v).toString(),
       spark:  kpiSparklines.appointments,
-      accent: "#a78bfa",
+      accent: "#6D28D9",
     },
     {
       key:    "clients",
@@ -156,7 +156,7 @@ export default function KPICards() {
       change: adminStats.clientsChange,
       format: (v) => Math.round(v).toString(),
       spark:  kpiSparklines.clients,
-      accent: "#34d399",
+      accent: "#0F766E",
     },
     {
       key:    "rating",
@@ -165,7 +165,7 @@ export default function KPICards() {
       change: adminStats.ratingChange,
       format: (v) => v.toFixed(2),
       spark:  kpiSparklines.rating,
-      accent: "#fbbf24",
+      accent: "#B45309",
     },
   ];
 

@@ -10,13 +10,13 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 
 const C = {
-  card:      "#111118",
-  border:    "rgba(255,255,255,0.06)",
-  surface:   "#16161e",
-  primary:   "#f1f0ed",
-  secondary: "#6b6870",
-  muted:     "#2e2d35",
-  red:       "#CC1A1A",
+  card:      "#FFFFFF",
+  border:    "rgba(17,17,17,0.08)",
+  surface:   "#F1EEE8",
+  primary:   "#111111",
+  secondary: "#57514B",
+  muted:     "#6E6760",
+  red:       "#C62828",
 };
 
 export default function BarbersManagement() {
@@ -105,7 +105,7 @@ export default function BarbersManagement() {
                       fontSize: "10px",
                       borderRadius: "4px",
                       background: barber.available ? "rgba(34,197,94,0.1)" : "rgba(82,82,91,0.2)",
-                      color: barber.available ? "#4ade80" : C.secondary,
+                      color: barber.available ? "#15803D" : C.secondary,
                       fontWeight: 500,
                     }}
                   >
@@ -120,7 +120,7 @@ export default function BarbersManagement() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                       align="end"
-                      style={{ background: "#1a1a22", border: `1px solid ${C.border}`, borderRadius: "8px" }}
+                      style={{ background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "8px" }}
                     >
                       {barberTx.actions.map((l) => (
                         <DropdownMenuItem

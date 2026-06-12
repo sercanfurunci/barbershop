@@ -3,27 +3,26 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
-import { services } from "@/lib/data";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { Clock, ArrowRight } from "lucide-react";
 
 const C = {
-  bg:       "#070707",
-  card:     "#0f0f14",
-  border:   "rgba(255,255,255,0.07)",
-  surface:  "#16161e",
-  primary:  "#F0EDE8",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#FFFFFF",
+  card:     "#FFFFFF",
+  border:   "#E5DFD6",
+  surface:  "#EFEAE2",
+  primary:  "#111111",
+  secondary:"#44403C",
+  muted:    "#6B7280",
+  red:      "#C62828",
 };
 
 const CATEGORY_COLORS = {
-  cuts:    { bg: "rgba(59,130,246,0.08)",  text: "#60a5fa",  border: "rgba(59,130,246,0.15)"  },
-  beard:   { bg: "rgba(245,158,11,0.08)",  text: "#fbbf24",  border: "rgba(245,158,11,0.15)"  },
-  combo:   { bg: "rgba(204,26,26,0.08)",   text: "#f87171",  border: "rgba(204,26,26,0.15)"   },
-  premium: { bg: "rgba(167,139,250,0.08)", text: "#a78bfa",  border: "rgba(167,139,250,0.15)" },
+  cuts:    { bg: "#EFF6FF", text: "#1E3A8A", border: "#BFDBFE" },
+  beard:   { bg: "#FFFBEB", text: "#78350F", border: "#FDE68A" },
+  combo:   { bg: "#FEF2F2", text: "#7F1D1D", border: "#FECACA" },
+  premium: { bg: "#F5F3FF", text: "#4C1D95", border: "#DDD6FE" },
 };
 
 const CATEGORY_LABELS = {
@@ -47,7 +46,7 @@ const badgeBase = {
   lineHeight: 1,
 };
 
-export default function Services() {
+export default function Services({ services = [] }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-60px" });
   const { lang } = useLang();
@@ -57,7 +56,7 @@ export default function Services() {
     <section id="services" ref={ref} className="relative" style={{ background: C.bg }}>
       <div
         className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, #E5DFD6, transparent)" }}
       />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 py-24 lg:py-28">
@@ -127,7 +126,7 @@ export default function Services() {
                       borderRadius: "12px",
                       padding: "24px",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(204,26,26,0.35)"; e.currentTarget.style.background = "#121218"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.35)"; e.currentTarget.style.background = "#FAFAF8"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
                   >
                     {/* ── HEADER ROW ──
@@ -224,9 +223,7 @@ export default function Services() {
           transition={{ duration: 0.5, delay: 0.5 }}
           className="text-center mt-8"
           style={{ fontSize: "12px", color: C.muted, letterSpacing: "0.04em" }}
-        >
-          {tx.services.footer}
-        </motion.p>
+        />
       </div>
     </section>
   );

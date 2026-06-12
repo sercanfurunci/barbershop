@@ -3,23 +3,22 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
-import { barbers } from "@/lib/data";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { Star, ArrowRight } from "lucide-react";
 
 const C = {
-  bg:       "#0a0a0f",
-  card:     "#0f0f14",
-  border:   "rgba(255,255,255,0.07)",
-  surface:  "#16161e",
-  primary:  "#F0EDE8",
-  secondary:"#6b6870",
-  muted:    "#2e2d35",
-  red:      "#CC1A1A",
+  bg:       "#F6F3EE",
+  card:     "#FFFFFF",
+  border:   "#E5DFD6",
+  surface:  "#EFEAE2",
+  primary:  "#111111",
+  secondary:"#44403C",
+  muted:    "#6B7280",
+  red:      "#C62828",
 };
 
-export default function Barbers() {
+export default function Barbers({ barbers = [] }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-60px" });
   const { lang } = useLang();
@@ -29,7 +28,7 @@ export default function Barbers() {
     <section id="barbers" ref={ref} style={{ background: C.bg }}>
       <div
         className="absolute left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, #E5DFD6, transparent)" }}
       />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 py-24 lg:py-32">
@@ -95,7 +94,7 @@ export default function Barbers() {
                     borderRadius: "12px",
                     padding: "24px",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(204,26,26,0.3)"; e.currentTarget.style.background = "#121218"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.3)"; e.currentTarget.style.background = "#FAFAF8"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
                 >
                   {/* Avatar row — fixed 52px avatar + fixed-height availability badge */}
@@ -104,7 +103,7 @@ export default function Barbers() {
                       className="flex items-center justify-center font-bold text-white shrink-0"
                       style={{
                         width: "52px", height: "52px",
-                        background: `linear-gradient(135deg, ${C.red}, #9a1212)`,
+                        background: `linear-gradient(135deg, ${C.red}, #7f1d1d)`,
                         borderRadius: "12px",
                         fontSize: "15px",
                         letterSpacing: "0.04em",
@@ -117,16 +116,16 @@ export default function Barbers() {
                       style={{
                         height: "24px",
                         padding: "0 8px",
-                        background: barber.available ? "rgba(34,197,94,0.08)" : "rgba(82,82,91,0.15)",
+                        background: barber.available ? "#F0FDF4" : "#F3F4F6",
                         borderRadius: "20px",
-                        border: `1px solid ${barber.available ? "rgba(34,197,94,0.15)" : "rgba(82,82,91,0.2)"}`,
+                        border: `1px solid ${barber.available ? "#BBF7D0" : "#E5E7EB"}`,
                       }}
                     >
                       <div
                         className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ background: barber.available ? "#22c55e" : "#52525b" }}
+                        style={{ background: barber.available ? "#16a34a" : "#9CA3AF" }}
                       />
-                      <span style={{ fontSize: "10px", color: barber.available ? "#22c55e" : C.secondary, fontWeight: 500 }}>
+                      <span style={{ fontSize: "10px", color: barber.available ? "#166534" : "#6B7280", fontWeight: 500 }}>
                         {barber.available
                           ? (lang === "tr" ? "Müsait" : "Available")
                           : (lang === "tr" ? "İzinli" : "Off")}

@@ -8,14 +8,15 @@ import { apiFetch } from "@/lib/api";
 import { Crown, Scissors, ArrowRight, Loader2, Eye, EyeOff, ChevronLeft } from "lucide-react";
 
 const C = {
-  bg:      "#070707",
-  card:    "#0f0f14",
-  border:  "rgba(255,255,255,0.07)",
-  surface: "#16161e",
-  primary: "#F0EDE8",
-  secondary:"#6b6870",
-  muted:   "#2e2d35",
-  red:     "#CC1A1A",
+  bg:      "#F8F6F2",
+  card:    "#FFFFFF",
+  border:  "rgba(17,17,17,0.08)",
+  surface: "#F1EEE8",
+  primary: "#111111",
+  secondary:"#57514B",
+  muted:   "#6E6760",
+  dim:      "#C9C2B7",
+  red:     "#C62828",
 };
 
 export default function BarberLoginPage() {
@@ -116,7 +117,7 @@ export default function BarberLoginPage() {
                 onClick={() => handleSelect({ type: "admin", nameTr: "Süper Admin" })}
                 className="w-full text-left flex items-center gap-5 mb-4"
                 style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px 24px", cursor: "pointer", transition: "all 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(204,26,26,0.4)"; e.currentTarget.style.background = "#121218"; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.4)"; e.currentTarget.style.background = "#FBF7F0"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
               >
                 <div className="flex items-center justify-center shrink-0" style={{ width: "48px", height: "48px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "12px" }}>
@@ -147,7 +148,7 @@ export default function BarberLoginPage() {
                     onClick={() => handleSelect({ type: "barber", slug: barber.slug, nameTr: barber.nameTr, avatar: barber.avatar, titleTr: barber.titleTr })}
                     className="text-left flex items-center gap-4"
                     style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 18px", cursor: "pointer", transition: "all 0.2s" }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(204,26,26,0.3)"; e.currentTarget.style.background = "#121218"; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.3)"; e.currentTarget.style.background = "#FBF7F0"; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
                   >
                     <div className="flex items-center justify-center font-bold text-white shrink-0" style={{ width: "38px", height: "38px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "10px", fontSize: "11px" }}>
@@ -157,8 +158,8 @@ export default function BarberLoginPage() {
                       <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500, marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {barber.nameTr}
                       </div>
-                      <div style={{ fontSize: "10px", color: barber.available ? "#22c55e" : C.muted, display: "flex", alignItems: "center", gap: "4px" }}>
-                        <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: barber.available ? "#22c55e" : C.muted, flexShrink: 0 }} />
+                      <div style={{ fontSize: "10px", color: barber.available ? "#15803D" : C.muted, display: "flex", alignItems: "center", gap: "4px" }}>
+                        <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: barber.available ? "#15803D" : C.muted, flexShrink: 0 }} />
                         {barber.available ? "Müsait" : "İzinli"}
                       </div>
                     </div>
@@ -200,7 +201,7 @@ export default function BarberLoginPage() {
               {/* Password form */}
               <form onSubmit={handleSubmit}>
                 {error && (
-                  <div style={{ background: "rgba(204,26,26,0.1)", border: "1px solid rgba(204,26,26,0.3)", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px", fontSize: "13px", color: C.red }}>
+                  <div style={{ background: "rgba(198,40,40,0.1)", border: "1px solid rgba(198,40,40,0.3)", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px", fontSize: "13px", color: C.red }}>
                     {error}
                   </div>
                 )}
@@ -216,7 +217,7 @@ export default function BarberLoginPage() {
                     style={{
                       width: "100%",
                       background: C.card,
-                      border: `1px solid ${error ? "rgba(204,26,26,0.5)" : C.border}`,
+                      border: `1px solid ${error ? "rgba(198,40,40,0.5)" : C.border}`,
                       borderRadius: "10px",
                       padding: "14px 48px 14px 16px",
                       fontSize: "15px",
@@ -226,7 +227,7 @@ export default function BarberLoginPage() {
                       boxSizing: "border-box",
                     }}
                     onFocus={e => { e.target.style.borderColor = `${C.red}60`; }}
-                    onBlur={e => { e.target.style.borderColor = error ? "rgba(204,26,26,0.5)" : C.border; }}
+                    onBlur={e => { e.target.style.borderColor = error ? "rgba(198,40,40,0.5)" : C.border; }}
                   />
                   <button
                     type="button"
@@ -242,7 +243,7 @@ export default function BarberLoginPage() {
                   disabled={loading || !password}
                   className="w-full flex items-center justify-center gap-2"
                   style={{
-                    background: loading || !password ? C.muted : C.red,
+                    background: loading || !password ? C.dim : C.red,
                     color: "#fff",
                     border: "none",
                     borderRadius: "10px",
