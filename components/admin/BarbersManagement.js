@@ -1,188 +1,116 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { barbers, barberPerformance } from "@/lib/data";
-import { MoreVertical } from "lucide-react";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MoreVertical, Plus, Loader2, X, Check, AlertCircle } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 import { useLang } from "@/contexts/LanguageContext";
-import { useT } from "@/lib/translations";
 
 const C = {
-  card:      "#FFFFFF",
-  border:    "rgba(17,17,17,0.08)",
-  surface:   "#F1EEE8",
-  primary:   "#111111",
-  secondary: "#57514B",
-  muted:     "#6E6760",
-  red:       "#C62828",
+  card:    "#FFFFFF",
+  border:  "rgba(17,17,17,0.08)",
+  surface: "#F1EEE8",
+  bg:      "#F8F6F2",
+  primary: "#111111",
+  secondary:"#57514B",
+  muted:   "#6E6760",
+  dim:     "#C9C2B7",
+  red:     "#C62828",
+  green:   "#15803D",
 };
+
+const DAYS_TR = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
+const DAYS_KEY = ["mon","tue","wed","thu","fri","sat","sun"];
+
+function minToTime(min) {
+  if (min == null) return "—";
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+}
 
 export default function BarbersManagement() {
   const { lang } = useLang();
-  const tx = useT(lang);
-  const barberTx = tx.admin.barbers;
+  const [barbers, setBarbers]     = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState("");
+  const [menuFor, setMenuFor]     = useState(null);
+  const [editTarget, setEditTarget]     = useState(null); // barber obj
+  const [scheduleTarget, setScheduleTarget] = useState(null); // barber obj
+  const [createOpen, setCreateOpen]     = useState(false);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await apiFetch("/api/admin/barbers");
+      setBarbers(data);
+    } catch (e) {
+      setError(e.message || "Yükleme hatası");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  const toggleAvailable = async (barber) => {
+    setMenuFor(null);
+    try {
+      const updated = await apiFetch(`/api/admin/barbers/${barber.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ available: !barber.available }),
+      });
+      setBarbers((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+    } catch (e) {
+      alert(e.message || "İşlem başarısız");
+    }
+  };
+
+  const deleteBarber = async (barber) => {
+    setMenuFor(null);
+    if (!confirm(`"${barber.nameTr}" berberi silmek üzeresin. Devam edilsin mi?`)) return;
+    try {
+      await apiFetch(`/api/admin/barbers/${barber.id}`, { method: "DELETE" });
+      setBarbers((prev) => prev.filter((b) => b.id !== barber.id));
+    } catch (e) {
+      alert(e.message || "Silme başarısız");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-24" style={{ color: C.muted }}>
+        <Loader2 size={16} className="animate-spin" /> Yükleniyor…
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="py-16 text-center text-[13px]" style={{ color: C.red }}>{error}</div>;
+  }
 
   return (
     <div className="space-y-5">
-      {/* Revenue share */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px" }}>
-        <p style={{ fontSize: "11px", letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary, marginBottom: "16px" }}>
-          {barberTx.revenueShare}
-        </p>
-        <div className="space-y-4">
-          {barberPerformance.map((b, i) => (
-            <motion.div
-              key={b.name}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.07 }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className="w-7 h-7 flex items-center justify-center font-bold text-white shrink-0"
-                    style={{ background: C.red, fontSize: "10px", borderRadius: "5px" }}
-                  >
-                    {b.avatar}
-                  </div>
-                  <span style={{ fontSize: "13px", color: C.primary }}>{b.name}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span style={{ fontSize: "12px", color: C.secondary }}>{b.appointments} {barberTx.appts}</span>
-                  <span className="font-display font-light" style={{ fontSize: "16px", color: C.primary, minWidth: "80px", textAlign: "right" }}>
-                    ₺{b.revenue.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-              <div className="h-1.5 w-full" style={{ background: C.surface, borderRadius: "99px", overflow: "hidden" }}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${b.share * 100}%` }}
-                  transition={{ duration: 0.7, delay: 0.2 + i * 0.07, ease: [0.16, 1, 0.3, 1] }}
-                  style={{ height: "100%", background: C.red, borderRadius: "99px", opacity: 0.7 + b.share * 0.3 }}
-                />
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
       {/* Barber cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {barbers.map((barber, i) => {
-          const perf = barberPerformance.find((p) => p.name === barber.name);
-          return (
-            <motion.div
-              key={barber.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.07, duration: 0.4 }}
-              style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column" }}
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex items-center justify-center font-bold text-white"
-                    style={{ width: "44px", height: "44px", background: `linear-gradient(135deg, ${C.red}, #9A1212)`, borderRadius: "10px", fontSize: "14px" }}
-                  >
-                    {barber.avatar}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: C.primary, lineHeight: 1.3 }}>{barber.name}</div>
-                    <div style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: C.red, lineHeight: 1.3 }}>{barber.title[lang]}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      height: "20px",
-                      padding: "0 8px",
-                      fontSize: "10px",
-                      borderRadius: "4px",
-                      background: barber.available ? "rgba(34,197,94,0.1)" : "rgba(82,82,91,0.2)",
-                      color: barber.available ? "#15803D" : C.secondary,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {barber.available ? barberTx.active : barberTx.off}
-                  </span>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      className="w-7 h-7 flex items-center justify-center"
-                      style={{ color: C.secondary }}
-                    >
-                      <MoreVertical size={14} />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      style={{ background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "8px" }}
-                    >
-                      {barberTx.actions.map((l) => (
-                        <DropdownMenuItem
-                          key={l}
-                          className="cursor-pointer"
-                          style={{ padding: "7px 12px", fontSize: "12px", color: C.secondary }}
-                        >
-                          {l}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-
-              {/* Bio */}
-              <p className="line-clamp-2" style={{ fontSize: "12px", color: C.secondary, lineHeight: 1.6, marginBottom: "14px" }}>
-                {barber.bio[lang]}
-              </p>
-
-              {/* Specialties */}
-              <div className="flex flex-wrap gap-1.5">
-                {barber.specialties[lang].map((s) => (
-                  <span
-                    key={s}
-                    style={{
-                      fontSize: "10px",
-                      letterSpacing: "0.06em",
-                      padding: "2px 8px",
-                      background: C.surface,
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "4px",
-                      color: C.secondary,
-                    }}
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-
-              <div style={{ flex: 1, minHeight: "12px" }} />
-
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-2 pt-4" style={{ borderTop: `1px solid ${C.border}` }}>
-                {[
-                  { label: barberTx.statLabels.exp,     value: `${barber.yearsExp}${lang === "tr" ? " yıl" : "y"}` },
-                  { label: barberTx.statLabels.rating,  value: barber.rating },
-                  { label: barberTx.statLabels.revenue, value: perf ? `₺${(perf.revenue / 1000).toFixed(0)}k` : "—" },
-                ].map((s) => (
-                  <div key={s.label} className="text-center">
-                    <div className="font-display font-light" style={{ fontSize: "18px", color: C.primary, lineHeight: 1.1 }}>{s.value}</div>
-                    <div style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.muted, marginTop: "2px" }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          );
-        })}
+        {barbers.map((barber, i) => (
+          <BarberCard
+            key={barber.id}
+            barber={barber}
+            lang={lang}
+            index={i}
+            menuFor={menuFor}
+            setMenuFor={setMenuFor}
+            onEdit={() => { setMenuFor(null); setEditTarget(barber); }}
+            onSchedule={() => { setMenuFor(null); setScheduleTarget(barber); }}
+            onToggle={() => toggleAvailable(barber)}
+            onDelete={() => deleteBarber(barber)}
+          />
+        ))}
       </div>
 
-      {/* Add barber */}
+      {/* Add barber button */}
       <button
+        onClick={() => setCreateOpen(true)}
         className="w-full flex items-center justify-center gap-2 transition-all duration-200"
         style={{
           border: `1px dashed ${C.muted}`,
@@ -196,7 +124,428 @@ export default function BarbersManagement() {
         onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red; }}
         onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.muted; }}
       >
-        {barberTx.addBarber}
+        <Plus size={14} /> Yeni Berber Ekle
+      </button>
+
+      {/* Modals */}
+      <AnimatePresence>
+        {editTarget && (
+          <EditBarberModal
+            barber={editTarget}
+            onClose={() => setEditTarget(null)}
+            onSaved={(updated) => {
+              setBarbers((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+              setEditTarget(null);
+            }}
+          />
+        )}
+        {scheduleTarget && (
+          <ScheduleModal
+            barber={scheduleTarget}
+            onClose={() => setScheduleTarget(null)}
+            onSaved={() => { reload(); setScheduleTarget(null); }}
+          />
+        )}
+        {createOpen && (
+          <CreateBarberModal
+            onClose={() => setCreateOpen(false)}
+            onCreated={(newBarber) => {
+              setBarbers((prev) => [...prev, newBarber]);
+              setCreateOpen(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ── Barber Card ─────────────────────────────────────────────────────────── */
+function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedule, onToggle, onDelete }) {
+  const name  = barber.nameTr;
+  const title = lang === "tr" ? barber.titleTr : (barber.titleEn || barber.titleTr);
+  const bio   = lang === "tr" ? barber.bioTr   : (barber.bioEn   || barber.bioTr);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.07, duration: 0.4 }}
+      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column" }}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div
+            className="flex items-center justify-center font-bold text-white shrink-0"
+            style={{ width: "44px", height: "44px", background: `linear-gradient(135deg, ${barber.color || C.red}, #9A1212)`, borderRadius: "10px", fontSize: "14px" }}
+          >
+            {barber.avatar}
+          </div>
+          <div>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: C.primary, lineHeight: 1.3 }}>{name}</div>
+            <div style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: C.red, lineHeight: 1.3 }}>{title}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span style={{
+            display: "inline-flex", alignItems: "center", height: "20px", padding: "0 8px",
+            fontSize: "10px", borderRadius: "4px", fontWeight: 500,
+            background: barber.available ? "rgba(34,197,94,0.1)" : "rgba(82,82,91,0.2)",
+            color: barber.available ? C.green : C.secondary,
+          }}>
+            {barber.available ? "Aktif" : "İzinde"}
+          </span>
+          <div className="relative">
+            <button
+              onClick={() => setMenuFor(menuFor === barber.id ? null : barber.id)}
+              className="w-7 h-7 flex items-center justify-center rounded-md"
+              style={{ color: C.secondary }}
+            >
+              <MoreVertical size={14} />
+            </button>
+            {menuFor === barber.id && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setMenuFor(null)} />
+                <div
+                  className="absolute right-0 mt-1 z-20 rounded-lg overflow-hidden min-w-[160px]"
+                  style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}
+                >
+                  <MI onClick={onEdit}>Düzenle</MI>
+                  <MI onClick={onSchedule}>Programı Gör</MI>
+                  <MI onClick={onToggle}>{barber.available ? "İzine Al" : "Aktife Al"}</MI>
+                  <MI onClick={onDelete} danger>Berberi Sil</MI>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {bio && (
+        <p className="line-clamp-2" style={{ fontSize: "12px", color: C.secondary, lineHeight: 1.6, marginBottom: "14px" }}>
+          {bio}
+        </p>
+      )}
+
+      {barber.specialties?.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {barber.specialties.map((s) => (
+            <span key={s} style={{ fontSize: "10px", letterSpacing: "0.06em", padding: "2px 8px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "4px", color: C.secondary }}>
+              {s}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style={{ flex: 1 }} />
+
+      <div className="grid grid-cols-2 gap-2 pt-4" style={{ borderTop: `1px solid ${C.border}` }}>
+        {[
+          { label: "Deneyim", value: `${barber.yearsExp} yıl` },
+          { label: "Puan",    value: barber.rating?.toFixed(1) ?? "—" },
+        ].map((s) => (
+          <div key={s.label} className="text-center">
+            <div className="font-display font-light" style={{ fontSize: "18px", color: C.primary, lineHeight: 1.1 }}>{s.value}</div>
+            <div style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.muted, marginTop: "2px" }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function MI({ children, onClick, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left px-3 py-2 text-[12px] hover:bg-black/[0.04] transition-colors"
+      style={{ color: danger ? C.red : C.secondary }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ── Edit Barber Modal ───────────────────────────────────────────────────── */
+function EditBarberModal({ barber, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    nameTr:     barber.nameTr,
+    nameEn:     barber.nameEn || "",
+    titleTr:    barber.titleTr,
+    titleEn:    barber.titleEn || "",
+    bioTr:      barber.bioTr || "",
+    bioEn:      barber.bioEn || "",
+    avatar:     barber.avatar,
+    yearsExp:   barber.yearsExp ?? 1,
+    specialties: (barber.specialties || []).join(", "),
+    color:      barber.color || "#CC1A1A",
+  });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr]   = useState("");
+
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setErr("");
+    try {
+      const updated = await apiFetch(`/api/admin/barbers/${barber.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...form,
+          yearsExp: Number(form.yearsExp),
+          specialties: form.specialties.split(",").map((s) => s.trim()).filter(Boolean),
+        }),
+      });
+      onSaved(updated);
+    } catch (e2) {
+      setErr(e2.message || "Kayıt başarısız");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="Berberi Düzenle" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-3">
+        <Row2>
+          <Field label="İsim (TR) *"><input required value={form.nameTr} onChange={set("nameTr")} className={inp} /></Field>
+          <Field label="İsim (EN)"><input value={form.nameEn} onChange={set("nameEn")} className={inp} /></Field>
+        </Row2>
+        <Row2>
+          <Field label="Unvan (TR) *"><input required value={form.titleTr} onChange={set("titleTr")} className={inp} /></Field>
+          <Field label="Unvan (EN)"><input value={form.titleEn} onChange={set("titleEn")} className={inp} /></Field>
+        </Row2>
+        <Field label="Bio (TR)"><textarea value={form.bioTr} onChange={set("bioTr")} rows={2} className={inp} /></Field>
+        <Field label="Bio (EN)"><textarea value={form.bioEn} onChange={set("bioEn")} rows={2} className={inp} /></Field>
+        <Row2>
+          <Field label="Avatar (2 harf)"><input required value={form.avatar} onChange={set("avatar")} maxLength={3} className={inp} /></Field>
+          <Field label="Deneyim (yıl)"><input type="number" min={0} value={form.yearsExp} onChange={set("yearsExp")} className={inp} /></Field>
+        </Row2>
+        <Field label="Uzmanlıklar (virgülle ayır)"><input value={form.specialties} onChange={set("specialties")} placeholder="Fade, Sakal, Klasik Kesim" className={inp} /></Field>
+        {err && <ErrMsg>{err}</ErrMsg>}
+        <FormActions onClose={onClose} busy={busy} label="Kaydet" />
+      </form>
+    </Modal>
+  );
+}
+
+/* ── Schedule Modal ──────────────────────────────────────────────────────── */
+function ScheduleModal({ barber, onClose, onSaved }) {
+  const [wh, setWh]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy]   = useState(false);
+  const [err, setErr]     = useState("");
+
+  useEffect(() => {
+    apiFetch(`/api/admin/working-hours?barberId=${barber.id}`)
+      .then((data) => {
+        const init = {};
+        for (const day of DAYS_KEY) {
+          init[day] = {
+            start: data[`${day}Start`] ?? null,
+            end:   data[`${day}End`]   ?? null,
+          };
+        }
+        setWh(init);
+      })
+      .catch(() => setErr("Program yüklenemedi"))
+      .finally(() => setLoading(false));
+  }, [barber.id]);
+
+  const toggle = (day) => {
+    setWh((prev) => {
+      const cur = prev[day];
+      if (cur.start !== null) return { ...prev, [day]: { start: null, end: null } };
+      return { ...prev, [day]: { start: 600, end: 1290 } };
+    });
+  };
+
+  const setTime = (day, field, val) => {
+    const [h, m] = val.split(":").map(Number);
+    setWh((prev) => ({ ...prev, [day]: { ...prev[day], [field]: h * 60 + m } }));
+  };
+
+  const save = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      await apiFetch("/api/admin/working-hours", {
+        method: "PATCH",
+        body: JSON.stringify({ barberId: barber.id, ...wh }),
+      });
+      onSaved();
+    } catch (e) {
+      setErr(e.message || "Kayıt başarısız");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title={`${barber.nameTr} — Program`} onClose={onClose} wide>
+      {loading && <div className="flex justify-center py-8"><Loader2 size={16} className="animate-spin" style={{ color: C.muted }} /></div>}
+      {!loading && wh && (
+        <div className="space-y-2">
+          {DAYS_KEY.map((day, i) => {
+            const on = wh[day].start !== null;
+            return (
+              <div key={day} className="flex items-center gap-3">
+                <button
+                  onClick={() => toggle(day)}
+                  className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors"
+                  style={{ background: on ? C.red : C.surface, border: `1px solid ${on ? C.red : C.border}` }}
+                >
+                  {on && <Check size={10} color="#fff" strokeWidth={3} />}
+                </button>
+                <span className="w-24 text-[13px]" style={{ color: C.primary }}>{DAYS_TR[i]}</span>
+                {on ? (
+                  <div className="flex items-center gap-2">
+                    <TimeInput value={minToTime(wh[day].start)} onChange={(v) => setTime(day, "start", v)} />
+                    <span style={{ color: C.muted, fontSize: "12px" }}>—</span>
+                    <TimeInput value={minToTime(wh[day].end)} onChange={(v) => setTime(day, "end", v)} />
+                  </div>
+                ) : (
+                  <span className="text-[12px]" style={{ color: C.muted }}>Kapalı</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {err && <ErrMsg>{err}</ErrMsg>}
+      {!loading && (
+        <div className="flex justify-end gap-2 pt-4 mt-2" style={{ borderTop: `1px solid ${C.border}` }}>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px]" style={{ color: C.primary, background: C.surface }}>İptal</button>
+          <button onClick={save} disabled={busy} className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium" style={{ background: C.red, color: "#fff", opacity: busy ? 0.7 : 1 }}>
+            {busy && <Loader2 size={13} className="animate-spin" />} Kaydet
+          </button>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function TimeInput({ value, onChange }) {
+  const safe = value === "—" ? "10:00" : value;
+  return (
+    <input
+      type="time"
+      value={safe}
+      onChange={(e) => onChange(e.target.value)}
+      className="px-2 py-1 rounded-md text-[13px] outline-none"
+      style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.primary }}
+    />
+  );
+}
+
+/* ── Create Barber Modal ─────────────────────────────────────────────────── */
+function CreateBarberModal({ onClose, onCreated }) {
+  const [form, setForm] = useState({
+    slug: "", nameTr: "", titleTr: "", avatar: "", yearsExp: 1, specialties: "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr]   = useState("");
+
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setErr("");
+    try {
+      const barber = await apiFetch("/api/admin/barbers", {
+        method: "POST",
+        body: JSON.stringify({
+          ...form,
+          yearsExp: Number(form.yearsExp),
+          specialties: form.specialties.split(",").map((s) => s.trim()).filter(Boolean),
+        }),
+      });
+      onCreated(barber);
+    } catch (e2) {
+      setErr(e2.message || "Oluşturma başarısız");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="Yeni Berber" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-3">
+        <Row2>
+          <Field label="İsim *"><input required value={form.nameTr} onChange={set("nameTr")} className={inp} /></Field>
+          <Field label="Slug *" hint="küçük harf, tire"><input required value={form.slug} onChange={set("slug")} placeholder="mehmet" className={inp} /></Field>
+        </Row2>
+        <Field label="Unvan *"><input required value={form.titleTr} onChange={set("titleTr")} placeholder="Berber" className={inp} /></Field>
+        <Row2>
+          <Field label="Avatar (2 harf) *"><input required value={form.avatar} onChange={set("avatar")} maxLength={3} placeholder="MK" className={inp} /></Field>
+          <Field label="Deneyim (yıl)"><input type="number" min={0} value={form.yearsExp} onChange={set("yearsExp")} className={inp} /></Field>
+        </Row2>
+        <Field label="Uzmanlıklar (virgülle ayır)"><input value={form.specialties} onChange={set("specialties")} placeholder="Fade, Sakal" className={inp} /></Field>
+        {err && <ErrMsg>{err}</ErrMsg>}
+        <FormActions onClose={onClose} busy={busy} label="Ekle" />
+      </form>
+    </Modal>
+  );
+}
+
+/* ── Shared UI pieces ────────────────────────────────────────────────────── */
+const inp = "w-full px-3 py-2 text-[13px] rounded-lg outline-none";
+
+function Modal({ title, onClose, children, wide }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(17,17,17,0.45)" }}
+    >
+      <motion.div
+        initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
+        transition={{ duration: 0.18 }}
+        className={`w-full rounded-2xl overflow-hidden ${wide ? "max-w-[560px]" : "max-w-[480px]"}`}
+        style={{ background: C.card, border: `1px solid ${C.border}` }}
+      >
+        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: `1px solid ${C.border}` }}>
+          <h3 className="text-[15px] font-semibold" style={{ color: C.primary }}>{title}</h3>
+          <button onClick={onClose} style={{ color: C.muted }}><X size={18} /></button>
+        </div>
+        <div className="px-5 py-5">{children}</div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function Field({ label, hint, children }) {
+  return (
+    <label className="block">
+      <div className="text-[12px] font-medium mb-1" style={{ color: C.primary }}>{label}</div>
+      <div className="rounded-lg" style={{ background: C.surface, border: `1px solid ${C.border}` }}>{children}</div>
+      {hint && <div className="text-[11px] mt-1" style={{ color: C.muted }}>{hint}</div>}
+    </label>
+  );
+}
+
+function Row2({ children }) {
+  return <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{children}</div>;
+}
+
+function ErrMsg({ children }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 rounded-md text-[12px]" style={{ color: C.red, background: "rgba(198,40,40,0.08)" }}>
+      <AlertCircle size={13} /> {children}
+    </div>
+  );
+}
+
+function FormActions({ onClose, busy, label }) {
+  return (
+    <div className="flex justify-end gap-2 pt-2">
+      <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-[13px]" style={{ color: C.primary, background: C.surface }}>İptal</button>
+      <button type="submit" disabled={busy} className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium" style={{ background: C.red, color: "#fff", opacity: busy ? 0.7 : 1 }}>
+        {busy && <Loader2 size={13} className="animate-spin" />} {label}
       </button>
     </div>
   );
