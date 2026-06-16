@@ -331,7 +331,7 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
 export default function BarberDashboardClient({ barberId: barberSlug }) {
   const router = useRouter();
   const { role, user, logout, loaded: authLoaded } = useAuth();
-  const { appointments, updateStatus } = useAppointments();
+  const { appointments, updateStatus, refresh } = useAppointments();
   const [date, setDate]       = useState(todayStr());
   const [view, setView]       = useState("dashboard");
   const [moreSheet, setMoreSheet] = useState(false);
@@ -553,11 +553,17 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
             <span style={{ fontSize: "13px", fontWeight: 600, color: C.primary }}>{barber.nameTr ?? barber.name}</span>
           </div>
           <div style={{ flex: 1 }} />
-          <button onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5"
-            style={{ background: C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "0 14px", height: "36px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-            <Plus size={14} /> <span className="hidden sm:inline">Randevu Ekle</span><span className="sm:hidden">Ekle</span>
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button onClick={refresh} title="Yenile"
+              style={{ background: C.surface, color: C.secondary, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "0 12px", height: "36px", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              ↻
+            </button>
+            <button onClick={() => setShowModal(true)}
+              className="flex items-center gap-1.5"
+              style={{ background: C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "0 14px", height: "36px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+              <Plus size={14} /> <span className="hidden sm:inline">Randevu Ekle</span><span className="sm:hidden">Ekle</span>
+            </button>
+          </div>
         </header>
 
         {/* Page content — extra bottom padding so content clears mobile bottom nav */}

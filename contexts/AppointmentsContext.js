@@ -20,7 +20,11 @@ export function AppointmentsProvider({ children }) {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+    const id = setInterval(fetchAll, 30_000);
+    return () => clearInterval(id);
+  }, [fetchAll]);
 
   const addAppointment = useCallback(async (appt) => {
     const payload = {
