@@ -30,21 +30,20 @@ const C = {
   red:      "#C62828",
 };
 
-// Arrival-focused status config — workflow order: pending→confirmed→in-progress→completed
+// Simple 3-action flow: confirm arrival → done, or mark no-show
 export const FLOW = [
-  { key: "confirmed",    label: "Onaylandı",  shortLabel: "Onay",   color: "#15803D", bg: "rgba(34,197,94,0.12)"   },
-  { key: "in-progress",  label: "Koltuğa Aldı", shortLabel: "Devam", color: "#2563EB", bg: "rgba(96,165,250,0.12)" },
-  { key: "completed",    label: "Tamamlandı", shortLabel: "Tamam",  color: "#57514B", bg: "rgba(107,104,112,0.12)" },
-  { key: "noshow",       label: "Gelmedi",    shortLabel: "Gelmedi",color: "#C62828", bg: "rgba(198,40,40,0.12)"   },
+  { key: "confirmed",  label: "Onaylandı",  shortLabel: "Onay",   color: "#15803D", bg: "rgba(34,197,94,0.12)"  },
+  { key: "completed",  label: "Tamamlandı", shortLabel: "Tamam",  color: "#57514B", bg: "rgba(107,104,112,0.12)" },
+  { key: "noshow",     label: "Gelmedi",    shortLabel: "Gelmedi",color: "#C62828", bg: "rgba(198,40,40,0.12)"  },
 ];
 
 export const ALL_STATUS = {
-  pending:       { label: "Bekleniyor",    color: "#B45309", bg: "rgba(245,158,11,0.1)"   },
-  confirmed:     { label: "Onaylandı",     color: "#15803D", bg: "rgba(34,197,94,0.1)"    },
-  "in-progress": { label: "Koltuğa Aldı", color: "#2563EB", bg: "rgba(96,165,250,0.1)"   },
-  completed:     { label: "Tamamlandı",   color: "#57514B", bg: "rgba(107,104,112,0.1)"  },
-  noshow:        { label: "Gelmedi",      color: "#C62828", bg: "rgba(198,40,40,0.1)"    },
-  cancelled:     { label: "İptal",        color: "#52525b", bg: "rgba(82,82,91,0.1)"     },
+  pending:     { label: "Bekleniyor",  color: "#B45309", bg: "rgba(245,158,11,0.1)"  },
+  confirmed:   { label: "Onaylandı",   color: "#15803D", bg: "rgba(34,197,94,0.1)"   },
+  completed:   { label: "Tamamlandı",  color: "#57514B", bg: "rgba(107,104,112,0.1)" },
+  noshow:      { label: "Gelmedi",     color: "#C62828", bg: "rgba(198,40,40,0.1)"   },
+  cancelled:   { label: "İptal",       color: "#52525b", bg: "rgba(82,82,91,0.1)"    },
+  "in-progress": { label: "Devam",     color: "#2563EB", bg: "rgba(96,165,250,0.1)"  },
 };
 
 function timeToMin(t) {
@@ -88,7 +87,7 @@ export function NextAppointmentCard({ appt, onAction }) {
   }
 
   const sc = ALL_STATUS[appt.status] ?? ALL_STATUS.pending;
-  const isActive = appt.status === "in-progress";
+  const isActive = false;
 
   return (
     <motion.div
@@ -262,12 +261,11 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
     .filter(a => a.barberId === barberId && a.date === date && a.status !== "cancelled")
     .sort((a, b) => a.time.localeCompare(b.time));
   const pending    = dayAppts.filter(a => a.status === "pending").length;
-  const confirmed  = dayAppts.filter(a => ["confirmed", "in-progress"].includes(a.status)).length;
+  const confirmed  = dayAppts.filter(a => a.status === "confirmed").length;
   const completed  = dayAppts.filter(a => a.status === "completed").length;
   const revenue    = dayAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
-  const nextAppt   = isToday_ ? dayAppts.find(a => a.time >= now && ["pending", "confirmed", "in-progress"].includes(a.status)) : null;
-  const activeAppt = isToday_ ? dayAppts.find(a => a.status === "in-progress") : null;
-  const displayNext = activeAppt ?? nextAppt;
+  const nextAppt   = isToday_ ? dayAppts.find(a => a.time >= now && ["pending", "confirmed"].includes(a.status)) : null;
+  const displayNext = nextAppt;
 
   return (
     <>
@@ -317,7 +315,7 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {dayAppts.map((appt, i) => {
-            const isPast = isToday_ && appt.time < now && appt.status !== "in-progress";
+            const isPast = isToday_ && appt.time < now;
             const isNext = appt.id === displayNext?.id;
             return <TimelineItem key={appt.id} appt={appt} isNext={isNext} isPast={isPast} onAction={updateStatus} index={i} />;
           })}
@@ -381,18 +379,14 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
   const now = nowTimeStr();
 
   const nextAppt = isViewingToday
-    ? dayAppts.find(a => a.time >= now && ["pending", "confirmed", "in-progress"].includes(a.status))
+    ? dayAppts.find(a => a.time >= now && ["pending", "confirmed"].includes(a.status))
     : null;
 
-  const activeAppt = isViewingToday
-    ? dayAppts.find(a => a.status === "in-progress")
-    : null;
-
-  const displayNext = activeAppt ?? nextAppt;
+  const displayNext = nextAppt;
 
   // Stats
   const pending   = dayAppts.filter(a => a.status === "pending").length;
-  const confirmed = dayAppts.filter(a => ["confirmed", "in-progress"].includes(a.status)).length;
+  const confirmed = dayAppts.filter(a => a.status === "confirmed").length;
   const completed = dayAppts.filter(a => a.status === "completed").length;
   const noshow    = dayAppts.filter(a => a.status === "noshow").length;
   const revenue   = dayAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
@@ -658,7 +652,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                         {dayAppts.map((appt, i) => {
-                          const isPast = isViewingToday && appt.time < now && !["in-progress"].includes(appt.status);
+                          const isPast = isViewingToday && appt.time < now;
                           const isNext = appt.id === displayNext?.id;
                           return <TimelineItem key={appt.id} appt={appt} isNext={isNext} isPast={isPast} onAction={updateStatus} index={i} />;
                         })}
