@@ -29,6 +29,7 @@ import { useRouter } from "next/navigation";
 import { barbers, workingHours } from "@/lib/data";
 import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
+import { apiFetch } from "@/lib/api";
 
 const C = {
   bg:       "#F8F6F2",
