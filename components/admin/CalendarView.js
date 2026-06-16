@@ -246,7 +246,7 @@ function BreakBlock({ brk }) {
 }
 
 // ─── Mobile Agenda View ───────────────────────────────────────────────────────
-function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayRevenue, totalToday, confirmedCnt, pendingCnt, activeBarber, setActiveBarber, statusFilter, setStatusFilter, onNewAppt, updateStatus }) {
+function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayRevenue, totalToday, confirmedCnt, pendingCnt, activeBarber, setActiveBarber, statusFilter, setStatusFilter, onNewAppt, updateStatus, barbers }) {
   const [selectedAppt, setSelectedAppt] = useState(null);
 
   const sorted = [...displayAppts].sort((a, b) => a.time.localeCompare(b.time));
@@ -543,6 +543,7 @@ export default function CalendarView() {
       statusFilter={statusFilter} setStatusFilter={setStatusFilter}
       onNewAppt={openModal}
       updateStatus={updateStatus}
+      barbers={barbers}
     />
   );
 
