@@ -38,6 +38,8 @@ model Shop {
   holidays     Holiday[]
   auditLogs    AuditLog[]
   notifications Notification[]
+  notificationSettings NotificationSettings?
+  notificationJobs     NotificationJob[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -229,6 +231,7 @@ model Appointment {
   notes         String?           @db.Text
   notifications Notification[]
   auditLogs     AuditLog[]
+  notificationJobs NotificationJob[]
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
@@ -317,4 +320,78 @@ model Notification {
   @@index([clientId])
   @@index([appointmentId])
   @@index([status])
+}
+
+model NotificationSettings {
+  id              String  @id @default(cuid())
+  shopId          String  @unique
+  shop            Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  smsEnabled      Boolean @default(false)
+  waEnabled       Boolean @default(false)
+
+  netgsmUser      String?
+  netgsmPassword  String?
+  netgsmHeader    String? // SMS sender name (max 11 chars)
+
+  reminder48h     Boolean @default(true)
+  reminder3h      Boolean @default(true)
+  followupEnabled Boolean @default(false)
+  followupHours   Int     @default(24)
+
+  tplCreated     String? @db.Text
+  tplConfirmed   String? @db.Text
+  tplCancelled   String? @db.Text
+  tplReminder48h String? @db.Text
+  tplReminder3h  String? @db.Text
+  tplFollowup    String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NotificationJob {
+  id            String         @id @default(cuid())
+  shopId        String
+  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  appointmentId String?
+  appointment   Appointment?   @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  channel       NotifChannel
+  event         NotifEvent
+  phone         String
+  message       String         @db.Text
+  scheduledFor  DateTime
+  status        NotifJobStatus @default(PENDING)
+  attempts      Int            @default(0)
+  maxAttempts   Int            @default(3)
+  lastError     String?        @db.Text
+  processedAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([shopId, createdAt])
+  @@index([appointmentId])
+}
+
+enum NotifChannel {
+  SMS
+  WHATSAPP
+}
+
+enum NotifEvent {
+  CREATED
+  CONFIRMED
+  CANCELLED
+  REMINDER_48H
+  REMINDER_3H
+  FOLLOWUP
+}
+
+enum NotifJobStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
 }

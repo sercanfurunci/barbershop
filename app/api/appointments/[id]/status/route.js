@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { queueNotifications, cancelPendingJobs } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,14 @@ export async function PATCH(request, { params }) {
     where: { id },
     data: { status },
   });
+
+  // Queue notifications for status changes
+  if (status === "CONFIRMED") {
+    queueNotifications(id, "CONFIRMED").catch(() => {});
+  } else if (status === "CANCELLED") {
+    await cancelPendingJobs(id);
+    queueNotifications(id, "CANCELLED").catch(() => {});
+  }
 
   return NextResponse.json(updated);
 }

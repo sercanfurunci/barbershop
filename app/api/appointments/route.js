@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { getDefaultShopId } from "@/lib/shop";
+import { queueNotifications } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -220,6 +221,11 @@ export async function POST(request) {
         notes:     notes?.trim() ?? null,
       },
     });
+
+    // Queue notifications (non-blocking — don't let this fail the response)
+    queueNotifications(appointment.id, "CREATED").catch(err =>
+      console.error("[POST /api/appointments] queue error:", err.message)
+    );
 
     return NextResponse.json(appointment, { status: 201 });
   } catch (err) {

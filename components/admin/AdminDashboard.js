@@ -20,6 +20,7 @@ import CalendarView from "./CalendarView";
 import ManualBookingModal from "./ManualBookingModal";
 import SettingsPage from "./SettingsPage";
 import ServicesManagement from "./ServicesManagement";
+import NotificationsPage from "@/components/admin/NotificationsPage";
 import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
@@ -63,7 +64,8 @@ const NAV_SECTIONS = (lang) => [
   {
     label: lang === "tr" ? "RAPOR" : "REPORTS",
     items: [
-      { id: "revenue",       label: "Gelir",        icon: TrendingUp      },
+      { id: "revenue",        label: "Gelir",        icon: TrendingUp      },
+      { id: "notifications", label: "Bildirimler",  icon: Bell            },
       { id: "settings",      label: "Ayarlar",      icon: Settings        },
     ],
   },
@@ -253,7 +255,8 @@ export default function AdminDashboard() {
                 {tab === "barbers"       && <BarbersPage tx={tx} />}
                 {tab === "customers"     && <CustomersPage barberId={globalBarberId} />}
                 {tab === "services-mgmt" && <ServicesManagement />}
-                {tab === "revenue"       && <RevenuePage tx={tx} barberId={globalBarberId} />}
+                {tab === "revenue"        && <RevenuePage tx={tx} barberId={globalBarberId} />}
+                {tab === "notifications" && <NotificationsPage />}
                 {tab === "settings"      && <SettingsPage />}
                 {tab === "barber-ops"    && <BarberOpsPage barberId={globalBarberId} />}
               </motion.div>
