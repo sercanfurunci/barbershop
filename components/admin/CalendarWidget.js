@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { appointmentDates } from "@/lib/data";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
@@ -11,6 +10,8 @@ import {
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
+import { useAppointments } from "@/contexts/AppointmentsContext";
+import { todayStr } from "@/lib/utils";
 
 const C = {
   card:      "#111118",
@@ -32,27 +33,36 @@ function getDotColor(count) {
 }
 
 export default function CalendarWidget() {
-  const [month, setMonth] = useState(new Date(2026, 5, 1));
-  const today  = new Date(2026, 5, 9);
+  const today = new Date();
+  const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const { lang } = useLang();
   const tx = useT(lang);
   const calTx = tx.admin.calendar;
   const locale = lang === "tr" ? dateFnsTr : enUS;
   const DAYS = lang === "tr" ? DAYS_TR : DAYS_EN;
 
+  const { appointments } = useAppointments();
+
+  // Build appointment count per date from real context data
+  const apptByDate = appointments
+    .filter(a => a.status !== "cancelled")
+    .reduce((acc, a) => {
+      acc[a.date] = (acc[a.date] ?? 0) + 1;
+      return acc;
+    }, {});
+
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
   const startPad = (getDay(startOfMonth(month)) + 6) % 7;
   const padded = [...Array(startPad).fill(null), ...days];
 
-  const todayKey = format(today, "yyyy-MM-dd");
-  const todayCount = appointmentDates[todayKey] || 0;
-  const todayAppts = [
-    { time: "10:00", name: "Ahmet Yıldız",   service: lang === "tr" ? "VIP Bakım"       : "VIP Grooming"  },
-    { time: "11:30", name: "Mert Çelik",      service: lang === "tr" ? "Usta Tıraşı"    : "Royal Shave"   },
-    { time: "13:00", name: "Burak Öztürk",    service: "Fade & Taper"  },
-    { time: "14:30", name: "Can Polat",        service: lang === "tr" ? "Kesim & Sakal"  : "Cut & Beard"   },
-    { time: "15:00", name: "Kemal Arslan",     service: lang === "tr" ? "Klasik Kesim"   : "Classic Cut"   },
-  ].slice(0, todayCount);
+  const todayKey = todayStr();
+  const todayCount = apptByDate[todayKey] ?? 0;
+
+  // Today's appointments for the schedule list (up to 5, sorted by time)
+  const todayAppts = [...appointments]
+    .filter(a => a.date === todayKey && a.status !== "cancelled")
+    .sort((a, b) => a.time.localeCompare(b.time))
+    .slice(0, 5);
 
   return (
     <div
@@ -106,8 +116,8 @@ export default function CalendarWidget() {
           if (!day) return <div key={`pad-${idx}`} />;
 
           const key          = format(day, "yyyy-MM-dd");
-          const count        = appointmentDates[key] || 0;
-          const isCurrentDay = isSameDay(day, today);
+          const count        = apptByDate[key] ?? 0;
+          const isCurrentDay = key === todayKey;
           const isPast       = isBefore(startOfDay(day), startOfDay(today));
 
           return (
@@ -148,27 +158,34 @@ export default function CalendarWidget() {
             {todayCount} {calTx.booked}
           </span>
         </div>
-        <div className="space-y-2">
-          {todayAppts.map((appt, i) => (
-            <motion.div
-              key={appt.time}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.06 }}
-              className="flex items-center gap-3"
-              style={{ padding: "8px 10px", background: C.surface, borderRadius: "7px" }}
-            >
-              <span style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", color: C.secondary, minWidth: "36px" }}>
-                {appt.time}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div style={{ fontSize: "12px", color: C.primary, lineHeight: 1.3 }}>{appt.name}</div>
-                <div style={{ fontSize: "10px", color: C.secondary, lineHeight: 1.3 }}>{appt.service}</div>
-              </div>
-              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: i === 2 ? C.red : "#22c55e" }} />
-            </motion.div>
-          ))}
-        </div>
+        {todayAppts.length === 0 ? (
+          <div style={{ fontSize: "11px", color: C.muted, padding: "8px 0" }}>Bugün randevu yok</div>
+        ) : (
+          <div className="space-y-2">
+            {todayAppts.map((appt, i) => (
+              <motion.div
+                key={appt.id}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.06 }}
+                className="flex items-center gap-3"
+                style={{ padding: "8px 10px", background: C.surface, borderRadius: "7px" }}
+              >
+                <span style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", color: C.secondary, minWidth: "36px" }}>
+                  {appt.time}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div style={{ fontSize: "12px", color: C.primary, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
+                  <div style={{ fontSize: "10px", color: C.secondary, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}</div>
+                </div>
+                <div
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ background: appt.status === "confirmed" ? "#22c55e" : appt.status === "pending" ? "#f59e0b" : C.red }}
+                />
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

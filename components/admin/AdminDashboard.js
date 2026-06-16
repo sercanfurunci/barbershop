@@ -26,7 +26,6 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { barbers, workingHours } from "@/lib/data";
 import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import { apiFetch } from "@/lib/api";
@@ -81,11 +80,17 @@ export default function AdminDashboard() {
   const [globalBarberId, setGlobalBarberId] = useState(null);
   const { lang, setLang }           = useLang();
   const tx = useT(lang);
-  const { logout, role, loaded } = useAuth();
+  const { logout, role, loaded, user } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [realBarbers, setRealBarbers] = useState([]);
 
   useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    apiFetch("/api/admin/barbers")
+      .then(list => setRealBarbers(Array.isArray(list) ? list : []))
+      .catch(() => {});
+  }, []);
 
   const handleLogout = () => { logout(); router.push("/barber"); };
   const navSections = NAV_SECTIONS(lang);
@@ -105,7 +110,7 @@ export default function AdminDashboard() {
         className="hidden lg:flex flex-col fixed top-0 left-0 bottom-0 z-30 w-[220px]"
         style={{ background: C.sidebar, borderRight: `1px solid ${C.border}` }}
       >
-        <Sidebar tab={tab} setTab={setTab} navSections={navSections} tx={tx} lang={lang} setLang={setLang} handleLogout={handleLogout} />
+        <Sidebar tab={tab} setTab={setTab} navSections={navSections} tx={tx} lang={lang} setLang={setLang} handleLogout={handleLogout} user={user} />
       </aside>
 
       {/* Mobile drawer */}
@@ -194,15 +199,15 @@ export default function AdminDashboard() {
                 onClick={() => setUserMenu(!userMenu)}
                 style={{ width: "36px", height: "36px", background: C.red, borderRadius: "8px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff" }}
               >
-                MY
+                {(user?.displayName ?? user?.username ?? "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
               </button>
               {userMenu && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 100 }} onClick={() => setUserMenu(false)} />
                   <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "10px", padding: "6px", zIndex: 200, minWidth: "160px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 8px 24px rgba(17,17,17,0.12)" }}>
                     <div style={{ padding: "8px 10px 10px", borderBottom: `1px solid ${C.border}`, marginBottom: "4px" }}>
-                      <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>Mehmet Yılmaz</div>
-                      <div style={{ fontSize: "10px", color: C.secondary }}>Süper Admin</div>
+                      <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{user?.displayName ?? user?.username ?? "Admin"}</div>
+                      <div style={{ fontSize: "10px", color: C.secondary }}>{user?.role === "SUPER_ADMIN" ? "Süper Admin" : user?.role === "ADMIN" ? "Admin" : user?.role === "BARBER" ? "Berber" : "Yönetici"}</div>
                     </div>
                     {[
                       { label: "Profil", icon: User, action: () => { setUserMenu(false); } },
@@ -233,7 +238,7 @@ export default function AdminDashboard() {
 
         {/* Barber selector bar — mobile only, sticky below header */}
         <div className="sticky top-14 z-20 lg:hidden" style={{ background: `${C.bg}f0`, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}>
-          <BarberSelectorBar globalBarberId={globalBarberId} setGlobalBarberId={setGlobalBarberId} />
+          <BarberSelectorBar globalBarberId={globalBarberId} setGlobalBarberId={setGlobalBarberId} realBarbers={realBarbers} />
         </div>
 
         {/* Page body — calendar tab gets full height, others get scrollable padding */}
@@ -251,12 +256,12 @@ export default function AdminDashboard() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
               >
-                {tab === "overview"      && <OverviewPage setTab={setTab} tx={tx} lang={lang} onNewBooking={() => setShowBooking(true)} barberId={globalBarberId} />}
-                {tab === "appointments"  && <AppointmentsPage tx={tx} barberId={globalBarberId} />}
+                {tab === "overview"      && <OverviewPage setTab={setTab} tx={tx} lang={lang} onNewBooking={() => setShowBooking(true)} barberId={globalBarberId} realBarbers={realBarbers} />}
+                {tab === "appointments"  && <AppointmentsPage tx={tx} barberId={globalBarberId} realBarbers={realBarbers} />}
                 {tab === "barbers"       && <BarbersPage tx={tx} />}
                 {tab === "customers"     && <CustomersPage barberId={globalBarberId} />}
                 {tab === "services-mgmt" && <ServicesManagement />}
-                {tab === "revenue"        && <RevenuePage tx={tx} barberId={globalBarberId} />}
+                {tab === "revenue"        && <RevenuePage tx={tx} barberId={globalBarberId} realBarbers={realBarbers} />}
                 {tab === "notifications" && <NotificationsPage />}
                 {tab === "settings"      && <SettingsPage />}
                 {tab === "barber-ops"    && <BarberOpsPage barberId={globalBarberId} />}
@@ -277,9 +282,9 @@ export default function AdminDashboard() {
 
 /* ─── Barber Selector Bar (mobile top bar, second sticky row) ────────────── */
 
-function BarberSelectorBar({ globalBarberId, setGlobalBarberId }) {
+function BarberSelectorBar({ globalBarberId, setGlobalBarberId, realBarbers = [] }) {
   const allOption = { id: null, label: "Tüm Berberler", avatar: null };
-  const options = [allOption, ...barbers.map(b => ({ id: b.id, label: b.name.split(" ")[0], avatar: b.avatar }))];
+  const options = [allOption, ...realBarbers.map(b => ({ id: b.id, label: (b.nameTr ?? b.name ?? "").split(" ")[0], avatar: b.avatar }))];
 
   return (
     <div
@@ -571,6 +576,13 @@ const OPS_TABS = [
 function BarberOpsPage({ barberId }) {
   const [selectedId, setSelectedId]   = useState(barberId ?? null);
   const [opsView, setOpsView]         = useState("schedule");
+  const [realBarbers, setRealBarbers] = useState([]);
+
+  useEffect(() => {
+    apiFetch("/api/admin/barbers")
+      .then(list => setRealBarbers(Array.isArray(list) ? list : []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (barberId !== undefined) setSelectedId(barberId);
@@ -580,7 +592,16 @@ function BarberOpsPage({ barberId }) {
   const { appointments, updateStatus } = useAppointments();
   const today = todayStr();
 
-  const selectedBarber = selectedId ? barbers.find(b => b.id === selectedId) : null;
+  const selectedBarber = selectedId ? realBarbers.find(b => b.id === selectedId) : null;
+
+  // Derive today's working hours from the barber's schedule
+  const selectedBarberWH = (() => {
+    if (!selectedBarber?.workingHours?.length) return { start: 9, end: 18 };
+    const dow = (new Date().getDay() + 6) % 7;
+    const wh = selectedBarber.workingHours.find(h => h.dayOfWeek === dow);
+    if (!wh || !wh.isOpen) return { start: 9, end: 18 };
+    return { start: parseInt(wh.startTime), end: parseInt(wh.endTime) };
+  })();
 
   return (
     <div>
@@ -600,7 +621,7 @@ function BarberOpsPage({ barberId }) {
           Berber Seçin
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {barbers.map((b) => {
+          {realBarbers.map((b) => {
             const active       = selectedId === b.id;
             const todayCount   = appointments.filter(a => a.barberId === b.id && a.date === today && a.status !== "cancelled").length;
             const activeNow    = appointments.some(a => a.barberId === b.id && a.date === today && a.status === "in-progress");
@@ -623,8 +644,8 @@ function BarberOpsPage({ barberId }) {
                 <div style={{ width: "40px", height: "40px", background: active ? C.red : C.surface, border: `1px solid ${active ? "transparent" : C.border}`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px", fontWeight: 700, color: active ? "#fff" : C.secondary, marginBottom: "12px" }}>
                   {b.avatar}
                 </div>
-                <div style={{ fontSize: "13px", color: active ? C.primary : C.secondary, fontWeight: active ? 600 : 400, lineHeight: 1.3, marginBottom: "2px" }}>{b.name}</div>
-                <div style={{ fontSize: "10px", color: active ? C.red : C.muted, letterSpacing: "0.04em" }}>{b.title?.tr}</div>
+                <div style={{ fontSize: "13px", color: active ? C.primary : C.secondary, fontWeight: active ? 600 : 400, lineHeight: 1.3, marginBottom: "2px" }}>{b.nameTr}</div>
+                <div style={{ fontSize: "10px", color: active ? C.red : C.muted, letterSpacing: "0.04em" }}>{b.titleTr}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "8px" }}>
                   {activeNow && <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#2563EB", display: "inline-block", animation: "pulse 1.5s infinite" }} />}
                   <span style={{ fontSize: "10px", color: C.muted }}>
@@ -647,8 +668,8 @@ function BarberOpsPage({ barberId }) {
                 {selectedBarber.avatar}
               </div>
               <div>
-                <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{selectedBarber.name}</div>
-                <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{selectedBarber.title?.tr}</div>
+                <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{selectedBarber.nameTr}</div>
+                <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{selectedBarber.titleTr}</div>
               </div>
             </div>
             <button
@@ -694,7 +715,7 @@ function BarberOpsPage({ barberId }) {
               transition={{ duration: 0.18 }}
             >
               {opsView === "schedule" && (
-                <BarberScheduleSection barberId={selectedId} date={date} setDate={setDate} appointments={appointments} updateStatus={updateStatus} />
+                <BarberScheduleSection barberId={selectedId} date={date} setDate={setDate} appointments={appointments} updateStatus={updateStatus} barberWH={selectedBarberWH} />
               )}
               {opsView === "appointments" && (
                 <BarberAppointmentsList barberId={selectedId} appointments={appointments} onAction={updateStatus} onNewBooking={() => setShowBooking(true)} />
@@ -719,10 +740,10 @@ function BarberOpsPage({ barberId }) {
 
 /* ─── Schedule Section (date nav + BarberDayView) ────────────────────────── */
 
-function BarberScheduleSection({ barberId, date, setDate, appointments, updateStatus }) {
+function BarberScheduleSection({ barberId, date, setDate, appointments, updateStatus, barberWH }) {
   const today          = todayStr();
   const isViewingToday = date === today;
-  const wh            = workingHours[barberId] ?? { start: 9, end: 18 };
+  const wh            = barberWH ?? { start: 9, end: 18 };
 
   return (
     <div>
@@ -897,10 +918,10 @@ function BarberPerformanceView({ barberId, appointments }) {
 
 /* ─── Available Slots ────────────────────────────────────────────────────── */
 
-function BarberAvailableSlots({ barberId, appointments }) {
+function BarberAvailableSlots({ barberId, appointments, barberWH }) {
   const today    = todayStr();
   const now      = nowTimeStr();
-  const wh       = workingHours[barberId] ?? { start: 9, end: 18 };
+  const wh       = barberWH ?? { start: 9, end: 18 };
   const slots    = [];
   for (let h = wh.start; h < wh.end; h++) {
     for (let m = 0; m < 60; m += 30) {
@@ -943,7 +964,7 @@ function BarberAvailableSlots({ barberId, appointments }) {
   );
 }
 
-function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout }) {
+function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, user }) {
   return (
     <>
       {/* Logo */}
@@ -1009,10 +1030,12 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout }) 
       {/* Bottom: user + logout + site link */}
       <div style={{ padding: "10px 12px", borderTop: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "28px", height: "28px", background: C.red, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>MY</div>
+          <div style={{ width: "28px", height: "28px", background: C.red, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+            {(user?.displayName ?? user?.username ?? "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Mehmet Yılmaz</div>
-            <div style={{ fontSize: "10px", color: C.secondary }}>Süper Admin</div>
+            <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.displayName ?? user?.username ?? "Admin"}</div>
+            <div style={{ fontSize: "10px", color: C.secondary }}>{user?.role === "SUPER_ADMIN" ? "Süper Admin" : user?.role === "ADMIN" ? "Admin" : user?.role === "BARBER" ? "Berber" : "Yönetici"}</div>
           </div>
           <button onClick={handleLogout} title="Çıkış" style={{ width: "28px", height: "28px", background: "none", border: `1px solid ${C.border}`, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary, flexShrink: 0 }}>
             <LogOut size={12} />
@@ -1024,7 +1047,7 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout }) 
 }
 
 /* ─── Business KPIs ───────────────────────────────────────────────────────── */
-function BusinessKPIs({ barberId }) {
+function BusinessKPIs({ barberId, activeBarberCount = 0 }) {
   const { appointments } = useAppointments();
   const today = todayStr();
 
@@ -1035,13 +1058,14 @@ function BusinessKPIs({ barberId }) {
   const todayRevenue = completed.reduce((s, a) => s + (a.price || 0), 0);
   const noShowRate   = todayAppts.length > 0 ? Math.round((noshows.length / todayAppts.length) * 100) : 0;
   const TOTAL_SLOTS  = 24;
-  const totalCap     = barbers.length * TOTAL_SLOTS;
+  const effectiveBarbers = activeBarberCount || Math.max(new Set(todayAppts.map(a => a.barberId)).size, 1);
+  const totalCap     = effectiveBarbers * TOTAL_SLOTS;
   const usedSlots    = todayAppts.reduce((s, a) => s + Math.ceil((a.duration || 30) / 30), 0);
   const chairOcc     = Math.round((usedSlots / totalCap) * 100);
 
   const cards = [
     { label: "Bugün Kasa",     value: `₺${todayRevenue.toLocaleString()}`, sub: `${completed.length} işlem tamamlandı`, hero: true },
-    { label: "Toplam Randevu", value: todayAppts.length,                    sub: `${barbers.filter(b => b.available).length} berber aktif` },
+    { label: "Toplam Randevu", value: todayAppts.length,                    sub: `${effectiveBarbers} berber aktif` },
     { label: "Koltuk Doluluk", value: `${chairOcc}%`,                       sub: `${usedSlots}/${totalCap} slot`, valueColor: chairOcc > 70 ? "#15803D" : chairOcc > 40 ? "#B45309" : C.primary },
     { label: "No-Show Oranı",  value: `${noShowRate}%`,                     sub: `${noshows.length} gelmedi`,     valueColor: noShowRate > 15 ? "#B91C1C" : C.primary },
     { label: "Onay Bekliyor",  value: pending.length,                       sub: pending.length > 0 ? "hemen işlem yap" : "tümü onaylandı", alert: pending.length > 0 },
@@ -1067,12 +1091,12 @@ function BusinessKPIs({ barberId }) {
 }
 
 /* ─── Staff Performance Cards ─────────────────────────────────────────────── */
-function StaffPerformance({ barberId }) {
+function StaffPerformance({ barberId, realBarbers = [] }) {
   const { appointments } = useAppointments();
   const today = todayStr();
   const todayAppts = appointments.filter(a => a.date === today && a.status !== "cancelled");
   const TOTAL_SLOTS = 24;
-  const visibleBarbers = barberId ? barbers.filter(b => b.id === barberId) : barbers;
+  const visibleBarbers = barberId ? realBarbers.filter(b => b.id === barberId) : realBarbers;
 
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
@@ -1095,10 +1119,10 @@ function StaffPerformance({ barberId }) {
                   {b.avatar}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.name.split(" ")[0]}</div>
+                  <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(b.nameTr ?? b.name ?? "").split(" ")[0]}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-                    <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: b.available ? "#15803D" : C.muted }} />
-                    <span style={{ fontSize: "9px", color: b.available ? "#15803D" : C.muted }}>{b.available ? "Aktif" : "İzinli"}</span>
+                    <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: b.available !== false ? "#15803D" : C.muted }} />
+                    <span style={{ fontSize: "9px", color: b.available !== false ? "#15803D" : C.muted }}>{b.available !== false ? "Aktif" : "İzinli"}</span>
                   </div>
                 </div>
                 {pendingCt > 0 && (
@@ -1173,13 +1197,12 @@ function PendingConfirmations({ onNewBooking, barberId }) {
         ) : (
           <div style={{ maxHeight: "220px", overflowY: "auto" }}>
             {pending.map((appt, i) => {
-              const brb = barbers.find(b => b.id === appt.barberId);
               return (
                 <div key={appt.id} style={{ padding: "9px 14px", borderBottom: i < pending.length - 1 ? `1px solid ${C.border}` : "none", display: "flex", alignItems: "center", gap: "8px" }}>
                   <span style={{ fontSize: "11px", color: C.secondary, minWidth: "36px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
-                    <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service} · {brb?.name.split(" ")[0]}</div>
+                    <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}{appt.barber ? ` · ${appt.barber.split(" ")[0]}` : ""}</div>
                   </div>
                   <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
                     <button onClick={() => updateStatus(appt.id, "confirmed")}
@@ -1226,13 +1249,13 @@ function PendingConfirmations({ onNewBooking, barberId }) {
               Sıradaki Randevular · {upcoming.length}
             </div>
             {upcoming.map((appt, i) => {
-              const brb      = barbers.find(b => b.id === appt.barberId);
               const isActive = appt.status === "in-progress";
+              const barberInitials = appt.barber ? appt.barber.split(" ").map(w => w[0]).slice(0, 2).join("") : "?";
               return (
                 <div key={appt.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px", borderTop: `1px solid ${C.border}` }}>
                   <span style={{ fontSize: "11px", color: isActive ? "#2563EB" : C.primary, fontWeight: 600, minWidth: "38px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
                   <div style={{ width: "18px", height: "18px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                    {brb?.avatar ?? "?"}
+                    {barberInitials}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
@@ -1285,12 +1308,12 @@ function TodaySchedule({ onNewBooking, barberId }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))" }}>
           {todayAppts.map((appt, i) => {
             const sc  = SC[appt.status] ?? SC.pending;
-            const brb = barbers.find(b => b.id === appt.barberId);
+            const barberInitials = appt.barber ? appt.barber.split(" ").map(w => w[0]).slice(0, 2).join("") : "?";
             return (
               <div key={appt.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 18px", borderRight: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
                 <span style={{ fontSize: "11px", color: C.primary, fontWeight: 600, minWidth: "38px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
                 <div style={{ width: "20px", height: "20px", background: `linear-gradient(135deg, #C62828, #9a1212)`, borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                  {brb?.avatar ?? "??"}
+                  {barberInitials}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: "11px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
@@ -1336,9 +1359,9 @@ function RecentActivityFeed() {
       </div>
       <div style={{ overflowY: "auto", maxHeight: "360px" }}>
         {recent.map((appt, i) => {
-          const brb = barbers.find(b => b.id === appt.barberId);
           const color = STATUS_COLOR[appt.status] ?? "#57514B";
           const isToday = appt.date === today;
+          const barberInitials = appt.barber ? appt.barber.split(" ").map(w => w[0]).slice(0, 2).join("") : "?";
           return (
             <div key={appt.id} style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 18px", borderBottom: i < recent.length - 1 ? `1px solid ${C.border}` : "none" }}>
               <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, marginTop: "5px", flexShrink: 0 }} />
@@ -1350,9 +1373,9 @@ function RecentActivityFeed() {
                 <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "3px" }}>
                   <div style={{ width: "14px", height: "14px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "6px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                    {brb?.avatar}
+                    {barberInitials}
                   </div>
-                  <span style={{ fontSize: "10px", color: C.muted }}>{brb?.name.split(" ")[0]}</span>
+                  <span style={{ fontSize: "10px", color: C.muted }}>{appt.barber?.split(" ")[0]}</span>
                   <span style={{ fontSize: "10px", color: C.muted }}>·</span>
                   <span style={{ fontSize: "10px", color: isToday ? C.primary : C.muted, fontFamily: "'DM Mono', monospace" }}>{isToday ? appt.time : appt.date}</span>
                 </div>
@@ -1367,10 +1390,10 @@ function RecentActivityFeed() {
 }
 
 /* ─── Overview Page ───────────────────────────────────────────────────────── */
-function OverviewPage({ setTab, tx, lang, onNewBooking, barberId }) {
+function OverviewPage({ setTab, tx, lang, onNewBooking, barberId, realBarbers = [] }) {
   const now     = new Date();
   const dateStr = now.toLocaleDateString(lang === "tr" ? "tr-TR" : "en-US", { weekday: "long", day: "numeric", month: "long" });
-  const activeBarber = barberId ? barbers.find(b => b.id === barberId) : null;
+  const activeBarber = barberId ? realBarbers.find(b => b.id === barberId) : null;
 
   return (
     <div className="space-y-6">
@@ -1378,10 +1401,10 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, barberId }) {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {activeBarber ? activeBarber.name : tx.admin.greeting}
+            {activeBarber ? (activeBarber.nameTr ?? activeBarber.name) : tx.admin.greeting}
           </h1>
           <p style={{ fontSize: "12px", color: C.secondary, marginTop: "2px" }}>
-            {activeBarber ? activeBarber.title?.tr : dateStr}
+            {activeBarber ? (activeBarber.titleTr ?? activeBarber.title?.tr) : dateStr}
           </p>
         </div>
         <button
@@ -1394,11 +1417,11 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, barberId }) {
       </div>
 
       {/* Business KPIs */}
-      <BusinessKPIs barberId={barberId} />
+      <BusinessKPIs barberId={barberId} activeBarberCount={realBarbers.filter(b => b.available).length} />
 
       {/* Staff performance + Pending confirmations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1fr_1fr_340px] gap-4">
-        <StaffPerformance barberId={barberId} />
+        <StaffPerformance barberId={barberId} realBarbers={realBarbers} />
         <PendingConfirmations onNewBooking={onNewBooking} barberId={barberId} />
         <div className="hidden xl:block">
           <RecentActivityFeed />
@@ -1432,14 +1455,14 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, barberId }) {
 }
 
 /* ─── Appointments Page ───────────────────────────────────────────────────── */
-function AppointmentsPage({ tx, barberId }) {
+function AppointmentsPage({ tx, barberId, realBarbers = [] }) {
   const p = tx.admin.pages.appointments;
-  const activeBarber = barberId ? barbers.find(b => b.id === barberId) : null;
+  const activeBarber = barberId ? realBarbers.find(b => b.id === barberId) : null;
   return (
     <div className="space-y-5">
       <PageHeader
-        title={activeBarber ? `${activeBarber.name} · Randevular` : p.title}
-        sub={activeBarber ? activeBarber.title?.tr : p.sub}
+        title={activeBarber ? `${activeBarber.nameTr ?? activeBarber.name} · Randevular` : p.title}
+        sub={activeBarber ? (activeBarber.titleTr ?? activeBarber.title?.tr) : p.sub}
       />
       <AppointmentsList barberId={barberId} />
     </div>
@@ -1575,9 +1598,9 @@ function CustomersPage({ barberId }) {
 }
 
 /* ─── Revenue Page ────────────────────────────────────────────────────────── */
-function RevenuePage({ tx, barberId }) {
+function RevenuePage({ tx, barberId, realBarbers = [] }) {
   const { appointments } = useAppointments();
-  const activeBarber = barberId ? barbers.find(b => b.id === barberId) : null;
+  const activeBarber = barberId ? realBarbers.find(b => b.id === barberId) : null;
   const today = todayStr();
   const thisMonth = today.slice(0, 7);
 
@@ -1590,10 +1613,10 @@ function RevenuePage({ tx, barberId }) {
     <div className="space-y-5">
       <div>
         <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>
-          {activeBarber ? `${activeBarber.name} · Gelir` : "Gelir"}
+          {activeBarber ? `${activeBarber.nameTr ?? activeBarber.name} · Gelir` : "Gelir"}
         </h1>
         <p style={{ fontSize: "12px", color: C.secondary, marginTop: "2px" }}>
-          {activeBarber ? activeBarber.title?.tr : "Son 30 günlük gelir analizi"}
+          {activeBarber ? (activeBarber.titleTr ?? activeBarber.title?.tr) : "Son 30 günlük gelir analizi"}
         </p>
       </div>
 
@@ -1620,6 +1643,7 @@ function RevenuePage({ tx, barberId }) {
           <AreaChart />
         </>
       )}
+      {activeBarber && <AreaChart barberId={barberId} />}
     </div>
   );
 }

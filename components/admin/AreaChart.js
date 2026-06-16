@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { monthlyRevenue, weeklyRevenue } from "@/lib/data";
+import { apiFetch } from "@/lib/api";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 
@@ -17,28 +17,19 @@ const C = {
   red:       "#C62828",
 };
 
-const PERIODS_TR = [
-  { key: "7d",  label: "7G",  data: weeklyRevenue.map((d) => ({ date: d.day, value: d.revenue })) },
-  { key: "30d", label: "30G", data: monthlyRevenue },
-];
-const PERIODS_EN = [
-  { key: "7d",  label: "7D",  data: weeklyRevenue.map((d) => ({ date: d.day, value: d.revenue })) },
-  { key: "30d", label: "30D", data: monthlyRevenue },
-];
-
 const PAD = { t: 24, r: 16, b: 36, l: 60 };
 const VW = 600, VH = 200;
 const CW = VW - PAD.l - PAD.r;
 const CH = VH - PAD.t - PAD.b;
 
 function buildPath(data) {
+  if (!data || data.length < 2) return { pts: [], line: "", fill: "", max: 0 };
   const vals  = data.map((d) => d.value);
-  const max   = Math.max(...vals);
-  const range = max || 1;
+  const max   = Math.max(...vals) || 1;
 
   const pts = data.map((d, i) => ({
     x: PAD.l + (i / (data.length - 1)) * CW,
-    y: PAD.t + CH - (d.value / range) * CH,
+    y: PAD.t + CH - (d.value / max) * CH,
   }));
 
   let line = `M ${pts[0].x} ${pts[0].y}`;
@@ -55,27 +46,42 @@ function buildPath(data) {
 }
 
 function yTicks(max, count = 4) {
-  const step = Math.ceil(max / count / 1000) * 1000;
+  const step = Math.ceil(max / count / 1000) * 1000 || 1;
   return Array.from({ length: count + 1 }, (_, i) => i * step).filter((v) => v <= max * 1.1);
 }
 
-export default function AreaChart() {
-  const [period, setPeriod] = useState("30d");
+export default function AreaChart({ barberId }) {
+  const [period, setPeriod]   = useState("30d");
   const [tooltip, setTooltip] = useState(null);
+  const [chartData, setChartData] = useState({ "7d": null, "30d": null });
   const svgRef = useRef(null);
   const { lang } = useLang();
   const tx = useT(lang);
   const chartTx = tx.admin.chart;
 
-  const PERIODS = lang === "tr" ? PERIODS_TR : PERIODS_EN;
-  const data = PERIODS.find((p) => p.key === period).data;
-  const total = data.reduce((a, b) => a + b.value, 0);
-  const avg   = Math.round(total / data.filter((d) => d.value > 0).length);
+  useEffect(() => {
+    const params = new URLSearchParams({ range: period });
+    if (barberId) params.set("barberId", barberId);
+    apiFetch(`/api/admin/revenue?${params}`)
+      .then(d => setChartData(prev => ({ ...prev, [period]: d })))
+      .catch(() => {});
+  }, [period, barberId]);
+
+  const current = chartData[period];
+  const data = current?.data ?? [];
+  const total = current?.total ?? 0;
+  const avg   = current?.avg ?? 0;
+
+  const PERIODS = [
+    { key: "7d",  label: lang === "tr" ? "7G"  : "7D"  },
+    { key: "30d", label: lang === "tr" ? "30G" : "30D" },
+  ];
+
   const { pts, line, fill, max } = buildPath(data);
   const ticks = yTicks(max);
 
   const handleMouseMove = useCallback((e) => {
-    if (!svgRef.current) return;
+    if (!svgRef.current || pts.length === 0) return;
     const rect = svgRef.current.getBoundingClientRect();
     const svgX  = ((e.clientX - rect.left) / rect.width) * VW;
     let closest = 0, minDist = Infinity;
@@ -97,9 +103,11 @@ export default function AreaChart() {
             <span className="font-display font-light" style={{ fontSize: "30px", color: C.primary, lineHeight: 1, letterSpacing: "-0.02em" }}>
               ₺{total.toLocaleString()}
             </span>
-            <span style={{ fontSize: "12px", color: C.secondary }}>
-              ₺{avg.toLocaleString()} {chartTx.avgDay}
-            </span>
+            {avg > 0 && (
+              <span style={{ fontSize: "12px", color: C.secondary }}>
+                ₺{avg.toLocaleString()} {chartTx.avgDay}
+              </span>
+            )}
           </div>
         </div>
 
@@ -125,92 +133,98 @@ export default function AreaChart() {
         </div>
       </div>
 
-      <div className="relative" onMouseLeave={() => setTooltip(null)}>
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${VW} ${VH}`}
-          className="w-full"
-          style={{ overflow: "visible" }}
-          onMouseMove={handleMouseMove}
-        >
-          <defs>
-            <linearGradient id="area-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor={C.red} stopOpacity="0.22" />
-              <stop offset="100%" stopColor={C.red} stopOpacity="0"    />
-            </linearGradient>
-          </defs>
-
-          {ticks.map((tick) => {
-            const range = Math.max(...ticks);
-            const y = PAD.t + CH - (tick / (range || 1)) * CH;
-            return (
-              <g key={tick}>
-                <line x1={PAD.l} y1={y} x2={VW - PAD.r} y2={y} stroke={C.grid} strokeWidth="1" />
-                <text x={PAD.l - 8} y={y + 4} fill={C.muted} fontSize="9" textAnchor="end" fontFamily="'DM Mono', monospace">
-                  {tick >= 1000 ? `₺${(tick / 1000).toFixed(tick % 1000 === 0 ? 0 : 1)}k` : `₺${tick}`}
-                </text>
-              </g>
-            );
-          })}
-
-          {data.map((d, i) => {
-            const step = data.length <= 7 ? 1 : Math.ceil(data.length / 6);
-            if (i % step !== 0 && i !== data.length - 1) return null;
-            return (
-              <text key={i} x={pts[i].x} y={VH - 6} fill={C.muted} fontSize="9" textAnchor="middle" fontFamily="'DM Mono', monospace">
-                {d.date}
-              </text>
-            );
-          })}
-
-          <motion.path
-            key={period + "-fill"}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            d={fill}
-            fill="url(#area-fill)"
-          />
-
-          <motion.path
-            key={period + "-line"}
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            d={line}
-            fill="none"
-            stroke={C.red}
-            strokeWidth="1.75"
-            strokeLinecap="round"
-          />
-
-          {tooltip && (
-            <g>
-              <line x1={tooltip.x} y1={PAD.t} x2={tooltip.x} y2={PAD.t + CH} stroke="rgba(17,17,17,0.18)" strokeWidth="1" strokeDasharray="3 3" />
-              <circle cx={tooltip.x} cy={tooltip.y} r="4" fill={C.red} stroke="#F8F6F2" strokeWidth="2" />
-            </g>
-          )}
-        </svg>
-
-        {tooltip && tooltip.value > 0 && (
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              left: `${(tooltip.x / VW) * 100}%`,
-              top: `${(tooltip.y / VH) * 100}%`,
-              transform: "translate(-50%, -120%)",
-              background: C.surface,
-              border: `1px solid ${C.border}`,
-              borderRadius: "6px",
-              padding: "6px 10px",
-              whiteSpace: "nowrap",
-            }}
+      {data.length === 0 ? (
+        <div style={{ height: `${VH}px`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ fontSize: "12px", color: C.muted }}>Veri yükleniyor…</div>
+        </div>
+      ) : (
+        <div className="relative" onMouseLeave={() => setTooltip(null)}>
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${VW} ${VH}`}
+            className="w-full"
+            style={{ overflow: "visible" }}
+            onMouseMove={handleMouseMove}
           >
-            <div style={{ fontSize: "11px", color: C.secondary, marginBottom: "2px" }}>{tooltip.label}</div>
-            <div style={{ fontSize: "13px", fontWeight: 600, color: C.primary }}>₺{tooltip.value.toLocaleString()}</div>
-          </div>
-        )}
-      </div>
+            <defs>
+              <linearGradient id="area-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor={C.red} stopOpacity="0.22" />
+                <stop offset="100%" stopColor={C.red} stopOpacity="0"    />
+              </linearGradient>
+            </defs>
+
+            {ticks.map((tick) => {
+              const range = Math.max(...ticks);
+              const y = PAD.t + CH - (tick / (range || 1)) * CH;
+              return (
+                <g key={tick}>
+                  <line x1={PAD.l} y1={y} x2={VW - PAD.r} y2={y} stroke={C.grid} strokeWidth="1" />
+                  <text x={PAD.l - 8} y={y + 4} fill={C.muted} fontSize="9" textAnchor="end" fontFamily="'DM Mono', monospace">
+                    {tick >= 1000 ? `₺${(tick / 1000).toFixed(tick % 1000 === 0 ? 0 : 1)}k` : `₺${tick}`}
+                  </text>
+                </g>
+              );
+            })}
+
+            {data.map((d, i) => {
+              const step = data.length <= 7 ? 1 : Math.ceil(data.length / 6);
+              if (i % step !== 0 && i !== data.length - 1) return null;
+              return (
+                <text key={i} x={pts[i].x} y={VH - 6} fill={C.muted} fontSize="9" textAnchor="middle" fontFamily="'DM Mono', monospace">
+                  {d.date}
+                </text>
+              );
+            })}
+
+            <motion.path
+              key={period + "-fill"}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              d={fill}
+              fill="url(#area-fill)"
+            />
+
+            <motion.path
+              key={period + "-line"}
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              d={line}
+              fill="none"
+              stroke={C.red}
+              strokeWidth="1.75"
+              strokeLinecap="round"
+            />
+
+            {tooltip && (
+              <g>
+                <line x1={tooltip.x} y1={PAD.t} x2={tooltip.x} y2={PAD.t + CH} stroke="rgba(17,17,17,0.18)" strokeWidth="1" strokeDasharray="3 3" />
+                <circle cx={tooltip.x} cy={tooltip.y} r="4" fill={C.red} stroke="#F8F6F2" strokeWidth="2" />
+              </g>
+            )}
+          </svg>
+
+          {tooltip && tooltip.value > 0 && (
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                left: `${(tooltip.x / VW) * 100}%`,
+                top: `${(tooltip.y / VH) * 100}%`,
+                transform: "translate(-50%, -120%)",
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: "6px",
+                padding: "6px 10px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <div style={{ fontSize: "11px", color: C.secondary, marginBottom: "2px" }}>{tooltip.label}</div>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: C.primary }}>₺{tooltip.value.toLocaleString()}</div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

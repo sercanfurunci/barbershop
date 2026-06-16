@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { barbers, workingHours, breaks } from "@/lib/data";
 import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
+import { apiFetch } from "@/lib/api";
 import ManualBookingModal from "./ManualBookingModal";
 import {
   ChevronLeft, ChevronRight, Plus, Clock, X, Check,
@@ -257,7 +257,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
 
   function ApptCard({ appt }) {
     const sc  = SC[appt.status] ?? SC.pending;
-    const brb = barbers.find(b => b.id === appt.barberId);
+    const barberInitials = appt.barber ? appt.barber.split(" ").map(w => w[0]).slice(0, 2).join("") : "?";
     const Icon = sc.icon;
     return (
       <motion.div
@@ -289,9 +289,9 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "5px" }}>
               <div style={{ width: "16px", height: "16px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                {brb?.avatar}
+                {barberInitials}
               </div>
-              <span style={{ fontSize: "10px", color: C.muted }}>{brb?.name.split(" ")[0]}</span>
+              <span style={{ fontSize: "10px", color: C.muted }}>{appt.barber?.split(" ")[0]}</span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", fontSize: "10px", color: sc.color, padding: "1px 6px", background: sc.bg, borderRadius: "4px" }}>
                 <Icon size={8} />
                 {sc.short}
@@ -352,7 +352,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
 
       {/* Barber filter chips */}
       <div style={{ flexShrink: 0, background: C.card, borderBottom: `1px solid ${C.border}`, padding: "8px 16px", display: "flex", gap: "6px", overflowX: "auto", scrollbarWidth: "none" }}>
-        {[{ id: "all", label: "Tümü" }, ...barbers.map(b => ({ id: b.id, label: b.name.split(" ")[0] }))].map(b => (
+        {[{ id: "all", label: "Tümü" }, ...barbers.map(b => ({ id: b.id, label: (b.nameTr ?? b.name ?? "").split(" ")[0] }))].map(b => (
           <button key={b.id} onClick={() => setActiveBarber(b.id)} style={{ height: "26px", padding: "0 12px", borderRadius: "13px", background: activeBarber === b.id ? "rgba(198,40,40,0.12)" : "none", border: `1px solid ${activeBarber === b.id ? "rgba(198,40,40,0.4)" : C.border}`, fontSize: "11px", color: activeBarber === b.id ? C.red : C.secondary, cursor: "pointer", fontWeight: activeBarber === b.id ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0 }}>
             {b.label}
           </button>
@@ -450,6 +450,24 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
+// Derive working hours { start, end } for a barber on a specific date
+function getBarberWH(barber, dateStr) {
+  if (!barber?.workingHours?.length) return { start: 9, end: 18 };
+  const dow = (new Date(dateStr + "T12:00:00").getDay() + 6) % 7; // 0=Mon
+  const wh = barber.workingHours.find(h => h.dayOfWeek === dow);
+  if (!wh || !wh.isOpen) return null;
+  return { start: parseInt(wh.startTime), end: parseInt(wh.endTime) };
+}
+
+// Convert barber.breaks to { start: "HH:MM", end: "HH:MM", label: string }[]
+function getBarberBreaks(barber, dateStr) {
+  if (!barber?.breaks?.length) return [];
+  const dow = (new Date(dateStr + "T12:00:00").getDay() + 6) % 7;
+  return barber.breaks
+    .filter(b => b.dayOfWeek == null || b.dayOfWeek === dow)
+    .map(b => ({ start: b.startTime, end: b.endTime, label: "Mola" }));
+}
+
 export default function CalendarView() {
   const { appointments, updateStatus } = useAppointments();
   const [date, setDate]             = useState(todayStr());
@@ -458,7 +476,14 @@ export default function CalendarView() {
   const [statusFilter, setStatusFilter]   = useState("all");
   const [activeBarber, setActiveBarber]   = useState("all");
   const [listOpen, setListOpen]     = useState(false);
+  const [barbers, setBarbers]       = useState([]);
   const gridRef = useRef(null);
+
+  useEffect(() => {
+    apiFetch("/api/admin/barbers")
+      .then(list => setBarbers(Array.isArray(list) ? list : []))
+      .catch(() => {});
+  }, []);
 
   // Scroll to current time on mount / date change
   useEffect(() => {
@@ -504,6 +529,8 @@ export default function CalendarView() {
   };
 
   const visibleBarbers = activeBarber === "all" ? barbers : barbers.filter(b => b.id === activeBarber);
+  // Normalize barber name field for components that expect .name
+  const normalizedBarbers = visibleBarbers.map(b => ({ ...b, name: b.nameTr ?? b.name ?? "" }));
 
   // Mobile agenda view
   const mobileView = (
@@ -620,7 +647,7 @@ export default function CalendarView() {
         <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px", overflowX: "auto" }}>
           {/* Barber filter */}
           <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-            {[{ id: "all", name: "Tümü", avatar: "T" }, ...barbers].map(b => (
+            {[{ id: "all", name: "Tümü", avatar: "T" }, ...barbers.map(b => ({ ...b, name: b.nameTr ?? b.name ?? "" }))].map(b => (
               <button
                 key={b.id}
                 onClick={() => setActiveBarber(b.id)}
@@ -675,8 +702,8 @@ export default function CalendarView() {
           {/* Column headers */}
           <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card }}>
             <div style={{ width: `${TIME_COL_W}px`, flexShrink: 0, borderRight: `1px solid ${C.border}` }} />
-            {visibleBarbers.map((barber) => {
-              const wh        = workingHours[barber.id] ?? { start: 9, end: 18 };
+            {normalizedBarbers.map((barber) => {
+              const wh        = getBarberWH(barber, date) ?? { start: 9, end: 18 };
               const bAppts    = displayAppts.filter(a => a.barberId === barber.id);
               const bRevenue  = bAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
               const bPending  = bAppts.filter(a => a.status === "pending").length;
@@ -739,9 +766,9 @@ export default function CalendarView() {
               </div>
 
               {/* Barber columns */}
-              {visibleBarbers.map((barber) => {
-                const wh          = workingHours[barber.id] ?? { start: 9, end: 18 };
-                const barberBreaks = breaks[barber.id] ?? [];
+              {normalizedBarbers.map((barber) => {
+                const wh          = getBarberWH(barber, date) ?? { start: 9, end: 18 };
+                const barberBreaks = getBarberBreaks(barber, date);
                 const barberAppts  = displayAppts.filter(a => a.barberId === barber.id);
                 const offBeforeH   = ((wh.start - DAY_START) * 2) * SLOT_H;
                 const offAfterTop  = ((wh.end   - DAY_START) * 2) * SLOT_H;
@@ -808,7 +835,7 @@ export default function CalendarView() {
                     .sort((a, b) => a.time.localeCompare(b.time))
                     .map((appt, i, arr) => {
                       const sc  = SC[appt.status] ?? SC.pending;
-                      const brb = barbers.find(b => b.id === appt.barberId);
+                      const barberInitials = appt.barber ? appt.barber.split(" ").map(w => w[0]).slice(0, 2).join("") : "?";
                       return (
                         <div
                           key={appt.id}
@@ -821,9 +848,9 @@ export default function CalendarView() {
                               <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}</div>
                               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "3px" }}>
                                 <div style={{ width: "14px", height: "14px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "6px", fontWeight: 700, color: "#fff" }}>
-                                  {brb?.avatar}
+                                  {barberInitials}
                                 </div>
-                                <span style={{ fontSize: "10px", color: C.muted }}>{brb?.name.split(" ")[0]}</span>
+                                <span style={{ fontSize: "10px", color: C.muted }}>{appt.barber?.split(" ")[0]}</span>
                                 <span style={{ fontSize: "10px", color: C.muted }}>·</span>
                                 <span style={{ fontSize: "10px", color: sc.color }}>{sc.short}</span>
                               </div>
