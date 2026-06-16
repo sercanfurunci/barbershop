@@ -91,8 +91,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Bu saat dilimi dolu" }, { status: 409 });
     }
 
-    // Find-or-create client — upsert avoided because PrismaNeonHttp (HTTP mode)
-    // does not support implicit transactions that Prisma uses for upsert.
+    // Find-or-create client (manual — avoids upsert's implicit transaction)
     let client = await prisma.client.findUnique({
       where: { shopId_phone: { shopId, phone } },
     });
