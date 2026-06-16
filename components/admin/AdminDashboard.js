@@ -26,7 +26,7 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { barbers, clients, workingHours } from "@/lib/data";
+import { barbers, workingHours } from "@/lib/data";
 import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 
@@ -1458,28 +1458,39 @@ function BarbersPage({ tx }) {
 
 /* ─── Customers Page ──────────────────────────────────────────────────────── */
 function CustomersPage({ barberId }) {
-  const [search, setSearch] = useState("");
-  const { appointments } = useAppointments();
-  const activeBarber = barberId ? barbers.find(b => b.id === barberId) : null;
+  const [search, setSearch]     = useState("");
+  const [clients, setClients]   = useState([]);
+  const [total, setTotal]       = useState(0);
+  const [loading, setLoading]   = useState(true);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const barberClientNames = barberId
-    ? [...new Set(appointments.filter(a => a.barberId === barberId).map(a => a.client))]
-    : null;
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  const rows = clients.filter(c => {
-    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search);
-    const matchBarber = !barberClientNames || barberClientNames.includes(c.name);
-    return matchSearch && matchBarber;
-  });
+  useEffect(() => {
+    setLoading(true);
+    const params = new URLSearchParams({ limit: "200" });
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (barberId) params.set("barberId", barberId);
+    apiFetch(`/api/admin/clients?${params}`)
+      .then(data => { setClients(data.clients ?? []); setTotal(data.total ?? 0); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [debouncedSearch, barberId]);
 
   return (
     <div>
       <div style={{ marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>
-            {activeBarber ? `${activeBarber.name} · Müşteriler` : "Müşteriler"}
+            Müşteriler
           </h1>
-          <p style={{ fontSize: "12px", color: C.secondary, marginTop: "2px" }}>{rows.length} kayıt</p>
+          <p style={{ fontSize: "12px", color: C.secondary, marginTop: "2px" }}>
+            {loading ? "Yükleniyor…" : `${total} kayıt`}
+          </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "0 10px", height: "34px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "6px" }}>
           <Search size={11} style={{ color: C.muted }} />
@@ -1491,54 +1502,73 @@ function CustomersPage({ barberId }) {
           />
         </div>
       </div>
-      {/* Desktop table */}
-      <div className="hidden md:block" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-              {["Müşteri", "Telefon", "Ziyaret", "Toplam Harcama", "No-show", "Son Ziyaret"].map(h => (
-                <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: C.muted, fontWeight: 400 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((c, i) => (
-              <tr key={c.id} style={{ borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : "none" }}
-                onMouseEnter={e => e.currentTarget.style.background = C.surface + "80"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-              >
-                <td style={{ padding: "11px 16px" }}><div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{c.name}</div></td>
-                <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: C.secondary, fontFamily: "'DM Mono', monospace" }}>{c.phone}</span></td>
-                <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "13px", color: C.primary }}>{c.visits}</span></td>
-                <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>₺{c.totalSpent.toLocaleString()}</span></td>
-                <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: c.noShows > 0 ? "#B91C1C" : C.secondary }}>{c.noShows}</span></td>
-                <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: C.secondary }}>{c.lastVisit}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {/* Mobile card list */}
-      <div className="md:hidden" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-        {rows.map((c, i) => (
-          <div key={c.id} style={{ padding: "14px 16px", borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : "none" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
-              <div>
-                <div style={{ fontSize: "14px", color: C.primary, fontWeight: 500 }}>{c.name}</div>
-                <div style={{ fontSize: "12px", color: C.secondary, fontFamily: "'DM Mono', monospace", marginTop: "1px" }}>{c.phone}</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600 }}>₺{c.totalSpent.toLocaleString()}</div>
-                <div style={{ fontSize: "10px", color: C.secondary, marginTop: "1px" }}>{c.visits} ziyaret</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "11px", color: C.muted }}>{c.lastVisit}</span>
-              {c.noShows > 0 && <span style={{ fontSize: "11px", color: "#B91C1C" }}>{c.noShows} no-show</span>}
-            </div>
+
+      {loading ? (
+        <div style={{ padding: "48px", textAlign: "center", color: C.muted, fontSize: "13px" }}>Yükleniyor…</div>
+      ) : clients.length === 0 ? (
+        <div style={{ padding: "48px", textAlign: "center", color: C.muted, fontSize: "13px" }}>
+          {search ? "Arama sonucu bulunamadı." : "Henüz müşteri kaydı yok."}
+        </div>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                  {["Müşteri", "Telefon", "Ziyaret", "Toplam Harcama", "No-show", "Son Ziyaret"].map(h => (
+                    <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: C.muted, fontWeight: 400 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((c, i) => (
+                  <tr key={c.id} style={{ borderBottom: i < clients.length - 1 ? `1px solid ${C.border}` : "none" }}
+                    onMouseEnter={e => e.currentTarget.style.background = C.surface + "80"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  >
+                    <td style={{ padding: "11px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{c.name}</div>
+                        {c.blocked && <span style={{ fontSize: "10px", color: "#B91C1C", background: "rgba(185,28,28,0.08)", borderRadius: "4px", padding: "1px 5px" }}>Engelli</span>}
+                      </div>
+                    </td>
+                    <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: C.secondary, fontFamily: "monospace" }}>{c.phone}</span></td>
+                    <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "13px", color: C.primary }}>{c.visits}</span></td>
+                    <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>₺{(c.totalSpent ?? 0).toLocaleString()}</span></td>
+                    <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: c.noShows > 0 ? "#B91C1C" : C.secondary }}>{c.noShows}</span></td>
+                    <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: C.secondary }}>{c.lastVisit ?? "—"}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
+          {/* Mobile card list */}
+          <div className="md:hidden" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
+            {clients.map((c, i) => (
+              <div key={c.id} style={{ padding: "14px 16px", borderBottom: i < clients.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <div style={{ fontSize: "14px", color: C.primary, fontWeight: 500 }}>{c.name}</div>
+                      {c.blocked && <span style={{ fontSize: "10px", color: "#B91C1C" }}>Engelli</span>}
+                    </div>
+                    <div style={{ fontSize: "12px", color: C.secondary, fontFamily: "monospace", marginTop: "1px" }}>{c.phone}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600 }}>₺{(c.totalSpent ?? 0).toLocaleString()}</div>
+                    <div style={{ fontSize: "10px", color: C.secondary, marginTop: "1px" }}>{c.visits} ziyaret</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "11px", color: C.muted }}>{c.lastVisit ?? "—"}</span>
+                  {c.noShows > 0 && <span style={{ fontSize: "11px", color: "#B91C1C" }}>{c.noShows} no-show</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
