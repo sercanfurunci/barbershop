@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { Check, Star, ChevronRight, Clock } from "lucide-react";
@@ -283,10 +282,8 @@ export default function Hero({ services = [], barbers = [] }) {
             <div className="lg:col-span-5 xl:col-span-5 flex flex-col justify-center">
 
               {/* Badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+              <div
+                className="hero-badge"
                 style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "28px", width: "fit-content" }}
               >
                 <div style={{ display: "flex", gap: "2px" }}>
@@ -299,14 +296,11 @@ export default function Hero({ services = [], barbers = [] }) {
                 <span style={{ fontSize: "10px", color: C.red, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600 }}>
                   {lang === "tr" ? "Darıca · Premium Berber" : "Darıca · Premium Barber"}
                 </span>
-              </motion.div>
+              </div>
 
               {/* Headline — padding-bottom gives descenders breathing room */}
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="font-display font-light"
+              <h1
+                className="font-display font-light hero-heading"
                 style={{ letterSpacing: "-0.025em", marginBottom: "20px", paddingBottom: "4px" }}
               >
                 <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 90px)", color: C.primary, lineHeight: 1.0 }}>
@@ -319,27 +313,20 @@ export default function Hero({ services = [], barbers = [] }) {
                 <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 90px)", color: C.red, lineHeight: 1.0, paddingBottom: "0.2em" }}>
                   {lang === "tr" ? "bekliyor." : "you."}
                 </span>
-              </motion.h1>
+              </h1>
 
               {/* Sub-copy */}
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.38 }}
+              <p
+                className="hero-sub"
                 style={{ fontSize: "14px", color: C.secondary, lineHeight: 1.75, maxWidth: "400px", marginBottom: "32px" }}
               >
                 {lang === "tr"
                   ? "Abdurrahman Çelik Exclusive Salon'da premium saç ve sakal bakımı. Online randevu alın, bekleme yok."
                   : "Premium haircuts and grooming at Abdurrahman Çelik Exclusive Salon. Book online, no waiting."}
-              </motion.p>
+              </p>
 
               {/* Desktop CTAs */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.48 }}
-                className="hidden sm:flex flex-col sm:flex-row gap-3 mb-10"
-              >
+              <div className="hero-ctas hidden sm:flex flex-col sm:flex-row gap-3 mb-10">
                 <Link href="/book" style={{
                   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px",
                   background: C.red, color: "#fff", padding: "13px 28px", borderRadius: "8px",
@@ -362,27 +349,19 @@ export default function Hero({ services = [], barbers = [] }) {
                 >
                   {lang === "tr" ? "Hizmetleri Gör" : "View Services"}
                 </a>
-              </motion.div>
+              </div>
 
               {/* Mobile: explore link */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.48 }}
-                className="flex sm:hidden mb-6"
-              >
+              <div className="hero-ctas flex sm:hidden mb-6">
                 <a href="#services" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: C.secondary, fontSize: "13px", fontWeight: 500, textDecoration: "none" }}>
                   {lang === "tr" ? "Hizmetleri Gör" : "View Services"}
                   <ChevronRight size={13} />
                 </a>
-              </motion.div>
+              </div>
 
               {/* Trust bar */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                className="hidden sm:grid grid-cols-4 gap-0"
+              <div
+                className="hero-trust hidden sm:grid grid-cols-4 gap-0"
                 style={{ borderTop: `1px solid ${C.border}`, paddingTop: "20px" }}
               >
                 {TRUST.map((item, i) => (
@@ -403,21 +382,16 @@ export default function Hero({ services = [], barbers = [] }) {
                     </span>
                   </div>
                 ))}
-              </motion.div>
+              </div>
             </div>
 
             {/* ── RIGHT ── */}
-            <motion.div
-              initial={{ opacity: 0, x: 28 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
-              className="lg:col-span-7 xl:col-span-7 flex items-center justify-center lg:justify-end"
-            >
+            <div className="hero-right lg:col-span-7 xl:col-span-7 flex items-center justify-center lg:justify-end">
               <div style={{ width: "100%", maxWidth: "520px" }}>
                 <StatusCard lang={lang} barbers={barbers} />
                 <BookingWidget lang={lang} tx={tx} services={services} barbers={barbers} />
               </div>
-            </motion.div>
+            </div>
 
           </div>
         </div>
