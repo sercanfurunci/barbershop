@@ -131,6 +131,6 @@ export async function POST(request) {
     return NextResponse.json(appointment, { status: 201 });
   } catch (err) {
     console.error("[POST /api/appointments]", err);
-    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası", detail: err.message }, { status: 500 });
   }
 }
