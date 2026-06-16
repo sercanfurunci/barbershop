@@ -5,6 +5,13 @@ export const alt = "Abdurrahman Çelik Exclusive Salon";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+const BARBERS = [
+  { initials: "AÇ", name: "Abdurrahman Çelik", title: "Baş Berber", exp: "20 yıl" },
+  { initials: "EÇ", name: "Egemen Çelik",      title: "Kıdemli Berber", exp: "8 yıl" },
+  { initials: "ÖF", name: "Ömer Efe Furunci",  title: "Berber", exp: "5 yıl" },
+  { initials: "EF", name: "Emin Fırtına",      title: "Berber", exp: "12 yıl" },
+];
+
 export default function OgImage() {
   return new ImageResponse(
     (
@@ -12,143 +19,116 @@ export default function OgImage() {
         style={{
           width: "1200px",
           height: "630px",
-          background: "#070707",
+          background: "#F2EDE4",
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "72px 80px",
-          fontFamily: "serif",
+          fontFamily: "sans-serif",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Background glow */}
+        {/* Left panel */}
         <div style={{
-          position: "absolute",
-          top: "-120px",
-          left: "-80px",
-          width: "600px",
-          height: "600px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(204,26,26,0.12) 0%, transparent 70%)",
+          width: "580px",
+          padding: "56px 64px",
           display: "flex",
-        }} />
-        <div style={{
-          position: "absolute",
-          bottom: "-100px",
-          right: "-60px",
-          width: "500px",
-          height: "500px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(180,120,60,0.06) 0%, transparent 70%)",
-          display: "flex",
-        }} />
-
-        {/* Top: Logo + location */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          flexDirection: "column",
+          justifyContent: "space-between",
+          flexShrink: 0,
+        }}>
+          {/* Logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{
-              width: "48px", height: "48px",
-              background: "#CC1A1A",
-              borderRadius: "10px",
+              width: "40px", height: "40px",
+              background: "#C62828",
+              borderRadius: "8px",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <span style={{ color: "#fff", fontSize: "22px", fontWeight: 700 }}>A</span>
+              <span style={{ color: "#fff", fontSize: "18px", fontWeight: 700 }}>A</span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              <span style={{ color: "#F0EDE8", fontSize: "18px", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 300 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+              <span style={{ color: "#111", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>
                 Abdurrahman Çelik
               </span>
-              <span style={{ color: "#CC1A1A", fontSize: "11px", letterSpacing: "0.18em", textTransform: "uppercase" }}>
+              <span style={{ color: "#C62828", fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase" }}>
                 Exclusive Salon
               </span>
             </div>
           </div>
 
-          <div style={{
-            display: "flex", alignItems: "center", gap: "8px",
-            padding: "8px 18px",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "40px",
-          }}>
-            <span style={{ color: "#9A96A0", fontSize: "13px", letterSpacing: "0.04em" }}>
-              Darıca, Kocaeli
+          {/* Headline */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", gap: "3px" }}>
+              {[1,2,3,4,5].map(i => (
+                <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="#C62828">
+                  <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                </svg>
+              ))}
+              <span style={{ color: "#57514B", fontSize: "13px", marginLeft: "6px" }}>4.9 · 176 yorum</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.0 }}>
+              <span style={{ color: "#111", fontSize: "72px", fontWeight: 300, letterSpacing: "-0.03em", fontFamily: "serif" }}>Ustalar</span>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "14px" }}>
+                <span style={{ color: "#111", fontSize: "72px", fontWeight: 300, letterSpacing: "-0.03em", fontStyle: "italic", fontFamily: "serif" }}>sizi</span>
+                <span style={{ color: "#C62828", fontSize: "72px", fontWeight: 300, letterSpacing: "-0.03em", fontFamily: "serif" }}>bekliyor.</span>
+              </div>
+            </div>
+            <span style={{ color: "#57514B", fontSize: "15px", lineHeight: 1.5, marginTop: "4px" }}>
+              Darıca'nın en seçkin berberi. Online randevu, bekleme yok.
             </span>
+          </div>
+
+          {/* CTA + location */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{
+              background: "#C62828", padding: "12px 24px", borderRadius: "40px",
+              display: "flex", alignItems: "center", gap: "6px",
+            }}>
+              <span style={{ color: "#fff", fontSize: "14px", fontWeight: 600 }}>Randevu Al</span>
+              <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "13px" }}>→</span>
+            </div>
+            <span style={{ color: "#8E8A93", fontSize: "12px" }}>Darıca, Kocaeli</span>
           </div>
         </div>
 
-        {/* Center: Headline */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
-            {[1,2,3,4,5].map(i => (
-              <svg key={i} width="20" height="20" viewBox="0 0 24 24" fill="#CC1A1A">
-                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-              </svg>
-            ))}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{
-              color: "#F0EDE8",
-              fontSize: "72px",
-              fontWeight: 300,
-              letterSpacing: "-0.03em",
-              lineHeight: 1,
-            }}>
-              Ustalar
-            </span>
-            <span style={{
-              color: "#CC1A1A",
-              fontSize: "72px",
-              fontWeight: 300,
-              letterSpacing: "-0.03em",
-              lineHeight: 1,
-              fontStyle: "italic",
-            }}>
-              sizi bekliyor.
-            </span>
-          </div>
-          <span style={{ color: "#9A96A0", fontSize: "18px", lineHeight: 1.5, maxWidth: "600px" }}>
-            Darıca'nın en seçkin berberi. Premium saç &amp; sakal bakımı. Online randevu alın, bekleme yok.
+        {/* Divider */}
+        <div style={{ width: "1px", background: "rgba(0,0,0,0.08)", alignSelf: "stretch", flexShrink: 0 }} />
+
+        {/* Right panel — barber cards */}
+        <div style={{
+          flex: 1,
+          padding: "48px 48px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          gap: "12px",
+        }}>
+          <span style={{ fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "#C62828", marginBottom: "4px", fontWeight: 500 }}>
+            USTA BERBERLERİ
           </span>
-        </div>
-
-        {/* Bottom: Stats */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0px" }}>
-          {[
-            { value: "4.9", label: "Ortalama Puan" },
-            { value: "175+", label: "Google Yorum" },
-            { value: "12+", label: "Yıllık Deneyim" },
-            { value: "4", label: "Usta Berber" },
-          ].map((stat, i) => (
-            <div key={i} style={{
-              display: "flex", flexDirection: "column", gap: "4px",
-              paddingRight: i < 3 ? "32px" : "0",
-              paddingLeft: i > 0 ? "32px" : "0",
-              borderRight: i < 3 ? "1px solid rgba(255,255,255,0.07)" : "none",
+          {BARBERS.map((b) => (
+            <div key={b.initials} style={{
+              display: "flex", alignItems: "center", gap: "12px",
+              background: "#fff",
+              border: "1px solid rgba(0,0,0,0.07)",
+              borderRadius: "10px",
+              padding: "10px 14px",
             }}>
-              <span style={{ color: "#F0EDE8", fontSize: "28px", fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1 }}>
-                {stat.value}
-              </span>
-              <span style={{ color: "#8E8A93", fontSize: "11px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                {stat.label}
-              </span>
+              <div style={{
+                width: "38px", height: "38px",
+                background: "linear-gradient(135deg, #C62828, #7f1d1d)",
+                borderRadius: "8px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <span style={{ color: "#fff", fontSize: "12px", fontWeight: 700, letterSpacing: "0.03em" }}>{b.initials}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px", flex: 1 }}>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: "#111", lineHeight: 1 }}>{b.name}</span>
+                <span style={{ fontSize: "10px", color: "#C62828", letterSpacing: "0.06em", textTransform: "uppercase" }}>{b.title}</span>
+              </div>
+              <span style={{ fontSize: "11px", color: "#8E8A93", flexShrink: 0 }}>{b.exp}</span>
             </div>
           ))}
-
-          <div style={{ flex: 1 }} />
-
-          {/* CTA pill */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: "8px",
-            background: "#CC1A1A",
-            padding: "14px 28px",
-            borderRadius: "40px",
-          }}>
-            <span style={{ color: "#fff", fontSize: "15px", fontWeight: 600, letterSpacing: "0.03em" }}>
-              Randevu Al
-            </span>
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "14px" }}>→</span>
-          </div>
         </div>
       </div>
     ),

@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef } from "react";
 import Link from "next/link";
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { Star, ArrowRight } from "lucide-react";
@@ -19,13 +18,11 @@ const C = {
 };
 
 export default function Barbers({ barbers = [] }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-60px" });
   const { lang } = useLang();
   const tx = useT(lang);
 
   return (
-    <section id="barbers" ref={ref} style={{ background: C.bg }}>
+    <section id="barbers" style={{ background: C.bg }}>
       <div
         className="absolute left-0 right-0 h-px"
         style={{ background: "linear-gradient(90deg, transparent, #E5DFD6, transparent)" }}
@@ -37,7 +34,8 @@ export default function Barbers({ barbers = [] }) {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.6 }}
           >
             <div className="flex items-center gap-2.5 mb-4">
@@ -57,7 +55,8 @@ export default function Barbers({ barbers = [] }) {
 
           <motion.div
             initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : {}}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-60px" }}
             transition={{ delay: 0.2 }}
             className="flex flex-col gap-3 items-start lg:items-end"
           >
@@ -81,7 +80,8 @@ export default function Barbers({ barbers = [] }) {
             <motion.div
               key={barber.id}
               initial={{ opacity: 0, y: 16 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, delay: 0.1 + i * 0.08 }}
               className="flex flex-col"
             >
