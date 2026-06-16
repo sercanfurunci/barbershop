@@ -122,7 +122,26 @@ function DesktopStepper({ activeStep, steps, onGoTo }) {
 }
 
 // ── Main flow ─────────────────────────────────────────────────────────────────
-export default function BookingFlow() {
+function normalizeServices(raw) {
+  return raw.map((s) => ({
+    ...s,
+    name:        { tr: s.nameTr, en: s.nameEn },
+    description: { tr: s.descTr, en: s.descEn },
+    category:    s.category?.toLowerCase() ?? "cuts",
+  }));
+}
+
+function normalizeBarbers(raw) {
+  return raw.map((b) => ({
+    ...b,
+    name:    b.nameTr,
+    title:   { tr: b.titleTr, en: b.titleEn },
+    bio:     { tr: b.bioTr,   en: b.bioEn   },
+    reviews: b.reviewCount,
+  }));
+}
+
+export default function BookingFlow({ initialServices = [], initialBarbers = [] }) {
   // step 1-5 on mobile; desktop maps 3+4 → DateTimeSelect, 5 → Confirmation
   const [step, setStep]           = useState(1);
   const [direction, setDirection] = useState(1);
@@ -133,26 +152,17 @@ export default function BookingFlow() {
   const { lang } = useLang();
   const tx = useT(lang);
 
-  const [services, setServices]   = useState([]);
-  const [barbers, setBarbers]     = useState([]);
-  const [dataLoaded, setDataLoaded] = useState(false);
+  const hasInitial = initialServices.length > 0;
+  const [services, setServices]   = useState(() => hasInitial ? normalizeServices(initialServices) : []);
+  const [barbers, setBarbers]     = useState(() => initialBarbers.length > 0 ? normalizeBarbers(initialBarbers) : []);
+  const [dataLoaded, setDataLoaded] = useState(hasInitial);
 
   useEffect(() => {
+    if (hasInitial) return; // already have server-side data
     Promise.all([apiFetch("/api/services"), apiFetch("/api/barbers")])
       .then(([svcData, brbrData]) => {
-        setServices(svcData.map((s) => ({
-          ...s,
-          name:        { tr: s.nameTr, en: s.nameEn },
-          description: { tr: s.descTr, en: s.descEn },
-          category:    s.category.toLowerCase(),
-        })));
-        setBarbers(brbrData.map((b) => ({
-          ...b,
-          name:    b.nameTr,
-          title:   { tr: b.titleTr, en: b.titleEn },
-          bio:     { tr: b.bioTr,   en: b.bioEn   },
-          reviews: b.reviewCount,
-        })));
+        setServices(normalizeServices(svcData));
+        setBarbers(normalizeBarbers(brbrData));
         setDataLoaded(true);
       })
       .catch(() => setDataLoaded(true));
