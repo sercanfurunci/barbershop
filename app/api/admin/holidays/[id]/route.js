@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 // DELETE /api/admin/holidays/[id]
 export async function DELETE(request, { params }) {
   const payload = await requireAuth(request);

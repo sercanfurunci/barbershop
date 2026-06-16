@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 async function resolveBarber(id, payload) {
   if (!payload) return { err: unauthorized() };
   if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN") return { err: forbidden() };

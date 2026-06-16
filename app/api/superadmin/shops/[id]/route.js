@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 function gate(payload) {
   if (!payload) return unauthorized();
   if (payload.role !== "SUPER_ADMIN") return forbidden();

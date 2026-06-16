@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 const VALID_CATEGORIES = ["CUTS", "BEARD", "COMBO", "PREMIUM"];
 
 async function resolve(id, payload) {
