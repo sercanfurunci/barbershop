@@ -20,9 +20,32 @@ const C = {
   red:      "#C62828",
 };
 
+// Formats digits-only string to Turkish phone display: 532 123 45 67
+function formatPhoneDisplay(digits) {
+  const d = digits.replace(/\D/g, "").slice(0, 10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0,3)} ${d.slice(3)}`;
+  if (d.length <= 8) return `${d.slice(0,3)} ${d.slice(3,6)} ${d.slice(6)}`;
+  return `${d.slice(0,3)} ${d.slice(3,6)} ${d.slice(6,8)} ${d.slice(8)}`;
+}
+
+function validateForm(form) {
+  const errors = {};
+  if (!form.name.trim() || form.name.trim().length < 2)
+    errors.name = "En az 2 karakter olmalı";
+  const digits = form.phone.replace(/\D/g, "");
+  if (!digits || digits.length !== 10 || !digits.startsWith("5"))
+    errors.phone = "Geçerli bir numara girin (örn: 532 123 45 67)";
+  if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+    errors.email = "Geçerli bir e-posta adresi girin";
+  return errors;
+}
+
 export default function Confirmation({ booking, onBack, onLoadingChange, onSuccess, lang = "tr", tx, compact = false }) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   const setLoadingState = (v) => { setLoading(v); onLoadingChange?.(v); };
   const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
@@ -30,9 +53,26 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
   const success = tx?.booking?.success ?? {};
   const locale = lang === "tr" ? dateFnsTr : enUS;
 
+  const handlePhoneChange = (raw) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 10);
+    setForm(f => ({ ...f, phone: formatPhoneDisplay(digits) }));
+  };
+
+  const handleBlur = (field) => {
+    setTouched(t => ({ ...t, [field]: true }));
+    setErrors(validateForm({ ...form }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.phone || !form.email) {
+    const errs = validateForm(form);
+    setErrors(errs);
+    setTouched({ name: true, phone: true, email: true });
+    if (Object.keys(errs).length > 0) {
+      toast.error("Lütfen formdaki hataları düzeltin");
+      return;
+    }
+    if (!form.name || !form.phone) {
       toast.error(s4.errorMsg ?? "Lütfen tüm zorunlu alanları doldurun");
       return;
     }
@@ -248,30 +288,36 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
         <form id="booking-confirm-form" onSubmit={handleSubmit} className="lg:col-span-3 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
-              label={s4.formLabels?.name}
-              placeholder={s4.placeholders?.name}
+              label={s4.formLabels?.name ?? "Ad Soyad"}
+              placeholder={s4.placeholders?.name ?? "Ahmet Yılmaz"}
               value={form.name}
               onChange={(v) => setForm({ ...form, name: v })}
+              onBlur={() => handleBlur("name")}
+              error={touched.name ? errors.name : undefined}
               required
             />
             <FormField
-              label={s4.formLabels?.phone}
-              placeholder={s4.placeholders?.phone}
+              label={s4.formLabels?.phone ?? "Telefon"}
+              placeholder="532 123 45 67"
               value={form.phone}
-              onChange={(v) => setForm({ ...form, phone: v })}
+              onChange={handlePhoneChange}
+              onBlur={() => handleBlur("phone")}
+              error={touched.phone ? errors.phone : undefined}
               icon={<Phone size={13} />}
+              inputMode="tel"
               required
             />
           </div>
 
           <FormField
-            label={s4.formLabels?.email}
-            placeholder={s4.placeholders?.email}
+            label={(s4.formLabels?.email ?? "E-posta") + " (isteğe bağlı)"}
+            placeholder={s4.placeholders?.email ?? "ornek@mail.com"}
             value={form.email}
             onChange={(v) => setForm({ ...form, email: v })}
+            onBlur={() => handleBlur("email")}
+            error={touched.email ? errors.email : undefined}
             type="email"
             icon={<Mail size={13} />}
-            required
           />
 
           <div>
@@ -349,28 +395,29 @@ function SummaryRow({ icon, label, value }) {
   );
 }
 
-function FormField({ label, placeholder, value, onChange, type = "text", icon, required }) {
+function FormField({ label, placeholder, value, onChange, onBlur, type = "text", icon, required, error, inputMode }) {
   return (
     <div>
-      <label style={{ display: "block", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: C.muted, marginBottom: "8px", fontWeight: 500 }}>
+      <label style={{ display: "block", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: error ? C.red : C.muted, marginBottom: "8px", fontWeight: 500 }}>
         {label}{required && <span style={{ color: C.red, marginLeft: "2px" }}>*</span>}
       </label>
       <div className="relative">
         {icon && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: C.muted }}>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: error ? C.red : C.muted }}>
             {icon}
           </span>
         )}
         <input
           type={type}
-          required={required}
+          inputMode={inputMode}
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
           style={{
             width: "100%",
             background: C.card,
-            border: `1px solid ${C.border}`,
+            border: `1px solid ${error ? C.red : C.border}`,
             borderRadius: "8px",
             color: C.primary,
             fontSize: "14px",
@@ -379,10 +426,13 @@ function FormField({ label, placeholder, value, onChange, type = "text", icon, r
             transition: "border-color 0.15s",
             height: "44px",
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.5)"; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = error ? C.red : "rgba(198,40,40,0.5)"; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = error ? C.red : C.border; onBlur?.(); }}
         />
       </div>
+      {error && (
+        <p style={{ fontSize: "11px", color: C.red, marginTop: "5px" }}>{error}</p>
+      )}
     </div>
   );
 }
