@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Calendar, Clock, User, Scissors, Phone, Mail, ArrowRight } from "lucide-react";
+import { Check, Calendar, Clock, User, Scissors, Phone, Mail, ArrowRight, CalendarPlus, Download } from "lucide-react";
+import { googleCalendarUrl } from "@/lib/calendar";
 import { format } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 import { toast } from "sonner";
@@ -46,6 +47,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [createdApptId, setCreatedApptId] = useState(null);
 
   const setLoadingState = (v) => { setLoading(v); onLoadingChange?.(v); };
   const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
@@ -82,7 +84,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
         ? format(booking.date, "yyyy-MM-dd")
         : booking.date;
 
-      await apiFetch("/api/appointments", {
+      const created = await apiFetch("/api/appointments", {
         method: "POST",
         body: JSON.stringify({
           name:      form.name,
@@ -96,6 +98,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
           source:    "ONLINE",
         }),
       });
+      setCreatedApptId(created?.id ?? null);
       setSubmitted(true);
       onSuccess?.();
       toast.success(success.confirmed ?? "Randevunuz onaylandı!");
@@ -118,6 +121,21 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
     const [titleLine1, titleLine2] = success.title
       ? success.title(form.name.split(" ")[0])
       : [`Görüşürüz,`, `${form.name.split(" ")[0]}.`];
+
+    const dateStr = booking.date instanceof Date
+      ? format(booking.date, "yyyy-MM-dd")
+      : booking.date ?? "";
+
+    const gcalUrl = googleCalendarUrl({
+      title:       `${serviceName}${barberName ? ` – ${barberName}` : ""}`,
+      description: `Hizmet: ${serviceName}\nBerber: ${barberName}${form.notes ? `\nNot: ${form.notes}` : ""}`,
+      location:    "Makas Kuaför",
+      dateStr,
+      timeStr:     booking.time ?? "09:00",
+      durationMin: booking.service?.duration ?? 30,
+    });
+
+    const icsUrl = createdApptId ? `/api/calendar/${createdApptId}/ics` : null;
 
     return (
       <motion.div
@@ -152,13 +170,13 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
             <span style={{ fontStyle: "italic", color: C.red }}>{titleLine2}</span>
           </h2>
           <p style={{ fontSize: "14px", color: C.secondary, marginBottom: "4px" }}>{success.confirmed}</p>
-          <p style={{ fontSize: "13px", color: C.muted, marginBottom: "40px" }}>
+          <p style={{ fontSize: "13px", color: C.muted, marginBottom: "32px" }}>
             {success.emailSent ? success.emailSent(form.email) : form.email}
           </p>
 
           {/* Booking details card */}
           <div
-            className="text-left mb-8 w-full"
+            className="text-left mb-6 w-full"
             style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "24px" }}
           >
             <div style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.muted, marginBottom: "16px" }}>
@@ -170,6 +188,56 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
               <SummaryRow icon={<Calendar size={13} />} label={booking.date ? format(booking.date, "EEEE, d MMMM yyyy", { locale }) : ""} />
               <SummaryRow icon={<Clock size={13} />} label={booking.time} />
             </div>
+          </div>
+
+          {/* Add to Calendar */}
+          <div
+            className="w-full mb-6"
+            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px" }}
+          >
+            <div style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.muted, marginBottom: "14px", fontWeight: 500 }}>
+              Takvime Ekle
+            </div>
+            <div className="flex flex-col gap-2.5">
+              <a
+                href={gcalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 transition-all duration-150"
+                style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "11px 16px", fontSize: "13px", fontWeight: 500, color: C.primary, textDecoration: "none" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(17,17,17,0.25)"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" fill="#4285F4"/>
+                  <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8z" fill="white" fillOpacity="0.3"/>
+                  <path d="M15.5 8.5h-7v7h7v-7zm-1 6h-5v-5h5v5z" fill="white"/>
+                  <path d="M17 6H7v2h10V6zm0 10H7v2h10v-2z" fill="#34A853"/>
+                  <path d="M6 7H4v10h2V7z" fill="#FBBC05"/>
+                  <path d="M20 7h-2v10h2V7z" fill="#EA4335"/>
+                </svg>
+                Google Calendar
+                <ArrowRight size={12} style={{ marginLeft: "auto", opacity: 0.4 }} />
+              </a>
+
+              {icsUrl && (
+                <a
+                  href={icsUrl}
+                  download
+                  className="flex items-center gap-3 transition-all duration-150"
+                  style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "11px 16px", fontSize: "13px", fontWeight: 500, color: C.primary, textDecoration: "none" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(17,17,17,0.25)"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+                >
+                  <Download size={15} style={{ color: C.muted }} />
+                  Apple / Outlook Takvimi
+                  <span style={{ marginLeft: "auto", fontSize: "11px", color: C.muted }}>(.ics)</span>
+                </a>
+              )}
+            </div>
+            <p style={{ fontSize: "11px", color: C.dim, marginTop: "12px", lineHeight: 1.5 }}>
+              48 saat ve 3 saat öncesi için otomatik hatırlatıcı eklenir.
+            </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full">
