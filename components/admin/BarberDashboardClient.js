@@ -289,7 +289,7 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
       {isToday_ && (
         <div style={{ marginBottom: "14px" }}>
           <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "8px" }}>
-            {activeAppt ? "Şu An" : "Sonraki Randevu"}
+            {"Sonraki Randevu"}
           </div>
           <NextAppointmentCard appt={displayNext} onAction={updateStatus} />
         </div>
@@ -667,7 +667,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                 {isViewingToday && (
                   <div>
                     <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "10px" }}>
-                      {activeAppt ? "Şu An Koltuğa Aldı" : "Sonraki Randevu"}
+                      {"Sonraki Randevu"}
                     </div>
                     <NextAppointmentCard appt={displayNext} onAction={updateStatus} />
                   </div>
