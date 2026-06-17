@@ -42,6 +42,10 @@ next-env.d.ts
 
 /lib/generated/prisma
 
-# AI agent instructions
+# AI agent / Claude Code files
 CLAUDE.md
 AGENTS.md
+PRODUCT.md
+DESIGN.md
+.impeccable/
+.claude/
