@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useLang } from "@/contexts/LanguageContext";
@@ -166,18 +167,13 @@ function BarberCard({ barber, lang, tx, index }) {
         {/* ── Image ── */}
         <div style={{ position: "relative", height: "300px", flexShrink: 0, background: "#1a1210", overflow: "hidden" }}>
           {barber.profilePhoto ? (
-            <img
+            <Image
               src={barber.profilePhoto}
               alt={name}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                objectPosition: "center center",
-                display: "block",
-                transition: "transform 0.5s cubic-bezier(0.16,1,0.3,1)",
-              }}
-              className="group-hover:scale-[1.04]"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+              style={{ objectFit: "cover", objectPosition: "center center" }}
+              className="group-hover:scale-[1.04] transition-transform duration-500"
             />
           ) : (
             <div style={{

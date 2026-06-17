@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Star, Check } from "lucide-react";
 
@@ -104,11 +105,13 @@ export default function BarberSelect({ barbers, loaded, selected, onSelect, onBa
                     ✦
                   </div>
                 ) : barber.profilePhoto ? (
-                  <img
+                  <Image
                     src={barber.profilePhoto}
-                    alt={barber.name}
+                    alt={barber.name || ""}
+                    width={46} height={46}
+                    sizes="46px"
                     style={{
-                      width: "46px", height: "46px", flexShrink: 0,
+                      flexShrink: 0,
                       borderRadius: "50%", objectFit: "cover",
                       border: `2px solid ${isSelected ? C.red : C.border}`,
                     }}

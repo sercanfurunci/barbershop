@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, MoreVertical, Eye, Pencil, Trash2, ArrowRight, Phone } from "lucide-react";
+import { Search, MoreVertical, Eye, Pencil, Trash2, ArrowRight, Phone, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -64,22 +64,34 @@ function StatusPill({ status, label, style }) {
   );
 }
 
+const PAGE_SIZE = 20;
+
 export default function AppointmentsList({ limit, onViewAll, barberId }) {
-  const [search, setSearch]  = useState("");
+  const [search, setSearch]       = useState("");
   const [statusFilter, setStatus] = useState("all");
+  const [page, setPage]           = useState(0);
   const { lang } = useLang();
   const tx = useT(lang);
   const apptTx = tx.admin.appointments;
   const { appointments, updateStatus, deleteAppointment } = useAppointments();
 
-  const rows = appointments
+  // Reset page whenever filters change
+  useEffect(() => { setPage(0); }, [search, statusFilter, barberId]);
+
+  const allFiltered = appointments
     .filter((a) => {
       const q = search.toLowerCase();
       const match = a.client.toLowerCase().includes(q) || a.service.toLowerCase().includes(q) || a.barber.toLowerCase().includes(q);
       return match && (statusFilter === "all" || a.status === statusFilter) && (!barberId || a.barberId === barberId);
     })
-    .sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time))
-    .slice(0, limit ?? 200);
+    .sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
+
+  const totalPages = Math.max(1, Math.ceil(allFiltered.length / PAGE_SIZE));
+
+  // limit prop → overview widget (no pagination); else → paginated full list
+  const rows = limit
+    ? allFiltered.slice(0, limit)
+    : allFiltered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", overflow: "hidden" }}>
@@ -311,6 +323,52 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
           </div>
         )}
       </div>
+
+      {/* Pagination — only in full list mode */}
+      {!limit && totalPages > 1 && (
+        <div
+          className="flex items-center justify-between"
+          style={{ padding: "10px 16px", borderTop: `1px solid ${C.border}` }}
+        >
+          <span style={{ fontSize: "11px", color: C.muted }}>
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, allFiltered.length)}{" "}
+            / {allFiltered.length}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              style={{
+                width: 28, height: 28, borderRadius: 6,
+                border: `1px solid ${C.border}`,
+                background: page === 0 ? C.surface : C.card,
+                color: page === 0 ? C.muted : C.secondary,
+                cursor: page === 0 ? "not-allowed" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <ChevronLeft size={12} />
+            </button>
+            <span style={{ fontSize: "11px", color: C.secondary, minWidth: 48, textAlign: "center" }}>
+              {page + 1} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+              style={{
+                width: 28, height: 28, borderRadius: 6,
+                border: `1px solid ${C.border}`,
+                background: page === totalPages - 1 ? C.surface : C.card,
+                color: page === totalPages - 1 ? C.muted : C.secondary,
+                cursor: page === totalPages - 1 ? "not-allowed" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <ChevronRight size={12} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

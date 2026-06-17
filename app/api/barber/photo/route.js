@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { uploadBarberPhoto, deleteBarberPhoto } from "@/lib/cloudinary";
 
 export const dynamic = "force-dynamic";
 
@@ -30,12 +31,13 @@ export async function POST(request) {
       return NextResponse.json({ error: "Fotoğraf çok büyük (max 2 MB)" }, { status: 400 });
     }
 
-    const updated = await prisma.barber.update({
+    const url = await uploadBarberPhoto(photo, payload.barberId);
+    await prisma.barber.update({
       where: { id: payload.barberId },
-      data: { profilePhoto: photo },
+      data:  { profilePhoto: url },
     });
 
-    return NextResponse.json({ profilePhoto: updated.profilePhoto });
+    return NextResponse.json({ profilePhoto: url });
   } catch (err) {
     console.error("[POST /api/barber/photo]", err);
     return NextResponse.json({ error: err.message || "Sunucu hatası" }, { status: 500 });
@@ -49,9 +51,10 @@ export async function DELETE(request) {
     if (!payload) return unauthorized();
     if (!payload.barberId) return forbidden();
 
+    await deleteBarberPhoto(payload.barberId);
     await prisma.barber.update({
       where: { id: payload.barberId },
-      data: { profilePhoto: null },
+      data:  { profilePhoto: null },
     });
 
     return NextResponse.json({ ok: true });

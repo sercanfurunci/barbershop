@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -894,8 +895,12 @@ function ProfileTab() {
               onClick={() => !photoLoading && photoRef.current?.click()}
             >
               {profilePhoto ? (
-                <img src={profilePhoto} alt="Profil"
-                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center", display: "block" }} />
+                <Image
+                  src={profilePhoto} alt="Profil"
+                  fill
+                  sizes="96px"
+                  style={{ objectFit: "cover", objectPosition: "center center" }}
+                />
               ) : (
                 <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: 700, color: "#fff" }}>
                   {user?.barber?.avatar ?? "A"}
@@ -957,7 +962,9 @@ function ProfileTab() {
       {/* Identity card — merge with profile above, just show email/username now */}
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "16px 20px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "14px" }}>
         {profilePhoto ? (
-          <img src={profilePhoto} alt="Profil" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+          <Image src={profilePhoto} alt="Profil" width={40} height={40}
+            sizes="40px"
+            style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
         ) : (
           <div style={{ width: "40px", height: "40px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
             {user?.barber?.avatar ?? "A"}

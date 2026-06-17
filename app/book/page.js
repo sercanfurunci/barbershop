@@ -27,6 +27,7 @@ export default async function BookPage() {
           id: true, nameTr: true, titleTr: true, titleEn: true,
           bioTr: true, bioEn: true, rating: true, reviewCount: true,
           specialties: true, avatar: true, color: true, available: true, yearsExp: true,
+          profilePhoto: true,
         },
         orderBy: { createdAt: "asc" },
       }),
@@ -45,6 +46,7 @@ export default async function BookPage() {
       rating: b.rating, reviewCount: b.reviewCount,
       specialties: b.specialties, avatar: b.avatar,
       color: b.color, available: b.available, yearsExp: b.yearsExp,
+      profilePhoto: b.profilePhoto ?? null,
     }));
   } catch (err) {
     console.error("[BookPage] DB prefetch error:", err.message);

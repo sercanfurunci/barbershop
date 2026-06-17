@@ -31,14 +31,14 @@ export function AppointmentsProvider({ children }) {
     }
 
     fetchAll();
-    let id = setInterval(fetchAll, 30_000);
+    let id = setInterval(fetchAll, 60_000);
 
     const handleVisibility = () => {
       if (document.hidden) {
         clearInterval(id);
       } else {
         fetchAll(); // immediate refresh on tab restore
-        id = setInterval(fetchAll, 30_000);
+        id = setInterval(fetchAll, 60_000);
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);

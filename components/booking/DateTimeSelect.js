@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { apiFetch } from "@/lib/api";
@@ -47,23 +47,57 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
   const [slotBarberMap, setSlotBarberMap]   = useState({});
   const [loadingSlots, setLoadingSlots]     = useState(false);
 
+  // Ref-based prefetch cache: dateStr → slots[] | "loading"
+  const prefetchRef = useRef({});
+
+  // Prefetch next 7 days in background as soon as barber + service are known.
+  // Uses a ref so prefetch completions don't trigger re-renders.
+  useEffect(() => {
+    const barberId  = booking.barber?.id;
+    const serviceId = booking.service?.id;
+    if (!barberId || !serviceId || barberId === "any") return;
+
+    Array.from({ length: 7 }, (_, i) => format(addDays(today, i), "yyyy-MM-dd"))
+      .filter(d => !prefetchRef.current[d])
+      .forEach(d => {
+        prefetchRef.current[d] = "loading";
+        apiFetch(`/api/availability?barberId=${barberId}&serviceId=${serviceId}&date=${d}`)
+          .then(r  => { prefetchRef.current[d] = r.slots ?? []; })
+          .catch(() => { delete prefetchRef.current[d]; });
+      });
+  }, [booking.barber?.id, booking.service?.id]);
+
   useEffect(() => {
     if (!localDate || !booking.barber || !booking.service) return;
     const serviceId = booking.service.id;
     const isAny    = booking.barber.id === "any";
     const dateStr  = format(localDate, "yyyy-MM-dd");
 
-    setLoadingSlots(true);
     setLocalTime(null);
-    setAvailableSlots([]);
     setSlotBarberMap({});
 
     if (!isAny) {
+      // Cache hit: instant display, no spinner
+      const cached = prefetchRef.current[dateStr];
+      if (Array.isArray(cached)) {
+        setAvailableSlots(cached);
+        setLoadingSlots(false);
+        return;
+      }
+      // Cache miss: fetch and prime the cache for next time
+      setLoadingSlots(true);
+      setAvailableSlots([]);
       apiFetch(`/api/availability?barberId=${booking.barber.id}&serviceId=${serviceId}&date=${dateStr}`)
-        .then((data) => setAvailableSlots(data.slots ?? []))
+        .then((data) => {
+          const slots = data.slots ?? [];
+          prefetchRef.current[dateStr] = slots;
+          setAvailableSlots(slots);
+        })
         .catch(() => setAvailableSlots([]))
         .finally(() => setLoadingSlots(false));
     } else {
+      setLoadingSlots(true);
+      setAvailableSlots([]);
       const barberList = allBarbers.filter((b) => b.available);
       if (barberList.length === 0) { setLoadingSlots(false); return; }
       Promise.all(

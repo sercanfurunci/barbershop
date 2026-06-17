@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { uploadBarberPhoto, deleteBarberPhoto } from "@/lib/cloudinary";
 
 export const dynamic = "force-dynamic";
 
@@ -35,12 +36,13 @@ export async function POST(request, { params }) {
     if (!barber) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
     if (payload.role !== "SUPER_ADMIN" && barber.shopId !== payload.shopId) return forbidden();
 
-    const updated = await prisma.barber.update({
+    const url = await uploadBarberPhoto(photo, id);
+    await prisma.barber.update({
       where: { id },
-      data: { profilePhoto: photo },
+      data:  { profilePhoto: url },
     });
 
-    return NextResponse.json({ profilePhoto: updated.profilePhoto });
+    return NextResponse.json({ profilePhoto: url });
   } catch (err) {
     console.error("[POST /api/admin/barbers/photo]", err);
     return NextResponse.json({ error: err.message || "Sunucu hatası" }, { status: 500 });
@@ -59,6 +61,7 @@ export async function DELETE(request, { params }) {
     if (!barber) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
     if (payload.role !== "SUPER_ADMIN" && barber.shopId !== payload.shopId) return forbidden();
 
+    await deleteBarberPhoto(id);
     await prisma.barber.update({ where: { id }, data: { profilePhoto: null } });
     return NextResponse.json({ ok: true });
   } catch (err) {

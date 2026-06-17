@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
@@ -196,11 +197,13 @@ function BookingWidget({ lang, services, barbers }) {
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", cursor: "pointer", background: "none", border: "none", padding: 0 }}
                 title={b.name}>
                 {b.profilePhoto ? (
-                  <img src={b.profilePhoto} alt={b.name} style={{
-                    width: "38px", height: "38px", borderRadius: "9px", objectFit: "cover",
-                    border: `2px solid ${selectedBarber === b.id ? C.red : C.border}`,
-                    transition: "all 0.15s",
-                  }} />
+                  <Image src={b.profilePhoto} alt={b.name || ""} width={38} height={38}
+                    sizes="38px"
+                    style={{
+                      borderRadius: "9px", objectFit: "cover",
+                      border: `2px solid ${selectedBarber === b.id ? C.red : C.border}`,
+                      transition: "all 0.15s",
+                    }} />
                 ) : (
                   <div style={{
                     width: "38px", height: "38px", borderRadius: "9px",

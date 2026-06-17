@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { MoreVertical, Plus, Loader2, X, Check, AlertCircle, Camera, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
@@ -211,7 +212,9 @@ function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedu
         <div className="flex items-center gap-3">
           <div style={{ position: "relative", flexShrink: 0 }}>
             {barber.profilePhoto ? (
-              <img src={barber.profilePhoto} alt={name} style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover" }} />
+              <Image src={barber.profilePhoto} alt={name} width={44} height={44}
+                sizes="44px"
+                style={{ borderRadius: 10, objectFit: "cover" }} />
             ) : (
               <div
                 className="flex items-center justify-center font-bold text-white"
