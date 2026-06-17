@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Calendar, Users, Settings,
   Bell, Search, Menu, ExternalLink, Plus, CalendarDays, LogOut, Scissors,
   UserCheck, TrendingUp, User, MoreHorizontal, X,
-  ChevronLeft, ChevronRight, Activity, Clock,
+  ChevronLeft, ChevronRight, Activity, Clock, Star,
 } from "lucide-react";
 import {
   BarberDayView, BarberAppointmentsList, BarberCustomersView,
@@ -21,6 +21,7 @@ import ManualBookingModal from "./ManualBookingModal";
 import SettingsPage from "./SettingsPage";
 import ServicesManagement from "./ServicesManagement";
 import NotificationsPage from "@/components/admin/NotificationsPage";
+import ReviewsPage from "@/components/admin/ReviewsPage";
 import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
@@ -65,6 +66,7 @@ const NAV_SECTIONS = (lang) => [
     label: lang === "tr" ? "RAPOR" : "REPORTS",
     items: [
       { id: "revenue",        label: "Gelir",        icon: TrendingUp      },
+      { id: "reviews",        label: "Yorumlar",     icon: Star            },
       { id: "notifications", label: "Bildirimler",  icon: Bell            },
       { id: "settings",      label: "Ayarlar",      icon: Settings        },
     ],
@@ -262,6 +264,7 @@ export default function AdminDashboard() {
                 {tab === "customers"     && <CustomersPage barberId={globalBarberId} />}
                 {tab === "services-mgmt" && <ServicesManagement />}
                 {tab === "revenue"        && <RevenuePage tx={tx} barberId={globalBarberId} realBarbers={realBarbers} />}
+                {tab === "reviews"        && <ReviewsPage />}
                 {tab === "notifications" && <NotificationsPage />}
                 {tab === "settings"      && <SettingsPage />}
                 {tab === "barber-ops"    && <BarberOpsPage barberId={globalBarberId} />}

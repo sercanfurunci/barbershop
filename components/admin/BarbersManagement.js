@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MoreVertical, Plus, Loader2, X, Check, AlertCircle } from "lucide-react";
+import { MoreVertical, Plus, Loader2, X, Check, AlertCircle, Camera, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useLang } from "@/contexts/LanguageContext";
+import ImageCropModal from "@/components/shared/ImageCropModal";
 
 const C = {
   card:    "#FFFFFF",
@@ -36,6 +37,22 @@ export default function BarbersManagement() {
   const [editTarget, setEditTarget]     = useState(null); // barber obj
   const [scheduleTarget, setScheduleTarget] = useState(null); // barber obj
   const [createOpen, setCreateOpen]     = useState(false);
+  const [cropTarget, setCropTarget]     = useState(null); // { file, barberId }
+
+  const uploadCropped = async (dataUrl) => {
+    if (!cropTarget) return;
+    try {
+      const res = await apiFetch(`/api/admin/barbers/${cropTarget.barberId}/photo`, {
+        method: "POST",
+        body: JSON.stringify({ photo: dataUrl }),
+      });
+      setBarbers(prev => prev.map(b => b.id === cropTarget.barberId ? { ...b, profilePhoto: res.profilePhoto } : b));
+    } catch (err) {
+      alert(err.message || "Fotoğraf yüklenemedi");
+    } finally {
+      setCropTarget(null);
+    }
+  };
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -104,6 +121,8 @@ export default function BarbersManagement() {
             onSchedule={() => { setMenuFor(null); setScheduleTarget(barber); }}
             onToggle={() => toggleAvailable(barber)}
             onDelete={() => deleteBarber(barber)}
+            onPhotoUpdate={(id, photo) => setBarbers(prev => prev.map(b => b.id === id ? { ...b, profilePhoto: photo } : b))}
+            onStartCrop={(f, id) => setCropTarget({ file: f, barberId: id })}
           />
         ))}
       </div>
@@ -126,6 +145,15 @@ export default function BarbersManagement() {
       >
         <Plus size={14} /> Yeni Berber Ekle
       </button>
+
+      {/* Crop modal */}
+      {cropTarget && (
+        <ImageCropModal
+          file={cropTarget.file}
+          onConfirm={uploadCropped}
+          onCancel={() => setCropTarget(null)}
+        />
+      )}
 
       {/* Modals */}
       <AnimatePresence>
@@ -161,11 +189,12 @@ export default function BarbersManagement() {
 }
 
 /* ── Barber Card ─────────────────────────────────────────────────────────── */
-function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedule, onToggle, onDelete }) {
+function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedule, onToggle, onDelete, onPhotoUpdate, onStartCrop }) {
   const name  = barber.nameTr;
   const title = lang === "tr" ? barber.titleTr : (barber.titleEn || barber.titleTr);
   const bio   = lang === "tr" ? barber.bioTr   : (barber.bioEn   || barber.bioTr);
-
+  const fileRef = useRef(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -173,14 +202,24 @@ function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedu
       transition={{ delay: index * 0.07, duration: 0.4 }}
       style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column" }}
     >
+      {/* Hidden file input */}
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
+        onChange={e => { const f = e.target.files?.[0]; if (f) { onStartCrop(f, barber.id); e.target.value = ""; } }} />
+
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div
-            className="flex items-center justify-center font-bold text-white shrink-0"
-            style={{ width: "44px", height: "44px", background: `linear-gradient(135deg, ${barber.color || C.red}, #9A1212)`, borderRadius: "10px", fontSize: "14px" }}
-          >
-            {barber.avatar}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            {barber.profilePhoto ? (
+              <img src={barber.profilePhoto} alt={name} style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover" }} />
+            ) : (
+              <div
+                className="flex items-center justify-center font-bold text-white"
+                style={{ width: "44px", height: "44px", background: `linear-gradient(135deg, ${barber.color || C.red}, #9A1212)`, borderRadius: "10px", fontSize: "14px" }}
+              >
+                {photoLoading ? <Loader2 size={14} className="animate-spin" /> : barber.avatar}
+              </div>
+            )}
           </div>
           <div>
             <div style={{ fontSize: "14px", fontWeight: 600, color: C.primary, lineHeight: 1.3 }}>{name}</div>
@@ -213,6 +252,8 @@ function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedu
                 >
                   <MI onClick={onEdit}>Düzenle</MI>
                   <MI onClick={onSchedule}>Programı Gör</MI>
+                  <MI onClick={() => { setMenuFor(null); fileRef.current?.click(); }}>Fotoğraf Yükle</MI>
+                  {barber.profilePhoto && <MI onClick={async () => { setMenuFor(null); await apiFetch(`/api/admin/barbers/${barber.id}/photo`, { method: "DELETE" }); onPhotoUpdate(barber.id, null); }} danger>Fotoğrafı Kaldır</MI>}
                   <MI onClick={onToggle}>{barber.available ? "İzine Al" : "Aktife Al"}</MI>
                   <MI onClick={onDelete} danger>Berberi Sil</MI>
                 </div>
@@ -549,4 +590,25 @@ function FormActions({ onClose, busy, label }) {
       </button>
     </div>
   );
+}
+
+
+// Resize image to maxDim px and return base64 data URL
+function resizeImage(file, maxDim = 300) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 }

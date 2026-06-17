@@ -103,6 +103,16 @@ export default function BarberSelect({ barbers, loaded, selected, onSelect, onBa
                   }}>
                     ✦
                   </div>
+                ) : barber.profilePhoto ? (
+                  <img
+                    src={barber.profilePhoto}
+                    alt={barber.name}
+                    style={{
+                      width: "46px", height: "46px", flexShrink: 0,
+                      borderRadius: "50%", objectFit: "cover",
+                      border: `2px solid ${isSelected ? C.red : C.border}`,
+                    }}
+                  />
                 ) : (
                   <div style={{
                     width: "46px", height: "46px", flexShrink: 0,

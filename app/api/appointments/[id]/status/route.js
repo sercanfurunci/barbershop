@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { queueNotifications, cancelPendingJobs } from "@/lib/notifications";
+import { createReviewRequest } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,8 @@ export async function PATCH(request, { params }) {
   } else if (status === "CANCELLED") {
     await cancelPendingJobs(id);
     queueNotifications(id, "CANCELLED").catch(() => {});
+  } else if (status === "COMPLETED" && appt.status !== "COMPLETED") {
+    createReviewRequest(id).catch(() => {});
   }
 
   return NextResponse.json(updated);

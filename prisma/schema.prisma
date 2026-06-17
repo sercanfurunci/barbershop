@@ -37,9 +37,10 @@ model Shop {
   appointments Appointment[]
   holidays     Holiday[]
   auditLogs    AuditLog[]
-  notifications Notification[]
+  notifications        Notification[]
   notificationSettings NotificationSettings?
   notificationJobs     NotificationJob[]
+  reviewRequests       ReviewRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -94,18 +95,20 @@ model Barber {
   bioTr        String         @db.Text
   bioEn        String         @db.Text
   avatar       String
+  profilePhoto String?        // base64 data URL or external URL
   color        String         @default("#CC1A1A")
   rating       Float          @default(5.0)
   reviewCount  Int            @default(0)
   yearsExp     Int            @default(1)
   available    Boolean        @default(true)
   specialties  String[]
-  user         User?
-  appointments Appointment[]
-  workingHours WorkingHours?
-  breaks       BarberBreak[]
-  holidays     Holiday[]
-  services     BarberService[]
+  user            User?
+  appointments    Appointment[]
+  workingHours    WorkingHours?
+  breaks          BarberBreak[]
+  holidays        Holiday[]
+  services        BarberService[]
+  reviewRequests  ReviewRequest[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -229,9 +232,10 @@ model Appointment {
   status        AppointmentStatus @default(PENDING)
   source        BookingSource     @default(ONLINE)
   notes         String?           @db.Text
-  notifications Notification[]
-  auditLogs     AuditLog[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]
   notificationJobs NotificationJob[]
+  reviewRequest    ReviewRequest?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
@@ -394,4 +398,40 @@ enum NotifJobStatus {
   SENT
   FAILED
   CANCELLED
+}
+
+// ─── Review Requests ──────────────────────────────────────────────────────────
+// Created when an appointment reaches COMPLETED status.
+// After 2 hours, a cron job sends an SMS with a unique review link.
+
+model ReviewRequest {
+  id              String    @id @default(cuid())
+  shopId          String
+  shop            Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  appointmentId   String    @unique
+  appointment     Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  barberId        String
+  barber          Barber    @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  token           String    @unique @default(cuid())
+  customerName    String
+  customerPhone   String
+  customerEmail   String?
+  status          ReviewRequestStatus @default(PENDING)
+  sentAt          DateTime?
+  reviewedAt      DateTime?
+  rating          Int?      // 1-5
+  comment         String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([shopId, status])
+  @@index([barberId])
+  @@index([status, createdAt])
+}
+
+enum ReviewRequestStatus {
+  PENDING    // not yet sent
+  SENT       // SMS sent, awaiting review
+  REVIEWED   // customer submitted rating
+  SKIPPED    // could not send (no phone, etc.)
 }

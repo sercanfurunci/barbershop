@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppointments } from "@/contexts/AppointmentsContext";
@@ -8,12 +8,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { todayStr, toDateStr } from "@/lib/utils";
 import ManualBookingModal from "@/components/admin/ManualBookingModal";
+import ImageCropModal from "@/components/shared/ImageCropModal";
 import Link from "next/link";
 import {
   Plus, LogOut, ChevronLeft, ChevronRight, ExternalLink,
   Phone, UserCheck, Clock, CheckCircle, XCircle, AlertCircle, ArrowRight,
   CalendarDays, List, User, X, LayoutDashboard, Users, MoreHorizontal,
-  Settings, Eye, EyeOff, Save, Loader2, AtSign,
+  Settings, Eye, EyeOff, Save, Loader2, AtSign, Star, Camera, Trash2, MessageSquare,
 } from "lucide-react";
 
 const C = {
@@ -344,13 +345,25 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
     return () => clearInterval(id);
   }, []);
 
-  // Fetch real barber data from API
-  useEffect(() => {
+  // Fetch real barber data from API, poll every 30s, refresh on tab focus
+  const fetchBarberData = useCallback(() => {
     apiFetch("/api/barbers").then(list => {
       const found = list.find(b => b.slug === barberSlug);
       if (found) setBarberData(found);
     }).catch(() => {});
   }, [barberSlug]);
+
+  useEffect(() => {
+    fetchBarberData();
+    const id = setInterval(fetchBarberData, 30_000);
+    return () => clearInterval(id);
+  }, [fetchBarberData]);
+
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === "visible") { fetchBarberData(); refresh(); } };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [fetchBarberData, refresh]);
 
   useEffect(() => {
     if (!authLoaded) return;
@@ -417,6 +430,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
     { id: "schedule",     label: "Program",    icon: CalendarDays    },
     { id: "appointments", label: "Randevular", icon: List            },
     { id: "customers",    label: "Müşteriler", icon: Users           },
+    { id: "reviews",      label: "Yorumlar",   icon: Star            },
     { id: "profil",       label: "Profil",     icon: Settings        },
   ];
 
@@ -743,6 +757,9 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
           <BarberCustomersView barberId={realBarberId ?? barberSlug} appointments={appointments} onNewBooking={() => setShowModal(true)} />
         )}
 
+        {/* ── Reviews view ── */}
+        {view === "reviews" && <BarberReviewsTab />}
+
         {/* ── Profil view ── */}
         {view === "profil" && <ProfileTab />}
 
@@ -768,6 +785,11 @@ function ProfileTab() {
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg]   = useState(null); // { ok, text }
+
+  const [profilePhoto, setProfilePhoto] = useState(user?.barber?.profilePhoto ?? null);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [cropFile, setCropFile]         = useState(null);
+  const photoRef = useRef(null);
 
   const [curPwd, setCurPwd]   = useState("");
   const [newPwd, setNewPwd]   = useState("");
@@ -824,16 +846,126 @@ function ProfileTab() {
     outline: "none", caretColor: C.red, boxSizing: "border-box",
   });
 
+  const uploadPhoto = async (dataUrl) => {
+    setPhotoLoading(true);
+    try {
+      const res = await apiFetch("/api/barber/photo", { method: "POST", body: JSON.stringify({ photo: dataUrl }) });
+      setProfilePhoto(res.profilePhoto);
+    } catch (err) { alert(err.message || "Fotoğraf yüklenemedi"); }
+    finally { setPhotoLoading(false); }
+  };
+
+  const removePhoto = async () => {
+    if (!confirm("Fotoğrafı kaldırmak istiyor musun?")) return;
+    setPhotoLoading(true);
+    try {
+      await apiFetch("/api/barber/photo", { method: "DELETE" });
+      setProfilePhoto(null);
+    } catch { /* ignore */ }
+    finally { setPhotoLoading(false); }
+  };
+
   return (
     <div>
-      {/* Identity card */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "20px 24px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "16px" }}>
-        <div style={{ width: "48px", height: "48px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-          {user?.barber?.avatar ?? "A"}
+      {cropFile && (
+        <ImageCropModal
+          file={cropFile}
+          onConfirm={dataUrl => { setCropFile(null); uploadPhoto(dataUrl); }}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
+
+      {/* Facebook-style profile photo card */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "24px 20px 20px", marginBottom: "16px" }}>
+        <input ref={photoRef} type="file" accept="image/*" style={{ display: "none" }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) { setCropFile(f); e.target.value = ""; } }} />
+
+        {/* Avatar + info row */}
+        <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "16px" }}>
+          {/* Circular avatar */}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div style={{
+              width: 96, height: 96, borderRadius: "50%",
+              overflow: "hidden", background: "#16120f",
+              border: `3px solid ${C.border}`,
+              cursor: "pointer",
+              position: "relative",
+            }}
+              onClick={() => !photoLoading && photoRef.current?.click()}
+            >
+              {profilePhoto ? (
+                <img src={profilePhoto} alt="Profil"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center", display: "block" }} />
+              ) : (
+                <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: 700, color: "#fff" }}>
+                  {user?.barber?.avatar ?? "A"}
+                </div>
+              )}
+              {/* Hover overlay */}
+              <div
+                style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.42)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.18s", borderRadius: "50%" }}
+                onMouseEnter={e => { if (!photoLoading) e.currentTarget.style.opacity = 1; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = 0; }}
+              >
+                {photoLoading ? <Loader2 size={18} color="#fff" className="animate-spin" /> : <Camera size={18} color="#fff" />}
+              </div>
+            </div>
+            {/* Camera badge */}
+            <button
+              onClick={() => !photoLoading && photoRef.current?.click()}
+              style={{
+                position: "absolute", bottom: 0, right: 0,
+                width: 28, height: 28, borderRadius: "50%",
+                background: C.red, border: "2px solid #fff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <Camera size={12} color="#fff" />
+            </button>
+          </div>
+
+          {/* Name + title */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: "17px", fontWeight: 700, color: C.primary, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: "3px" }}>
+              {user?.displayName ?? user?.barber?.nameTr ?? "Profil"}
+            </div>
+            <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
+              {user?.barber?.titleTr ?? "Berber"}
+            </div>
+            <div style={{ fontSize: "12px", color: C.muted }}>
+              {user?.email}
+            </div>
+          </div>
         </div>
+
+        {/* Action buttons */}
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button onClick={() => photoRef.current?.click()} disabled={photoLoading}
+            style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px", background: C.surface, color: C.primary, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: photoLoading ? "not-allowed" : "pointer", opacity: photoLoading ? 0.6 : 1 }}>
+            <Camera size={13} /> {profilePhoto ? "Fotoğrafı Değiştir" : "Fotoğraf Yükle"}
+          </button>
+          {profilePhoto && (
+            <button onClick={removePhoto} disabled={photoLoading}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 14px", background: "transparent", color: C.muted, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
+              <Trash2 size={12} /> Kaldır
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Identity card — merge with profile above, just show email/username now */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "16px 20px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "14px" }}>
+        {profilePhoto ? (
+          <img src={profilePhoto} alt="Profil" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+        ) : (
+          <div style={{ width: "40px", height: "40px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+            {user?.barber?.avatar ?? "A"}
+          </div>
+        )}
         <div>
-          <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600 }}>{user?.displayName ?? user?.barber?.nameTr ?? "Admin"}</div>
-          <div style={{ fontSize: "12px", color: C.secondary, marginTop: "2px" }}>{user?.username ? `@${user.username}` : user?.email}</div>
+          <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{user?.displayName ?? user?.barber?.nameTr ?? "Admin"}</div>
+          <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>{user?.username ? `@${user.username}` : user?.email}</div>
         </div>
       </div>
 
@@ -941,6 +1073,129 @@ function ProfileTab() {
       </div>
     </div>
   );
+}
+
+/* ─── Barber Reviews Tab ─────────────────────────────────────────────────── */
+
+function BarberReviewsTab() {
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch("/api/barber/reviews")
+      .then(d => setData(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+        <Loader2 size={18} style={{ color: C.muted }} className="animate-spin" />
+      </div>
+    );
+  }
+
+  const stats    = data?.stats;
+  const reviews  = data?.reviews ?? [];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Summary card */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 36, fontWeight: 700, color: C.primary, letterSpacing: "-0.03em", lineHeight: 1 }}>
+              {stats?.avgRating > 0 ? stats.avgRating.toFixed(1) : "—"}
+            </div>
+            <div style={{ display: "flex", gap: 3, margin: "6px 0 4px" }}>
+              {[1,2,3,4,5].map(n => (
+                <Star key={n} size={14} fill={n <= Math.round(stats?.avgRating ?? 0) ? C.red : "none"} style={{ color: n <= Math.round(stats?.avgRating ?? 0) ? C.red : C.dim }} />
+              ))}
+            </div>
+            <p style={{ fontSize: 12, color: C.muted }}>{stats?.totalCount ?? 0} değerlendirme</p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+            {(stats?.distribution ?? []).map(({ stars, count }) => {
+              const pct = stats.totalCount > 0 ? (count / stats.totalCount) * 100 : 0;
+              return (
+                <div key={stars} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 10, color: C.muted, width: 14, textAlign: "right" }}>{stars}</span>
+                  <Star size={9} fill={C.red} style={{ color: C.red }} />
+                  <div style={{ flex: 1, height: 5, background: C.surface, borderRadius: 3 }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: C.red, borderRadius: 3 }} />
+                  </div>
+                  <span style={{ fontSize: 9, color: C.muted, width: 16 }}>{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Reviews list */}
+      {reviews.length === 0 ? (
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "32px 24px", textAlign: "center" }}>
+          <MessageSquare size={28} style={{ color: C.dim, marginBottom: 8 }} />
+          <p style={{ fontSize: 13, color: C.muted }}>Henüz yorum yok</p>
+        </div>
+      ) : (
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
+          {reviews.map((r, i) => (
+            <div key={r.id} style={{
+              padding: "14px 20px",
+              borderBottom: i < reviews.length - 1 ? `1px solid ${C.border}` : "none",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <div style={{ display: "flex", gap: 2 }}>
+                  {[1,2,3,4,5].map(n => (
+                    <Star key={n} size={11} fill={n <= (r.rating ?? 0) ? C.red : "none"} style={{ color: n <= (r.rating ?? 0) ? C.red : C.dim }} />
+                  ))}
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 500, color: C.primary }}>{r.customerName}</span>
+                <span style={{ fontSize: 10, color: C.muted, marginLeft: "auto" }}>{formatRelBd(r.reviewedAt)}</span>
+              </div>
+              {r.comment && (
+                <p style={{ fontSize: 12, color: C.secondary, lineHeight: 1.55 }}>{r.comment}</p>
+              )}
+              {r.appointment?.service?.nameTr && (
+                <p style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{r.appointment.service.nameTr}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatRelBd(dateStr) {
+  if (!dateStr) return "";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return `${m}dk`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}s`;
+  return `${Math.floor(h / 24)}g`;
+}
+
+function resizeImageBarber(file, maxDim = 300) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 }
 
 /* ─── Barber Bottom Navigation ───────────────────────────────────────────── */
