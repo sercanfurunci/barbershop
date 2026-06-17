@@ -89,10 +89,11 @@ export default function AdminDashboard() {
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
+    if (!loaded || !role) return;
     apiFetch("/api/admin/barbers")
       .then(list => setRealBarbers(Array.isArray(list) ? list : []))
       .catch(() => {});
-  }, []);
+  }, [loaded, role]);
 
   const handleLogout = () => { logout(); router.push("/barber"); };
   const navSections = NAV_SECTIONS(lang);

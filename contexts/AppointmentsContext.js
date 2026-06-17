@@ -2,10 +2,12 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { apiFetch, normalizeAppointment } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AppointmentsContext = createContext(null);
 
 export function AppointmentsProvider({ children }) {
+  const { user, loaded: authLoaded } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [loaded, setLoaded]             = useState(false);
 
@@ -20,11 +22,18 @@ export function AppointmentsProvider({ children }) {
     }
   }, []);
 
+  // Only start fetching after auth is confirmed AND a user is logged in.
+  // Re-runs when the logged-in user changes (login / logout / navigation).
   useEffect(() => {
+    if (!authLoaded || !user) {
+      // Not logged in — clear stale data so the next login sees a clean slate
+      if (authLoaded) { setAppointments([]); setLoaded(false); }
+      return;
+    }
     fetchAll();
     const id = setInterval(fetchAll, 30_000);
     return () => clearInterval(id);
-  }, [fetchAll]);
+  }, [authLoaded, user?.id, fetchAll]);
 
   const addAppointment = useCallback(async (appt) => {
     const payload = {
