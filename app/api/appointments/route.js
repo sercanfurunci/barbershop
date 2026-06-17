@@ -144,17 +144,24 @@ export async function POST(request) {
 
     const shopId = await getDefaultShopId();
 
-    const service = await prisma.service.findFirst({ where: { id: serviceId, shopId } });
-    if (!service) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
+    // Fetch service, barber, existing client, and slot conflicts in parallel.
+    const [service, barber, existingClient, slotConflicts] = await Promise.all([
+      prisma.service.findFirst({ where: { id: serviceId, shopId } }),
+      prisma.barber.findFirst({ where: { id: barberId, shopId } }),
+      prisma.client.findUnique({
+        where: { shopId_phone: { shopId, phone } },
+        select: { id: true, blocked: true },
+      }),
+      prisma.appointment.findMany({
+        where: { shopId, barberId, date, status: { notIn: ["CANCELLED", "NOSHOW"] } },
+        select: { time: true, duration: true },
+      }),
+    ]);
 
-    const barber = await prisma.barber.findFirst({ where: { id: barberId, shopId } });
-    if (!barber) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
+    if (!service) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
+    if (!barber)  return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
 
     // ── Phone-based spam guard: max 2 active upcoming appointments per phone ──
-    const existingClient = await prisma.client.findUnique({
-      where: { shopId_phone: { shopId, phone } },
-      select: { id: true, blocked: true },
-    });
     if (existingClient?.blocked) {
       return NextResponse.json({ error: "Bu numara ile randevu oluşturulamaz." }, { status: 403 });
     }
@@ -179,11 +186,6 @@ export async function POST(request) {
     const [h, m] = time.split(":").map(Number);
     const startMin = h * 60 + m;
     const endMin   = startMin + service.duration;
-
-    const slotConflicts = await prisma.appointment.findMany({
-      where: { shopId, barberId, date, status: { notIn: ["CANCELLED", "NOSHOW"] } },
-      select: { time: true, duration: true },
-    });
 
     const conflict = slotConflicts.some(a => {
       const aStart = parseInt(a.time.split(":")[0]) * 60 + parseInt(a.time.split(":")[1]);

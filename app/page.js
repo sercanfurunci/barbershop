@@ -8,7 +8,11 @@ import Barbers from "@/components/landing/Barbers";
 import Testimonials from "@/components/landing/Testimonials";
 import CTA from "@/components/landing/CTA";
 
-export const dynamic = "force-dynamic";
+// Revalidate every 5 minutes — services and barbers rarely change.
+// profilePhoto is NOT included here; the Barbers component fetches it
+// lazily from the CDN-cached /api/barbers endpoint to keep the SSR
+// HTML payload small (photos are ~150–200 KB base64 each).
+export const revalidate = 300;
 
 export default async function Home() {
   let services = [];
@@ -31,7 +35,6 @@ export default async function Home() {
           id: true, nameTr: true, titleTr: true, titleEn: true,
           bioTr: true, bioEn: true, rating: true, reviewCount: true,
           specialties: true, avatar: true, color: true, available: true, yearsExp: true,
-          profilePhoto: true,
         },
         orderBy: { createdAt: "asc" },
       }),
@@ -57,7 +60,6 @@ export default async function Home() {
       reviews: b.reviewCount,
       specialties: { tr: b.specialties, en: b.specialties },
       avatar: b.avatar,
-      profilePhoto: b.profilePhoto ?? null,
       color: b.color,
       available: b.available,
       yearsExp: b.yearsExp,

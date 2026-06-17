@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized } from "@/lib/auth";
+import { requireAuth, unauthorized, clearAuthCache } from "@/lib/auth";
 
 export async function GET(request) {
   const payload = await requireAuth(request);
@@ -23,6 +23,7 @@ export async function GET(request) {
 export async function DELETE(request) {
   const payload = await requireAuth(request);
   if (payload?.userId) {
+    clearAuthCache(payload.userId);
     await prisma.user.update({
       where: { id: payload.userId },
       data: { tokenVersion: { increment: 1 } },

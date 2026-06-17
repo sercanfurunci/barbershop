@@ -23,16 +23,30 @@ export function AppointmentsProvider({ children }) {
   }, []);
 
   // Only start fetching after auth is confirmed AND a user is logged in.
-  // Re-runs when the logged-in user changes (login / logout / navigation).
+  // Pauses polling when the browser tab is hidden to avoid wasted DB queries.
   useEffect(() => {
     if (!authLoaded || !user) {
-      // Not logged in — clear stale data so the next login sees a clean slate
       if (authLoaded) { setAppointments([]); setLoaded(false); }
       return;
     }
+
     fetchAll();
-    const id = setInterval(fetchAll, 30_000);
-    return () => clearInterval(id);
+    let id = setInterval(fetchAll, 30_000);
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        clearInterval(id);
+      } else {
+        fetchAll(); // immediate refresh on tab restore
+        id = setInterval(fetchAll, 30_000);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [authLoaded, user?.id, fetchAll]);
 
   const addAppointment = useCallback(async (appt) => {

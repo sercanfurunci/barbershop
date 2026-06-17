@@ -103,5 +103,9 @@ export async function GET(request) {
     service.duration
   );
 
-  return NextResponse.json({ slots, date, barberId, serviceId });
+  const res = NextResponse.json({ slots, date, barberId, serviceId });
+  // Short CDN/edge cache. A false-positive (showing stale available slot)
+  // is safe because the POST has its own conflict check + DB unique constraint.
+  res.headers.set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=30");
+  return res;
 }

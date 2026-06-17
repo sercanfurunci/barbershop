@@ -3,7 +3,8 @@ import { getDefaultShopId } from "@/lib/shop";
 import Navbar from "@/components/shared/Navbar";
 import BookingFlow from "@/components/booking/BookingFlow";
 
-export const dynamic = "force-dynamic";
+// Services and barbers change rarely; revalidate every 60 seconds.
+export const revalidate = 60;
 
 export const metadata = {
   title: "Randevu Al — Abdurrahman Çelik Exclusive Salon",

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useLang } from "@/contexts/LanguageContext";
@@ -22,9 +23,23 @@ function initials(name = "") {
   return name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
 }
 
-export default function Barbers({ barbers = [] }) {
+export default function Barbers({ barbers: initialBarbers = [] }) {
+  const [barbers, setBarbers] = useState(initialBarbers);
   const { lang } = useLang();
   const tx = useT(lang);
+
+  // Lazily fetch profile photos from the CDN-cached public API.
+  // Not in SSR payload to keep initial HTML small (~150–200 KB per photo).
+  useEffect(() => {
+    fetch("/api/barbers")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        const photoMap = new Map(data.map(b => [b.id, b.profilePhoto ?? null]));
+        setBarbers(prev => prev.map(b => ({ ...b, profilePhoto: photoMap.get(b.id) ?? null })));
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section id="barbers" style={{ background: C.bg, position: "relative" }}>
