@@ -176,7 +176,7 @@ export default function Footer() {
       {/* ─── Footer grid ──────────────────────────────────────────────────── */}
       <div style={{ borderTop: "1px solid #1E1E1E" }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-16 pb-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-16" style={{ borderBottom: "1px solid #1E1E1E" }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-12 pb-16" style={{ borderBottom: "1px solid #1E1E1E" }}>
 
             {/* Brand */}
             <div>
@@ -239,34 +239,6 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* Contact repeat — compact */}
-            <div>
-              <h4 style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#C62828", marginBottom: "20px", fontWeight: 600 }}>{ft.visit}</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                  <MapPin size={11} style={{ color: "#C62828", flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ fontSize: "12px", color: "#888582", lineHeight: 1.7, whiteSpace: "pre-line" }}>
-                    {lang === "tr" ? ADDRESS_TR : ADDRESS_EN}
-                  </span>
-                </div>
-                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  <Phone size={11} style={{ color: "#C62828", flexShrink: 0 }} />
-                  <a href={`tel:${PHONE.replace(/\s/g, "")}`} style={{ fontSize: "12px", color: "#888582", textDecoration: "none", transition: "color 0.2s" }}
-                    onMouseEnter={e => e.currentTarget.style.color = "#F6F3EE"}
-                    onMouseLeave={e => e.currentTarget.style.color = "#888582"}>
-                    {PHONE}
-                  </a>
-                </div>
-                <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                  <Clock size={11} style={{ color: "#C62828", flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ fontSize: "12px", color: "#888582", lineHeight: 1.7 }}>
-                    {ft.hours.weekdays}
-                    {ft.hours.sat && <><br />{ft.hours.sat}</>}
-                    <br /><span style={{ color: "#555250" }}>{ft.hours.sun}</span>
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Bottom bar */}

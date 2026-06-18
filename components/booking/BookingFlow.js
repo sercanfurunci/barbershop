@@ -141,18 +141,54 @@ function normalizeBarbers(raw) {
   }));
 }
 
-export default function BookingFlow({ initialServices = [], initialBarbers = [] }) {
+function resolvePreselect(preselect, normServices, normBarbers) {
+  if (!preselect) return { service: null, barber: null, date: null };
+  const service = preselect.serviceId
+    ? normServices.find(s => s.id === preselect.serviceId) || null
+    : null;
+  const barber = preselect.barberId === "any"
+    ? { id: "any" }
+    : preselect.barberId
+      ? normBarbers.find(b => b.id === preselect.barberId) || null
+      : null;
+  const date = preselect.dateOffset != null ? (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + preselect.dateOffset);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })() : null;
+  return { service, barber, date };
+}
+
+function initialStep(preselect, hasInitial) {
+  if (!preselect || !hasInitial) return 1;
+  const hasService = !!preselect.serviceId;
+  const hasBarber  = !!preselect.barberId;
+  const hasDate    = preselect.dateOffset != null;
+  if (hasService && hasBarber && hasDate) return 4;
+  if (hasService && hasBarber) return 3;
+  if (hasService) return 2;
+  return 1;
+}
+
+export default function BookingFlow({ initialServices = [], initialBarbers = [], preselect = null }) {
+  const hasInitial = initialServices.length > 0;
+  const normServicesInit = hasInitial ? normalizeServices(initialServices) : [];
+  const normBarbersInit  = initialBarbers.length > 0 ? normalizeBarbers(initialBarbers) : [];
+
   // step 1-5 on mobile; desktop maps 3+4 → DateTimeSelect, 5 → Confirmation
-  const [step, setStep]           = useState(1);
+  const [step, setStep]           = useState(() => initialStep(preselect, hasInitial));
   const [direction, setDirection] = useState(1);
-  const [booking, setBooking]     = useState({ service: null, barber: null, date: null, time: null });
+  const [booking, setBooking]     = useState(() => {
+    const pre = resolvePreselect(preselect, normServicesInit, normBarbersInit);
+    return { service: pre.service, barber: pre.barber, date: pre.date, time: null };
+  });
   const [confirming, setConfirming] = useState(false);
   const [bookingDone, setBookingDone] = useState(false);
   const [pendingChange, setPendingChange] = useState(null);
   const { lang } = useLang();
   const tx = useT(lang);
 
-  const hasInitial = initialServices.length > 0;
   const [services, setServices]   = useState(() => hasInitial ? normalizeServices(initialServices) : []);
   const [barbers, setBarbers]     = useState(() => initialBarbers.length > 0 ? normalizeBarbers(initialBarbers) : []);
   const [dataLoaded, setDataLoaded] = useState(hasInitial);

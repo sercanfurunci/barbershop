@@ -10,7 +10,8 @@ export const metadata = {
   title: "Randevu Al — Abdurrahman Çelik Exclusive Salon",
 };
 
-export default async function BookPage() {
+export default async function BookPage({ searchParams }) {
+  const params = await searchParams;
   let initialServices = [];
   let initialBarbers  = [];
 
@@ -55,7 +56,15 @@ export default async function BookPage() {
   return (
     <div style={{ background: "#F6F3EE", minHeight: "100vh" }}>
       <Navbar />
-      <BookingFlow initialServices={initialServices} initialBarbers={initialBarbers} />
+      <BookingFlow
+          initialServices={initialServices}
+          initialBarbers={initialBarbers}
+          preselect={{
+            serviceId:  params?.service ?? null,
+            barberId:   params?.barber  ?? null,
+            dateOffset: params?.date != null ? parseInt(params.date, 10) : 0,
+          }}
+        />
     </div>
   );
 }
