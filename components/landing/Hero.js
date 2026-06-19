@@ -82,7 +82,7 @@ function StatusCard({ lang, barbers }) {
 function BookingWidget({ lang, services, barbers }) {
   const [selectedService, setSelectedService] = useState(null);
   const [selectedBarber, setSelectedBarber]   = useState(null);
-  const [selectedDate, setSelectedDate]       = useState(0);
+  const [selectedDate, setSelectedDate]       = useState(null);
   const [dateLabels, setDateLabels] = useState(
     lang === "tr" ? ["Bugün", "Yarın", "---"] : ["Today", "Tomorrow", "---"]
   );
@@ -223,20 +223,6 @@ function BookingWidget({ lang, services, barbers }) {
                 </span>
               </button>
             ))}
-            <button
-              onClick={() => setSelectedBarber(selectedBarber === "any" ? null : "any")}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", cursor: "pointer", background: "none", border: "none", padding: 0 }}>
-              <div style={{
-                width: "38px", height: "38px", borderRadius: "9px",
-                background: selectedBarber === "any" ? C.red : C.surface,
-                border: `2px solid ${selectedBarber === "any" ? C.red : C.border}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "14px", transition: "all 0.15s",
-              }}>✦</div>
-              <span style={{ fontSize: "9px", color: selectedBarber === "any" ? C.red : C.muted, letterSpacing: "0.02em" }}>
-                {lang === "tr" ? "Herhangi" : "Any"}
-              </span>
-            </button>
           </div>
         </div>
 
@@ -259,7 +245,7 @@ function BookingWidget({ lang, services, barbers }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "7px" }}>
             {dateLabels.map((label, i) => (
-              <button key={label} onClick={() => setSelectedDate(i)} style={{
+              <button key={label} onClick={() => setSelectedDate(selectedDate === i ? null : i)} style={{
                 padding: "10px 0", textAlign: "center", borderRadius: "7px", cursor: "pointer",
                 background: selectedDate === i ? `rgba(198,40,40,0.08)` : C.surface,
                 border: `1px solid ${selectedDate === i ? `rgba(198,40,40,0.35)` : C.border}`,
@@ -275,9 +261,9 @@ function BookingWidget({ lang, services, barbers }) {
 
         {/* CTA */}
         <Link href={`/book?${new URLSearchParams({
-          ...(selectedService ? { service: selectedService } : {}),
-          ...(selectedBarber  ? { barber:  selectedBarber  } : {}),
-          date: String(selectedDate),
+          ...(selectedService               ? { service: selectedService }      : {}),
+          ...(selectedBarber                ? { barber:  selectedBarber  }      : {}),
+          ...(selectedDate !== null         ? { date:    String(selectedDate) } : {}),
         }).toString()}`} style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
           background: C.red, color: "#fff",

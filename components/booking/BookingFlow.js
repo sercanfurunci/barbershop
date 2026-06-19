@@ -230,7 +230,8 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
   // ── Selection handlers ──────────────────────────────────────────────────────
   const onServiceSelect = (s) => {
     if (booking.service?.id === s.id) { nextStep(); return; }
-    const hasDownstream = booking.barber || booking.date || booking.time;
+    // Only reset downstream if service is being CHANGED (not set for the first time)
+    const hasDownstream = booking.service && (booking.barber || booking.date || booking.time);
     if (hasDownstream) {
       setPendingChange({
         message: lang === "tr"
@@ -239,14 +240,16 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
         action: () => { setBooking({ service: s, barber: null, date: null, time: null }); nextStep(); },
       });
     } else {
-      setBooking({ service: s, barber: null, date: null, time: null });
+      // First-time selection: preserve preselected barber/date
+      setBooking((prev) => ({ ...prev, service: s, time: null }));
       nextStep();
     }
   };
 
   const onBarberSelect = (b) => {
     if (booking.barber?.id === b.id) { nextStep(); return; }
-    const hasDownstream = booking.date || booking.time;
+    // Only reset downstream if barber is being CHANGED (not set for the first time)
+    const hasDownstream = booking.barber && (booking.date || booking.time);
     if (hasDownstream) {
       setPendingChange({
         message: lang === "tr"
@@ -255,7 +258,8 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
         action: () => { setBooking((prev) => ({ ...prev, barber: b, date: null, time: null })); nextStep(); },
       });
     } else {
-      setBooking((prev) => ({ ...prev, barber: b, date: null, time: null }));
+      // First-time selection: preserve preselected date
+      setBooking((prev) => ({ ...prev, barber: b, time: null }));
       nextStep();
     }
   };

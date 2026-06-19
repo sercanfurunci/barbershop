@@ -62,7 +62,7 @@ export default async function BookPage({ searchParams }) {
           preselect={{
             serviceId:  params?.service ?? null,
             barberId:   params?.barber  ?? null,
-            dateOffset: params?.date != null ? parseInt(params.date, 10) : 0,
+            dateOffset: params?.date != null ? parseInt(params.date, 10) : null,
           }}
         />
     </div>
