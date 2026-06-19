@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Calendar, Users, Settings,
@@ -165,6 +166,12 @@ export default function AdminDashboard() {
             <Menu size={18} />
           </button>
 
+          {/* Mobile-only: user info (sidebar not visible on mobile) */}
+          <div className="flex lg:hidden flex-col" style={{ lineHeight: 1.2 }}>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: C.primary }}>{user?.displayName ?? user?.username ?? user?.email?.split("@")[0] ?? "Admin"}</span>
+            <span style={{ fontSize: "10px", color: C.muted }}>{user?.role === "SUPER_ADMIN" ? "Süper Admin" : user?.role === "ADMIN" ? "Admin" : "Yönetici"}</span>
+          </div>
+
           <div className="hidden sm:flex items-center gap-2 flex-1 max-w-xs px-3 h-8" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "6px" }}>
             <Search size={12} style={{ color: C.muted }} />
             <input
@@ -217,12 +224,12 @@ export default function AdminDashboard() {
                 onClick={() => setUserMenu(!userMenu)}
                 style={{ width: "44px", height: "44px", background: C.primary, borderRadius: "8px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff" }}
               >
-                {(user?.displayName ?? user?.username ?? "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
+                {(user?.displayName ?? user?.username ?? user?.email ?? "A").split(/[\s@]/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "A"}
               </button>
-              {userMenu && (
+              {userMenu && mounted && createPortal(
                 <>
-                  <div style={{ position: "fixed", inset: 0, zIndex: 100 }} onClick={() => setUserMenu(false)} />
-                  <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "10px", padding: "6px", zIndex: 200, minWidth: "160px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 8px 24px rgba(17,17,17,0.12)" }}>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setUserMenu(false)} />
+                  <div style={{ position: "fixed", top: "58px", right: "16px", background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "10px", padding: "6px", zIndex: 9999, minWidth: "160px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 8px 24px rgba(17,17,17,0.12)" }}>
                     <div style={{ padding: "8px 10px 10px", borderBottom: `1px solid ${C.border}`, marginBottom: "4px" }}>
                       <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{user?.displayName ?? user?.username ?? "Admin"}</div>
                       <div style={{ fontSize: "10px", color: C.secondary }}>{user?.role === "SUPER_ADMIN" ? "Süper Admin" : user?.role === "ADMIN" ? "Admin" : user?.role === "BARBER" ? "Berber" : "Yönetici"}</div>
@@ -248,7 +255,8 @@ export default function AdminDashboard() {
                       Çıkış Yap
                     </button>
                   </div>
-                </>
+                </>,
+                document.body
               )}
             </div>
           </div>
@@ -1050,7 +1058,7 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, us
       <div style={{ padding: "10px 12px", borderTop: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{ width: "28px", height: "28px", background: C.primary, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-            {(user?.displayName ?? user?.username ?? "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
+            {(user?.displayName ?? user?.username ?? user?.email ?? "A").split(/[\s@]/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "A"}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.displayName ?? user?.username ?? "Admin"}</div>

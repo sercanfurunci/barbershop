@@ -65,10 +65,10 @@ export default function Navbar() {
               >
                 <span className="font-display font-bold text-white" style={{ fontSize: "14px" }}>{(shop?.name ?? "M")[0].toUpperCase()}</span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, minWidth: 0 }}>
                 <span
                   className="font-display font-light"
-                  style={{ fontSize: "13px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.primary }}
+                  style={{ fontSize: "13px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "clamp(100px, 30vw, 260px)" }}
                 >
                   {shop?.name ?? "MAKAS"}
                 </span>
