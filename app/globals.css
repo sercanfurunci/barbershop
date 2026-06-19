@@ -240,7 +240,7 @@ button, [role="button"] {
 
 @media (max-width: 767px) {
   .sa-sidebar        { display: none !important; }
-  .sa-main           { margin-left: 0 !important; max-width: 100vw !important; }
+  .sa-main           { margin-left: 0 !important; width: 100% !important; }
   .sa-bottomnav      { display: flex !important; }
   .sa-table          { display: none !important; }
   .sa-cards          { display: block !important; }

@@ -163,15 +163,13 @@ export default function SuperAdminDashboard() {
 
       {/* ──────────── Main content ──────────── */}
       <div style={{
-        flex: 1,
         minWidth: 0,
         display: "flex",
         flexDirection: "column",
         overflowX: "hidden",
-        // Desktop: push right by sidebar. Mobile: full width.
         marginLeft: sidebarW,
-        transition: "margin-left 0.22s ease",
-        maxWidth: `calc(100vw - ${sidebarW}px)`,
+        width: `calc(100vw - ${sidebarW}px)`,
+        transition: "margin-left 0.22s ease, width 0.22s ease",
       }} className="sa-main">
 
         {/* Header */}

@@ -25,6 +25,6 @@ export async function GET(request) {
     return NextResponse.json({ ok: true, notifications: notifResults, reviews: reviewResults });
   } catch (err) {
     console.error("[cron/notifications]", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: "Cron error" }, { status: 500 });
   }
 }

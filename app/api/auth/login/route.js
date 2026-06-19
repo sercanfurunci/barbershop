@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signToken } from "@/lib/auth";
+import { rateLimit, getIp } from "@/lib/rateLimit";
 import bcrypt from "bcryptjs";
 
 export async function POST(request) {
   try {
+    // 10 attempts per 15 minutes per IP — brute-force protection
+    const ip  = getIp(request);
+    const rl  = rateLimit(`login:${ip}`, { limit: 10, windowMs: 15 * 60 * 1000 });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Çok fazla giriş denemesi. Lütfen bekleyin." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {

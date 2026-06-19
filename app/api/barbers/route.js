@@ -18,6 +18,6 @@ export async function GET(request) {
     return res;
   } catch (err) {
     console.error("[GET /api/barbers]", err);
-    return NextResponse.json({ error: "Sunucu hatası", detail: err.message }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

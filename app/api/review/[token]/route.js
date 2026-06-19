@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { rateLimit, getIp } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +30,19 @@ export async function GET(request, { params }) {
 
 // POST /api/review/:token — submit review
 export async function POST(request, { params }) {
-  const { token } = await params;
-  const { rating, comment } = await request.json();
+  // 3 attempts per IP per 5 minutes
+  const ip = getIp(request);
+  const rl = rateLimit(`review:${ip}`, { limit: 3, windowMs: 5 * 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json({ error: "Çok fazla istek. Lütfen bekleyin." }, { status: 429 });
+  }
 
-  if (!rating || rating < 1 || rating > 5) {
+  const { token } = await params;
+  const body = await request.json().catch(() => ({}));
+  const { rating, comment } = body;
+
+  const ratingInt = Math.floor(Number(rating));
+  if (!ratingInt || ratingInt < 1 || ratingInt > 5) {
     return NextResponse.json({ error: "Geçersiz puan" }, { status: 400 });
   }
 
@@ -44,8 +54,8 @@ export async function POST(request, { params }) {
     prisma.reviewRequest.update({
       where: { token },
       data: {
-        rating,
-        comment: comment?.trim() || null,
+        rating: ratingInt,
+        comment: comment?.trim().slice(0, 1000) || null,
         status: "REVIEWED",
         reviewedAt: new Date(),
       },
@@ -68,11 +78,10 @@ export async function POST(request, { params }) {
     data: { rating: Math.round(avg * 10) / 10 },
   });
 
-  // If high rating, return Google redirect flag
   const googleMapsUrl = process.env.GOOGLE_REVIEW_URL || null;
   return NextResponse.json({
     ok: true,
-    redirectToGoogle: rating >= 5 && !!googleMapsUrl,
-    googleUrl: rating >= 5 ? googleMapsUrl : null,
+    redirectToGoogle: ratingInt >= 5 && !!googleMapsUrl,
+    googleUrl: ratingInt >= 5 ? googleMapsUrl : null,
   });
 }

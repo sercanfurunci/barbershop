@@ -295,6 +295,7 @@ function BookingWidget({ lang, services, barbers }) {
 
 export default function Hero({ services = [], barbers = [] }) {
   const { lang } = useLang();
+  const tx = useT(lang);
   const shop = useShop();
   const bookBase = shop?.slug ? `/${shop.slug}/book` : "/book";
 
@@ -329,7 +330,7 @@ export default function Hero({ services = [], barbers = [] }) {
                 </span>
                 <span style={{ width: "1px", height: "12px", background: C.border, flexShrink: 0 }} />
                 <span style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>
-                  {lang === "tr" ? "Darıca · Premium Berber" : "Darıca · Premium Barber"}
+                  {tx.hero.badge(shop)}
                 </span>
               </div>
 

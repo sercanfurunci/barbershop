@@ -40,7 +40,7 @@ export async function POST(request) {
     return NextResponse.json({ profilePhoto: url });
   } catch (err) {
     console.error("[POST /api/barber/photo]", err);
-    return NextResponse.json({ error: err.message || "Sunucu hatası" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -60,6 +60,6 @@ export async function DELETE(request) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[DELETE /api/barber/photo]", err);
-    return NextResponse.json({ error: err.message || "Sunucu hatası" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

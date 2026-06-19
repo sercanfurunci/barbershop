@@ -11,7 +11,7 @@ export async function GET(request) {
   const [admins, barbers] = await Promise.all([
     prisma.user.findMany({
       where: { shopId, role: { in: ["ADMIN", "RECEPTIONIST"] } },
-      select: { id: true, displayName: true, username: true, email: true, role: true },
+      select: { id: true, displayName: true, username: true, role: true },
     }),
     prisma.barber.findMany({
       where: { shopId, available: true },

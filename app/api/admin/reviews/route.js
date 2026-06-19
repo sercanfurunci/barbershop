@@ -14,7 +14,13 @@ export async function GET(request) {
   const limit  = Math.min(parseInt(searchParams.get("limit") || "50"), 200);
   const status = searchParams.get("status") || "REVIEWED";
 
-  const where = { shopId: payload.shopId };
+  // SUPER_ADMIN has no shopId — require explicit shopId param to avoid returning all data
+  const shopId = payload.role === "SUPER_ADMIN"
+    ? searchParams.get("shopId")
+    : payload.shopId;
+  if (!shopId) return forbidden();
+
+  const where = { shopId };
   if (status !== "all") where.status = status;
 
   const [reviews, allReviewed] = await Promise.all([
@@ -28,7 +34,7 @@ export async function GET(request) {
       },
     }),
     prisma.reviewRequest.findMany({
-      where: { shopId: payload.shopId, status: "REVIEWED" },
+      where: { shopId, status: "REVIEWED" },
       select: { rating: true, barberId: true },
     }),
   ]);

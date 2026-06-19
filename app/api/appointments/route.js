@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
+import { rateLimit, getIp } from "@/lib/rateLimit";
 import { queueNotifications } from "@/lib/notifications";
 import { todayStr } from "@/lib/utils";
 
@@ -8,8 +9,6 @@ export const dynamic = "force-dynamic";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Normalizes Turkish phone to 10-digit format starting with 5 (e.g. "5321234567")
-// Accepts: 05321234567 / 5321234567 / +905321234567 / 532 123 45 67 etc.
 function normalizePhone(raw) {
   const digits = String(raw).replace(/\D/g, "");
   if (digits.startsWith("90") && digits.length === 12) return digits.slice(2);
@@ -18,34 +17,11 @@ function normalizePhone(raw) {
   return null;
 }
 
-function isValidPhone(phone) {
-  return /^5[0-9]{9}$/.test(phone);
-}
+function isValidPhone(phone) { return /^5[0-9]{9}$/.test(phone); }
+function isValidName(name)   { return typeof name === "string" && name.trim().length >= 2 && name.trim().length <= 100; }
+function isValidEmail(email) { return !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
 
-function isValidName(name) {
-  return typeof name === "string" && name.trim().length >= 2 && name.trim().length <= 100;
-}
-
-function isValidEmail(email) {
-  return !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-// Best-effort IP rate limiting (in-memory, per serverless instance).
-// Limits public booking to 5 requests per IP per 10 minutes.
-const ipBucket = new Map(); // ip → { count, resetAt }
-function checkIpRate(ip) {
-  const now = Date.now();
-  const WINDOW = 10 * 60 * 1000; // 10 min
-  const LIMIT  = 5;
-  const entry = ipBucket.get(ip);
-  if (!entry || now > entry.resetAt) {
-    ipBucket.set(ip, { count: 1, resetAt: now + WINDOW });
-    return true;
-  }
-  if (entry.count >= LIMIT) return false;
-  entry.count++;
-  return true;
-}
+const ALLOWED_SOURCES = new Set(["ONLINE", "ADMIN", "WALK_IN", "PHONE"]);
 
 // GET /api/appointments?date=2026-06-10&barberId=brb-1&status=PENDING
 export async function GET(request) {
@@ -92,12 +68,13 @@ export async function GET(request) {
 // POST /api/appointments — public booking endpoint
 export async function POST(request) {
   try {
-    // ── IP rate limit ────────────────────────────────────────────────────────
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    if (!checkIpRate(ip)) {
+    // ── IP rate limit: 5 bookings per IP per 10 min ──────────────────────────
+    const ip = getIp(request);
+    const rl = rateLimit(`booking:${ip}`, { limit: 5, windowMs: 10 * 60 * 1000 });
+    if (!rl.ok) {
       return NextResponse.json(
         { error: "Çok fazla istek gönderdiniz. Lütfen 10 dakika bekleyin." },
-        { status: 429 }
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
       );
     }
 
@@ -217,8 +194,8 @@ export async function POST(request) {
         duration:  service.duration,
         price:     service.price,
         status:    "PENDING",
-        source:    source ?? "ONLINE",
-        notes:     notes?.trim() ?? null,
+        source:    ALLOWED_SOURCES.has(source) ? source : "ONLINE",
+        notes:     notes?.trim().slice(0, 500) ?? null,
       },
       include: { shop: { select: { name: true, address: true, phone: true } } },
     });
@@ -231,6 +208,6 @@ export async function POST(request) {
     return NextResponse.json(appointment, { status: 201 });
   } catch (err) {
     console.error("[POST /api/appointments]", err);
-    return NextResponse.json({ error: "Sunucu hatası", detail: err.message }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

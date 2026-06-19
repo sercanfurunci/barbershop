@@ -488,7 +488,7 @@ function TimeInput({ value, onChange }) {
 /* ── Create Barber Modal ─────────────────────────────────────────────────── */
 function CreateBarberModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
-    slug: "", nameTr: "", titleTr: "", avatar: "", yearsExp: 1, specialties: "",
+    slug: "", nameTr: "", titleTr: "", avatar: "", yearsExp: 1, specialties: "", password: "",
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr]   = useState("");
@@ -529,6 +529,9 @@ function CreateBarberModal({ onClose, onCreated }) {
           <Field label="Deneyim (yıl)"><input type="number" min={0} value={form.yearsExp} onChange={set("yearsExp")} className={inp} /></Field>
         </Row2>
         <Field label="Uzmanlıklar (virgülle ayır)"><input value={form.specialties} onChange={set("specialties")} placeholder="Fade, Sakal" className={inp} /></Field>
+        <Field label="Giriş Şifresi *" hint="Berber bu şifreyle giriş yapacak (sonradan değiştirilebilir)">
+          <input required type="password" value={form.password} onChange={set("password")} placeholder="Min. 6 karakter" className={inp} />
+        </Field>
         {err && <ErrMsg>{err}</ErrMsg>}
         <FormActions onClose={onClose} busy={busy} label="Ekle" />
       </form>
