@@ -5,12 +5,21 @@ import { AppointmentsProvider } from "@/contexts/AppointmentsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata = {
-  title: { default: "MAKAS — Premium Berber", template: "%s | MAKAS" },
-  description: "Online randevu sistemi ile premium saç & sakal bakımı.",
+  title: { default: "MAKAS — Berber Randevu Sistemi", template: "%s | MAKAS" },
+  description: "Berberlere özel online randevu ve salon yönetim platformu. Müşteri kaybetme, randevuları otomatikleştir.",
+  metadataBase: new URL("https://makas.furunci.tech"),
   openGraph: {
     siteName: "MAKAS",
     locale: "tr_TR",
     type: "website",
+    title: "MAKAS — Berber Randevu Sistemi",
+    description: "Berberlere özel online randevu ve salon yönetim platformu. Müşteri kaybetme, randevuları otomatikleştir.",
+    url: "https://makas.furunci.tech",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MAKAS — Berber Randevu Sistemi",
+    description: "Berberlere özel online randevu ve salon yönetim platformu.",
   },
 };
 
