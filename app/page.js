@@ -821,7 +821,13 @@ function Footer() {
           color: "rgba(248,246,242,0.4)",
         }}
       >
-        © 2026 MAKAS. Tüm hakları saklıdır.
+        <span>© 2026 MAKAS. Tüm hakları saklıdır.</span>
+        <span style={{ margin: "0 8px", opacity: 0.3 }}>·</span>
+        <a href="/gizlilik" style={{ color: "inherit", textDecoration: "none", opacity: 0.7 }}>Gizlilik</a>
+        <span style={{ margin: "0 8px", opacity: 0.3 }}>·</span>
+        <a href="/kullanim-kosullari" style={{ color: "inherit", textDecoration: "none", opacity: 0.7 }}>Kullanım Koşulları</a>
+        <span style={{ margin: "0 8px", opacity: 0.3 }}>·</span>
+        <a href="/cerez-politikasi" style={{ color: "inherit", textDecoration: "none", opacity: 0.7 }}>Çerezler</a>
       </div>
     </footer>
   );

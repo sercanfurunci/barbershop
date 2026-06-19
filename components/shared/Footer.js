@@ -227,12 +227,16 @@ export default function Footer() {
               © {new Date().getFullYear()} {shopName}
             </p>
             <div style={{ display: "flex", gap: "24px" }}>
-              {[ft.privacy, ft.terms, ft.cookies].map((item) => (
-                <a key={item} href="#" style={{ fontSize: "10px", color: "#555250", textDecoration: "none", letterSpacing: "0.08em", transition: "color 0.2s" }}
+              {[
+                { label: ft.privacy,  href: shop?.slug ? `/${shop.slug}/gizlilik` : "/gizlilik" },
+                { label: ft.terms,    href: "/kullanim-kosullari" },
+                { label: ft.cookies,  href: "/cerez-politikasi" },
+              ].map(({ label, href }) => (
+                <Link key={href} href={href} style={{ fontSize: "10px", color: "#555250", textDecoration: "none", letterSpacing: "0.08em", transition: "color 0.2s" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#9A9490"}
                   onMouseLeave={e => e.currentTarget.style.color = "#555250"}>
-                  {item}
-                </a>
+                  {label}
+                </Link>
               ))}
             </div>
           </div>
