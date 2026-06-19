@@ -1,9 +1,15 @@
-import AdminDashboard from "@/components/admin/AdminDashboard";
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
-export const metadata = {
-  title: "Admin Dashboard — MAKAS",
-};
-
-export default function AdminPage() {
-  return <AdminDashboard />;
+export default function AdminRedirect() {
+  const { user, loaded } = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (!loaded) return;
+    const slug = user?.shop?.slug;
+    router.replace(slug ? `/${slug}/admin` : "/superadmin/login");
+  }, [loaded, user, router]);
+  return null;
 }

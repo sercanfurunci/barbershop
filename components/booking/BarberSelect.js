@@ -5,14 +5,15 @@ import { motion } from "framer-motion";
 import { Star, Check } from "lucide-react";
 
 const C = {
-  bg:       "#F6F3EE",
-  card:     "#FFFFFF",
-  border:   "#E5DFD6",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   surface:  "#EFEAE2",
+  card:     "#FFFFFF",
+  border:   "#E5DED3",
   primary:  "#111111",
-  secondary:"#44403C",
-  muted:    "#6B7280",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 function SkeletonRow() {
@@ -50,7 +51,7 @@ export default function BarberSelect({ barbers, loaded, selected, onSelect, onBa
             style={{ fontSize: "clamp(26px, 4vw, 40px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "5px" }}
           >
             {s2.title?.[0]}{" "}
-            <span style={{ fontStyle: "italic", color: C.red }}>{s2.title?.[1]}</span>
+            <span style={{ fontStyle: "italic", color: C.primary }}>{s2.title?.[1]}</span>
           </h1>
           <p style={{ fontSize: "13px", color: C.muted }}>{s2.subtitle}</p>
         </div>
@@ -83,8 +84,8 @@ export default function BarberSelect({ barbers, loaded, selected, onSelect, onBa
                   display: "flex", alignItems: "center", gap: "12px",
                   width: "100%", textAlign: "left",
                   padding: "14px 16px",
-                  background: isSelected ? "#FEF2F2" : C.card,
-                  borderLeft: `3px solid ${isSelected ? C.red : "transparent"}`,
+                  background: isSelected ? C.surface : C.card,
+                  borderLeft: `3px solid ${isSelected ? C.primary : "transparent"}`,
                   borderBottom: i < allItems.length - 1 ? `1px solid ${C.border}` : "none",
                   cursor: "pointer",
                   transition: "background 0.15s",
@@ -95,9 +96,9 @@ export default function BarberSelect({ barbers, loaded, selected, onSelect, onBa
                 {isAny ? (
                   <div style={{
                     width: "46px", height: "46px", flexShrink: 0,
-                    background: isSelected ? `${C.red}18` : C.surface,
+                    background: isSelected ? `${C.primary}18` : C.surface,
                     borderRadius: "50%",
-                    border: `1.5px dashed ${isSelected ? C.red : C.border}`,
+                    border: `1.5px dashed ${isSelected ? C.primary : C.border}`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: "17px",
                     transition: "all 0.15s",
@@ -113,13 +114,13 @@ export default function BarberSelect({ barbers, loaded, selected, onSelect, onBa
                     style={{
                       flexShrink: 0,
                       borderRadius: "50%", objectFit: "cover",
-                      border: `2px solid ${isSelected ? C.red : C.border}`,
+                      border: `2px solid ${isSelected ? C.primary : C.border}`,
                     }}
                   />
                 ) : (
                   <div style={{
                     width: "46px", height: "46px", flexShrink: 0,
-                    background: `linear-gradient(135deg, ${C.red}, #7f1d1d)`,
+                    background: `linear-gradient(135deg, ${C.primary}, #7f1d1d)`,
                     borderRadius: "50%",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     color: "#fff", fontWeight: 700, fontSize: "13px",
@@ -133,7 +134,7 @@ export default function BarberSelect({ barbers, loaded, selected, onSelect, onBa
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
                     fontSize: "14px", fontWeight: 500,
-                    color: isSelected ? C.red : C.primary,
+                    color: isSelected ? C.primary : C.primary,
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     marginBottom: "2px",
                   }}>
@@ -141,7 +142,7 @@ export default function BarberSelect({ barbers, loaded, selected, onSelect, onBa
                   </div>
                   <div style={{
                     fontSize: isAny ? "11px" : "10px",
-                    color: isAny ? C.muted : C.red,
+                    color: isAny ? C.muted : C.primary,
                     letterSpacing: isAny ? 0 : "0.07em",
                     textTransform: isAny ? "none" : "uppercase",
                     fontWeight: isAny ? 400 : 500,
@@ -155,7 +156,7 @@ export default function BarberSelect({ barbers, loaded, selected, onSelect, onBa
                   {!isAny && (
                     <>
                       <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-                        <Star size={10} fill={C.red} style={{ color: C.red }} />
+                        <Star size={10} fill={C.primary} style={{ color: C.primary }} />
                         <span style={{ fontSize: "12px", fontWeight: 600, color: C.primary }}>{barber.rating}</span>
                         <span style={{ fontSize: "10px", color: C.muted }}>({barber.reviews})</span>
                       </div>
@@ -176,7 +177,7 @@ export default function BarberSelect({ barbers, loaded, selected, onSelect, onBa
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      style={{ width: "20px", height: "20px", background: C.red, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginTop: isAny ? 0 : "-2px" }}
+                      style={{ width: "20px", height: "20px", background: C.primary, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginTop: isAny ? 0 : "-2px" }}
                     >
                       <Check size={10} color="#fff" />
                     </motion.div>

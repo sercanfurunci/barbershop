@@ -435,3 +435,16 @@ enum ReviewRequestStatus {
   REVIEWED   // customer submitted rating
   SKIPPED    // could not send (no phone, etc.)
 }
+
+// ─── Platform Leads ───────────────────────────────────────────────────────────
+// Prospective customers who fill out the contact form on the SaaS landing page.
+
+model Lead {
+  id           String   @id @default(cuid())
+  businessName String
+  name         String
+  phone        String
+  email        String?
+  message      String?  @db.Text
+  createdAt    DateTime @default(now())
+}

@@ -15,8 +15,8 @@ export async function GET(request) {
 
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
 
-  // Use Istanbul-aware date to avoid month boundary errors between 00:00-03:00 Istanbul time
-  const TZ = "Europe/Istanbul";
+  const shopData = await prisma.shop.findUnique({ where: { id: shopId }, select: { timezone: true } });
+  const TZ = shopData?.timezone ?? "Europe/Istanbul";
   const fmt = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
   const now = new Date();
   const istParts = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit" }).format(now).split("-").map(Number);

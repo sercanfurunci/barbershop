@@ -7,14 +7,15 @@ import { useLang } from "@/contexts/LanguageContext";
 import { Star } from "lucide-react";
 
 const C = {
-  bg:       "#FFFFFF",
-  card:     "#FAFAF8",
-  border:   "#E5DFD6",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   surface:  "#EFEAE2",
+  card:     "#FFFFFF",
+  border:   "#E5DED3",
   primary:  "#111111",
-  secondary:"#44403C",
-  muted:    "#6B7280",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 const GoogleIcon = () => (
@@ -71,7 +72,7 @@ export default function Testimonials() {
               textWrap: "balance",
             }}>
               {lang === "tr" ? "Müşterilerimiz" : "Our Clients"}{" "}
-              <span style={{ fontStyle: "italic", color: C.red }}>
+              <span style={{ fontStyle: "italic", color: C.primary }}>
                 {lang === "tr" ? "anlatıyor" : "speak"}
               </span>
             </h2>
@@ -90,7 +91,7 @@ export default function Testimonials() {
               }}>
                 {displayRating}
               </span>
-              <span style={{ color: C.red, fontSize: "18px", lineHeight: 1 }}>★</span>
+              <span style={{ color: C.primary, fontSize: "18px", lineHeight: 1 }}>★</span>
             </div>
             <div style={{ fontSize: "12px", color: C.muted }}>
               {displayTotal} {lang === "tr" ? "Google değerlendirmesi" : "Google reviews"}
@@ -134,7 +135,7 @@ export default function Testimonials() {
                     transition: "border-color 0.2s, box-shadow 0.2s",
                   }}
                   onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = "rgba(198,40,40,0.25)";
+                    e.currentTarget.style.borderColor = "rgba(17,17,17,0.25)";
                     e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.06)";
                   }}
                   onMouseLeave={e => {
@@ -146,8 +147,8 @@ export default function Testimonials() {
                   <div className="flex gap-0.5 mb-4">
                     {[1,2,3,4,5].map(s => (
                       <Star key={s} size={11}
-                        fill={s <= (item.rating ?? 5) ? C.red : "transparent"}
-                        style={{ color: C.red }}
+                        fill={s <= (item.rating ?? 5) ? C.primary : "transparent"}
+                        style={{ color: C.primary }}
                       />
                     ))}
                   </div>
@@ -181,7 +182,7 @@ export default function Testimonials() {
                     ) : (
                       <div style={{
                         width: "34px", height: "34px", borderRadius: "7px",
-                        background: C.red, flexShrink: 0,
+                        background: C.primary, flexShrink: 0,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: "11px", fontWeight: 700, color: "#fff",
                       }}>

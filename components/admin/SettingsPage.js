@@ -7,17 +7,17 @@ import { todayStr } from "@/lib/utils";
 import { Clock, Calendar, Plus, Trash2, Save, CheckCircle, AlertCircle, ChevronDown } from "lucide-react";
 
 const C = {
-  bg:       "#F8F6F2",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   card:     "#FFFFFF",
-  cardHi:   "#FBF7F0",
-  border:   "rgba(17,17,17,0.08)",
-  borderHi: "rgba(17,17,17,0.18)",
-  surface:  "#F1EEE8",
+  cardHi:   "#FDFBF7",
+  border:   "#E5DED3",
+  borderHi: "#C5BEB5",
+  surface:  "#EFEAE2",
   primary:  "#111111",
-  secondary:"#57514B",
-  muted:    "#6E6760",
-  dim:      "#C9C2B7",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 const DAYS = [
@@ -181,13 +181,13 @@ function WorkingHoursTab() {
           <button key={b.id} onClick={() => selectBarber(b)}
             className="w-full flex items-center gap-3"
             style={{
-              padding: "12px 14px", background: b.id === selectedId ? `${C.red}12` : "transparent",
+              padding: "12px 14px", background: b.id === selectedId ? `${C.primary}12` : "transparent",
               border: "none", cursor: "pointer", transition: "all 0.15s", textAlign: "left",
             }}
             onMouseEnter={e => { if (b.id !== selectedId) e.currentTarget.style.background = C.surface; }}
             onMouseLeave={e => { if (b.id !== selectedId) e.currentTarget.style.background = "transparent"; }}
           >
-            <div style={{ width: "32px", height: "32px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+            <div style={{ width: "32px", height: "32px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
               {b.avatar}
             </div>
             <div>
@@ -213,7 +213,7 @@ function WorkingHoursTab() {
                 </motion.div>
               )}
               {toast === "error" && (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-2" style={{ fontSize: "12px", color: "#B91C1C" }}>
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-2" style={{ fontSize: "12px", color: "#111111" }}>
                   <AlertCircle size={14} /> Hata
                 </motion.div>
               )}
@@ -233,7 +233,7 @@ function WorkingHoursTab() {
                     {/* Toggle */}
                     <button onClick={() => toggleDayOff(d.key)}
                       style={{ width: "38px", height: "20px", borderRadius: "10px", border: "none", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s",
-                        background: isOff ? C.dim : C.red }}
+                        background: isOff ? C.dim : C.primary }}
                     >
                       <div style={{ position: "absolute", top: "2px", width: "16px", height: "16px", borderRadius: "50%", background: "#fff", transition: "left 0.2s", left: isOff ? "2px" : "20px" }} />
                     </button>
@@ -261,7 +261,7 @@ function WorkingHoursTab() {
           <button onClick={save} disabled={saving}
             className="flex items-center gap-2"
             style={{
-              background: saving ? C.dim : C.red, color: "#fff", border: "none",
+              background: saving ? C.dim : C.primary, color: "#fff", border: "none",
               borderRadius: "8px", padding: "10px 20px", fontSize: "13px",
               fontWeight: 600, cursor: saving ? "not-allowed" : "pointer",
             }}
@@ -392,7 +392,7 @@ function HolidaysTab() {
 
         <form onSubmit={addHoliday} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {error && (
-            <div style={{ background: "rgba(198,40,40,0.1)", border: "1px solid rgba(198,40,40,0.3)", borderRadius: "6px", padding: "8px 12px", fontSize: "12px", color: C.red }}>
+            <div style={{ background: "rgba(17,17,17,0.1)", border: "1px solid rgba(17,17,17,0.3)", borderRadius: "6px", padding: "8px 12px", fontSize: "12px", color: C.primary }}>
               {error}
             </div>
           )}
@@ -401,7 +401,7 @@ function HolidaysTab() {
             <input type="date" value={date} onChange={e => setDate(e.target.value)} required
               min={today}
               style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", padding: "8px 12px", fontSize: "13px", color: C.primary, outline: "none", colorScheme: "dark", boxSizing: "border-box" }}
-              onFocus={e => e.target.style.borderColor = `${C.red}60`}
+              onFocus={e => e.target.style.borderColor = `${C.primary}60`}
               onBlur={e => e.target.style.borderColor = C.border}
             />
           </Field>
@@ -409,7 +409,7 @@ function HolidaysTab() {
           <Field label="Açıklama">
             <input type="text" placeholder="Örn: Kurban Bayramı" value={label} onChange={e => setLabel(e.target.value)}
               style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", padding: "8px 12px", fontSize: "13px", color: C.primary, outline: "none", boxSizing: "border-box" }}
-              onFocus={e => e.target.style.borderColor = `${C.red}60`}
+              onFocus={e => e.target.style.borderColor = `${C.primary}60`}
               onBlur={e => e.target.style.borderColor = C.border}
             />
           </Field>
@@ -428,7 +428,7 @@ function HolidaysTab() {
 
           <button type="submit" disabled={adding || !date}
             className="flex items-center justify-center gap-2 w-full"
-            style={{ background: adding || !date ? C.dim : C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "11px", fontSize: "13px", fontWeight: 600, cursor: adding || !date ? "not-allowed" : "pointer" }}
+            style={{ background: adding || !date ? C.dim : C.primary, color: "#fff", border: "none", borderRadius: "8px", padding: "11px", fontSize: "13px", fontWeight: 600, cursor: adding || !date ? "not-allowed" : "pointer" }}
           >
             <Plus size={14} />
             {adding ? "Ekleniyor…" : "Tatil Ekle"}
@@ -458,7 +458,7 @@ function HolidayRow({ h, onDelete, last }) {
       {confirming ? (
         <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
           <button onClick={() => { onDelete(h.id); setConfirming(false); }}
-            style={{ padding: "5px 10px", borderRadius: "6px", background: "rgba(198,40,40,0.15)", border: "1px solid rgba(198,40,40,0.3)", fontSize: "11px", color: C.red, cursor: "pointer", fontWeight: 600 }}>
+            style={{ padding: "5px 10px", borderRadius: "6px", background: "rgba(17,17,17,0.15)", border: "1px solid rgba(17,17,17,0.3)", fontSize: "11px", color: C.primary, cursor: "pointer", fontWeight: 600 }}>
             Sil
           </button>
           <button onClick={() => setConfirming(false)}
@@ -469,7 +469,7 @@ function HolidayRow({ h, onDelete, last }) {
       ) : (
         <button onClick={() => setConfirming(true)}
           style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: `1px solid ${C.border}`, borderRadius: "6px", cursor: "pointer", color: C.muted, flexShrink: 0 }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.3)"; e.currentTarget.style.color = C.red; }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(17,17,17,0.3)"; e.currentTarget.style.color = C.primary; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; }}
         >
           <Trash2 size={13} />
@@ -557,7 +557,7 @@ function RulesTab() {
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         <button onClick={save}
           className="flex items-center justify-center gap-2 w-full"
-          style={{ background: C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "11px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+          style={{ background: C.primary, color: "#fff", border: "none", borderRadius: "8px", padding: "11px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
         >
           <Save size={14} />
           Kaydet

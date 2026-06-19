@@ -4,24 +4,30 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
+import { useShop } from "@/contexts/ShopContext";
 import { ArrowRight } from "lucide-react";
 
 const C = {
-  bg:       "#FFFFFF",
-  border:   "#E5DFD6",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
+  surface:  "#EFEAE2",
+  card:     "#FFFFFF",
+  border:   "#E5DED3",
   primary:  "#111111",
-  secondary:"#44403C",
-  muted:    "#6B7280",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 export default function Services({ services = [] }) {
   const { lang } = useLang();
   const tx = useT(lang);
+  const shop = useShop();
+  const bookHref = shop?.slug ? `/${shop.slug}/book` : "/book";
 
   return (
     <section id="services" style={{ background: C.bg, position: "relative" }}>
-      <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, #E5DFD6 30%, #E5DFD6 70%, transparent)" }} />
+      <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, #E5DED3 30%, #E5DED3 70%, transparent)" }} />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 py-20 lg:py-28">
 
@@ -42,7 +48,7 @@ export default function Services({ services = [] }) {
             textWrap: "balance",
           }}>
             {tx.services.title[0]}{" "}
-            <span style={{ fontStyle: "italic", color: C.red }}>{tx.services.title[1]}</span>
+            <span style={{ fontStyle: "italic", color: C.muted }}>{tx.services.title[1]}</span>
           </h2>
           <p style={{ fontSize: "15px", color: C.secondary, lineHeight: 1.7, maxWidth: "440px" }}>
             {tx.services.subtitle}
@@ -61,7 +67,7 @@ export default function Services({ services = [] }) {
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.5, delay: Math.min(i * 0.05, 0.3), ease: [0.16, 1, 0.3, 1] }}
             >
-              <Link href="/book" className="group block" style={{ textDecoration: "none" }}>
+              <Link href={bookHref} className="group block" style={{ textDecoration: "none" }}>
                 <div
                   style={{
                     display: "grid",
@@ -89,11 +95,14 @@ export default function Services({ services = [] }) {
                       {service.popular && (
                         <span style={{
                           fontSize: "10px",
-                          color: C.red,
+                          color: C.primary,
                           letterSpacing: "0.1em",
                           textTransform: "uppercase",
                           fontWeight: 600,
                           flexShrink: 0,
+                          background: "rgba(17,17,17,0.06)",
+                          padding: "2px 8px",
+                          borderRadius: "4px",
                         }}>
                           {tx.services.popular}
                         </span>
@@ -115,7 +124,7 @@ export default function Services({ services = [] }) {
                     <ArrowRight
                       size={16}
                       className="opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150"
-                      style={{ color: C.red, flexShrink: 0 }}
+                      style={{ color: C.primary, flexShrink: 0 }}
                     />
                   </div>
                 </div>
@@ -136,9 +145,9 @@ export default function Services({ services = [] }) {
             {tx.services.footer}
           </p>
           <Link
-            href="/book"
+            href={bookHref}
             className="inline-flex items-center gap-2 group flex-shrink-0"
-            style={{ fontSize: "14px", color: C.red, fontWeight: 500, textDecoration: "none" }}
+            style={{ fontSize: "14px", color: C.primary, fontWeight: 500, textDecoration: "none" }}
           >
             {tx.services.cta}
             <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />

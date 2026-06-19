@@ -5,15 +5,15 @@ import { Star, AlertTriangle, TrendingUp, MessageSquare, Users, Loader2 } from "
 import { apiFetch } from "@/lib/api";
 
 const C = {
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   card:     "#FFFFFF",
-  border:   "rgba(17,17,17,0.08)",
-  surface:  "#F1EEE8",
-  bg:       "#F8F6F2",
+  border:   "#E5DED3",
+  surface:  "#EFEAE2",
   primary:  "#111111",
-  secondary:"#57514B",
-  muted:    "#6E6760",
-  dim:      "#C9C2B7",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
   green:    "#15803D",
   yellow:   "#CA8A04",
 };
@@ -22,7 +22,7 @@ function StarRow({ rating, size = 12 }) {
   return (
     <div style={{ display: "flex", gap: 2 }}>
       {[1, 2, 3, 4, 5].map(n => (
-        <Star key={n} size={size} fill={n <= rating ? C.red : "none"} style={{ color: n <= rating ? C.red : C.dim }} />
+        <Star key={n} size={size} fill={n <= rating ? C.primary : "none"} style={{ color: n <= rating ? C.primary : C.dim }} />
       ))}
     </div>
   );
@@ -41,7 +41,7 @@ function BarberAvatar({ barber, size = 36 }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%", flexShrink: 0,
-      background: `linear-gradient(135deg, ${C.red}, #7f1d1d)`,
+      background: `linear-gradient(135deg, ${C.primary}, #7f1d1d)`,
       display: "flex", alignItems: "center", justifyContent: "center",
       fontSize: size * 0.3, fontWeight: 700, color: "#fff",
     }}>
@@ -75,7 +75,7 @@ export default function ReviewsPage() {
     <div className="space-y-5">
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard icon={Star} label="Ortalama Puan" value={data?.stats?.avgRating?.toFixed(1) ?? "—"} accent={C.red} />
+        <KpiCard icon={Star} label="Ortalama Puan" value={data?.stats?.avgRating?.toFixed(1) ?? "—"} accent={C.primary} />
         <KpiCard icon={MessageSquare} label="Toplam Yorum" value={data?.stats?.totalCount ?? "—"} accent="#2563eb" />
         <KpiCard icon={AlertTriangle} label="Olumsuz Yorum" value={negativeReviews.length} accent={C.yellow} />
         <KpiCard icon={TrendingUp} label="Bu Hafta" value={weekCount(data?.reviews)} accent={C.green} />
@@ -92,10 +92,10 @@ export default function ReviewsPage() {
                 <div key={stars} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 4, width: 60, flexShrink: 0 }}>
                     <span style={{ fontSize: 12, color: C.secondary, fontWeight: 500 }}>{stars}</span>
-                    <Star size={11} fill={C.red} style={{ color: C.red }} />
+                    <Star size={11} fill={C.primary} style={{ color: C.primary }} />
                   </div>
                   <div style={{ flex: 1, height: 6, background: C.surface, borderRadius: 3, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: C.red, borderRadius: 3, transition: "width 0.5s ease" }} />
+                    <div style={{ height: "100%", width: `${pct}%`, background: C.primary, borderRadius: 3, transition: "width 0.5s ease" }} />
                   </div>
                   <span style={{ fontSize: 11, color: C.muted, width: 28, textAlign: "right", flexShrink: 0 }}>{count}</span>
                 </div>
@@ -136,7 +136,7 @@ export default function ReviewsPage() {
                 onClick={() => setFilter(f)}
                 style={{
                   padding: "4px 10px", borderRadius: 5, fontSize: 11, fontWeight: 500, cursor: "pointer", border: "none",
-                  background: filter === f ? C.red : C.surface,
+                  background: filter === f ? C.primary : C.surface,
                   color: filter === f ? "#fff" : C.secondary,
                 }}>
                 {{ REVIEWED: "Tamamlanan", SENT: "Gönderilen", PENDING: "Bekleyen", all: "Tümü" }[f]}

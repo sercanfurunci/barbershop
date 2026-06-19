@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getDefaultShopId } from "@/lib/shop";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request) {
+  const shopId = new URL(request.url).searchParams.get("shopId");
+  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+
   try {
-    const shopId = await getDefaultShopId();
     const services = await prisma.service.findMany({
       where: { shopId, active: true },
       orderBy: [{ sortOrder: "asc" }, { category: "asc" }, { price: "asc" }],

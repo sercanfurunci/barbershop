@@ -4,14 +4,15 @@ import { motion } from "framer-motion";
 import { Clock, Check } from "lucide-react";
 
 const C = {
-  bg:       "#F6F3EE",
-  card:     "#FFFFFF",
-  border:   "#E5DFD6",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   surface:  "#EFEAE2",
+  card:     "#FFFFFF",
+  border:   "#E5DED3",
   primary:  "#111111",
-  secondary:"#44403C",
-  muted:    "#6B7280",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 const CATEGORY_LABELS = {
@@ -54,7 +55,7 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
             style={{ fontSize: "clamp(26px, 4vw, 40px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "5px" }}
           >
             {s1.title?.[0]}{" "}
-            <span style={{ fontStyle: "italic", color: C.red }}>{s1.title?.[1]}</span>
+            <span style={{ fontStyle: "italic", color: C.primary }}>{s1.title?.[1]}</span>
           </h1>
           <p style={{ fontSize: "13px", color: C.muted }}>{s1.subtitle}</p>
         </div>
@@ -89,7 +90,7 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
                   width: "100%", textAlign: "left",
                   padding: "13px 16px",
                   background: isSelected ? "#FEF2F2" : C.card,
-                  borderLeft: `3px solid ${isSelected ? C.red : "transparent"}`,
+                  borderLeft: `3px solid ${isSelected ? C.primary : "transparent"}`,
                   borderBottom: i < services.length - 1 ? `1px solid ${C.border}` : "none",
                   cursor: "pointer",
                   transition: "background 0.15s",
@@ -99,7 +100,7 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
                 {/* Icon */}
                 <div style={{
                   width: "42px", height: "42px", flexShrink: 0,
-                  background: isSelected ? `${C.red}18` : C.surface,
+                  background: isSelected ? `${C.primary}18` : C.surface,
                   borderRadius: "10px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "19px",
@@ -113,7 +114,7 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
                   <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "3px" }}>
                     <span style={{
                       fontSize: "14px", fontWeight: 500,
-                      color: isSelected ? C.red : C.primary,
+                      color: isSelected ? C.primary : C.primary,
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}>
                       {service.name[lang]}
@@ -121,7 +122,7 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
                     {service.popular && (
                       <span style={{
                         fontSize: "8px", fontWeight: 700, letterSpacing: "0.06em",
-                        color: C.red, background: `${C.red}15`,
+                        color: C.primary, background: `${C.primary}15`,
                         padding: "1px 5px", borderRadius: "3px", flexShrink: 0,
                         textTransform: "uppercase",
                       }}>
@@ -149,14 +150,14 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
 
                 {/* Price + check */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
-                  <span style={{ fontSize: "16px", fontWeight: 700, color: isSelected ? C.red : C.primary, letterSpacing: "-0.01em" }}>
+                  <span style={{ fontSize: "16px", fontWeight: 700, color: isSelected ? C.primary : C.primary, letterSpacing: "-0.01em" }}>
                     ₺{service.price.toLocaleString()}
                   </span>
                   {isSelected && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      style={{ width: "18px", height: "18px", background: C.red, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                      style={{ width: "18px", height: "18px", background: C.primary, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}
                     >
                       <Check size={10} color="#fff" />
                     </motion.div>

@@ -26,22 +26,22 @@ import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import { apiFetch } from "@/lib/api";
 
 const C = {
-  bg:       "#F8F6F2",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   sidebar:  "#FFFFFF",
   card:     "#FFFFFF",
-  border:   "rgba(17,17,17,0.08)",
-  surface:  "#F1EEE8",
+  border:   "#E5DED3",
+  surface:  "#EFEAE2",
   primary:  "#111111",
-  secondary:"#57514B",
-  muted:    "#6E6760",
-  dim:      "#C9C2B7",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 const NAV_SECTIONS = (lang) => [
@@ -84,6 +84,8 @@ export default function AdminDashboard() {
   const tx = useT(lang);
   const { logout, role, loaded, user } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const shopSlug = user?.shop?.slug ?? params?.shopSlug;
   const [mounted, setMounted] = useState(false);
   const [realBarbers, setRealBarbers] = useState([]);
 
@@ -95,12 +97,12 @@ export default function AdminDashboard() {
       .catch(() => {});
   }, [loaded, role]);
 
-  const handleLogout = () => { logout(); router.push("/barber"); };
+  const handleLogout = () => { const s = user?.shop?.slug; logout(); router.push(s ? `/${s}/barber` : "/superadmin/login"); };
   const navSections = NAV_SECTIONS(lang);
 
   useEffect(() => {
     if (!loaded) return;
-    if (!role) router.replace("/barber");
+    if (!role) router.replace(shopSlug ? `/${shopSlug}/barber` : "/superadmin/login");
   }, [loaded, role, router]);
 
   if (!mounted || !loaded || !role) return null;
@@ -155,7 +157,7 @@ export default function AdminDashboard() {
             <input
               placeholder={tx.admin.appointments.search}
               className="flex-1 bg-transparent text-xs outline-none"
-              style={{ color: C.primary, caretColor: C.red }}
+              style={{ color: C.primary, caretColor: C.primary }}
             />
           </div>
 
@@ -172,7 +174,7 @@ export default function AdminDashboard() {
 
             <button className="relative w-8 h-8 flex items-center justify-center" style={{ color: C.secondary }}>
               <Bell size={15} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ background: C.red }} />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ background: C.primary }} />
             </button>
 
             {/* Berber Görünümü — top bar shortcut (md+, admin-only) */}
@@ -181,10 +183,10 @@ export default function AdminDashboard() {
               className="hidden md:flex items-center gap-1.5"
               style={{
                 height: "32px", padding: "0 10px",
-                border: `1px solid ${tab === "barber-ops" ? `${C.red}50` : C.border}`,
+                border: `1px solid ${tab === "barber-ops" ? `${C.primary}50` : C.border}`,
                 borderRadius: "6px", fontSize: "11px",
-                color: tab === "barber-ops" ? C.red : C.secondary,
-                background: tab === "barber-ops" ? `${C.red}10` : "transparent",
+                color: tab === "barber-ops" ? C.primary : C.secondary,
+                background: tab === "barber-ops" ? `${C.primary}10` : "transparent",
                 cursor: "pointer", letterSpacing: "0.02em",
                 transition: "all 0.15s",
               }}
@@ -200,7 +202,7 @@ export default function AdminDashboard() {
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => setUserMenu(!userMenu)}
-                style={{ width: "36px", height: "36px", background: C.red, borderRadius: "8px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff" }}
+                style={{ width: "44px", height: "44px", background: C.primary, borderRadius: "8px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff" }}
               >
                 {(user?.displayName ?? user?.username ?? "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
               </button>
@@ -225,8 +227,8 @@ export default function AdminDashboard() {
                       </button>
                     ))}
                     <div style={{ height: "1px", background: C.border, margin: "4px 0" }} />
-                    <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "7px 10px", borderRadius: "6px", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#B91C1C", textAlign: "left" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(198,40,40,0.08)"; }}
+                    <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "7px 10px", borderRadius: "6px", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#111111", textAlign: "left" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(17,17,17,0.08)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
                     >
                       <LogOut size={12} />
@@ -312,8 +314,8 @@ function BarberSelectorBar({ globalBarberId, setGlobalBarberId, realBarbers = []
             style={{
               display: "flex", alignItems: "center", gap: "5px",
               padding: "5px 10px", borderRadius: "20px",
-              background: active ? C.red : C.surface,
-              border: `1px solid ${active ? C.red : C.border}`,
+              background: active ? C.primary : C.surface,
+              border: `1px solid ${active ? C.primary : C.border}`,
               color: active ? "#fff" : C.secondary,
               fontSize: "11px", fontWeight: active ? 600 : 400,
               whiteSpace: "nowrap", cursor: "pointer",
@@ -430,8 +432,8 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                       gap: "8px", padding: "16px 8px",
-                      background: active ? `${C.red}18` : C.surface,
-                      border: `1px solid ${active ? `${C.red}40` : C.border}`,
+                      background: active ? `${C.primary}18` : C.surface,
+                      border: `1px solid ${active ? `${C.primary}40` : C.border}`,
                       borderRadius: "12px", cursor: "pointer",
                       minHeight: "80px",
                     }}
@@ -440,11 +442,11 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                       style={{
                         width: "36px", height: "36px", borderRadius: "10px",
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        background: active ? `${C.red}22` : `${C.surface}`,
-                        border: `1px solid ${active ? `${C.red}30` : C.border}`,
+                        background: active ? `${C.primary}22` : `${C.surface}`,
+                        border: `1px solid ${active ? `${C.primary}30` : C.border}`,
                       }}
                     >
-                      <Icon size={16} style={{ color: active ? C.red : C.secondary }} />
+                      <Icon size={16} style={{ color: active ? C.primary : C.secondary }} />
                     </div>
                     <span style={{ fontSize: "10px", color: active ? C.primary : C.secondary, fontWeight: active ? 600 : 400, lineHeight: 1.2, textAlign: "center" }}>
                       {label}
@@ -460,7 +462,7 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                 onClick={() => { onNewBooking(); setMoreOpen(false); }}
                 style={{
                   width: "100%", minHeight: "48px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                  background: C.red, color: "#fff", border: "none", borderRadius: "12px",
+                  background: C.primary, color: "#fff", border: "none", borderRadius: "12px",
                   fontSize: "13px", fontWeight: 600, cursor: "pointer", letterSpacing: "0.01em",
                 }}
               >
@@ -506,7 +508,7 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                     layoutId="bottom-nav-pill"
                     style={{
                       position: "absolute", inset: "-6px -10px",
-                      background: `${C.red}18`,
+                      background: `${C.primary}18`,
                       borderRadius: "10px",
                     }}
                     transition={{ type: "spring", damping: 28, stiffness: 380 }}
@@ -514,7 +516,7 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                 )}
                 <Icon
                   size={20}
-                  style={{ color: active ? C.red : C.muted, position: "relative", zIndex: 1, transition: "color 0.15s" }}
+                  style={{ color: active ? C.primary : C.muted, position: "relative", zIndex: 1, transition: "color 0.15s" }}
                 />
               </div>
               <span style={{ fontSize: "9px", color: active ? C.primary : C.muted, fontWeight: active ? 600 : 400, letterSpacing: "0.02em", transition: "color 0.15s" }}>
@@ -539,7 +541,7 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                 layoutId="bottom-nav-pill"
                 style={{
                   position: "absolute", inset: "-6px -10px",
-                  background: `${C.red}18`,
+                  background: `${C.primary}18`,
                   borderRadius: "10px",
                 }}
                 transition={{ type: "spring", damping: 28, stiffness: 380 }}
@@ -551,12 +553,12 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
               style={{ position: "relative", zIndex: 1, display: "flex" }}
             >
               {moreOpen
-                ? <X size={20} style={{ color: moreActive || moreOpen ? C.red : C.muted }} />
-                : <MoreHorizontal size={20} style={{ color: moreActive ? C.red : C.muted, transition: "color 0.15s" }} />
+                ? <X size={20} style={{ color: moreActive || moreOpen ? C.primary : C.muted }} />
+                : <MoreHorizontal size={20} style={{ color: moreActive ? C.primary : C.muted, transition: "color 0.15s" }} />
               }
             </motion.div>
             {moreActive && !moreOpen && (
-              <span style={{ position: "absolute", top: "-4px", right: "-4px", width: "6px", height: "6px", borderRadius: "50%", background: C.red, border: `2px solid ${C.sidebar}`, zIndex: 2 }} />
+              <span style={{ position: "absolute", top: "-4px", right: "-4px", width: "6px", height: "6px", borderRadius: "50%", background: C.primary, border: `2px solid ${C.sidebar}`, zIndex: 2 }} />
             )}
           </div>
           <span style={{ fontSize: "9px", color: moreActive || moreOpen ? C.primary : C.muted, fontWeight: moreActive || moreOpen ? 600 : 400, letterSpacing: "0.02em", transition: "color 0.15s" }}>
@@ -634,8 +636,8 @@ function BarberOpsPage({ barberId }) {
                 key={b.id}
                 onClick={() => { setSelectedId(b.id); setOpsView("schedule"); }}
                 style={{
-                  background: active ? `${C.red}12` : C.card,
-                  border: `1px solid ${active ? `${C.red}50` : C.border}`,
+                  background: active ? `${C.primary}12` : C.card,
+                  border: `1px solid ${active ? `${C.primary}50` : C.border}`,
                   borderRadius: "12px", padding: "16px",
                   textAlign: "left", cursor: "pointer",
                   transition: "all 0.15s",
@@ -644,12 +646,12 @@ function BarberOpsPage({ barberId }) {
                 onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = "rgba(17,17,17,0.18)"; e.currentTarget.style.background = C.surface; } }}
                 onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; } }}
               >
-                {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: `linear-gradient(90deg, ${C.red}, #9a1212, transparent)` }} />}
-                <div style={{ width: "40px", height: "40px", background: active ? C.red : C.surface, border: `1px solid ${active ? "transparent" : C.border}`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px", fontWeight: 700, color: active ? "#fff" : C.secondary, marginBottom: "12px" }}>
+                {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: `linear-gradient(90deg, ${C.primary}, #111111, transparent)` }} />}
+                <div style={{ width: "40px", height: "40px", background: active ? C.primary : C.surface, border: `1px solid ${active ? "transparent" : C.border}`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px", fontWeight: 700, color: active ? "#fff" : C.secondary, marginBottom: "12px" }}>
                   {b.avatar}
                 </div>
                 <div style={{ fontSize: "13px", color: active ? C.primary : C.secondary, fontWeight: active ? 600 : 400, lineHeight: 1.3, marginBottom: "2px" }}>{b.nameTr}</div>
-                <div style={{ fontSize: "10px", color: active ? C.red : C.muted, letterSpacing: "0.04em" }}>{b.titleTr}</div>
+                <div style={{ fontSize: "10px", color: active ? C.primary : C.muted, letterSpacing: "0.04em" }}>{b.titleTr}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "8px" }}>
                   {activeNow && <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#2563EB", display: "inline-block", animation: "pulse 1.5s infinite" }} />}
                   <span style={{ fontSize: "10px", color: C.muted }}>
@@ -668,17 +670,17 @@ function BarberOpsPage({ barberId }) {
           {/* Barber identity bar + add appointment */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", padding: "12px 16px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ width: "36px", height: "36px", background: C.red, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+              <div style={{ width: "36px", height: "36px", background: C.primary, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                 {selectedBarber.avatar}
               </div>
               <div>
                 <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{selectedBarber.nameTr}</div>
-                <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{selectedBarber.titleTr}</div>
+                <div style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.06em", textTransform: "uppercase" }}>{selectedBarber.titleTr}</div>
               </div>
             </div>
             <button
               onClick={() => setShowBooking(true)}
-              style={{ display: "flex", alignItems: "center", gap: "6px", background: C.red, color: "#fff", border: "none", borderRadius: "7px", padding: "0 14px", height: "36px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "7px", padding: "0 14px", height: "36px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
             >
               <Plus size={13} /> Randevu Ekle
             </button>
@@ -698,12 +700,12 @@ function BarberOpsPage({ barberId }) {
                     background: "none", border: "none",
                     color: active ? C.primary : C.secondary,
                     fontWeight: active ? 600 : 400,
-                    borderBottom: `2px solid ${active ? C.red : "transparent"}`,
+                    borderBottom: `2px solid ${active ? C.primary : "transparent"}`,
                     marginBottom: "-1px",
                     transition: "color 0.15s",
                   }}
                 >
-                  <Icon size={13} style={{ color: active ? C.red : C.secondary }} /> {label}
+                  <Icon size={13} style={{ color: active ? C.primary : C.secondary }} /> {label}
                 </button>
               );
             })}
@@ -757,7 +759,7 @@ function BarberScheduleSection({ barberId, date, setDate, appointments, updateSt
           <div style={{ fontSize: "16px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {formatDateLong(date)}
             {isViewingToday && (
-              <span style={{ marginLeft: "8px", fontSize: "10px", color: C.red, fontWeight: 700, letterSpacing: "0.08em", verticalAlign: "middle" }}>BUGÜN</span>
+              <span style={{ marginLeft: "8px", fontSize: "10px", color: C.primary, fontWeight: 700, letterSpacing: "0.08em", verticalAlign: "middle" }}>BUGÜN</span>
             )}
           </div>
           <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>
@@ -857,7 +859,7 @@ function BarberPerformanceView({ barberId, appointments }) {
                 <div style={{
                   width: "100%",
                   height: `${Math.max((day.revenue / maxRev) * 100, day.revenue > 0 ? 5 : 0)}%`,
-                  background: day.date === today ? C.red : `${C.red}40`,
+                  background: day.date === today ? C.primary : `${C.primary}40`,
                   borderRadius: "3px 3px 0 0",
                 }} />
               </div>
@@ -880,7 +882,7 @@ function BarberPerformanceView({ barberId, appointments }) {
                 <span style={{ fontSize: "11px", color: C.primary, fontWeight: 600 }}>{cnt}</span>
               </div>
               <div style={{ height: "4px", background: C.border, borderRadius: "2px" }}>
-                <div style={{ height: "100%", width: `${(cnt / maxSvc) * 100}%`, background: C.red, borderRadius: "2px" }} />
+                <div style={{ height: "100%", width: `${(cnt / maxSvc) * 100}%`, background: C.primary, borderRadius: "2px" }} />
               </div>
             </div>
           ))}
@@ -891,7 +893,7 @@ function BarberPerformanceView({ barberId, appointments }) {
           <div style={{ fontSize: "11px", color: C.secondary, fontWeight: 500, marginBottom: "14px" }}>Durum Dağılımı · {monthLabel}</div>
           {[
             { label: "Tamamlandı", count: completed.length,  color: "#15803D" },
-            { label: "Gelmedi",    count: noShows.length,    color: C.red     },
+            { label: "Gelmedi",    count: noShows.length,    color: C.primary     },
             { label: "İptal",      count: cancelled.length,  color: "#52525b" },
           ].map(({ label, count, color }) => {
             const total = Math.max(monthAppts.length, 1);
@@ -953,9 +955,9 @@ function BarberAvailableSlots({ barberId, appointments, barberWH }) {
               style={{
                 padding: "4px 9px", borderRadius: "5px", fontSize: "10px",
                 fontFamily: "'DM Mono', monospace",
-                background: isPast ? "transparent" : isBooked ? `${C.red}12` : "rgba(34,197,94,0.08)",
-                border: `1px solid ${isPast ? "transparent" : isBooked ? `${C.red}28` : "rgba(34,197,94,0.2)"}`,
-                color: isPast ? C.muted : isBooked ? "#B91C1C" : "#15803D",
+                background: isPast ? "transparent" : isBooked ? `${C.primary}12` : "rgba(34,197,94,0.08)",
+                border: `1px solid ${isPast ? "transparent" : isBooked ? `${C.primary}28` : "rgba(34,197,94,0.2)"}`,
+                color: isPast ? C.muted : isBooked ? "#111111" : "#15803D",
                 opacity: isPast ? 0.35 : 1,
               }}
             >
@@ -972,19 +974,19 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, us
   return (
     <>
       {/* Logo */}
-      <div className="h-14 flex items-center justify-between px-4" style={{ borderBottom: `1px solid ${C.border}` }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}
-          onMouseEnter={(e) => { e.currentTarget.querySelector("span.name").style.color = C.red; }}
+      <div className="h-14 flex items-center gap-2 px-4" style={{ borderBottom: `1px solid ${C.border}`, minWidth: 0 }}>
+        <Link href={user?.shop?.slug ? `/${user.shop.slug}` : "/"} style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", minWidth: 0, flex: 1, overflow: "hidden" }}
+          onMouseEnter={(e) => { e.currentTarget.querySelector("span.name").style.color = C.primary; }}
           onMouseLeave={(e) => { e.currentTarget.querySelector("span.name").style.color = C.primary; }}
         >
-          <div className="w-6 h-6 flex items-center justify-center" style={{ background: C.red, borderRadius: "4px", transition: "transform 0.15s" }}>
-            <span className="font-bold text-white" style={{ fontSize: "10px" }}>M</span>
+          <div className="w-6 h-6 flex items-center justify-center" style={{ background: C.primary, borderRadius: "4px", transition: "transform 0.15s", flexShrink: 0 }}>
+            <span className="font-bold text-white" style={{ fontSize: "10px" }}>{(user?.shop?.name ?? "M")[0].toUpperCase()}</span>
           </div>
-          <span className="name font-display" style={{ fontSize: "15px", letterSpacing: "0.25em", color: C.primary, textTransform: "uppercase", transition: "color 0.15s" }}>
-            Makas
+          <span className="name font-display" style={{ fontSize: "13px", letterSpacing: "0.05em", color: C.primary, textTransform: "uppercase", transition: "color 0.15s", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {user?.shop?.name ?? "Makas"}
           </span>
         </Link>
-        <span className="px-1.5 py-0.5 text-[9px] tracking-widest uppercase" style={{ background: `${C.red}18`, color: C.red, borderRadius: "3px" }}>
+        <span className="px-1.5 py-0.5 text-[9px] tracking-widest uppercase" style={{ background: `${C.primary}18`, color: C.primary, borderRadius: "3px", flexShrink: 0 }}>
           Admin
         </span>
       </div>
@@ -1019,9 +1021,9 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, us
                     onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                   >
                     {active && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full" style={{ background: C.red }} />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full" style={{ background: C.primary }} />
                     )}
-                    <Icon size={14} style={{ color: active ? C.red : C.secondary, flexShrink: 0 }} />
+                    <Icon size={14} style={{ color: active ? C.primary : C.secondary, flexShrink: 0 }} />
                     {item.label}
                   </button>
                 );
@@ -1034,7 +1036,7 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, us
       {/* Bottom: user + logout + site link */}
       <div style={{ padding: "10px 12px", borderTop: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "28px", height: "28px", background: C.red, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+          <div style={{ width: "28px", height: "28px", background: C.primary, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
             {(user?.displayName ?? user?.username ?? "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1071,7 +1073,7 @@ function BusinessKPIs({ barberId, activeBarberCount = 0 }) {
     { label: "Bugün Kasa",     value: `₺${todayRevenue.toLocaleString()}`, sub: `${completed.length} işlem tamamlandı`, hero: true },
     { label: "Toplam Randevu", value: todayAppts.length,                    sub: `${effectiveBarbers} berber aktif` },
     { label: "Koltuk Doluluk", value: `${chairOcc}%`,                       sub: `${usedSlots}/${totalCap} slot`, valueColor: chairOcc > 70 ? "#15803D" : chairOcc > 40 ? "#B45309" : C.primary },
-    { label: "No-Show Oranı",  value: `${noShowRate}%`,                     sub: `${noshows.length} gelmedi`,     valueColor: noShowRate > 15 ? "#B91C1C" : C.primary },
+    { label: "No-Show Oranı",  value: `${noShowRate}%`,                     sub: `${noshows.length} gelmedi`,     valueColor: noShowRate > 15 ? "#111111" : C.primary },
     { label: "Onay Bekliyor",  value: pending.length,                       sub: pending.length > 0 ? "hemen işlem yap" : "tümü onaylandı", alert: pending.length > 0 },
   ];
 
@@ -1079,7 +1081,7 @@ function BusinessKPIs({ barberId, activeBarberCount = 0 }) {
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
       {cards.map((c, i) => (
         <div key={i} className={i === 0 ? "col-span-2 lg:col-span-1" : ""} style={{
-          background: c.hero ? `linear-gradient(135deg, ${C.red} 0%, #9a1212 100%)` : C.card,
+          background: c.hero ? `linear-gradient(135deg, ${C.primary} 0%, #111111 100%)` : C.card,
           border: c.alert ? `1px solid rgba(245,158,11,0.4)` : `1px solid ${C.border}`,
           borderRadius: "10px", padding: "16px 18px", position: "relative", overflow: "hidden",
         }}>
@@ -1119,7 +1121,7 @@ function StaffPerformance({ barberId, realBarbers = [] }) {
           return (
             <div key={b.id} style={{ background: C.surface, borderRadius: "8px", padding: "12px 14px", border: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-                <div style={{ width: "30px", height: "30px", background: `linear-gradient(135deg, #C62828, #9a1212)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                <div style={{ width: "30px", height: "30px", background: `linear-gradient(135deg, #111111, #111111)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                   {b.avatar}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1149,7 +1151,7 @@ function StaffPerformance({ barberId, realBarbers = [] }) {
                   <span style={{ fontSize: "9px", color: util > 50 ? "#15803D" : C.secondary }}>{util}%</span>
                 </div>
                 <div style={{ height: "3px", background: C.border, borderRadius: "2px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${util}%`, background: util > 70 ? "#15803D" : util > 40 ? "#B45309" : C.red, borderRadius: "2px" }} />
+                  <div style={{ height: "100%", width: `${util}%`, background: util > 70 ? "#15803D" : util > 40 ? "#B45309" : C.primary, borderRadius: "2px" }} />
                 </div>
               </div>
             </div>
@@ -1192,7 +1194,7 @@ function PendingConfirmations({ onNewBooking, barberId }) {
             ? <span style={{ fontSize: "10px", background: "rgba(245,158,11,0.15)", color: "#B45309", borderRadius: "4px", padding: "1px 6px" }}>{pending.length}</span>
             : <span style={{ fontSize: "10px", background: "rgba(34,197,94,0.1)", color: "#15803D", borderRadius: "4px", padding: "1px 6px" }}>✓</span>
           }
-          <button onClick={onNewBooking} style={{ marginLeft: "auto", fontSize: "11px", color: C.red, background: "none", border: `1px solid rgba(198,40,40,0.25)`, borderRadius: "5px", padding: "3px 10px", cursor: "pointer" }}>+ Ekle</button>
+          <button onClick={onNewBooking} style={{ marginLeft: "auto", fontSize: "11px", color: C.primary, background: "none", border: `1px solid rgba(17,17,17,0.25)`, borderRadius: "5px", padding: "3px 10px", cursor: "pointer" }}>+ Ekle</button>
         </div>
         {pending.length === 0 ? (
           <div style={{ padding: "14px 18px" }}>
@@ -1214,7 +1216,7 @@ function PendingConfirmations({ onNewBooking, barberId }) {
                       title="Onayla"
                     >✓</button>
                     <button onClick={() => updateStatus(appt.id, "cancelled")}
-                      style={{ width: "26px", height: "26px", background: "rgba(248,113,113,0.08)", border: `1px solid rgba(248,113,113,0.2)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#B91C1C", fontSize: "13px", lineHeight: 1 }}
+                      style={{ width: "26px", height: "26px", background: "rgba(248,113,113,0.08)", border: `1px solid rgba(248,113,113,0.2)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#111111", fontSize: "13px", lineHeight: 1 }}
                       title="İptal"
                     >✕</button>
                   </div>
@@ -1258,7 +1260,7 @@ function PendingConfirmations({ onNewBooking, barberId }) {
               return (
                 <div key={appt.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px", borderTop: `1px solid ${C.border}` }}>
                   <span style={{ fontSize: "11px", color: isActive ? "#2563EB" : C.primary, fontWeight: 600, minWidth: "38px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
-                  <div style={{ width: "18px", height: "18px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                  <div style={{ width: "18px", height: "18px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                     {barberInitials}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -1293,7 +1295,7 @@ function TodaySchedule({ onNewBooking, barberId }) {
     confirmed:     { color: "#15803D" },
     "in-progress": { color: "#2563EB" },
     completed:     { color: "#57514B" },
-    noshow:        { color: "#C62828" },
+    noshow:        { color: "#111111" },
     cancelled:     { color: "#52525b" },
   };
 
@@ -1306,7 +1308,7 @@ function TodaySchedule({ onNewBooking, barberId }) {
       {todayAppts.length === 0 ? (
         <div style={{ padding: "32px 18px", textAlign: "center" }}>
           <div style={{ fontSize: "11px", color: C.muted, marginBottom: "10px" }}>Bugün randevu yok</div>
-          <button onClick={onNewBooking} style={{ fontSize: "11px", color: C.red, background: "none", border: `1px solid rgba(198,40,40,0.3)`, borderRadius: "6px", padding: "5px 12px", cursor: "pointer" }}>+ Randevu Ekle</button>
+          <button onClick={onNewBooking} style={{ fontSize: "11px", color: C.primary, background: "none", border: `1px solid rgba(17,17,17,0.3)`, borderRadius: "6px", padding: "5px 12px", cursor: "pointer" }}>+ Randevu Ekle</button>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))" }}>
@@ -1316,7 +1318,7 @@ function TodaySchedule({ onNewBooking, barberId }) {
             return (
               <div key={appt.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 18px", borderRight: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
                 <span style={{ fontSize: "11px", color: C.primary, fontWeight: 600, minWidth: "38px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
-                <div style={{ width: "20px", height: "20px", background: `linear-gradient(135deg, #C62828, #9a1212)`, borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                <div style={{ width: "20px", height: "20px", background: `linear-gradient(135deg, #111111, #111111)`, borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                   {barberInitials}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1348,7 +1350,7 @@ function RecentActivityFeed() {
     pending:       "#B45309",
     completed:     "#57514B",
     cancelled:     "#52525b",
-    noshow:        "#C62828",
+    noshow:        "#111111",
   };
   const STATUS_LABEL = {
     confirmed: "Onaylandı", "in-progress": "Devam", pending: "Bekliyor",
@@ -1376,7 +1378,7 @@ function RecentActivityFeed() {
                 </div>
                 <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "3px" }}>
-                  <div style={{ width: "14px", height: "14px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "6px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                  <div style={{ width: "14px", height: "14px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "6px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                     {barberInitials}
                   </div>
                   <span style={{ fontSize: "10px", color: C.muted }}>{appt.barber?.split(" ")[0]}</span>
@@ -1413,7 +1415,7 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, barberId, realBarbers = 
         </div>
         <button
           onClick={onNewBooking}
-          style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 14px", background: C.red, border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "#fff", flexShrink: 0 }}
+          style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 14px", background: C.primary, border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "#fff", flexShrink: 0 }}
         >
           <Plus size={14} />
           <span className="hidden sm:inline">Yeni Randevu</span>
@@ -1446,10 +1448,10 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, barberId, realBarbers = 
             key={t}
             onClick={() => setTab(t)}
             style={{ padding: "11px 16px", borderRadius: "8px", background: C.card, border: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "7px", fontSize: "12px", color: C.secondary }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.2)"; e.currentTarget.style.color = C.primary; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(17,17,17,0.2)"; e.currentTarget.style.color = C.primary; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.secondary; }}
           >
-            <Icon size={13} style={{ color: C.red }} />
+            <Icon size={13} style={{ color: C.primary }} />
             {label}
           </button>
         ))}
@@ -1558,13 +1560,13 @@ function CustomersPage({ barberId }) {
                     <td style={{ padding: "11px 16px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{c.name}</div>
-                        {c.blocked && <span style={{ fontSize: "10px", color: "#B91C1C", background: "rgba(185,28,28,0.08)", borderRadius: "4px", padding: "1px 5px" }}>Engelli</span>}
+                        {c.blocked && <span style={{ fontSize: "10px", color: "#111111", background: "rgba(185,28,28,0.08)", borderRadius: "4px", padding: "1px 5px" }}>Engelli</span>}
                       </div>
                     </td>
                     <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: C.secondary, fontFamily: "monospace" }}>{c.phone}</span></td>
                     <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "13px", color: C.primary }}>{c.visits}</span></td>
                     <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>₺{(c.totalSpent ?? 0).toLocaleString()}</span></td>
-                    <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: c.noShows > 0 ? "#B91C1C" : C.secondary }}>{c.noShows}</span></td>
+                    <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: c.noShows > 0 ? "#111111" : C.secondary }}>{c.noShows}</span></td>
                     <td style={{ padding: "11px 16px" }}><span style={{ fontSize: "12px", color: C.secondary }}>{c.lastVisit ?? "—"}</span></td>
                   </tr>
                 ))}
@@ -1579,7 +1581,7 @@ function CustomersPage({ barberId }) {
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       <div style={{ fontSize: "14px", color: C.primary, fontWeight: 500 }}>{c.name}</div>
-                      {c.blocked && <span style={{ fontSize: "10px", color: "#B91C1C" }}>Engelli</span>}
+                      {c.blocked && <span style={{ fontSize: "10px", color: "#111111" }}>Engelli</span>}
                     </div>
                     <div style={{ fontSize: "12px", color: C.secondary, fontFamily: "monospace", marginTop: "1px" }}>{c.phone}</div>
                   </div>
@@ -1590,7 +1592,7 @@ function CustomersPage({ barberId }) {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "11px", color: C.muted }}>{c.lastVisit ?? "—"}</span>
-                  {c.noShows > 0 && <span style={{ fontSize: "11px", color: "#B91C1C" }}>{c.noShows} no-show</span>}
+                  {c.noShows > 0 && <span style={{ fontSize: "11px", color: "#111111" }}>{c.noShows} no-show</span>}
                 </div>
               </div>
             ))}

@@ -7,15 +7,16 @@ import { useAppointments } from "@/contexts/AppointmentsContext";
 import { X, Check, Phone, User, Calendar, Clock } from "lucide-react";
 
 const C = {
-  bg:      "#F8F6F2",
+  bg:      "#F7F4EE",
+  bgSoft:  "#FDFBF7",
   card:    "#FFFFFF",
   modal:   "#FFFFFF",
-  border:  "rgba(17,17,17,0.08)",
-  surface: "#F1EEE8",
+  border:  "#E5DED3",
+  surface: "#EFEAE2",
   primary: "#111111",
-  secondary:"#57514B",
-  muted:   "#6E6760",
-  red:     "#C62828",
+  secondary:"#4A4A4A",
+  muted:   "#8A8480",
+  dim:     "#C5BEB5",
 };
 
 function Field({ label, icon: Icon, children }) {
@@ -154,7 +155,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
             }}
           >
             <div>
-              <div style={{ fontSize: "11px", color: C.red, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 500, marginBottom: "3px" }}>
+              <div style={{ fontSize: "11px", color: C.primary, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 500, marginBottom: "3px" }}>
                 Telefon Randevusu
               </div>
               <h2 style={{ fontSize: "18px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>
@@ -187,7 +188,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
                   style={{
-                    width: "56px", height: "56px", background: C.red,
+                    width: "56px", height: "56px", background: C.primary,
                     borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                     margin: "0 auto 16px",
                   }}
@@ -314,7 +315,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                 )}
 
                 {error && (
-                  <div style={{ fontSize: "12px", color: C.red, padding: "8px 12px", background: "rgba(198,40,40,0.08)", borderRadius: "6px", border: "1px solid rgba(198,40,40,0.2)" }}>
+                  <div style={{ fontSize: "12px", color: C.primary, padding: "8px 12px", background: "rgba(17,17,17,0.08)", borderRadius: "6px", border: "1px solid rgba(17,17,17,0.2)" }}>
                     {error}
                   </div>
                 )}
@@ -323,7 +324,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                   type="submit"
                   style={{
                     width: "100%", height: "44px",
-                    background: C.red, color: "#fff",
+                    background: C.primary, color: "#fff",
                     border: "none", borderRadius: "10px",
                     fontSize: "13px", fontWeight: 600,
                     cursor: "pointer", letterSpacing: "0.03em",

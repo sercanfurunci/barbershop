@@ -6,8 +6,8 @@ import { tr as dateFnsTr, enUS } from "date-fns/locale";
 import { apiFetch } from "@/lib/api";
 
 const C = {
-  bg: "#F6F3EE", card: "#FFFFFF", border: "#E5DFD6", surface: "#EFEAE2",
-  primary: "#111111", secondary: "#44403C", muted: "#6B7280", red: "#C62828",
+  bg: "#F7F4EE", bgSoft: "#FDFBF7", surface: "#EFEAE2", card: "#FFFFFF",
+  border: "#E5DED3", primary: "#111111", secondary: "#4A4A4A", muted: "#8A8480", dim: "#C5BEB5",
 };
 
 function SlotSkeleton({ count = 12 }) {
@@ -27,24 +27,25 @@ function SlotSkeleton({ count = 12 }) {
   );
 }
 
-export default function TimeSelect({ booking, allBarbers = [], onSelect, lang = "tr" }) {
+export default function TimeSelect({ shopId, booking, allBarbers = [], onSelect, lang = "tr" }) {
   const [slots, setSlots]             = useState([]);
   const [slotBarberMap, setSlotBarberMap] = useState({});
   const [loading, setLoading]         = useState(false);
   const locale = lang === "tr" ? dateFnsTr : enUS;
 
   useEffect(() => {
-    if (!booking.date || !booking.barber || !booking.service) return;
+    if (!shopId || !booking.date || !booking.barber || !booking.service) return;
     const serviceId = booking.service.id;
     const isAny    = booking.barber.id === "any";
     const dateStr  = format(booking.date, "yyyy-MM-dd");
+    const base     = `shopId=${shopId}&serviceId=${serviceId}&date=${dateStr}`;
 
     setLoading(true);
     setSlots([]);
     setSlotBarberMap({});
 
     if (!isAny) {
-      apiFetch(`/api/availability?barberId=${booking.barber.id}&serviceId=${serviceId}&date=${dateStr}`)
+      apiFetch(`/api/availability?${base}&barberId=${booking.barber.id}`)
         .then((data) => setSlots(data.slots ?? []))
         .catch(() => setSlots([]))
         .finally(() => setLoading(false));
@@ -53,7 +54,7 @@ export default function TimeSelect({ booking, allBarbers = [], onSelect, lang = 
       if (barberList.length === 0) { setLoading(false); return; }
       Promise.all(
         barberList.map((b) =>
-          apiFetch(`/api/availability?barberId=${b.id}&serviceId=${serviceId}&date=${dateStr}`)
+          apiFetch(`/api/availability?${base}&barberId=${b.id}`)
             .then((data) => ({ barberId: b.id, slots: data.slots ?? [] }))
             .catch(() => ({ barberId: b.id, slots: [] }))
         )
@@ -93,7 +94,7 @@ export default function TimeSelect({ booking, allBarbers = [], onSelect, lang = 
           background: C.card, border: `1px solid ${C.border}`, borderRadius: "20px",
           fontSize: "12px", color: C.secondary, fontWeight: 500,
         }}>
-          <span style={{ color: C.red, fontSize: "13px" }}>◷</span>
+          <span style={{ color: C.primary, fontSize: "13px" }}>◷</span>
           {dateLabel}
         </div>
         {!loading && slots.length > 0 && (
@@ -112,7 +113,7 @@ export default function TimeSelect({ booking, allBarbers = [], onSelect, lang = 
             {lang === "tr" ? "Bu tarihte müsait saat bulunamadı" : "No available times on this date"}
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", padding: "4px 16px 16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", padding: "4px 16px 16px" }}>
             {slots.map((slot) => (
               <button
                 key={slot}
@@ -125,9 +126,9 @@ export default function TimeSelect({ booking, allBarbers = [], onSelect, lang = 
                   cursor: "pointer", transition: "all 0.12s",
                 }}
                 onTouchStart={(e) => {
-                  e.currentTarget.style.background = "#FEF2F2";
-                  e.currentTarget.style.borderColor = C.red;
-                  e.currentTarget.style.color = C.red;
+                  e.currentTarget.style.background = C.surface;
+                  e.currentTarget.style.borderColor = C.primary;
+                  e.currentTarget.style.color = C.primary;
                 }}
                 onTouchEnd={(e) => {
                   e.currentTarget.style.background = C.card;

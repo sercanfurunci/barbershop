@@ -8,15 +8,15 @@ import {
 } from "lucide-react";
 
 const C = {
-  bg:       "#F8F6F2",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   card:     "#FFFFFF",
-  border:   "rgba(17,17,17,0.08)",
-  surface:  "#F1EEE8",
+  border:   "#E5DED3",
+  surface:  "#EFEAE2",
   primary:  "#111111",
-  secondary:"#57514B",
-  muted:    "#6E6760",
-  dim:      "#C9C2B7",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ function Toggle({ checked, onChange, disabled }) {
       disabled={disabled}
       style={{
         width: "40px", height: "22px", borderRadius: "100px", border: "none",
-        background: checked ? C.red : C.dim,
+        background: checked ? C.primary : C.dim,
         position: "relative", cursor: disabled ? "not-allowed" : "pointer",
         transition: "background 0.2s", flexShrink: 0,
       }}

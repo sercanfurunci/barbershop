@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Calendar, Clock, User, Scissors, Phone, Mail, ArrowRight, CalendarPlus, Download } from "lucide-react";
 import { googleCalendarUrl } from "@/lib/calendar";
+import { useShop } from "@/contexts/ShopContext";
 import { format } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 import { toast } from "sonner";
@@ -11,15 +12,15 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 
 const C = {
-  bg:       "#F6F3EE",
-  card:     "#FFFFFF",
-  border:   "#E5DFD6",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   surface:  "#EFEAE2",
+  card:     "#FFFFFF",
+  border:   "#E5DED3",
   primary:  "#111111",
-  secondary:"#44403C",
-  muted:    "#6B7280",
-  dim:      "#9A9490",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 // Formats digits-only string to Turkish phone display: 532 123 45 67
@@ -43,12 +44,15 @@ function validateForm(form) {
   return errors;
 }
 
-export default function Confirmation({ booking, onBack, onLoadingChange, onSuccess, lang = "tr", tx, compact = false }) {
+export default function Confirmation({ shopId, booking, onBack, onLoadingChange, onSuccess, lang = "tr", tx, compact = false }) {
+  const shop = useShop();
+  const shopSlug = shop?.slug;
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [createdApptId, setCreatedApptId] = useState(null);
+  const [apptShop, setApptShop] = useState(null);
 
   const setLoadingState = (v) => { setLoading(v); onLoadingChange?.(v); };
   const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
@@ -88,6 +92,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
       const created = await apiFetch("/api/appointments", {
         method: "POST",
         body: JSON.stringify({
+          shopId,
           name:      form.name,
           phone:     form.phone,
           email:     form.email,
@@ -100,6 +105,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
         }),
       });
       setCreatedApptId(created?.id ?? null);
+      setApptShop(created?.shop ?? null);
       setSubmitted(true);
       onSuccess?.();
       toast.success(success.confirmed ?? "Randevunuz onaylandı!");
@@ -127,10 +133,22 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
       ? format(booking.date, "yyyy-MM-dd")
       : booking.date ?? "";
 
+    const shopName    = apptShop?.name    ?? shop?.name    ?? "Makas Kuaför";
+    const shopAddress = apptShop?.address ?? shop?.address ?? "";
+    const shopPhone   = apptShop?.phone   ?? shop?.phone   ?? "";
+    const locationStr = [shopName, shopAddress].filter(Boolean).join(", ");
+    const descParts   = [
+      `Hizmet: ${serviceName}`,
+      `Berber: ${barberName}`,
+      shopAddress && `Adres: ${shopAddress}`,
+      shopPhone   && `Tel: ${shopPhone}`,
+      form.notes  && `Not: ${form.notes}`,
+    ].filter(Boolean);
+
     const gcalUrl = googleCalendarUrl({
       title:       `${serviceName}${barberName ? ` – ${barberName}` : ""}`,
-      description: `Hizmet: ${serviceName}\nBerber: ${barberName}${form.notes ? `\nNot: ${form.notes}` : ""}`,
-      location:    "Makas Kuaför",
+      description: descParts.join("\n"),
+      location:    locationStr,
       dateStr,
       timeStr:     booking.time ?? "09:00",
       durationMin: booking.service?.duration ?? 30,
@@ -149,7 +167,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
           animate={{ scale: 1 }}
           transition={{ delay: 0.15, type: "spring", stiffness: 240, damping: 18 }}
           className="flex items-center justify-center mb-8"
-          style={{ width: "80px", height: "80px", background: C.red, borderRadius: "20px" }}
+          style={{ width: "80px", height: "80px", background: C.primary, borderRadius: "20px" }}
         >
           <Check size={36} color="#fff" />
         </motion.div>
@@ -160,7 +178,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
           transition={{ delay: 0.35 }}
           className="w-full"
         >
-          <div style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: C.red, marginBottom: "16px", fontWeight: 500 }}>
+          <div style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: C.primary, marginBottom: "16px", fontWeight: 500 }}>
             {success.badge}
           </div>
           <h2
@@ -168,7 +186,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
             style={{ fontSize: "clamp(36px, 5vw, 52px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.0, marginBottom: "16px" }}
           >
             {titleLine1}<br />
-            <span style={{ fontStyle: "italic", color: C.red }}>{titleLine2}</span>
+            <span style={{ fontStyle: "italic", color: C.primary }}>{titleLine2}</span>
           </h2>
           <p style={{ fontSize: "14px", color: C.secondary, marginBottom: "4px" }}>{success.confirmed}</p>
           <p style={{ fontSize: "13px", color: C.muted, marginBottom: "32px" }}>
@@ -243,7 +261,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
 
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Link
-              href="/"
+              href={shopSlug ? `/${shopSlug}` : "/"}
               className="flex-1 flex items-center justify-center transition-all duration-200"
               style={{
                 border: `1px solid ${C.border}`,
@@ -259,18 +277,18 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
               {success.backHome}
             </Link>
             <Link
-              href="/book"
+              href={shopSlug ? `/${shopSlug}/book` : "/book"}
               className="flex-1 flex items-center justify-center gap-2 transition-all duration-200"
               style={{
-                background: C.red,
+                background: C.primary,
                 color: "#fff",
                 padding: "13px 20px",
                 borderRadius: "8px",
                 fontSize: "13px",
                 fontWeight: 600,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#B91C1C"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = C.red; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#111111"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = C.primary; }}
             >
               {success.bookAgain}
               <ArrowRight size={13} />
@@ -287,8 +305,8 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
       {!compact && (
         <div className="mb-10">
           <div className="flex items-center gap-2.5 mb-4">
-            <div style={{ width: "20px", height: "2px", background: C.red, borderRadius: "1px" }} />
-            <span style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: C.red, fontWeight: 500 }}>
+            <div style={{ width: "20px", height: "2px", background: C.primary, borderRadius: "1px" }} />
+            <span style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: C.primary, fontWeight: 500 }}>
               {s4.eyebrow}
             </span>
           </div>
@@ -297,7 +315,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
             style={{ fontSize: "clamp(32px, 4.5vw, 48px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "10px" }}
           >
             {s4.title?.[0]}{" "}
-            <span style={{ fontStyle: "italic", color: C.red }}>{s4.title?.[1]}</span>
+            <span style={{ fontStyle: "italic", color: C.primary }}>{s4.title?.[1]}</span>
           </h1>
           <p style={{ fontSize: "14px", color: C.secondary, lineHeight: 1.6 }}>{s4.subtitle}</p>
         </div>
@@ -404,14 +422,14 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
                 border: `1px solid ${C.border}`,
                 borderRadius: "8px",
                 color: C.primary,
-                fontSize: "14px",
+                fontSize: "16px",
                 padding: "12px 14px",
                 resize: "none",
                 outline: "none",
                 transition: "border-color 0.15s",
                 lineHeight: 1.6,
               }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(198,40,40,0.5)"; }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(17,17,17,0.5)"; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
             />
           </div>
@@ -421,7 +439,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
             disabled={loading}
             className="hidden md:flex w-full items-center justify-center gap-2.5 transition-all duration-200"
             style={{
-              background: loading ? C.surface : C.red,
+              background: loading ? C.surface : C.primary,
               color: loading ? C.secondary : "#fff",
               padding: "16px 24px",
               borderRadius: "8px",
@@ -431,8 +449,8 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
               cursor: loading ? "not-allowed" : "pointer",
               letterSpacing: "0.01em",
             }}
-            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "#B91C1C"; }}
-            onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = C.red; }}
+            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "#111111"; }}
+            onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = C.primary; }}
           >
             {loading ? (
               <>
@@ -457,7 +475,7 @@ export default function Confirmation({ booking, onBack, onLoadingChange, onSucce
 function SummaryRow({ icon, label, value }) {
   return (
     <div className="flex items-center gap-3">
-      <span style={{ color: C.red, flexShrink: 0 }}>{icon}</span>
+      <span style={{ color: C.primary, flexShrink: 0 }}>{icon}</span>
       <span style={{ fontSize: "13px", color: C.secondary, flexShrink: 0 }}>{label}</span>
       {value && <span style={{ fontSize: "13px", color: C.primary, marginLeft: "auto", textAlign: "right" }}>{value}</span>}
     </div>
@@ -467,12 +485,12 @@ function SummaryRow({ icon, label, value }) {
 function FormField({ label, placeholder, value, onChange, onBlur, type = "text", icon, required, error, inputMode }) {
   return (
     <div>
-      <label style={{ display: "block", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: error ? C.red : C.muted, marginBottom: "8px", fontWeight: 500 }}>
-        {label}{required && <span style={{ color: C.red, marginLeft: "2px" }}>*</span>}
+      <label style={{ display: "block", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: error ? C.primary : C.muted, marginBottom: "8px", fontWeight: 500 }}>
+        {label}{required && <span style={{ color: C.primary, marginLeft: "2px" }}>*</span>}
       </label>
       <div className="relative">
         {icon && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: error ? C.red : C.muted }}>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: error ? C.primary : C.muted }}>
             {icon}
           </span>
         )}
@@ -486,21 +504,21 @@ function FormField({ label, placeholder, value, onChange, onBlur, type = "text",
           style={{
             width: "100%",
             background: C.card,
-            border: `1px solid ${error ? C.red : C.border}`,
+            border: `1px solid ${error ? C.primary : C.border}`,
             borderRadius: "8px",
             color: C.primary,
-            fontSize: "14px",
+            fontSize: "16px",
             padding: icon ? "11px 14px 11px 36px" : "11px 14px",
             outline: "none",
             transition: "border-color 0.15s",
             height: "44px",
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = error ? C.red : "rgba(198,40,40,0.5)"; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = error ? C.red : C.border; onBlur?.(); }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = error ? C.primary : "rgba(17,17,17,0.5)"; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = error ? C.primary : C.border; onBlur?.(); }}
         />
       </div>
       {error && (
-        <p style={{ fontSize: "11px", color: C.red, marginTop: "5px" }}>{error}</p>
+        <p style={{ fontSize: "11px", color: C.primary, marginTop: "5px" }}>{error}</p>
       )}
     </div>
   );

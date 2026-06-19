@@ -130,7 +130,7 @@ export default function ImageCropModal({ file, onConfirm, onCancel }) {
               min={1} max={3} step={0.01}
               value={zoom}
               onChange={e => setZoom(Number(e.target.value))}
-              style={{ flex: 1, accentColor: "#C62828", cursor: "pointer" }}
+              style={{ flex: 1, accentColor: "#111111", cursor: "pointer" }}
             />
             <button
               onClick={() => setZoom(z => Math.min(3, z + 0.1))}
@@ -155,7 +155,7 @@ export default function ImageCropModal({ file, onConfirm, onCancel }) {
           <button
             onClick={handleSave}
             disabled={saving}
-            style={{ flex: 1, padding: "12px", background: "#C62828", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "7px" }}
+            style={{ flex: 1, padding: "12px", background: "#111111", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "7px" }}
           >
             <Check size={14} /> {saving ? "Kaydediliyor…" : "Kaydet"}
           </button>

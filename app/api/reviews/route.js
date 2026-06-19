@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 const API_KEY    = process.env.GOOGLE_PLACES_API_KEY;
-const PLACE_NAME = "Abdurrahman Çelik Exclusive Salon Darıca Kocaeli";
+// ponytail: single GOOGLE_PLACE_ID env var — add placeId column to Shop and pass ?shopId= here when going multi-tenant on reviews
+const PLACE_NAME = process.env.GOOGLE_PLACE_NAME ?? "Barber Shop";
 
 // Prefer the GOOGLE_PLACE_ID env var to skip the search API call.
 // Falls back to text-search if not configured.

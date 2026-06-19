@@ -5,19 +5,12 @@ import { AppointmentsProvider } from "@/contexts/AppointmentsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata = {
-  title: "Abdurrahman Çelik Exclusive Salon — Premium Berber",
-  description: "Darıca'nın en seçkin berberi. Premium saç & sakal bakımı. Online randevu alın, bekleme yok.",
+  title: { default: "MAKAS — Premium Berber", template: "%s | MAKAS" },
+  description: "Online randevu sistemi ile premium saç & sakal bakımı.",
   openGraph: {
-    title: "Abdurrahman Çelik Exclusive Salon",
-    description: "Darıca'nın en seçkin berberi. Premium saç & sakal bakımı. Online randevu alın, bekleme yok.",
-    siteName: "Abdurrahman Çelik Exclusive Salon",
+    siteName: "MAKAS",
     locale: "tr_TR",
     type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Abdurrahman Çelik Exclusive Salon",
-    description: "Darıca'nın en seçkin berberi. Online randevu alın.",
   },
 };
 

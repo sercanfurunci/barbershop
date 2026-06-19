@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { todayStr, nowMinutes } from "@/lib/utils";
-import { getDefaultShopId } from "@/lib/shop";
 
 const SLOT_INTERVAL = 30; // minutes
 
@@ -51,21 +50,20 @@ function computeSlots(workingHours, breaks, bookedAppointments, date, serviceDur
   return slots;
 }
 
-// GET /api/availability?barberId=brb-1&serviceId=svc-1&date=2026-06-10
+// GET /api/availability?shopId=X&barberId=brb-1&serviceId=svc-1&date=2026-06-10
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
+  const shopId    = searchParams.get("shopId");
   const barberId  = searchParams.get("barberId");
   const serviceId = searchParams.get("serviceId");
   const date      = searchParams.get("date");
 
-  if (!barberId || !serviceId || !date) {
-    return NextResponse.json({ error: "barberId, serviceId ve date gerekli" }, { status: 400 });
+  if (!shopId || !barberId || !serviceId || !date) {
+    return NextResponse.json({ error: "shopId, barberId, serviceId ve date gerekli" }, { status: 400 });
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "Geçersiz tarih formatı (YYYY-MM-DD)" }, { status: 400 });
   }
-
-  const shopId = await getDefaultShopId();
 
   const [barber, service, bookedAppointments, holidays] = await Promise.all([
     prisma.barber.findFirst({

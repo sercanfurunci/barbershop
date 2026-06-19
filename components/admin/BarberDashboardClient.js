@@ -19,31 +19,31 @@ import {
 } from "lucide-react";
 
 const C = {
-  bg:       "#F8F6F2",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   card:     "#FFFFFF",
-  cardHi:   "#FBF7F0",
-  border:   "rgba(17,17,17,0.08)",
-  borderHi: "rgba(17,17,17,0.18)",
-  surface:  "#F1EEE8",
+  cardHi:   "#FDFBF7",
+  border:   "#E5DED3",
+  borderHi: "#C5BEB5",
+  surface:  "#EFEAE2",
   primary:  "#111111",
-  secondary:"#57514B",
-  muted:    "#6E6760",
-  dim:      "#C9C2B7",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 // Simple 3-action flow: confirm arrival → done, or mark no-show
 export const FLOW = [
   { key: "confirmed",  label: "Onaylandı",  shortLabel: "Onay",   color: "#15803D", bg: "rgba(34,197,94,0.12)"  },
   { key: "completed",  label: "Tamamlandı", shortLabel: "Tamam",  color: "#57514B", bg: "rgba(107,104,112,0.12)" },
-  { key: "noshow",     label: "Gelmedi",    shortLabel: "Gelmedi",color: "#C62828", bg: "rgba(198,40,40,0.12)"  },
+  { key: "noshow",     label: "Gelmedi",    shortLabel: "Gelmedi",color: "#111111", bg: "rgba(17,17,17,0.12)"  },
 ];
 
 export const ALL_STATUS = {
   pending:     { label: "Bekleniyor",  color: "#B45309", bg: "rgba(245,158,11,0.1)"  },
   confirmed:   { label: "Onaylandı",   color: "#15803D", bg: "rgba(34,197,94,0.1)"   },
   completed:   { label: "Tamamlandı",  color: "#57514B", bg: "rgba(107,104,112,0.1)" },
-  noshow:      { label: "Gelmedi",     color: "#C62828", bg: "rgba(198,40,40,0.1)"   },
+  noshow:      { label: "Gelmedi",     color: "#111111", bg: "rgba(17,17,17,0.1)"   },
   cancelled:   { label: "İptal",       color: "#52525b", bg: "rgba(82,82,91,0.1)"    },
   "in-progress": { label: "Devam",     color: "#2563EB", bg: "rgba(96,165,250,0.1)"  },
 };
@@ -328,7 +328,7 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function BarberDashboardClient({ barberId: barberSlug }) {
+export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: shopSlugProp }) {
   const router = useRouter();
   const { role, user, logout, loaded: authLoaded } = useAuth();
   const { appointments, updateStatus, refresh } = useAppointments();
@@ -339,6 +339,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
   const [barberData, setBarberData] = useState(null);
   const [tick, setTick]     = useState(0);
   const [mounted, setMounted] = useState(false);
+  const loggingOut = useRef(false);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
@@ -348,11 +349,13 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
 
   // Fetch real barber data from API, poll every 30s, refresh on tab focus
   const fetchBarberData = useCallback(() => {
-    apiFetch("/api/barbers").then(list => {
+    const shopId = user?.shop?.id;
+    if (!shopId) return;
+    apiFetch(`/api/barbers?shopId=${shopId}`).then(list => {
       const found = list.find(b => b.slug === barberSlug);
       if (found) setBarberData(found);
     }).catch(() => {});
-  }, [barberSlug]);
+  }, [barberSlug, user?.shop?.id]);
 
   useEffect(() => {
     fetchBarberData();
@@ -368,9 +371,16 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
 
   useEffect(() => {
     if (!authLoaded) return;
-    if (!role) { router.replace("/barber"); return; }
-    if (role !== "admin" && role !== barberSlug) router.replace(`/barber/${role}`);
-  }, [role, authLoaded, barberSlug, router]);
+    if (!role) {
+      const dest = (user?.shop?.slug ?? shopSlugProp);
+      router.replace(dest ? `/${dest}/barber` : "/");
+      return;
+    }
+    const shopSlug = user?.shop?.slug;
+    if (role !== "admin" && role !== barberSlug && shopSlug) {
+      router.replace(`/${shopSlug}/barber/${role}`);
+    }
+  }, [role, authLoaded, barberSlug, router, user?.shop?.slug]);
 
   // Block render until auth is confirmed
   if (!authLoaded || !role) return null;
@@ -445,12 +455,12 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
         {/* Logo / Barber identity */}
         <div style={{ padding: "20px 20px 16px", borderBottom: `1px solid ${C.border}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "36px", height: "36px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+            <div style={{ width: "36px", height: "36px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
               {barber.avatar}
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: "13px", color: C.primary, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{barber.nameTr ?? barber.name}</div>
-              <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
+              <div style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
             </div>
           </div>
         </div>
@@ -462,11 +472,11 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
             return (
               <button key={id} onClick={() => setView(id)}
                 className="w-full flex items-center gap-3 transition-all"
-                style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "2px", background: active ? `${C.red}15` : "transparent", border: `1px solid ${active ? `${C.red}30` : "transparent"}`, cursor: "pointer", textAlign: "left" }}
+                style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "2px", background: active ? `${C.primary}15` : "transparent", border: `1px solid ${active ? `${C.primary}30` : "transparent"}`, cursor: "pointer", textAlign: "left" }}
                 onMouseEnter={e => { if (!active) e.currentTarget.style.background = C.surface; }}
                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
               >
-                <Icon size={15} style={{ color: active ? C.red : C.muted, flexShrink: 0 }} />
+                <Icon size={15} style={{ color: active ? C.primary : C.muted, flexShrink: 0 }} />
                 <span style={{ fontSize: "13px", color: active ? C.primary : C.secondary, fontWeight: active ? 500 : 400 }}>{label}</span>
               </button>
             );
@@ -476,7 +486,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
         {/* Sidebar footer */}
         <div style={{ padding: "12px 10px", borderTop: `1px solid ${C.border}` }}>
           {role === "admin" && (
-            <button onClick={() => router.push("/admin")}
+            <button onClick={() => router.push(user?.shop?.slug ? `/${user.shop.slug}/admin` : "/admin")}
               className="w-full flex items-center gap-3 transition-all"
               style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "4px", background: "transparent", border: "1px solid transparent", cursor: "pointer" }}
               onMouseEnter={e => { e.currentTarget.style.background = C.surface; }}
@@ -486,7 +496,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
               <span style={{ fontSize: "13px", color: C.secondary }}>Admin Paneli</span>
             </button>
           )}
-          <Link href="/"
+          <Link href={user?.shop?.slug ? `/${user.shop.slug}` : "/"}
             className="w-full flex items-center gap-3 transition-all"
             style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "4px", display: "flex", textDecoration: "none" }}
             onMouseEnter={e => { e.currentTarget.style.background = C.surface; }}
@@ -495,14 +505,14 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
             <ExternalLink size={15} style={{ color: C.muted }} />
             <span style={{ fontSize: "13px", color: C.secondary }}>Siteyi Gör</span>
           </Link>
-          <button onClick={() => { logout(); router.push("/barber"); }}
+          <button onClick={() => { { const s = user?.shop?.slug; loggingOut.current = true; logout(); router.push(s ? `/${s}/barber` : "/superadmin/login"); }; }}
             className="w-full flex items-center gap-3 transition-all"
             style={{ padding: "9px 10px", borderRadius: "8px", background: "transparent", border: "1px solid transparent", cursor: "pointer" }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(248,113,113,0.06)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
           >
-            <LogOut size={15} style={{ color: "#B91C1C" }} />
-            <span style={{ fontSize: "13px", color: "#B91C1C" }}>Çıkış Yap</span>
+            <LogOut size={15} style={{ color: "#111111" }} />
+            <span style={{ fontSize: "13px", color: "#111111" }}>Çıkış Yap</span>
           </button>
         </div>
       </aside>
@@ -528,20 +538,20 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
               </div>
               {/* Identity */}
               <div style={{ padding: "12px 20px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ width: "38px", height: "38px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>{barber.avatar}</div>
+                <div style={{ width: "38px", height: "38px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>{barber.avatar}</div>
                 <div>
                   <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{barber.nameTr ?? barber.name}</div>
-                  <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
+                  <div style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
                 </div>
               </div>
               {/* Actions */}
               <div style={{ padding: "8px 12px" }}>
                 <SheetItem icon={Settings} label="Profil" onClick={() => { setView("profil"); setMoreSheet(false); }} />
                 {role === "admin" && (
-                  <SheetItem icon={ChevronLeft} label="Admin Paneli" onClick={() => router.push("/admin")} />
+                  <SheetItem icon={ChevronLeft} label="Admin Paneli" onClick={() => router.push(user?.shop?.slug ? `/${user.shop.slug}/admin` : "/admin")} />
                 )}
-                <SheetItem icon={ExternalLink} label="Siteyi Gör" onClick={() => window.open("/", "_blank")} />
-                <SheetItem icon={LogOut} label="Çıkış Yap" danger onClick={() => { logout(); router.push("/barber"); }} />
+                <SheetItem icon={ExternalLink} label="Siteyi Gör" onClick={() => window.open(user?.shop?.slug ? `/${user.shop.slug}` : "/", "_blank")} />
+                <SheetItem icon={LogOut} label="Çıkış Yap" danger onClick={() => { { const s = user?.shop?.slug; loggingOut.current = true; logout(); router.push(s ? `/${s}/barber` : "/superadmin/login"); }; }} />
               </div>
             </motion.div>
           </>
@@ -555,13 +565,12 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
         <header className="h-14 flex items-center gap-4 px-4 lg:px-7 sticky top-0 z-20"
           style={{ background: `${C.bg}e8`, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}>
           {/* Barber identity — mobile only, replaces hamburger */}
-          <div className="flex items-center gap-2 lg:hidden">
-            <div style={{ width: "28px", height: "28px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+          <div className="flex items-center gap-2 lg:hidden" style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
+            <div style={{ width: "28px", height: "28px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
               {barber.avatar}
             </div>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: C.primary }}>{barber.nameTr ?? barber.name}</span>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: C.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{barber.nameTr ?? barber.name}</span>
           </div>
-          <div style={{ flex: 1 }} />
           <div style={{ display: "flex", gap: "8px" }}>
             <button onClick={refresh} title="Yenile"
               style={{ background: C.surface, color: C.secondary, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "0 12px", height: "36px", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -569,7 +578,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
             </button>
             <button onClick={() => setShowModal(true)}
               className="flex items-center gap-1.5"
-              style={{ background: C.red, color: "#fff", border: "none", borderRadius: "8px", padding: "0 14px", height: "36px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+              style={{ background: C.primary, color: "#fff", border: "none", borderRadius: "8px", padding: "0 14px", height: "36px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
               <Plus size={14} /> <span className="hidden sm:inline">Randevu Ekle</span><span className="sm:hidden">Ekle</span>
             </button>
           </div>
@@ -586,7 +595,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                 <h1 style={{ fontSize: "clamp(20px, 2.5vw, 26px)", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "4px" }}>
                   {view === "dashboard" ? formatDateLong(today) : formatDateLong(viewing)}
                   {(view === "dashboard" || isViewingToday) && (
-                    <span style={{ marginLeft: "10px", fontSize: "10px", color: C.red, fontWeight: 700, letterSpacing: "0.12em", verticalAlign: "middle", textTransform: "uppercase" }}>Bugün</span>
+                    <span style={{ marginLeft: "10px", fontSize: "10px", color: C.primary, fontWeight: 700, letterSpacing: "0.12em", verticalAlign: "middle", textTransform: "uppercase" }}>Bugün</span>
                   )}
                 </h1>
                 <p style={{ fontSize: "13px", color: C.secondary }}>{String(Math.floor(wh.start/60)).padStart(2,"0")}:{String(wh.start%60).padStart(2,"0")} – {String(Math.floor(wh.end/60)).padStart(2,"0")}:{String(wh.end%60).padStart(2,"0")} · {dayAppts.length} randevu</p>
@@ -660,7 +669,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                         <div style={{ fontSize: "28px", marginBottom: "10px", opacity: 0.2 }}>✂</div>
                         <div style={{ fontSize: "13px", color: C.secondary, marginBottom: "14px" }}>Bu gün için randevu yok</div>
                         <button onClick={() => setShowModal(true)}
-                          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "none", border: `1px solid rgba(198,40,40,0.3)`, borderRadius: "6px", padding: "7px 16px", fontSize: "12px", color: C.red, cursor: "pointer" }}>
+                          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "none", border: `1px solid rgba(17,17,17,0.3)`, borderRadius: "6px", padding: "7px 16px", fontSize: "12px", color: C.primary, cursor: "pointer" }}>
                           <Plus size={12} /> Randevu Ekle
                         </button>
                       </div>
@@ -716,10 +725,10 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                                 <motion.div
                                   initial={{ height: 0 }} animate={{ height: `${h}%` }}
                                   transition={{ delay: i * 0.04, duration: 0.35, ease: "easeOut" }}
-                                  style={{ width: "100%", background: isToday_ ? C.red : d.count > 0 ? "rgba(198,40,40,0.3)" : C.dim, borderRadius: "3px 3px 0 0", minHeight: "3px" }}
+                                  style={{ width: "100%", background: isToday_ ? C.primary : d.count > 0 ? "rgba(17,17,17,0.3)" : C.dim, borderRadius: "3px 3px 0 0", minHeight: "3px" }}
                                 />
                               </div>
-                              <div style={{ fontSize: "8px", color: isToday_ ? C.red : C.muted, fontWeight: isToday_ ? 700 : 400 }}>{dayLabel}</div>
+                              <div style={{ fontSize: "8px", color: isToday_ ? C.primary : C.muted, fontWeight: isToday_ ? 700 : 400 }}>{dayLabel}</div>
                             </div>
                           );
                         })}
@@ -732,7 +741,7 @@ export default function BarberDashboardClient({ barberId: barberSlug }) {
                       {[
                         { label: "Tamamlanan",  value: completed,                      color: C.secondary },
                         { label: "Bugün Kazanç",value: `₺${revenue.toLocaleString()}`, color: C.primary   },
-                        { label: "Gelmedi",     value: noshow,   color: noshow > 0 ? "#B91C1C" : C.muted  },
+                        { label: "Gelmedi",     value: noshow,   color: noshow > 0 ? "#111111" : C.muted  },
                         { label: "Tahmini Müsait Slot", value: freeSlots,                color: C.muted     },
                       ].map((s, i) => (
                         <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: i < 3 ? "10px" : 0 }}>
@@ -842,9 +851,9 @@ function ProfileTab() {
   };
 
   const inputStyle = (hasError) => ({
-    width: "100%", background: C.card, border: `1px solid ${hasError ? "rgba(198,40,40,0.5)" : C.border}`,
+    width: "100%", background: C.card, border: `1px solid ${hasError ? "rgba(17,17,17,0.5)" : C.border}`,
     borderRadius: "10px", padding: "12px 14px", fontSize: "14px", color: C.primary,
-    outline: "none", caretColor: C.red, boxSizing: "border-box",
+    outline: "none", caretColor: C.primary, boxSizing: "border-box",
   });
 
   const uploadPhoto = async (dataUrl) => {
@@ -902,7 +911,7 @@ function ProfileTab() {
                   style={{ objectFit: "cover", objectPosition: "center center" }}
                 />
               ) : (
-                <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: 700, color: "#fff" }}>
+                <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${C.primary}, #111111)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: 700, color: "#fff" }}>
                   {user?.barber?.avatar ?? "A"}
                 </div>
               )}
@@ -921,7 +930,7 @@ function ProfileTab() {
               style={{
                 position: "absolute", bottom: 0, right: 0,
                 width: 28, height: 28, borderRadius: "50%",
-                background: C.red, border: "2px solid #fff",
+                background: C.primary, border: "2px solid #fff",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 cursor: "pointer",
               }}
@@ -935,7 +944,7 @@ function ProfileTab() {
             <div style={{ fontSize: "17px", fontWeight: 700, color: C.primary, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: "3px" }}>
               {user?.displayName ?? user?.barber?.nameTr ?? "Profil"}
             </div>
-            <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
+            <div style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
               {user?.barber?.titleTr ?? "Berber"}
             </div>
             <div style={{ fontSize: "12px", color: C.muted }}>
@@ -966,7 +975,7 @@ function ProfileTab() {
             sizes="40px"
             style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
         ) : (
-          <div style={{ width: "40px", height: "40px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+          <div style={{ width: "40px", height: "40px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
             {user?.barber?.avatar ?? "A"}
           </div>
         )}
@@ -992,7 +1001,7 @@ function ProfileTab() {
                 value={username}
                 onChange={e => setUsername(e.target.value.toLowerCase())}
                 style={{ ...inputStyle(false), paddingLeft: "34px" }}
-                onFocus={e => { e.target.style.borderColor = `${C.red}60`; }}
+                onFocus={e => { e.target.style.borderColor = `${C.primary}60`; }}
                 onBlur={e => { e.target.style.borderColor = C.border; }}
               />
             </div>
@@ -1007,13 +1016,13 @@ function ProfileTab() {
               value={displayName}
               onChange={e => setDisplayName(e.target.value)}
               style={inputStyle(false)}
-              onFocus={e => { e.target.style.borderColor = `${C.red}60`; }}
+              onFocus={e => { e.target.style.borderColor = `${C.primary}60`; }}
               onBlur={e => { e.target.style.borderColor = C.border; }}
             />
           </div>
 
           {profileMsg && (
-            <div style={{ background: profileMsg.ok ? "rgba(34,197,94,0.08)" : "rgba(198,40,40,0.08)", border: `1px solid ${profileMsg.ok ? "rgba(34,197,94,0.25)" : "rgba(198,40,40,0.25)"}`, borderRadius: "8px", padding: "9px 13px", marginBottom: "14px", fontSize: "12px", color: profileMsg.ok ? "#15803D" : C.red }}>
+            <div style={{ background: profileMsg.ok ? "rgba(34,197,94,0.08)" : "rgba(17,17,17,0.08)", border: `1px solid ${profileMsg.ok ? "rgba(34,197,94,0.25)" : "rgba(17,17,17,0.25)"}`, borderRadius: "8px", padding: "9px 13px", marginBottom: "14px", fontSize: "12px", color: profileMsg.ok ? "#15803D" : C.primary }}>
               {profileMsg.text}
             </div>
           )}
@@ -1021,7 +1030,7 @@ function ProfileTab() {
           <button
             type="submit"
             disabled={profileSaving}
-            style={{ display: "flex", alignItems: "center", gap: "6px", background: C.red, color: "#fff", border: "none", borderRadius: "9px", padding: "11px 20px", fontSize: "13px", fontWeight: 600, cursor: profileSaving ? "not-allowed" : "pointer", opacity: profileSaving ? 0.7 : 1 }}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "9px", padding: "11px 20px", fontSize: "13px", fontWeight: 600, cursor: profileSaving ? "not-allowed" : "pointer", opacity: profileSaving ? 0.7 : 1 }}
           >
             {profileSaving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}
             Kaydet
@@ -1046,7 +1055,7 @@ function ProfileTab() {
                   value={val}
                   onChange={e => set(e.target.value)}
                   style={{ ...inputStyle(false), paddingRight: "44px" }}
-                  onFocus={e => { e.target.style.borderColor = `${C.red}60`; }}
+                  onFocus={e => { e.target.style.borderColor = `${C.primary}60`; }}
                   onBlur={e => { e.target.style.borderColor = C.border; }}
                 />
                 {i === 0 && (
@@ -1063,7 +1072,7 @@ function ProfileTab() {
           ))}
 
           {pwdMsg && (
-            <div style={{ background: pwdMsg.ok ? "rgba(34,197,94,0.08)" : "rgba(198,40,40,0.08)", border: `1px solid ${pwdMsg.ok ? "rgba(34,197,94,0.25)" : "rgba(198,40,40,0.25)"}`, borderRadius: "8px", padding: "9px 13px", marginBottom: "14px", fontSize: "12px", color: pwdMsg.ok ? "#15803D" : C.red }}>
+            <div style={{ background: pwdMsg.ok ? "rgba(34,197,94,0.08)" : "rgba(17,17,17,0.08)", border: `1px solid ${pwdMsg.ok ? "rgba(34,197,94,0.25)" : "rgba(17,17,17,0.25)"}`, borderRadius: "8px", padding: "9px 13px", marginBottom: "14px", fontSize: "12px", color: pwdMsg.ok ? "#15803D" : C.primary }}>
               {pwdMsg.text}
             </div>
           )}
@@ -1071,7 +1080,7 @@ function ProfileTab() {
           <button
             type="submit"
             disabled={pwdSaving || !curPwd || !newPwd || !confPwd}
-            style={{ display: "flex", alignItems: "center", gap: "6px", background: C.red, color: "#fff", border: "none", borderRadius: "9px", padding: "11px 20px", fontSize: "13px", fontWeight: 600, cursor: (pwdSaving || !curPwd || !newPwd || !confPwd) ? "not-allowed" : "pointer", opacity: (pwdSaving || !curPwd || !newPwd || !confPwd) ? 0.5 : 1 }}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "9px", padding: "11px 20px", fontSize: "13px", fontWeight: 600, cursor: (pwdSaving || !curPwd || !newPwd || !confPwd) ? "not-allowed" : "pointer", opacity: (pwdSaving || !curPwd || !newPwd || !confPwd) ? 0.5 : 1 }}
           >
             {pwdSaving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}
             Şifreyi Değiştir
@@ -1117,7 +1126,7 @@ function BarberReviewsTab() {
             </div>
             <div style={{ display: "flex", gap: 3, margin: "6px 0 4px" }}>
               {[1,2,3,4,5].map(n => (
-                <Star key={n} size={14} fill={n <= Math.round(stats?.avgRating ?? 0) ? C.red : "none"} style={{ color: n <= Math.round(stats?.avgRating ?? 0) ? C.red : C.dim }} />
+                <Star key={n} size={14} fill={n <= Math.round(stats?.avgRating ?? 0) ? C.primary : "none"} style={{ color: n <= Math.round(stats?.avgRating ?? 0) ? C.primary : C.dim }} />
               ))}
             </div>
             <p style={{ fontSize: 12, color: C.muted }}>{stats?.totalCount ?? 0} değerlendirme</p>
@@ -1128,9 +1137,9 @@ function BarberReviewsTab() {
               return (
                 <div key={stars} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontSize: 10, color: C.muted, width: 14, textAlign: "right" }}>{stars}</span>
-                  <Star size={9} fill={C.red} style={{ color: C.red }} />
+                  <Star size={9} fill={C.primary} style={{ color: C.primary }} />
                   <div style={{ flex: 1, height: 5, background: C.surface, borderRadius: 3 }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: C.red, borderRadius: 3 }} />
+                    <div style={{ height: "100%", width: `${pct}%`, background: C.primary, borderRadius: 3 }} />
                   </div>
                   <span style={{ fontSize: 9, color: C.muted, width: 16 }}>{count}</span>
                 </div>
@@ -1156,7 +1165,7 @@ function BarberReviewsTab() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                 <div style={{ display: "flex", gap: 2 }}>
                   {[1,2,3,4,5].map(n => (
-                    <Star key={n} size={11} fill={n <= (r.rating ?? 0) ? C.red : "none"} style={{ color: n <= (r.rating ?? 0) ? C.red : C.dim }} />
+                    <Star key={n} size={11} fill={n <= (r.rating ?? 0) ? C.primary : "none"} style={{ color: n <= (r.rating ?? 0) ? C.primary : C.dim }} />
                   ))}
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 500, color: C.primary }}>{r.customerName}</span>
@@ -1263,7 +1272,7 @@ function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogou
             <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 20px 16px", borderBottom: `1px solid ${C.border}` }}>
               <div style={{
                 width: "44px", height: "44px", flexShrink: 0,
-                background: `linear-gradient(135deg, ${C.red}, #9a1212)`,
+                background: `linear-gradient(135deg, ${C.primary}, #111111)`,
                 borderRadius: "12px", display: "flex", alignItems: "center",
                 justifyContent: "center", fontSize: "16px", fontWeight: 700, color: "#fff",
               }}>
@@ -1271,7 +1280,7 @@ function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogou
               </div>
               <div>
                 <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{barber?.nameTr ?? barber?.name}</div>
-                <div style={{ fontSize: "10px", color: C.red, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: "2px" }}>{barber?.titleTr ?? barber?.title?.tr}</div>
+                <div style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: "2px" }}>{barber?.titleTr ?? barber?.title?.tr}</div>
               </div>
             </div>
 
@@ -1308,10 +1317,10 @@ function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogou
                 onMouseLeave={e => e.currentTarget.style.background = "none"}
               >
                 <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <LogOut size={16} style={{ color: "#B91C1C" }} />
+                  <LogOut size={16} style={{ color: "#111111" }} />
                 </div>
                 <div style={{ textAlign: "left" }}>
-                  <div style={{ fontSize: "13px", color: "#B91C1C", fontWeight: 500 }}>Çıkış Yap</div>
+                  <div style={{ fontSize: "13px", color: "#111111", fontWeight: 500 }}>Çıkış Yap</div>
                   <div style={{ fontSize: "11px", color: C.muted, marginTop: "1px" }}>Oturumu kapat</div>
                 </div>
               </button>
@@ -1357,12 +1366,12 @@ function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogou
                 {active && (
                   <motion.div
                     layoutId="barber-nav-pill"
-                    style={{ position: "absolute", inset: "-6px -10px", background: `${C.red}18`, borderRadius: "10px" }}
+                    style={{ position: "absolute", inset: "-6px -10px", background: `${C.primary}18`, borderRadius: "10px" }}
                     transition={{ type: "spring", damping: 28, stiffness: 380 }}
                   />
                 )}
                 <motion.div animate={{ rotate: isMore && moreOpen ? 90 : 0 }} transition={{ duration: 0.2 }} style={{ position: "relative", zIndex: 1, display: "flex" }}>
-                  <Icon size={20} style={{ color: active ? C.red : C.muted, transition: "color 0.15s" }} />
+                  <Icon size={20} style={{ color: active ? C.primary : C.muted, transition: "color 0.15s" }} />
                 </motion.div>
               </div>
               <span style={{ fontSize: "9px", color: active ? C.primary : C.muted, fontWeight: active ? 600 : 400, letterSpacing: "0.02em", transition: "color 0.15s" }}>
@@ -1399,7 +1408,7 @@ export function BarberAppointmentsList({ barberId, appointments, onAction, onNew
         <div style={{ fontSize: "13px", color: C.secondary, marginBottom: "16px" }}>Yaklaşan randevu yok</div>
         <button
           onClick={onNewBooking}
-          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: C.red, border: "none", borderRadius: "8px", padding: "10px 18px", fontSize: "13px", color: "#fff", cursor: "pointer", fontWeight: 600 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: C.primary, border: "none", borderRadius: "8px", padding: "10px 18px", fontSize: "13px", color: "#fff", cursor: "pointer", fontWeight: 600 }}
         >
           <Plus size={14} /> Randevu Ekle
         </button>
@@ -1419,7 +1428,7 @@ export function BarberAppointmentsList({ barberId, appointments, onAction, onNew
           const label = dateStr === today ? "Bugün" : new Date(dateStr + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" });
           return (
             <div key={dateStr}>
-              <div style={{ fontSize: "11px", color: dateStr === today ? C.red : C.secondary, fontWeight: 600, letterSpacing: "0.05em", marginBottom: "8px", textTransform: dateStr === today ? "uppercase" : "none" }}>
+              <div style={{ fontSize: "11px", color: dateStr === today ? C.primary : C.secondary, fontWeight: 600, letterSpacing: "0.05em", marginBottom: "8px", textTransform: dateStr === today ? "uppercase" : "none" }}>
                 {label}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -1481,11 +1490,11 @@ function BarberFAB({ onNewBooking }) {
         bottom: "calc(76px + env(safe-area-inset-bottom))",
         right: "16px",
         width: "56px", height: "56px",
-        background: `linear-gradient(135deg, ${C.red} 0%, #9a1212 100%)`,
+        background: `linear-gradient(135deg, ${C.primary} 0%, #111111 100%)`,
         border: "none", borderRadius: "18px",
         display: "flex", alignItems: "center", justifyContent: "center",
         cursor: "pointer",
-        boxShadow: "0 4px 24px rgba(198,40,40,0.35), 0 2px 8px rgba(17,17,17,0.15)",
+        boxShadow: "0 4px 24px rgba(17,17,17,0.35), 0 2px 8px rgba(17,17,17,0.15)",
         zIndex: 35,
       }}
       aria-label="Yeni randevu ekle"
@@ -1538,7 +1547,7 @@ export function BarberCustomersView({ barberId, appointments, onNewBooking }) {
             placeholder="İsim veya telefon ara…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: "13px", color: C.primary, caretColor: C.red }}
+            style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: "13px", color: C.primary, caretColor: C.primary }}
           />
           {search && (
             <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex" }}>
@@ -1669,10 +1678,10 @@ function BottomNav({ view, setView, moreSheet, setMoreSheet }) {
             >
               <Icon
                 size={20}
-                style={{ color: active ? C.red : C.muted, transition: "color 0.15s" }}
+                style={{ color: active ? C.primary : C.muted, transition: "color 0.15s" }}
                 strokeWidth={active ? 2.2 : 1.8}
               />
-              <span style={{ fontSize: "9px", color: active ? C.red : C.muted, fontWeight: active ? 600 : 400, letterSpacing: "0.01em", transition: "color 0.15s" }}>
+              <span style={{ fontSize: "9px", color: active ? C.primary : C.muted, fontWeight: active ? 600 : 400, letterSpacing: "0.01em", transition: "color 0.15s" }}>
                 {label}
               </span>
             </button>
@@ -1692,8 +1701,8 @@ function SheetItem({ icon: Icon, label, onClick, danger }) {
       onTouchStart={(e) => { e.currentTarget.style.background = C.surface; }}
       onTouchEnd={(e) => { e.currentTarget.style.background = "none"; }}
     >
-      <Icon size={17} style={{ color: danger ? "#B91C1C" : C.secondary, flexShrink: 0 }} />
-      <span style={{ fontSize: "15px", color: danger ? "#B91C1C" : C.primary }}>{label}</span>
+      <Icon size={17} style={{ color: danger ? "#111111" : C.secondary, flexShrink: 0 }} />
+      <span style={{ fontSize: "15px", color: danger ? "#111111" : C.primary }}>{label}</span>
     </button>
   );
 }

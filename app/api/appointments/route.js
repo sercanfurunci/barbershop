@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
-import { getDefaultShopId } from "@/lib/shop";
 import { queueNotifications } from "@/lib/notifications";
 import { todayStr } from "@/lib/utils";
 
@@ -103,10 +102,10 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, phone: rawPhone, email, serviceId, barberId, date, time, notes, source } = body;
+    const { name, phone: rawPhone, email, serviceId, barberId, date, time, notes, source, shopId } = body;
 
     // ── Field presence ───────────────────────────────────────────────────────
-    if (!name || !rawPhone || !serviceId || !barberId || !date || !time) {
+    if (!shopId || !name || !rawPhone || !serviceId || !barberId || !date || !time) {
       return NextResponse.json({ error: "Eksik alanlar var" }, { status: 400 });
     }
 
@@ -142,8 +141,6 @@ export async function POST(request) {
     if (!/^\d{2}:\d{2}$/.test(time)) {
       return NextResponse.json({ error: "Geçersiz saat formatı." }, { status: 400 });
     }
-
-    const shopId = await getDefaultShopId();
 
     // Fetch service, barber, existing client, and slot conflicts in parallel.
     const [service, barber, existingClient, slotConflicts] = await Promise.all([
@@ -223,6 +220,7 @@ export async function POST(request) {
         source:    source ?? "ONLINE",
         notes:     notes?.trim() ?? null,
       },
+      include: { shop: { select: { name: true, address: true, phone: true } } },
     });
 
     // Queue notifications (non-blocking — don't let this fail the response)

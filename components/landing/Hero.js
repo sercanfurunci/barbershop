@@ -5,19 +5,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
+import { useShop } from "@/contexts/ShopContext";
 import { Star, ChevronRight, Clock, Check } from "lucide-react";
 
 const C = {
-  bg:       "#F6F3EE",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
+  surface:  "#EFEAE2",
   card:     "#FFFFFF",
-  surface:  "#F0EBE2",
-  border:   "#E5DFD6",
+  border:   "#E5DED3",
   borderHi: "#D4CECC",
   primary:  "#111111",
-  secondary:"#44403C",
-  muted:    "#6B7280",
-  dim:      "#D4CECC",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 function StatusCard({ lang, barbers }) {
@@ -60,7 +61,7 @@ function StatusCard({ lang, barbers }) {
           {displayBarbers.slice(0, 4).map((b, i) => (
             <div key={b.id} style={{
               width: "22px", height: "22px", borderRadius: "50%",
-              background: `linear-gradient(135deg, ${C.red}, #7f1d1d)`,
+              background: `linear-gradient(135deg, ${C.primary}, #7f1d1d)`,
               border: `2px solid ${C.card}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "7px", fontWeight: 700, color: "#fff",
@@ -80,6 +81,8 @@ function StatusCard({ lang, barbers }) {
 }
 
 function BookingWidget({ lang, services, barbers }) {
+  const shop = useShop();
+  const bookBase = shop?.slug ? `/${shop.slug}/book` : "/book";
   const [selectedService, setSelectedService] = useState(null);
   const [selectedBarber, setSelectedBarber]   = useState(null);
   const [selectedDate, setSelectedDate]       = useState(null);
@@ -119,7 +122,7 @@ function BookingWidget({ lang, services, barbers }) {
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{
             width: "22px", height: "22px",
-            background: C.red, borderRadius: "5px",
+            background: C.primary, borderRadius: "5px",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <span style={{ fontWeight: 800, color: "#fff", fontSize: "10px" }}>A</span>
@@ -140,7 +143,7 @@ function BookingWidget({ lang, services, barbers }) {
           <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "10px" }}>
             <div style={{
               width: "16px", height: "16px", borderRadius: "50%", flexShrink: 0,
-              background: selectedService ? C.red : C.dim,
+              background: selectedService ? C.primary : C.dim,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "9px", fontWeight: 700, color: "#fff",
             }}>
@@ -160,9 +163,9 @@ function BookingWidget({ lang, services, barbers }) {
                 style={{
                   padding: "6px 12px", borderRadius: "6px",
                   fontSize: "11px", fontWeight: 500, cursor: "pointer",
-                  border: `1px solid ${selectedService === svc.id ? C.red : C.border}`,
-                  background: selectedService === svc.id ? `rgba(198,40,40,0.08)` : "transparent",
-                  color: selectedService === svc.id ? C.red : C.secondary,
+                  border: `1px solid ${selectedService === svc.id ? C.primary : C.border}`,
+                  background: selectedService === svc.id ? `rgba(17,17,17,0.08)` : "transparent",
+                  color: selectedService === svc.id ? C.primary : C.secondary,
                   transition: "all 0.15s",
                 }}>
                 {svc.name[lang]}
@@ -178,7 +181,7 @@ function BookingWidget({ lang, services, barbers }) {
           <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "10px" }}>
             <div style={{
               width: "16px", height: "16px", borderRadius: "50%", flexShrink: 0,
-              background: selectedBarber ? C.red : C.dim,
+              background: selectedBarber ? C.primary : C.dim,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "9px", fontWeight: 700, color: "#fff",
             }}>
@@ -202,14 +205,14 @@ function BookingWidget({ lang, services, barbers }) {
                     sizes="38px"
                     style={{
                       borderRadius: "9px", objectFit: "cover",
-                      border: `2px solid ${selectedBarber === b.id ? C.red : C.border}`,
+                      border: `2px solid ${selectedBarber === b.id ? C.primary : C.border}`,
                       transition: "all 0.15s",
                     }} />
                 ) : (
                   <div style={{
                     width: "38px", height: "38px", borderRadius: "9px",
-                    background: selectedBarber === b.id ? C.red : C.surface,
-                    border: `2px solid ${selectedBarber === b.id ? C.red : C.border}`,
+                    background: selectedBarber === b.id ? C.primary : C.surface,
+                    border: `2px solid ${selectedBarber === b.id ? C.primary : C.border}`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: "10px", fontWeight: 700,
                     color: selectedBarber === b.id ? "#fff" : C.secondary,
@@ -218,7 +221,7 @@ function BookingWidget({ lang, services, barbers }) {
                     {b.avatar}
                   </div>
                 )}
-                <span style={{ fontSize: "9px", color: selectedBarber === b.id ? C.red : C.muted, letterSpacing: "0.02em" }}>
+                <span style={{ fontSize: "9px", color: selectedBarber === b.id ? C.primary : C.muted, letterSpacing: "0.02em" }}>
                   {(b.name || "").split(" ")[0]}
                 </span>
               </button>
@@ -233,7 +236,7 @@ function BookingWidget({ lang, services, barbers }) {
           <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "10px" }}>
             <div style={{
               width: "16px", height: "16px", borderRadius: "50%", flexShrink: 0,
-              background: C.red,
+              background: C.primary,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "9px", fontWeight: 700, color: "#fff",
             }}>
@@ -247,10 +250,10 @@ function BookingWidget({ lang, services, barbers }) {
             {dateLabels.map((label, i) => (
               <button key={label} onClick={() => setSelectedDate(selectedDate === i ? null : i)} style={{
                 padding: "10px 0", textAlign: "center", borderRadius: "7px", cursor: "pointer",
-                background: selectedDate === i ? `rgba(198,40,40,0.08)` : C.surface,
-                border: `1px solid ${selectedDate === i ? `rgba(198,40,40,0.35)` : C.border}`,
+                background: selectedDate === i ? `rgba(17,17,17,0.08)` : C.surface,
+                border: `1px solid ${selectedDate === i ? `rgba(17,17,17,0.35)` : C.border}`,
                 fontSize: "11px", fontWeight: selectedDate === i ? 600 : 400,
-                color: selectedDate === i ? C.red : C.secondary,
+                color: selectedDate === i ? C.primary : C.secondary,
                 transition: "all 0.15s",
               }}>
                 {label}
@@ -260,21 +263,21 @@ function BookingWidget({ lang, services, barbers }) {
         </div>
 
         {/* CTA */}
-        <Link href={`/book?${new URLSearchParams({
+        <Link href={`${bookBase}?${new URLSearchParams({
           ...(selectedService               ? { service: selectedService }      : {}),
           ...(selectedBarber                ? { barber:  selectedBarber  }      : {}),
           ...(selectedDate !== null         ? { date:    String(selectedDate) } : {}),
         }).toString()}`} style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-          background: C.red, color: "#fff",
+          background: C.primary, color: "#fff",
           padding: "15px 24px", borderRadius: "9px",
           fontSize: "14px", fontWeight: 700, letterSpacing: "0.03em",
           textDecoration: "none",
-          boxShadow: "0 6px 20px rgba(198,40,40,0.28)",
+          boxShadow: "0 6px 20px rgba(17,17,17,0.28)",
           transition: "all 0.2s",
         }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#B91C1C"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(198,40,40,0.38)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = C.red; e.currentTarget.style.boxShadow = "0 6px 20px rgba(198,40,40,0.28)"; }}
+          onMouseEnter={e => { e.currentTarget.style.background = "#111111"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(17,17,17,0.38)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = C.primary; e.currentTarget.style.boxShadow = "0 6px 20px rgba(17,17,17,0.28)"; }}
         >
           {lang === "tr" ? "Randevu Al" : "Book Now"}
           <ChevronRight size={15} />
@@ -292,6 +295,8 @@ function BookingWidget({ lang, services, barbers }) {
 
 export default function Hero({ services = [], barbers = [] }) {
   const { lang } = useLang();
+  const shop = useShop();
+  const bookBase = shop?.slug ? `/${shop.slug}/book` : "/book";
 
   return (
     <section className="relative min-h-screen flex flex-col" style={{ background: C.bg }}>
@@ -317,13 +322,13 @@ export default function Hero({ services = [], barbers = [] }) {
               {/* Stars + location */}
               <div className="hero-badge flex items-center gap-3 mb-8" style={{ flexWrap: "wrap" }}>
                 <div className="flex items-center gap-0.5">
-                  {[1,2,3,4,5].map(i => <Star key={i} size={10} fill={C.red} style={{ color: C.red }} />)}
+                  {[1,2,3,4,5].map(i => <Star key={i} size={10} fill={C.primary} style={{ color: C.primary }} />)}
                 </div>
                 <span style={{ fontSize: "11px", color: C.secondary }}>
                   4.9 · 176 {lang === "tr" ? "değerlendirme" : "reviews"}
                 </span>
                 <span style={{ width: "1px", height: "12px", background: C.border, flexShrink: 0 }} />
-                <span style={{ fontSize: "10px", color: C.red, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>
+                <span style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>
                   {lang === "tr" ? "Darıca · Premium Berber" : "Darıca · Premium Barber"}
                 </span>
               </div>
@@ -339,7 +344,7 @@ export default function Hero({ services = [], barbers = [] }) {
                 <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 88px)", color: C.primary, lineHeight: 1.0, fontStyle: "italic" }}>
                   {lang === "tr" ? "sizi" : "await"}
                 </span>
-                <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 88px)", color: C.red, lineHeight: 1.0, paddingBottom: "0.18em" }}>
+                <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 88px)", color: C.primary, lineHeight: 1.0, paddingBottom: "0.18em" }}>
                   {lang === "tr" ? "bekliyor." : "you."}
                 </span>
               </h1>
@@ -353,22 +358,22 @@ export default function Hero({ services = [], barbers = [] }) {
                 marginBottom: "32px",
               }}>
                 {lang === "tr"
-                  ? "Abdurrahman Çelik Exclusive Salon'da premium saç ve sakal bakımı. Online randevu alın, bekleme yok."
-                  : "Premium haircuts and grooming at Abdurrahman Çelik Exclusive Salon. Book online, no waiting."}
+                  ? `${shop?.name ?? "Salonumuzda"} premium saç ve sakal bakımı. Online randevu alın, bekleme yok.`
+                  : `Premium haircuts and grooming at ${shop?.name ?? "our salon"}. Book online, no waiting.`}
               </p>
 
               {/* Desktop CTAs */}
               <div className="hero-ctas hidden sm:flex flex-row gap-3 mb-10">
-                <Link href="/book" style={{
+                <Link href={bookBase} style={{
                   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                  background: C.red, color: "#fff",
+                  background: C.primary, color: "#fff",
                   padding: "13px 28px", borderRadius: "8px",
                   fontSize: "14px", fontWeight: 600, letterSpacing: "0.02em",
                   textDecoration: "none", transition: "background 0.15s",
                   whiteSpace: "nowrap",
                 }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#B91C1C"}
-                  onMouseLeave={e => e.currentTarget.style.background = C.red}
+                  onMouseEnter={e => e.currentTarget.style.background = "#111111"}
+                  onMouseLeave={e => e.currentTarget.style.background = C.primary}
                 >
                   {lang === "tr" ? "Randevu Al" : "Book Now"}
                   <ChevronRight size={14} />
@@ -409,7 +414,7 @@ export default function Hero({ services = [], barbers = [] }) {
                   <span className="font-display font-light" style={{
                     fontSize: "26px", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1,
                   }}>
-                    <span style={{ color: C.red, fontSize: "15px", marginRight: "3px" }}>★</span>4.9
+                    <span style={{ color: C.primary, fontSize: "15px", marginRight: "3px" }}>★</span>4.9
                   </span>
                   <span style={{ fontSize: "12px", color: C.muted }}>
                     {lang === "tr" ? "· 176 yorum" : "· 176 reviews"}

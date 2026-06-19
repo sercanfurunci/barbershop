@@ -9,14 +9,15 @@ import {
 import { apiFetch } from "@/lib/api";
 
 const C = {
-  bg:      "#F8F6F2",
+  bg:      "#F7F4EE",
+  bgSoft:  "#FDFBF7",
   card:    "#FFFFFF",
-  border:  "rgba(17,17,17,0.08)",
-  surface: "#F1EEE8",
+  border:  "#E5DED3",
+  surface: "#EFEAE2",
   primary: "#111111",
-  secondary:"#57514B",
-  muted:   "#6E6760",
-  red:     "#C62828",
+  secondary:"#4A4A4A",
+  muted:   "#8A8480",
+  dim:     "#C5BEB5",
 };
 
 const CATEGORY_OPTIONS = [
@@ -29,7 +30,7 @@ const CATEGORY_OPTIONS = [
 const CATEGORY_COLORS = {
   CUTS:    "#2563EB",
   BEARD:   "#B45309",
-  COMBO:   "#B91C1C",
+  COMBO:   "#111111",
   PREMIUM: "#6D28D9",
 };
 
@@ -140,7 +141,7 @@ function ServiceModal({ service, onClose, onSaved }) {
         >
           <div style={{ padding: "20px 24px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
-              <div style={{ fontSize: "11px", color: C.red, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 500, marginBottom: "3px" }}>
+              <div style={{ fontSize: "11px", color: C.primary, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 500, marginBottom: "3px" }}>
                 {isEdit ? "Hizmeti Düzenle" : "Yeni Hizmet"}
               </div>
               <h2 style={{ fontSize: "18px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>
@@ -205,7 +206,7 @@ function ServiceModal({ service, onClose, onSaved }) {
             </div>
 
             {error && (
-              <div style={{ fontSize: "12px", color: C.red, padding: "8px 12px", background: "rgba(198,40,40,0.08)", borderRadius: "6px", border: "1px solid rgba(198,40,40,0.2)" }}>
+              <div style={{ fontSize: "12px", color: C.primary, padding: "8px 12px", background: "rgba(17,17,17,0.08)", borderRadius: "6px", border: "1px solid rgba(17,17,17,0.2)" }}>
                 {error}
               </div>
             )}
@@ -213,7 +214,7 @@ function ServiceModal({ service, onClose, onSaved }) {
             <button
               type="submit"
               disabled={saving}
-              style={{ width: "100%", height: "44px", background: C.red, color: "#fff", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, letterSpacing: "0.03em" }}
+              style={{ width: "100%", height: "44px", background: C.primary, color: "#fff", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, letterSpacing: "0.03em" }}
             >
               {saving ? "Kaydediliyor..." : isEdit ? "Değişiklikleri Kaydet" : "Hizmet Ekle"}
             </button>
@@ -250,8 +251,8 @@ function DeleteModal({ service, onClose, onDeleted }) {
           transition={{ duration: 0.2 }}
           style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", width: "100%", maxWidth: "360px", padding: "28px 24px", textAlign: "center" }}
         >
-          <div style={{ width: "48px", height: "48px", background: "rgba(198,40,40,0.1)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <AlertTriangle size={22} color={C.red} />
+          <div style={{ width: "48px", height: "48px", background: "rgba(17,17,17,0.1)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <AlertTriangle size={22} color={C.primary} />
           </div>
           <div style={{ fontSize: "16px", color: C.primary, fontWeight: 500, marginBottom: "8px" }}>Hizmeti Sil</div>
           <div style={{ fontSize: "13px", color: C.secondary, marginBottom: "24px" }}>
@@ -261,7 +262,7 @@ function DeleteModal({ service, onClose, onDeleted }) {
             <button onClick={onClose} style={{ flex: 1, height: "40px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "13px", color: C.secondary, cursor: "pointer" }}>
               İptal
             </button>
-            <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, height: "40px", background: C.red, border: "none", borderRadius: "8px", fontSize: "13px", color: "#fff", fontWeight: 600, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}>
+            <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, height: "40px", background: C.primary, border: "none", borderRadius: "8px", fontSize: "13px", color: "#fff", fontWeight: 600, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}>
               {deleting ? "Siliniyor..." : "Sil"}
             </button>
           </div>
@@ -294,7 +295,7 @@ function ServiceMenu({ service, onEdit, onToggle, onDelete }) {
               {[
                 { label: "Düzenle",              icon: Pencil,      action: onEdit,   color: C.secondary },
                 { label: service.active ? "Pasif Yap" : "Aktif Yap", icon: service.active ? ToggleLeft : ToggleRight, action: onToggle, color: C.secondary },
-                { label: "Hizmeti Sil",          icon: Trash2,      action: onDelete, color: C.red },
+                { label: "Hizmeti Sil",          icon: Trash2,      action: onDelete, color: C.primary },
               ].map(item => (
                 <button key={item.label} onClick={() => { setOpen(false); item.action(); }}
                   style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "8px 10px", background: "none", border: "none", borderRadius: "7px", cursor: "pointer", fontSize: "13px", color: item.color, textAlign: "left" }}
@@ -362,7 +363,7 @@ export default function ServicesManagement() {
         </div>
         <button
           onClick={() => setCreateOpen(true)}
-          style={{ display: "flex", alignItems: "center", gap: "6px", height: "36px", padding: "0 14px", background: C.red, color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 500, cursor: "pointer", flexShrink: 0 }}
+          style={{ display: "flex", alignItems: "center", gap: "6px", height: "36px", padding: "0 14px", background: C.primary, color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 500, cursor: "pointer", flexShrink: 0 }}
         >
           <Plus size={14} />
           Hizmet Ekle
@@ -429,7 +430,7 @@ export default function ServicesManagement() {
                       <span style={{ fontSize: "18px" }}>{s.icon}</span>
                       <div>
                         <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{s.nameTr}</div>
-                        {s.popular && <span style={{ fontSize: "9px", color: C.red, letterSpacing: "0.06em", fontWeight: 600 }}>POPÜLER</span>}
+                        {s.popular && <span style={{ fontSize: "9px", color: C.primary, letterSpacing: "0.06em", fontWeight: 600 }}>POPÜLER</span>}
                       </div>
                     </div>
                   </td>
@@ -475,7 +476,7 @@ export default function ServicesManagement() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
                   <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{s.nameTr}</div>
-                  {s.popular && <span style={{ fontSize: "8px", color: C.red, letterSpacing: "0.06em", fontWeight: 600 }}>POPÜLER</span>}
+                  {s.popular && <span style={{ fontSize: "8px", color: C.primary, letterSpacing: "0.06em", fontWeight: 600 }}>POPÜLER</span>}
                   {!s.active && <span style={{ fontSize: "8px", color: C.muted, letterSpacing: "0.06em" }}>PASİF</span>}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

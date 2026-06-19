@@ -11,7 +11,6 @@ const C = {
   primary:  "#111111",
   secondary:"#44403C",
   muted:    "#6B7280",
-  red:      "#C62828",
 };
 
 function BarberAvatar({ barber, size = 80 }) {
@@ -31,7 +30,7 @@ function BarberAvatar({ barber, size = 80 }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%", flexShrink: 0,
-      background: `linear-gradient(135deg, ${C.red}, #7f1d1d)`,
+      background: `linear-gradient(135deg, ${C.primary}, #7f1d1d)`,
       display: "flex", alignItems: "center", justifyContent: "center",
       fontSize: size * 0.28, fontWeight: 700, color: "#fff",
       letterSpacing: "0.04em",
@@ -99,7 +98,7 @@ export default function ReviewPage() {
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: `3px solid ${C.border}`, borderTopColor: C.red, animation: "spin 0.8s linear infinite" }} />
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: `3px solid ${C.border}`, borderTopColor: C.primary, animation: "spin 0.8s linear infinite" }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -120,7 +119,7 @@ export default function ReviewPage() {
       <div style={{ marginBottom: "32px", textAlign: "center" }}>
         <div style={{
           display: "inline-flex", alignItems: "center", justifyContent: "center",
-          width: 40, height: 40, background: C.red, borderRadius: "10px",
+          width: 40, height: 40, background: C.primary, borderRadius: "10px",
           fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 12,
         }}>A</div>
         <p style={{ fontSize: 12, color: C.muted, letterSpacing: "0.06em" }}>
@@ -182,8 +181,8 @@ export default function ReviewPage() {
                     >
                       <Star
                         size={40}
-                        fill={n <= (hovered || rating) ? C.red : "none"}
-                        style={{ color: n <= (hovered || rating) ? C.red : C.border }}
+                        fill={n <= (hovered || rating) ? C.primary : "none"}
+                        style={{ color: n <= (hovered || rating) ? C.primary : C.border }}
                       />
                     </button>
                   ))}
@@ -199,7 +198,7 @@ export default function ReviewPage() {
               <>
                 <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 20 }}>
                   {[1, 2, 3, 4, 5].map(n => (
-                    <Star key={n} size={28} fill={n <= rating ? C.red : "none"} style={{ color: n <= rating ? C.red : C.border }} />
+                    <Star key={n} size={28} fill={n <= rating ? C.primary : "none"} style={{ color: n <= rating ? C.primary : C.border }} />
                   ))}
                 </div>
                 <p style={{ fontSize: 16, fontWeight: 600, color: C.primary, textAlign: "center", marginBottom: 8 }}>
@@ -231,7 +230,7 @@ export default function ReviewPage() {
                   disabled={submitting}
                   style={{
                     width: "100%", padding: "14px",
-                    background: C.red, color: "#fff",
+                    background: C.primary, color: "#fff",
                     border: "none", borderRadius: 9,
                     fontSize: 14, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
                     opacity: submitting ? 0.7 : 1,
@@ -254,7 +253,7 @@ function DoneState({ rating, googleUrl }) {
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-        <CheckCircle size={52} style={{ color: rating >= 5 ? "#16a34a" : C.red }} />
+        <CheckCircle size={52} style={{ color: rating >= 5 ? "#16a34a" : C.primary }} />
       </div>
       <p style={{ fontSize: 22, fontWeight: 700, color: "#111", marginBottom: 8 }}>
         {rating >= 5 ? "Teşekkürler! 🎉" : "Geri bildiriminiz alındı"}
@@ -276,7 +275,7 @@ function DoneState({ rating, googleUrl }) {
             rel="noopener noreferrer"
             style={{
               display: "inline-flex", alignItems: "center", gap: 8,
-              background: C.red, color: "#fff",
+              background: C.primary, color: "#fff",
               padding: "13px 28px", borderRadius: 9,
               fontSize: 14, fontWeight: 700, textDecoration: "none",
             }}

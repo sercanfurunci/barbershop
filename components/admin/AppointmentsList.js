@@ -11,23 +11,24 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 
 const C = {
+  bg:        "#F7F4EE",
   card:      "#FFFFFF",
-  border:    "rgba(17,17,17,0.08)",
-  surface:   "#F1EEE8",
+  border:    "#E5DED3",
+  surface:   "#EFEAE2",
   primary:   "#111111",
-  secondary: "#57514B",
-  muted:     "#6E6760",
-  red:       "#C62828",
+  secondary: "#4A4A4A",
+  muted:     "#8A8480",
+  dim:       "#C5BEB5",
 };
 
 function getStatusStyle(status) {
   const map = {
     confirmed:     { dot: "#2563EB", bg: "rgba(59,130,246,0.1)",  text: "#2563EB" },
-    "in-progress": { dot: "#C62828", bg: "rgba(198,40,40,0.12)", text: "#B91C1C", pulse: true },
+    "in-progress": { dot: "#111111", bg: "rgba(17,17,17,0.12)", text: "#111111", pulse: true },
     pending:       { dot: "#B45309", bg: "rgba(245,158,11,0.1)",  text: "#B45309" },
     completed:     { dot: "#15803D", bg: "rgba(34,197,94,0.1)",   text: "#15803D" },
     cancelled:     { dot: "#52525b", bg: "rgba(82,82,91,0.15)",   text: "#71717a" },
-    noshow:        { dot: "#C62828", bg: "rgba(198,40,40,0.1)",   text: "#B91C1C" },
+    noshow:        { dot: "#111111", bg: "rgba(17,17,17,0.1)",   text: "#111111" },
   };
   return map[status] || map.pending;
 }
@@ -119,7 +120,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="flex-1 bg-transparent outline-none"
-                  style={{ fontSize: "12px", color: C.primary, caretColor: C.red }}
+                  style={{ fontSize: "12px", color: C.primary, caretColor: C.primary }}
                 />
               </div>
               <select
@@ -301,7 +302,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                             key={label}
                             onSelect={action}
                             className="flex items-center gap-2.5 cursor-pointer"
-                            style={{ padding: "7px 12px", fontSize: "12px", color: danger ? "#B91C1C" : C.secondary, borderRadius: "5px" }}
+                            style={{ padding: "7px 12px", fontSize: "12px", color: danger ? "#111111" : C.secondary, borderRadius: "5px" }}
                           >
                             <Icon size={12} />
                             {label}

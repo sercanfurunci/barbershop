@@ -12,14 +12,15 @@ import {
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 
 const C = {
-  bg:       "#F6F3EE",
-  card:     "#FFFFFF",
-  border:   "#E5DFD6",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   surface:  "#EFEAE2",
+  card:     "#FFFFFF",
+  border:   "#E5DED3",
   primary:  "#111111",
-  secondary:"#44403C",
-  muted:    "#6B7280",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 function SlotSkeleton({ count = 8 }) {
@@ -32,7 +33,7 @@ function SlotSkeleton({ count = 8 }) {
   );
 }
 
-export default function DateTimeSelect({ booking, allBarbers = [], selectedDate, selectedTime, onSelect, onNext, onBack, lang = "tr", tx }) {
+export default function DateTimeSelect({ shopId, booking, allBarbers = [], selectedDate, selectedTime, onSelect, onNext, onBack, lang = "tr", tx }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [localDate, setLocalDate]       = useState(selectedDate);
   const [localTime, setLocalTime]       = useState(selectedTime);
@@ -55,17 +56,17 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
   useEffect(() => {
     const barberId  = booking.barber?.id;
     const serviceId = booking.service?.id;
-    if (!barberId || !serviceId || barberId === "any") return;
+    if (!shopId || !barberId || !serviceId || barberId === "any") return;
 
     Array.from({ length: 7 }, (_, i) => format(addDays(today, i), "yyyy-MM-dd"))
       .filter(d => !prefetchRef.current[d])
       .forEach(d => {
         prefetchRef.current[d] = "loading";
-        apiFetch(`/api/availability?barberId=${barberId}&serviceId=${serviceId}&date=${d}`)
+        apiFetch(`/api/availability?shopId=${shopId}&barberId=${barberId}&serviceId=${serviceId}&date=${d}`)
           .then(r  => { prefetchRef.current[d] = r.slots ?? []; })
           .catch(() => { delete prefetchRef.current[d]; });
       });
-  }, [booking.barber?.id, booking.service?.id]);
+  }, [shopId, booking.barber?.id, booking.service?.id]);
 
   useEffect(() => {
     if (!localDate || !booking.barber || !booking.service) return;
@@ -76,18 +77,18 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
     setLocalTime(null);
     setSlotBarberMap({});
 
+    const base = `shopId=${shopId}&serviceId=${serviceId}&date=${dateStr}`;
+
     if (!isAny) {
-      // Cache hit: instant display, no spinner
       const cached = prefetchRef.current[dateStr];
       if (Array.isArray(cached)) {
         setAvailableSlots(cached);
         setLoadingSlots(false);
         return;
       }
-      // Cache miss: fetch and prime the cache for next time
       setLoadingSlots(true);
       setAvailableSlots([]);
-      apiFetch(`/api/availability?barberId=${booking.barber.id}&serviceId=${serviceId}&date=${dateStr}`)
+      apiFetch(`/api/availability?${base}&barberId=${booking.barber.id}`)
         .then((data) => {
           const slots = data.slots ?? [];
           prefetchRef.current[dateStr] = slots;
@@ -102,7 +103,7 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
       if (barberList.length === 0) { setLoadingSlots(false); return; }
       Promise.all(
         barberList.map((b) =>
-          apiFetch(`/api/availability?barberId=${b.id}&serviceId=${serviceId}&date=${dateStr}`)
+          apiFetch(`/api/availability?${base}&barberId=${b.id}`)
             .then((data) => ({ barberId: b.id, slots: data.slots ?? [] }))
             .catch(() => ({ barberId: b.id, slots: [] }))
         )
@@ -113,9 +114,8 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
             if (!map[slot]) map[slot] = barberId;
           }
         }
-        const sorted = Object.keys(map).sort();
         setSlotBarberMap(map);
-        setAvailableSlots(sorted);
+        setAvailableSlots(Object.keys(map).sort());
       }).finally(() => setLoadingSlots(false));
     }
   }, [localDate, booking.barber?.id, booking.service?.id]);
@@ -182,13 +182,13 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
                 onClick={() => handleSlotClick(slot)}
                 style={{
                   height: "44px", borderRadius: "8px",
-                  border: `1px solid ${isSel ? C.red : C.border}`,
-                  background: isSel ? C.red : C.card,
+                  border: `1px solid ${isSel ? C.primary : C.border}`,
+                  background: isSel ? C.primary : C.card,
                   color: isSel ? "#fff" : C.primary,
                   fontSize: "13px", fontWeight: 500,
                   cursor: "pointer", transition: "all 0.12s",
                 }}
-                onMouseEnter={(e) => { if (!isSel) { e.currentTarget.style.borderColor = "rgba(198,40,40,0.4)"; e.currentTarget.style.color = C.red; } }}
+                onMouseEnter={(e) => { if (!isSel) { e.currentTarget.style.borderColor = "rgba(17,17,17,0.4)"; e.currentTarget.style.color = C.primary; } }}
                 onMouseLeave={(e) => { if (!isSel) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.primary; } }}
               >
                 {slot}
@@ -209,7 +209,7 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
           style={{ fontSize: "clamp(26px, 4vw, 40px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "5px" }}
         >
           {s3.title?.[0]}{" "}
-          <span style={{ fontStyle: "italic", color: C.red }}>{s3.title?.[1]}</span>
+          <span style={{ fontStyle: "italic", color: C.primary }}>{s3.title?.[1]}</span>
         </h1>
         <p style={{ fontSize: "13px", color: C.muted }}>{s3.subtitle}</p>
       </div>
@@ -240,8 +240,8 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
                   width: "52px", flexShrink: 0,
                   paddingTop: "9px", paddingBottom: "9px",
                   borderRadius: "10px",
-                  border: `1px solid ${isSelected ? C.red : C.border}`,
-                  background: isSelected ? C.red : C.card,
+                  border: `1px solid ${isSelected ? C.primary : C.border}`,
+                  background: isSelected ? C.primary : C.card,
                   color: isSelected ? "#fff" : C.primary,
                   display: "flex", flexDirection: "column", alignItems: "center", gap: "1px",
                   cursor: "pointer", transition: "all 0.15s",
@@ -254,7 +254,7 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
                   {format(date, "d")}
                 </span>
                 {isToday && !isSelected && (
-                  <div style={{ width: "3px", height: "3px", borderRadius: "50%", background: C.red }} />
+                  <div style={{ width: "3px", height: "3px", borderRadius: "50%", background: C.primary }} />
                 )}
               </button>
             );
@@ -292,7 +292,7 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
             <button
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
               style={{ width: "30px", height: "30px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.secondary, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.primary; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.color = C.primary; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.secondary; }}
             >
               <ChevronLeft size={13} />
@@ -303,7 +303,7 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
             <button
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
               style={{ width: "30px", height: "30px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.secondary, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.primary; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.color = C.primary; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.secondary; }}
             >
               <ChevronRight size={13} />
@@ -332,7 +332,7 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
                   className="flex items-center justify-center relative transition-all duration-150"
                   style={{
                     fontSize: "12px", borderRadius: "7px", minHeight: "36px",
-                    background: isSelected ? C.red : "transparent",
+                    background: isSelected ? C.primary : "transparent",
                     color: isSelected ? "#fff" : available ? C.primary : C.muted,
                     cursor: available ? "pointer" : "not-allowed",
                     fontWeight: isToday ? 700 : 400,
@@ -342,7 +342,7 @@ export default function DateTimeSelect({ booking, allBarbers = [], selectedDate,
                 >
                   {format(day, "d")}
                   {isToday && !isSelected && (
-                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2" style={{ width: "3px", height: "3px", background: C.red, borderRadius: "50%" }} />
+                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2" style={{ width: "3px", height: "3px", background: C.primary, borderRadius: "50%" }} />
                   )}
                 </button>
               );

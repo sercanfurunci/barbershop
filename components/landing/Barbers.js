@@ -6,18 +6,19 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
+import { useShop } from "@/contexts/ShopContext";
 import { Star, Scissors, ArrowRight } from "lucide-react";
 
 const C = {
-  bg:       "#F6F3EE",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
+  surface:  "#EFEAE2",
   card:     "#FFFFFF",
-  border:   "rgba(17,17,17,0.06)",
-  surface:  "#F1EEE8",
+  border:   "#E5DED3",
   primary:  "#111111",
-  secondary:"#44403C",
-  muted:    "#78716C",
-  red:      "#C62828",
-  dimRed:   "rgba(198,40,40,0.08)",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dimRed:   "rgba(17,17,17,0.08)",
 };
 
 function initials(name = "") {
@@ -28,11 +29,14 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
   const [barbers, setBarbers] = useState(initialBarbers);
   const { lang } = useLang();
   const tx = useT(lang);
+  const shop = useShop();
+  const bookHref = shop?.slug ? `/${shop.slug}/book` : "/book";
 
   // Lazily fetch profile photos from the CDN-cached public API.
   // Not in SSR payload to keep initial HTML small (~150–200 KB per photo).
   useEffect(() => {
-    fetch("/api/barbers")
+    if (!shop?.id) return;
+    fetch(`/api/barbers?shopId=${shop.id}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!Array.isArray(data)) return;
@@ -40,7 +44,7 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
         setBarbers(prev => prev.map(b => ({ ...b, profilePhoto: photoMap.get(b.id) ?? null })));
       })
       .catch(() => {});
-  }, []);
+  }, [shop?.id]);
 
   return (
     <section id="barbers" style={{ background: C.bg, position: "relative" }}>
@@ -69,7 +73,7 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
               }}
             >
               {tx.barbers.title[0]}{" "}
-              <span style={{ fontStyle: "italic", color: C.red }}>{tx.barbers.title[1]}</span>
+              <span style={{ fontStyle: "italic", color: C.primary }}>{tx.barbers.title[1]}</span>
             </h2>
           </motion.div>
 
@@ -101,14 +105,14 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
           style={{ marginTop: "40px", display: "flex", justifyContent: "center" }}
         >
           <Link
-            href="/book"
+            href={bookHref}
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: "6px",
               fontSize: "14px",
               fontWeight: 600,
-              color: C.red,
+              color: C.primary,
               textDecoration: "none",
               transition: "gap 0.2s",
             }}
@@ -192,7 +196,7 @@ function BarberCard({ barber, lang, tx, index }) {
           <div style={{
             position: "absolute", top: "10px", left: "10px",
             width: "32px", height: "32px",
-            background: C.red,
+            background: C.primary,
             borderRadius: "8px",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: "10px", fontWeight: 700, color: "#fff", letterSpacing: "0.04em",
@@ -230,7 +234,7 @@ function BarberCard({ barber, lang, tx, index }) {
           </h3>
 
           {/* Title */}
-          <p style={{ fontSize: "9px", color: C.red, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: "10px" }}>
+          <p style={{ fontSize: "9px", color: C.primary, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: "10px" }}>
             {title}
           </p>
 
@@ -272,7 +276,7 @@ function BarberCard({ barber, lang, tx, index }) {
             justifyContent: "space-between",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <Star size={11} fill={C.red} style={{ color: C.red, flexShrink: 0 }} />
+              <Star size={11} fill={C.primary} style={{ color: C.primary, flexShrink: 0 }} />
               <span style={{ fontSize: "12px", fontWeight: 600, color: C.primary }}>{barber.rating}</span>
               <span style={{ fontSize: "11px", color: C.muted }}>
                 · {barber.reviews > 0 ? barber.reviews : 0} {tx.barbers.reviews}

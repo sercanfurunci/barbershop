@@ -8,13 +8,14 @@ import { useT } from "@/lib/translations";
 import { apiFetch } from "@/lib/api";
 
 const C = {
+  bg:        "#F7F4EE",
   card:      "#FFFFFF",
-  border:    "rgba(17,17,17,0.08)",
-  surface:   "#F1EEE8",
+  border:    "#E5DED3",
+  surface:   "#EFEAE2",
   primary:   "#111111",
-  secondary: "#57514B",
-  muted:     "#6E6760",
-  red:       "#C62828",
+  secondary: "#4A4A4A",
+  muted:     "#8A8480",
+  dim:       "#C5BEB5",
 };
 
 function buildSparkPath(data, w, h) {
@@ -86,7 +87,7 @@ function KPICard({ card, delay, vsLabel }) {
             fontSize: "10px",
             fontWeight: 600,
             background: positive ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
-            color: positive ? "#15803D" : "#B91C1C",
+            color: positive ? "#15803D" : "#111111",
           }}
         >
           {positive ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
@@ -131,7 +132,7 @@ function KPICard({ card, delay, vsLabel }) {
 }
 
 const SKELETON_CARDS = [
-  { key: "revenue",      accent: "#C62828" },
+  { key: "revenue",      accent: "#111111" },
   { key: "appointments", accent: "#6D28D9" },
   { key: "clients",      accent: "#0F766E" },
   { key: "rating",       accent: "#B45309" },
@@ -182,7 +183,7 @@ export default function KPICards() {
       change: stats.revenueChange,
       format: (v) => `₺${Math.round(v).toLocaleString()}`,
       spark:  flatSpark,
-      accent: "#C62828",
+      accent: "#111111",
     },
     {
       key:    "appointments",

@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { generateIcs, appointmentCalendarData } from "@/lib/calendar";
-import { getDefaultShopId } from "@/lib/shop";
 
 export const dynamic = "force-dynamic";
 
@@ -10,30 +9,21 @@ export const dynamic = "force-dynamic";
 export async function GET(request, { params }) {
   const { appointmentId } = await params;
 
-  const shopId = await getDefaultShopId().catch(() => null);
-
   const appt = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: {
       service: { select: { nameTr: true, duration: true } },
       barber:  { select: { nameTr: true } },
-      shop:    { select: { name: true, address: true, phone: true } },
+      shop:    { select: { name: true, address: true, phone: true, status: true } },
     },
   }).catch(() => null);
 
-  if (!appt) {
-    return new Response("Not found", { status: 404 });
-  }
-
-  // Scope check — only serve appointments from the default shop
-  // (extend to multi-tenant by resolving shopId from hostname)
-  if (shopId && appt.shopId !== shopId) {
+  if (!appt || appt.shop?.status !== "ACTIVE") {
     return new Response("Not found", { status: 404 });
   }
 
   const data = appointmentCalendarData(appt);
   const ics  = generateIcs(data);
-
   const filename = `randevu-${appt.date}-${appt.time.replace(":", "")}.ics`;
 
   return new Response(ics, {

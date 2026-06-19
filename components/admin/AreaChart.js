@@ -14,7 +14,6 @@ const C = {
   primary:   "#111111",
   secondary: "#57514B",
   muted:     "#6E6760",
-  red:       "#C62828",
 };
 
 const PAD = { t: 24, r: 16, b: 36, l: 60 };
@@ -148,8 +147,8 @@ export default function AreaChart({ barberId }) {
           >
             <defs>
               <linearGradient id="area-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stopColor={C.red} stopOpacity="0.22" />
-                <stop offset="100%" stopColor={C.red} stopOpacity="0"    />
+                <stop offset="0%"   stopColor={C.primary} stopOpacity="0.22" />
+                <stop offset="100%" stopColor={C.primary} stopOpacity="0"    />
               </linearGradient>
             </defs>
 
@@ -192,7 +191,7 @@ export default function AreaChart({ barberId }) {
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               d={line}
               fill="none"
-              stroke={C.red}
+              stroke={C.primary}
               strokeWidth="1.75"
               strokeLinecap="round"
             />
@@ -200,7 +199,7 @@ export default function AreaChart({ barberId }) {
             {tooltip && (
               <g>
                 <line x1={tooltip.x} y1={PAD.t} x2={tooltip.x} y2={PAD.t + CH} stroke="rgba(17,17,17,0.18)" strokeWidth="1" strokeDasharray="3 3" />
-                <circle cx={tooltip.x} cy={tooltip.y} r="4" fill={C.red} stroke="#F8F6F2" strokeWidth="2" />
+                <circle cx={tooltip.x} cy={tooltip.y} r="4" fill={C.primary} stroke="#F8F6F2" strokeWidth="2" />
               </g>
             )}
           </svg>

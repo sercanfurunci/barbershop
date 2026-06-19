@@ -12,14 +12,15 @@ import {
 } from "lucide-react";
 
 const C = {
-  bg:       "#F8F6F2",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   card:     "#FFFFFF",
-  border:   "rgba(17,17,17,0.08)",
-  surface:  "#F1EEE8",
+  border:   "#E5DED3",
+  surface:  "#EFEAE2",
   primary:  "#111111",
-  secondary:"#57514B",
-  muted:    "#6E6760",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 const SLOT_H    = 48;
@@ -35,7 +36,7 @@ const SC = {
   confirmed:     { label: "Onaylandı",   short: "Ona",  color: "#15803D", bg: "rgba(34,197,94,0.15)",   icon: CheckCircle2 },
   "in-progress": { label: "Devam Ediyor",short: "Dev",  color: "#2563EB", bg: "rgba(96,165,250,0.15)",  icon: Clock        },
   completed:     { label: "Tamamlandı",  short: "Tam",  color: "#57514B", bg: "rgba(107,104,112,0.15)", icon: Check        },
-  noshow:        { label: "Gelmedi",     short: "Gel",  color: "#C62828", bg: "rgba(198,40,40,0.15)",   icon: AlertCircle  },
+  noshow:        { label: "Gelmedi",     short: "Gel",  color: "#111111", bg: "rgba(17,17,17,0.15)",   icon: AlertCircle  },
   cancelled:     { label: "İptal",       short: "İpt",  color: "#52525b", bg: "rgba(82,82,91,0.15)",    icon: Ban          },
 };
 
@@ -288,7 +289,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
               {appt.service}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "5px" }}>
-              <div style={{ width: "16px", height: "16px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+              <div style={{ width: "16px", height: "16px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                 {barberInitials}
               </div>
               <span style={{ fontSize: "10px", color: C.muted }}>{appt.barber?.split(" ")[0]}</span>
@@ -319,7 +320,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
             <div style={{ fontSize: "13px", fontWeight: 600, color: C.primary }}>
               {new Date(date + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" })}
             </div>
-            {isToday(date) && <div style={{ fontSize: "9px", color: C.red, fontWeight: 700, letterSpacing: "0.1em", marginTop: "1px" }}>BUGÜN</div>}
+            {isToday(date) && <div style={{ fontSize: "9px", color: C.primary, fontWeight: 700, letterSpacing: "0.1em", marginTop: "1px" }}>BUGÜN</div>}
           </div>
           <button onClick={() => setDate(d => addDays(d, 1))} style={{ width: "32px", height: "32px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary, flexShrink: 0 }}>
             <ChevronRight size={15} />
@@ -329,7 +330,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
               Bugün
             </button>
           )}
-          <button onClick={() => onNewAppt()} style={{ width: "32px", height: "32px", background: C.red, border: "none", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", flexShrink: 0 }}>
+          <button onClick={() => onNewAppt()} style={{ width: "32px", height: "32px", background: C.primary, border: "none", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", flexShrink: 0 }}>
             <Plus size={15} />
           </button>
         </div>
@@ -353,7 +354,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
       {/* Barber filter chips */}
       <div style={{ flexShrink: 0, background: C.card, borderBottom: `1px solid ${C.border}`, padding: "8px 16px", display: "flex", gap: "6px", overflowX: "auto", scrollbarWidth: "none" }}>
         {[{ id: "all", label: "Tümü" }, ...barbers.map(b => ({ id: b.id, label: (b.nameTr ?? b.name ?? "").split(" ")[0] }))].map(b => (
-          <button key={b.id} onClick={() => setActiveBarber(b.id)} style={{ height: "26px", padding: "0 12px", borderRadius: "13px", background: activeBarber === b.id ? "rgba(198,40,40,0.12)" : "none", border: `1px solid ${activeBarber === b.id ? "rgba(198,40,40,0.4)" : C.border}`, fontSize: "11px", color: activeBarber === b.id ? C.red : C.secondary, cursor: "pointer", fontWeight: activeBarber === b.id ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0 }}>
+          <button key={b.id} onClick={() => setActiveBarber(b.id)} style={{ height: "26px", padding: "0 12px", borderRadius: "13px", background: activeBarber === b.id ? "rgba(17,17,17,0.12)" : "none", border: `1px solid ${activeBarber === b.id ? "rgba(17,17,17,0.4)" : C.border}`, fontSize: "11px", color: activeBarber === b.id ? C.primary : C.secondary, cursor: "pointer", fontWeight: activeBarber === b.id ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0 }}>
             {b.label}
           </button>
         ))}
@@ -575,7 +576,7 @@ export default function CalendarView() {
                 {new Date(date + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </span>
               {isToday(date) && (
-                <span style={{ marginLeft: "8px", fontSize: "9px", color: C.red, fontWeight: 600, letterSpacing: "0.08em", verticalAlign: "middle" }}>BUGÜN</span>
+                <span style={{ marginLeft: "8px", fontSize: "9px", color: C.primary, fontWeight: 600, letterSpacing: "0.08em", verticalAlign: "middle" }}>BUGÜN</span>
               )}
             </div>
             <button
@@ -618,10 +619,10 @@ export default function CalendarView() {
             onClick={() => setListOpen(v => !v)}
             style={{
               height: "28px", padding: "0 10px",
-              background: listOpen ? "rgba(198,40,40,0.1)" : C.surface,
-              border: `1px solid ${listOpen ? "rgba(198,40,40,0.3)" : C.border}`,
+              background: listOpen ? "rgba(17,17,17,0.1)" : C.surface,
+              border: `1px solid ${listOpen ? "rgba(17,17,17,0.3)" : C.border}`,
               borderRadius: "6px", fontSize: "11px",
-              color: listOpen ? C.red : C.secondary, cursor: "pointer",
+              color: listOpen ? C.primary : C.secondary, cursor: "pointer",
               display: "flex", alignItems: "center", gap: "5px",
             }}
           >
@@ -634,7 +635,7 @@ export default function CalendarView() {
             onClick={() => openModal()}
             style={{
               display: "flex", alignItems: "center", gap: "6px",
-              background: C.red, color: "#fff", border: "none",
+              background: C.primary, color: "#fff", border: "none",
               borderRadius: "6px", padding: "0 14px", height: "28px",
               fontSize: "11px", fontWeight: 600, cursor: "pointer", letterSpacing: "0.02em",
             }}
@@ -654,9 +655,9 @@ export default function CalendarView() {
                 onClick={() => setActiveBarber(b.id)}
                 style={{
                   height: "24px", padding: "0 10px", borderRadius: "20px",
-                  background: activeBarber === b.id ? "rgba(198,40,40,0.12)" : "none",
-                  border: `1px solid ${activeBarber === b.id ? "rgba(198,40,40,0.35)" : C.border}`,
-                  fontSize: "11px", color: activeBarber === b.id ? C.red : C.secondary,
+                  background: activeBarber === b.id ? "rgba(17,17,17,0.12)" : "none",
+                  border: `1px solid ${activeBarber === b.id ? "rgba(17,17,17,0.35)" : C.border}`,
+                  fontSize: "11px", color: activeBarber === b.id ? C.primary : C.secondary,
                   cursor: "pointer", fontWeight: activeBarber === b.id ? 600 : 400,
                   whiteSpace: "nowrap",
                 }}
@@ -721,7 +722,7 @@ export default function CalendarView() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div style={{ width: "30px", height: "30px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                    <div style={{ width: "30px", height: "30px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                       {barber.avatar}
                     </div>
                     <div>
@@ -744,7 +745,7 @@ export default function CalendarView() {
                   </div>
                   <button
                     onClick={() => openModal(barber.id)}
-                    style={{ width: "22px", height: "22px", background: "rgba(198,40,40,0.08)", border: "1px solid rgba(198,40,40,0.18)", borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.red, flexShrink: 0 }}
+                    style={{ width: "22px", height: "22px", background: "rgba(17,17,17,0.08)", border: "1px solid rgba(17,17,17,0.18)", borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.primary, flexShrink: 0 }}
                   >
                     <Plus size={11} />
                   </button>
@@ -803,11 +804,11 @@ export default function CalendarView() {
 
               {/* Current time line */}
               {showNow && (
-                <div style={{ position: "absolute", top: `${nowTop}px`, left: `${TIME_COL_W}px`, right: 0, height: "1px", background: C.red, zIndex: 20, pointerEvents: "none" }}>
-                  <div style={{ position: "absolute", left: "-22px", top: "-8px", fontSize: "9px", color: C.red, fontWeight: 600, fontFamily: "'DM Mono', monospace", background: C.bg, padding: "1px 3px", borderRadius: "3px" }}>
+                <div style={{ position: "absolute", top: `${nowTop}px`, left: `${TIME_COL_W}px`, right: 0, height: "1px", background: C.primary, zIndex: 20, pointerEvents: "none" }}>
+                  <div style={{ position: "absolute", left: "-22px", top: "-8px", fontSize: "9px", color: C.primary, fontWeight: 600, fontFamily: "'DM Mono', monospace", background: C.bg, padding: "1px 3px", borderRadius: "3px" }}>
                     {nowLabel}
                   </div>
-                  <div style={{ position: "absolute", left: "-4px", top: "-3px", width: "7px", height: "7px", background: C.red, borderRadius: "50%" }} />
+                  <div style={{ position: "absolute", left: "-4px", top: "-3px", width: "7px", height: "7px", background: C.primary, borderRadius: "50%" }} />
                 </div>
               )}
             </div>
@@ -848,7 +849,7 @@ export default function CalendarView() {
                               <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
                               <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}</div>
                               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "3px" }}>
-                                <div style={{ width: "14px", height: "14px", background: `linear-gradient(135deg, ${C.red}, #9a1212)`, borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "6px", fontWeight: 700, color: "#fff" }}>
+                                <div style={{ width: "14px", height: "14px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "6px", fontWeight: 700, color: "#fff" }}>
                                   {barberInitials}
                                 </div>
                                 <span style={{ fontSize: "10px", color: C.muted }}>{appt.barber?.split(" ")[0]}</span>

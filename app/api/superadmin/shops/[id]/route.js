@@ -44,6 +44,7 @@ export async function PATCH(request, { params }) {
   const data = {};
 
   if (body.name !== undefined) data.name = String(body.name).trim();
+  if (body.slug !== undefined) data.slug = String(body.slug).trim().toLowerCase();
   if (body.address !== undefined) data.address = body.address || null;
   if (body.phone !== undefined) data.phone = body.phone || null;
   if (body.email !== undefined) data.email = body.email || null;

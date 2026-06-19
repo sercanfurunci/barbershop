@@ -20,14 +20,14 @@ const C = {
   primary:   "#f1f0ed",
   secondary: "#9A96A0",
   muted:     "#8E8A93",
-  red:       "#CC1A1A",
+  
 };
 
 const DAYS_TR = ["Pt", "Sa", "Ça", "Pe", "Cu", "Ct", "Pa"];
 const DAYS_EN = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
 function getDotColor(count) {
-  if (count >= 7) return C.red;
+  if (count >= 7) return C.primary;
   if (count >= 5) return "#f59e0b";
   return "#22c55e";
 }
@@ -126,7 +126,7 @@ export default function CalendarWidget() {
                 className="w-7 h-7 flex items-center justify-center transition-all"
                 style={{
                   borderRadius: "6px",
-                  background: isCurrentDay ? C.red : "transparent",
+                  background: isCurrentDay ? C.primary : "transparent",
                   fontSize: "11px",
                   fontWeight: isCurrentDay ? 600 : 400,
                   color: isCurrentDay ? "#fff" : isPast ? C.muted : C.primary,
@@ -153,7 +153,7 @@ export default function CalendarWidget() {
           </p>
           <span
             className="px-2 py-0.5"
-            style={{ fontSize: "10px", color: C.red, background: `${C.red}18`, borderRadius: "4px" }}
+            style={{ fontSize: "10px", color: C.primary, background: `${C.primary}18`, borderRadius: "4px" }}
           >
             {todayCount} {calTx.booked}
           </span>
@@ -180,7 +180,7 @@ export default function CalendarWidget() {
                 </div>
                 <div
                   className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: appt.status === "confirmed" ? "#22c55e" : appt.status === "pending" ? "#f59e0b" : C.red }}
+                  style={{ background: appt.status === "confirmed" ? "#22c55e" : appt.status === "pending" ? "#f59e0b" : C.primary }}
                 />
               </motion.div>
             ))}

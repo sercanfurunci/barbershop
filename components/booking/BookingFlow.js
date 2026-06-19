@@ -16,14 +16,15 @@ import { format } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 
 const C = {
-  bg:       "#F6F3EE",
-  card:     "#FFFFFF",
-  border:   "#E5DFD6",
+  bg:       "#F7F4EE",
+  bgSoft:   "#FDFBF7",
   surface:  "#EFEAE2",
+  card:     "#FFFFFF",
+  border:   "#E5DED3",
   primary:  "#111111",
-  secondary:"#44403C",
-  muted:    "#6B7280",
-  red:      "#C62828",
+  secondary:"#4A4A4A",
+  muted:    "#8A8480",
+  dim:      "#C5BEB5",
 };
 
 // Mobile: 5 steps (service / barber / date / time / confirm)
@@ -64,7 +65,7 @@ function ConfirmChangeDialog({ message, onConfirm, onCancel, lang }) {
           <button onClick={onCancel} style={{ flex: 1, height: "46px", borderRadius: "10px", border: `1px solid ${C.border}`, background: C.surface, color: C.secondary, fontSize: "14px", fontWeight: 500, cursor: "pointer" }}>
             {lang === "tr" ? "İptal" : "Cancel"}
           </button>
-          <button onClick={onConfirm} style={{ flex: 1, height: "46px", borderRadius: "10px", border: "none", background: C.red, color: "#fff", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onConfirm} style={{ flex: 1, height: "46px", borderRadius: "10px", border: "none", background: C.primary, color: "#fff", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
             {lang === "tr" ? "Devam Et" : "Continue"}
           </button>
         </div>
@@ -92,10 +93,10 @@ function DesktopStepper({ activeStep, steps, onGoTo }) {
             >
               <div style={{
                 width: "24px", height: "24px", borderRadius: "50%", flexShrink: 0,
-                background: done ? C.red : "transparent",
-                border: done ? "none" : active ? `1.5px solid ${C.red}` : `1.5px solid ${C.muted}`,
+                background: done ? C.primary : "transparent",
+                border: done ? "none" : active ? `1.5px solid ${C.primary}` : `1.5px solid ${C.muted}`,
                 fontSize: "11px", fontWeight: 600,
-                color: done ? "#fff" : active ? C.red : C.muted,
+                color: done ? "#fff" : active ? C.primary : C.muted,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transition: "all 0.2s",
               }}>
@@ -106,7 +107,7 @@ function DesktopStepper({ activeStep, steps, onGoTo }) {
                 <div style={{ fontSize: "10px", color: C.muted, whiteSpace: "nowrap" }}>{s.desc}</div>
               </div>
               {active && (
-                <motion.div layoutId="desk-step-indicator" className="absolute bottom-0 left-0 right-0" style={{ height: "2px", background: C.red, borderRadius: "1px" }} />
+                <motion.div layoutId="desk-step-indicator" className="absolute bottom-0 left-0 right-0" style={{ height: "2px", background: C.primary, borderRadius: "1px" }} />
               )}
             </button>
             {i < steps.length - 1 && (
@@ -171,7 +172,7 @@ function initialStep(preselect, hasInitial) {
   return 1;
 }
 
-export default function BookingFlow({ initialServices = [], initialBarbers = [], preselect = null }) {
+export default function BookingFlow({ shopId, initialServices = [], initialBarbers = [], preselect = null }) {
   const hasInitial = initialServices.length > 0;
   const normServicesInit = hasInitial ? normalizeServices(initialServices) : [];
   const normBarbersInit  = initialBarbers.length > 0 ? normalizeBarbers(initialBarbers) : [];
@@ -194,15 +195,18 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
   const [dataLoaded, setDataLoaded] = useState(hasInitial);
 
   useEffect(() => {
-    if (hasInitial) return; // already have server-side data
-    Promise.all([apiFetch("/api/services"), apiFetch("/api/barbers")])
+    if (hasInitial || !shopId) return;
+    Promise.all([
+      apiFetch(`/api/services?shopId=${shopId}`),
+      apiFetch(`/api/barbers?shopId=${shopId}`),
+    ])
       .then(([svcData, brbrData]) => {
         setServices(normalizeServices(svcData));
         setBarbers(normalizeBarbers(brbrData));
         setDataLoaded(true);
       })
       .catch(() => setDataLoaded(true));
-  }, []);
+  }, [shopId]);
 
   // ── Navigation helpers ──────────────────────────────────────────────────────
   const goToStep = (idx) => { setDirection(idx > step ? 1 : -1); setStep(idx); };
@@ -363,7 +367,7 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
         {!bookingDone && (
           <div style={{ height: "2px", background: C.border, flexShrink: 0 }}>
             <motion.div
-              style={{ height: "100%", background: C.red }}
+              style={{ height: "100%", background: C.primary }}
               animate={{ width: `${(step / 5) * 100}%` }}
               transition={{ duration: 0.38, ease: [0.32, 0.72, 0, 1] }}
             />
@@ -415,6 +419,7 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
               )}
               {step === 4 && (
                 <TimeSelect
+                  shopId={shopId}
                   booking={booking}
                   allBarbers={barbers}
                   onSelect={onTimeSelect}
@@ -424,6 +429,7 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
               {step === 5 && (
                 <div style={{ padding: "0 16px 24px" }}>
                   <Confirmation
+                    shopId={shopId}
                     booking={booking}
                     onBack={prevStep}
                     onLoadingChange={setConfirming}
@@ -477,7 +483,7 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
                       flexShrink: 0,
                       height: "44px", padding: "0 18px",
                       borderRadius: "10px",
-                      background: C.red, color: "#fff",
+                      background: C.primary, color: "#fff",
                       fontSize: "13px", fontWeight: 600,
                       border: "none", cursor: "pointer",
                       display: "flex", alignItems: "center", gap: "3px",
@@ -497,7 +503,7 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
                 style={{
                   width: "100%", height: "52px",
                   borderRadius: "12px",
-                  background: confirming ? C.surface : C.red,
+                  background: confirming ? C.surface : C.primary,
                   color: confirming ? C.muted : "#fff",
                   fontSize: "15px", fontWeight: 600,
                   border: "none",
@@ -531,7 +537,7 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
           className="sticky top-[68px] z-30"
           style={{ background: "rgba(246,243,238,0.97)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}
         >
-          <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(198,40,40,0.12), transparent)" }} />
+          <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(17,17,17,0.12), transparent)" }} />
           <DesktopStepper activeStep={desktopStep} steps={steps} onGoTo={desktopGoToStep} />
 
           {/* Selection chips */}
@@ -561,10 +567,10 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
                           cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                           transition: "all 0.12s",
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.color = C.primary; }}
                         onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.secondary; }}
                       >
-                        <span style={{ color: C.red, fontSize: "9px" }}>{chip.icon}</span>
+                        <span style={{ color: C.primary, fontSize: "9px" }}>{chip.icon}</span>
                         {chip.label}
                       </button>
                     ))}
@@ -592,10 +598,10 @@ export default function BookingFlow({ initialServices = [], initialBarbers = [],
                 <BarberSelect barbers={barbers} loaded={dataLoaded} selected={booking.barber} onSelect={onBarberSelect} lang={lang} tx={tx} />
               )}
               {(step === 3 || step === 4) && (
-                <DateTimeSelect booking={booking} allBarbers={barbers} selectedDate={booking.date} selectedTime={booking.time} onSelect={onDateTimeSelect} onNext={desktopNextStep} onBack={prevStep} lang={lang} tx={tx} />
+                <DateTimeSelect shopId={shopId} booking={booking} allBarbers={barbers} selectedDate={booking.date} selectedTime={booking.time} onSelect={onDateTimeSelect} onNext={desktopNextStep} onBack={prevStep} lang={lang} tx={tx} />
               )}
               {step === 5 && (
-                <Confirmation booking={booking} onBack={prevStep} onLoadingChange={setConfirming} onSuccess={() => setBookingDone(true)} lang={lang} tx={tx} />
+                <Confirmation shopId={shopId} booking={booking} onBack={prevStep} onLoadingChange={setConfirming} onSuccess={() => setBookingDone(true)} lang={lang} tx={tx} />
               )}
             </motion.div>
           </AnimatePresence>

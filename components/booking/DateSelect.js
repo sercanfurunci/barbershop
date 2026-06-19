@@ -11,7 +11,7 @@ import { tr as dateFnsTr, enUS } from "date-fns/locale";
 
 const C = {
   bg: "#F6F3EE", card: "#FFFFFF", border: "#E5DFD6", surface: "#EFEAE2",
-  primary: "#111111", secondary: "#44403C", muted: "#6B7280", red: "#C62828",
+  primary: "#111111", secondary: "#44403C", muted: "#6B7280",
 };
 
 export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
@@ -70,7 +70,7 @@ export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
       </div>
 
       {/* Calendar grid — fills remaining height */}
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: "1fr", gap: "3px" }}>
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: "minmax(40px, 1fr)", gap: "3px" }}>
         {paddedDays.map((day, idx) => {
           if (!day) return <div key={`pad-${idx}`} />;
           const available  = isAvailable(day);
@@ -88,7 +88,7 @@ export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
                 alignItems: "center",
                 justifyContent: "center",
                 borderRadius: "9px",
-                background: isSelected ? C.red : "transparent",
+                background: isSelected ? C.primary : "transparent",
                 color: isSelected ? "#fff" : available ? C.primary : "#CEC8C0",
                 fontSize: "16px",
                 fontWeight: isToday ? 700 : 400,
@@ -96,12 +96,11 @@ export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
                 border: "none",
                 position: "relative",
                 transition: "background 0.13s",
-                minHeight: 0,
               }}
             >
               {format(day, "d")}
               {isToday && !isSelected && (
-                <div style={{ position: "absolute", bottom: "5px", left: "50%", transform: "translateX(-50%)", width: "3px", height: "3px", borderRadius: "50%", background: C.red }} />
+                <div style={{ position: "absolute", bottom: "5px", left: "50%", transform: "translateX(-50%)", width: "3px", height: "3px", borderRadius: "50%", background: C.primary }} />
               )}
             </button>
           );
