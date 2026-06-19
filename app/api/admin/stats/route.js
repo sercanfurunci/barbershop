@@ -15,12 +15,19 @@ export async function GET(request) {
 
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
 
+  // Use Istanbul-aware date to avoid month boundary errors between 00:00-03:00 Istanbul time
+  const TZ = "Europe/Istanbul";
+  const fmt = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
   const now = new Date();
-  const thisMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthStart = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}-01`;
-  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-  const lastMonthEndStr = `${lastMonthEnd.getFullYear()}-${String(lastMonthEnd.getMonth() + 1).padStart(2, "0")}-${String(lastMonthEnd.getDate()).padStart(2, "0")}`;
+  const istParts = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit" }).format(now).split("-").map(Number);
+  const [yr, mo] = [istParts[0], istParts[1]]; // current year/month in Istanbul
+  const thisMonthStart = `${yr}-${String(mo).padStart(2, "0")}-01`;
+  const prevMo = mo === 1 ? 12 : mo - 1;
+  const prevYr = mo === 1 ? yr - 1 : yr;
+  const lastMonthStart = `${prevYr}-${String(prevMo).padStart(2, "0")}-01`;
+  // last day of previous month = one day before this month start
+  const lastMonthEndDate = new Date(Date.UTC(yr, mo - 1, 0)); // Day 0 of current month = last day of previous month
+  const lastMonthEndStr = fmt(lastMonthEndDate);
 
   const [
     totalRev,

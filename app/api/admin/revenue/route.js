@@ -21,10 +21,22 @@ export async function GET(request) {
 
   if (!shopId) return NextResponse.json({ data: [], total: 0, avg: 0 });
 
+  const TZ = "Europe/Istanbul";
+  const toDateStr = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+  const getDayLabel = (dateStr) => {
+    // Parse as local date to get day-of-week correctly
+    const [y, m, day] = dateStr.split("-").map(Number);
+    const dow = new Date(y, m - 1, day).getDay();
+    return ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"][dow === 0 ? 6 : dow - 1];
+  };
+
   const days = range === "7d" ? 7 : 30;
-  const start = new Date();
-  start.setDate(start.getDate() - (days - 1));
-  const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+  const todayStr = toDateStr(new Date());
+  const [ty, tm, td] = todayStr.split("-").map(Number);
+
+  // Build date range starting (days-1) days before today in Istanbul time
+  const startDate = new Date(ty, tm - 1, td - (days - 1));
+  const startStr = toDateStr(startDate);
 
   const groups = await prisma.appointment.groupBy({
     by: ["date"],
@@ -38,16 +50,14 @@ export async function GET(request) {
     orderBy: { date: "asc" },
   });
 
-  // Fill in all days (including zero-revenue days)
   const map = Object.fromEntries(groups.map(g => [g.date, g._sum.price ?? 0]));
 
   const data = [];
   for (let i = 0; i < days; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const d = new Date(ty, tm - 1, td - (days - 1) + i);
+    const key = toDateStr(d);
     const label = range === "7d"
-      ? ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"][d.getDay() === 0 ? 6 : d.getDay() - 1]
+      ? getDayLabel(key)
       : `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
     data.push({ date: label, fullDate: key, value: map[key] ?? 0 });
   }

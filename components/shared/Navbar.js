@@ -22,7 +22,8 @@ export default function Navbar() {
   const { lang, setLang }         = useLang();
   const tx = useT(lang);
   const pathname = usePathname();
-  const isBookPage = pathname?.startsWith("/book");
+  const isBookPage  = pathname?.startsWith("/book");
+  const isStaffPage = pathname?.startsWith("/admin") || pathname?.startsWith("/barber") || pathname?.startsWith("/superadmin");
 
   const navLinks = [
     { label: tx.nav.services, href: "#services" },
@@ -193,8 +194,8 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
-      {/* Mobile sticky bottom book bar — hidden on booking pages */}
-      {!isBookPage && <div
+      {/* Mobile sticky bottom book bar — hidden on booking and staff pages */}
+      {!isBookPage && !isStaffPage && <div
         className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
         style={{
           background: "rgba(246,243,238,0.97)",

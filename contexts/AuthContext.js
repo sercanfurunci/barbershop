@@ -25,20 +25,10 @@ export function AuthProvider({ children }) {
 
   const shopId = user?.shopId ?? user?.shop?.id ?? null;
 
-  const login = async (emailOrRole, password) => {
-    // Support legacy one-click login (dev shortcut) → map to real credentials
-    let email = emailOrRole;
-    let pwd   = password;
-
-    if (!password) {
-      // Legacy: emailOrRole is "admin" or barber slug like "mehmet"
-      email = emailOrRole === "admin" ? "admin@makas.com" : `${emailOrRole}@makas.com`;
-      pwd   = emailOrRole === "admin" ? "admin123" : "barber123";
-    }
-
+  const login = async (email, password) => {
     const data = await apiFetch("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password: pwd }),
+      body: JSON.stringify({ email, password }),
     });
     setUser(data.user);
     return data.user;

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { getDefaultShopId } from "@/lib/shop";
 import { queueNotifications } from "@/lib/notifications";
+import { todayStr } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -132,7 +133,7 @@ export async function POST(request) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json({ error: "Geçersiz tarih formatı." }, { status: 400 });
     }
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayStr(); // Istanbul-aware: avoids UTC midnight vs 00:00-03:00 Istanbul gap
     if (date < today) {
       return NextResponse.json({ error: "Geçmiş bir tarihe randevu oluşturulamaz." }, { status: 400 });
     }

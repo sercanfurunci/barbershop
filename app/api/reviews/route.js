@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
-const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+const API_KEY    = process.env.GOOGLE_PLACES_API_KEY;
 const PLACE_NAME = "Abdurrahman Çelik Exclusive Salon Darıca Kocaeli";
 
-// Cache place ID in module scope (survives across requests within same worker)
-let cachedPlaceId = null;
+// Prefer the GOOGLE_PLACE_ID env var to skip the search API call.
+// Falls back to text-search if not configured.
+let cachedPlaceId = process.env.GOOGLE_PLACE_ID || null;
 
 async function findPlaceId() {
   if (cachedPlaceId) return cachedPlaceId;

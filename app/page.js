@@ -69,7 +69,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#080808]">
+    <div className="flex flex-col min-h-screen bg-[#F6F3EE]">
       <Navbar />
       <main className="flex-1 pb-[72px] md:pb-0">
         <Hero services={services} barbers={barbers} />
@@ -78,7 +78,7 @@ export default async function Home() {
         <Testimonials />
         <CTA />
       </main>
-      <Footer className="mb-[72px] md:mb-0" />
+      <Footer />
     </div>
   );
 }

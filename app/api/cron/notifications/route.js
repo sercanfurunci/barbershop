@@ -5,8 +5,15 @@ import { processReviewQueue } from "@/lib/reviews";
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const auth = request.headers.get("authorization");
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  const secret = process.env.CRON_SECRET;
+  const auth   = request.headers.get("authorization");
+  const isProd = process.env.NODE_ENV === "production";
+  // In production, CRON_SECRET is mandatory — open endpoint is a security hole.
+  // In dev, allow if no secret is configured.
+  const unauthorized = isProd
+    ? !secret || auth !== `Bearer ${secret}`
+    : !!secret && auth !== `Bearer ${secret}`;
+  if (unauthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

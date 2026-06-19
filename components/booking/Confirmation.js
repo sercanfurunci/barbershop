@@ -18,6 +18,7 @@ const C = {
   primary:  "#111111",
   secondary:"#44403C",
   muted:    "#6B7280",
+  dim:      "#9A9490",
   red:      "#C62828",
 };
 

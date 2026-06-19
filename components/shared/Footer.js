@@ -54,7 +54,7 @@ export default function Footer() {
   const ft = tx.footer;
 
   return (
-    <footer style={{ background: "#111111" }}>
+    <footer style={{ background: "#111111" }} className="pb-[72px] md:pb-0">
 
       {/* ─── Location Section ─────────────────────────────────────────────── */}
       <section style={{ borderTop: "1px solid #1E1E1E", position: "relative", overflow: "hidden" }}>
