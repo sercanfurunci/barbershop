@@ -25,8 +25,9 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",   // unsafe-eval needed by Next.js dev; tighten for prod if possible
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://res.cloudinary.com",
+              "img-src 'self' data: blob: https://res.cloudinary.com https://lh3.googleusercontent.com",
               "connect-src 'self' https://maps.googleapis.com https://places.googleapis.com",
+              "frame-src https://www.google.com https://maps.google.com",
               "frame-ancestors 'none'",
             ].join("; "),
           },

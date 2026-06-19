@@ -15,24 +15,27 @@ async function fetchReviews(placeId, apiKey) {
 export async function GET(request) {
   const shopId = new URL(request.url).searchParams.get("shopId");
 
-  // Resolve credentials: per-shop settings take priority, fall back to env vars
-  let apiKey   = process.env.GOOGLE_PLACES_API_KEY;
-  let placeId  = process.env.GOOGLE_PLACE_ID || null;
+  let apiKey  = null;
+  let placeId = null;
 
   if (shopId) {
     const shop = await prisma.shop.findUnique({
       where: { id: shopId },
       select: { googlePlaceId: true, googlePlacesKey: true },
     });
-    if (shop?.googlePlaceId)   placeId = shop.googlePlaceId;
-    if (shop?.googlePlacesKey) apiKey  = shop.googlePlacesKey;
+    placeId = shop?.googlePlaceId ?? null;
+    apiKey  = shop?.googlePlacesKey ?? process.env.GOOGLE_PLACES_API_KEY ?? null;
+  } else {
+    // No shopId — use global env vars (superadmin/standalone context only)
+    placeId = process.env.GOOGLE_PLACE_ID ?? null;
+    apiKey  = process.env.GOOGLE_PLACES_API_KEY ?? null;
   }
 
+  if (!placeId) {
+    return NextResponse.json({ reviews: [], rating: null, totalRatings: 0 }, { status: 200 });
+  }
   if (!apiKey) {
     return NextResponse.json({ error: "API key not configured" }, { status: 500 });
-  }
-  if (!placeId) {
-    return NextResponse.json({ error: "Google Place ID not configured" }, { status: 404 });
   }
 
   try {

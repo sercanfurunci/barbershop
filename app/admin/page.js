@@ -9,7 +9,11 @@ export default function AdminRedirect() {
   useEffect(() => {
     if (!loaded) return;
     const slug = user?.shop?.slug;
-    router.replace(slug ? `/${slug}/admin` : "/superadmin/login");
+    if (!slug) { router.replace("/"); return; }
+    // Barbers land on their own dashboard, not the admin panel
+    const { role, barber } = user ?? {};
+    if (role === "BARBER" && barber?.slug) { router.replace(`/${slug}/barber/${barber.slug}`); return; }
+    router.replace(`/${slug}/admin`);
   }, [loaded, user, router]);
   return null;
 }

@@ -17,7 +17,9 @@ export async function GET(request) {
   const g = guard(payload);
   if (g.error) return g.error;
 
-  const where = g.shopId ? { shopId: g.shopId } : {};
+  const shopId = g.shopId ?? new URL(request.url).searchParams.get("shopId");
+  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+  const where = { shopId };
   const barbers = await prisma.barber.findMany({
     where,
     include: { workingHours: true },
@@ -38,10 +40,13 @@ export async function POST(request) {
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
 
   const body = await request.json();
-  const { slug, nameTr, nameEn, titleTr, titleEn, bioTr, bioEn, avatar, yearsExp, specialties, color, password } = body;
+  const { slug, nameTr, nameEn, titleTr, titleEn, bioTr, bioEn, avatar, yearsExp, specialties, color, password, email } = body;
 
   if (!slug || !nameTr || !titleTr || !avatar) {
     return NextResponse.json({ error: "slug, nameTr, titleTr ve avatar zorunlu" }, { status: 400 });
+  }
+  if (!email || !email.includes("@")) {
+    return NextResponse.json({ error: "Geçerli bir e-posta adresi gerekli" }, { status: 400 });
   }
   if (!password || password.length < 6) {
     return NextResponse.json({ error: "Şifre en az 6 karakter olmalı" }, { status: 400 });
@@ -50,9 +55,9 @@ export async function POST(request) {
   const dupe = await prisma.barber.findFirst({ where: { shopId, slug } });
   if (dupe) return NextResponse.json({ error: "Bu slug zaten kullanılıyor" }, { status: 409 });
 
-  const email = `${slug}@makas.com`;
-  const userDupe = await prisma.user.findFirst({ where: { email } });
-  if (userDupe) return NextResponse.json({ error: "Bu slug için kullanıcı zaten var" }, { status: 409 });
+  const normalizedEmail = email.toLowerCase().trim();
+  const userDupe = await prisma.user.findFirst({ where: { email: normalizedEmail } });
+  if (userDupe) return NextResponse.json({ error: "Bu e-posta adresi zaten kullanılıyor" }, { status: 409 });
 
   const passwordHash = await bcrypt.hash(password, 10);
 
@@ -78,7 +83,7 @@ export async function POST(request) {
 
     await tx.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         displayName: nameTr,
         passwordHash,
         role:        "BARBER",

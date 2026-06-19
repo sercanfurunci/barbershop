@@ -22,12 +22,7 @@ const C = {
 };
 
 function StatusCard({ lang, barbers }) {
-  const displayBarbers = barbers.length > 0 ? barbers : [
-    { id: "f1", avatar: "AÇ" },
-    { id: "f2", avatar: "EÇ" },
-    { id: "f3", avatar: "ÖF" },
-    { id: "f4", avatar: "EF" },
-  ];
+  const displayBarbers = barbers;
 
   return (
     <div style={{
@@ -97,12 +92,7 @@ function BookingWidget({ lang, services, barbers }) {
   }, [lang]);
 
   const serviceList = services.slice(0, 5);
-  const barberList  = barbers.length > 0 ? barbers : [
-    { id: "f1", avatar: "AÇ", name: "Abdurrahman" },
-    { id: "f2", avatar: "EÇ", name: "Egemen" },
-    { id: "f3", avatar: "ÖF", name: "Ömer" },
-    { id: "f4", avatar: "EF", name: "Emin" },
-  ];
+  const barberList  = barbers;
 
   return (
     <div style={{
@@ -298,6 +288,15 @@ export default function Hero({ services = [], barbers = [] }) {
   const tx = useT(lang);
   const shop = useShop();
   const bookBase = shop?.slug ? `/${shop.slug}/book` : "/book";
+  const [googleRating, setGoogleRating] = useState(null);
+
+  useEffect(() => {
+    if (!shop?.id) return;
+    fetch(`/api/reviews?shopId=${shop.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.rating) setGoogleRating({ rating: d.rating, total: d.totalRatings }); })
+      .catch(() => {});
+  }, [shop?.id]);
 
   return (
     <section className="relative min-h-screen flex flex-col" style={{ background: C.bg }}>
@@ -325,9 +324,11 @@ export default function Hero({ services = [], barbers = [] }) {
                 <div className="flex items-center gap-0.5">
                   {[1,2,3,4,5].map(i => <Star key={i} size={10} fill={C.primary} style={{ color: C.primary }} />)}
                 </div>
-                <span style={{ fontSize: "11px", color: C.secondary }}>
-                  4.9 · 176 {lang === "tr" ? "değerlendirme" : "reviews"}
-                </span>
+                {googleRating && (
+                  <span style={{ fontSize: "11px", color: C.secondary }}>
+                    {googleRating.rating} · {googleRating.total}+ {lang === "tr" ? "değerlendirme" : "reviews"}
+                  </span>
+                )}
                 <span style={{ width: "1px", height: "12px", background: C.border, flexShrink: 0 }} />
                 <span style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>
                   {tx.hero.badge(shop)}
@@ -411,20 +412,9 @@ export default function Hero({ services = [], barbers = [] }) {
                 className="hero-trust hidden sm:flex items-center gap-5 pt-6"
                 style={{ borderTop: `1px solid ${C.border}` }}
               >
-                <div className="flex items-baseline gap-2">
-                  <span className="font-display font-light" style={{
-                    fontSize: "26px", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1,
-                  }}>
-                    <span style={{ color: C.primary, fontSize: "15px", marginRight: "3px" }}>★</span>4.9
-                  </span>
-                  <span style={{ fontSize: "12px", color: C.muted }}>
-                    {lang === "tr" ? "· 176 yorum" : "· 176 reviews"}
-                  </span>
-                </div>
-                <span style={{ width: "1px", height: "22px", background: C.border, flexShrink: 0 }} />
-                <span style={{ fontSize: "12px", color: C.secondary }}>
-                  {lang === "tr" ? "12+ yıl deneyim · Darıca'nın tercihi" : "12+ years of craft · Darıca's choice"}
-                </span>
+                {shop?.description && (
+                  <span style={{ fontSize: "12px", color: C.secondary }}>{shop.description}</span>
+                )}
               </div>
             </div>
 

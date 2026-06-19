@@ -42,12 +42,13 @@ export default function BarberLoginPage() {
 
   useEffect(() => {
     if (!loaded) return;
-    if (role === "superadmin") router.replace("/superadmin");
-    else if (role === "admin") router.replace(user?.shop?.slug ? `/${user.shop.slug}/admin` : "/admin");
-    else if (user?.barber?.slug && user?.shop?.slug) {
-      router.replace(`/${user.shop.slug}/barber/${user.barber.slug}`);
-    }
-  }, [role, loaded, router, user]);
+    if (role === "superadmin") { router.replace("/superadmin"); return; }
+    // Only auto-redirect if the logged-in user belongs to THIS shop
+    const userShopSlug = user?.shop?.slug;
+    if (!userShopSlug || userShopSlug !== shop?.slug) return;
+    if (role === "admin") router.replace(`/${userShopSlug}/admin`);
+    else if (user?.barber?.slug) router.replace(`/${userShopSlug}/barber/${user.barber.slug}`);
+  }, [role, loaded, router, user, shop?.slug]);
 
   useEffect(() => {
     if (selected) setTimeout(() => pwdRef.current?.focus(), 120);

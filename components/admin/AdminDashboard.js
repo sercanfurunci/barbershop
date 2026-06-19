@@ -97,15 +97,28 @@ export default function AdminDashboard() {
       .catch(() => {});
   }, [loaded, role]);
 
-  const handleLogout = () => { const s = user?.shop?.slug; logout(); router.push(s ? `/${s}/barber` : "/superadmin/login"); };
+  const handleLogout = () => { const s = user?.shop?.slug ?? shopSlug; logout(); router.push(s ? `/${s}/barber` : "/"); };
   const navSections = NAV_SECTIONS(lang);
 
   useEffect(() => {
     if (!loaded) return;
-    if (!role) router.replace(shopSlug ? `/${shopSlug}/barber` : "/superadmin/login");
-  }, [loaded, role, router]);
+    if (!role) {
+      router.replace(shopSlug ? `/${shopSlug}/barber` : "/");
+      return;
+    }
+    if (role !== "admin" && role !== "superadmin") {
+      const dest = user?.shop?.slug ?? shopSlug;
+      router.replace(dest ? `/${dest}/barber/${role}` : "/");
+      return;
+    }
+    // Correct the URL if the slug in the path doesn't match the logged-in shop
+    if (role === "admin" && user?.shop?.slug && params?.shopSlug && user.shop.slug !== params.shopSlug) {
+      router.replace(`/${user.shop.slug}/admin`);
+    }
+  }, [loaded, role, router, shopSlug, user?.shop?.slug, params?.shopSlug]);
 
   if (!mounted || !loaded || !role) return null;
+  if (role !== "admin" && role !== "superadmin") return null;
 
   return (
     <div className="flex min-h-screen" style={{ background: C.bg, fontFamily: "'Outfit', sans-serif" }}>

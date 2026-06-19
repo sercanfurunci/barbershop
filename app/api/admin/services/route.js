@@ -21,7 +21,9 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("q")?.toLowerCase() ?? "";
 
-  const where = g.shopId ? { shopId: g.shopId } : {};
+  const shopId = g.shopId ?? searchParams.get("shopId");
+  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+  const where = { shopId };
   const services = await prisma.service.findMany({
     where,
     orderBy: [{ sortOrder: "asc" }, { category: "asc" }, { price: "asc" }],
