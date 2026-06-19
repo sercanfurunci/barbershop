@@ -57,8 +57,9 @@ export default function Footer() {
   const bookHref  = shop?.slug ? `/${shop.slug}/book` : "/book";
   const socialLinks = buildSocialLinks(shop?.social ?? {});
 
-  const mapsQuery  = encodeURIComponent(`${shopName}${shopAddr ? ` ${shopAddr}` : ""}`);
-  const mapsLink   = `https://www.google.com/maps/search/${mapsQuery}`;
+  const mapsLink = shop?.googlePlaceId
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shopName)}&query_place_id=${shop.googlePlaceId}`
+    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${shopName}${shopAddr ? ` ${shopAddr}` : ""}`)}`;
   const mapsEmbed  = shop?.mapsEmbed
     || `https://maps.google.com/maps?q=${encodeURIComponent(shopName)}&output=embed&hl=tr&z=16`;
 
