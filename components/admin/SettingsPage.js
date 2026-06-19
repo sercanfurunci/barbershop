@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/lib/api";
 import { todayStr } from "@/lib/utils";
-import { Clock, Calendar, Plus, Trash2, Save, CheckCircle, AlertCircle, ChevronDown } from "lucide-react";
+import { Clock, Calendar, Plus, Trash2, Save, CheckCircle, AlertCircle, ChevronDown, Store } from "lucide-react";
 
 const C = {
   bg:       "#F7F4EE",
@@ -48,13 +48,14 @@ function minToStr(min) {
 }
 
 const TABS = [
-  { id: "hours",    label: "Çalışma Saatleri", icon: Clock    },
-  { id: "holidays", label: "Tatil Günleri",     icon: Calendar },
-  { id: "rules",    label: "Randevu Kuralları", icon: Clock    },
+  { id: "profile",  label: "Salon Profili",     icon: Store    },
+  { id: "hours",    label: "Çalışma Saatleri",  icon: Clock    },
+  { id: "holidays", label: "Tatil Günleri",      icon: Calendar },
+  { id: "rules",    label: "Randevu Kuralları",  icon: Clock    },
 ];
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("hours");
+  const [activeTab, setActiveTab] = useState("profile");
 
   return (
     <div>
@@ -85,6 +86,7 @@ export default function SettingsPage() {
 
       <AnimatePresence mode="wait">
         <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+          {activeTab === "profile"  && <ShopProfileTab />}
           {activeTab === "hours"    && <WorkingHoursTab />}
           {activeTab === "holidays" && <HolidaysTab />}
           {activeTab === "rules"    && <RulesTab />}
@@ -581,15 +583,170 @@ function RulesTab() {
   );
 }
 
+/* ─── Shop Profile Tab ────────────────────────────────────────────────────── */
+
+function ShopProfileTab() {
+  const empty = { name: "", address: "", phone: "", email: "", description: "", googlePlaceId: "", googlePlacesKey: "", mapsEmbed: "", social: { instagram: "", facebook: "", tiktok: "", twitter: "", website: "" } };
+  const [form, setForm]   = useState(empty);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast]   = useState(null); // "success" | "error" | string
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    apiFetch("/api/admin/shop")
+      .then(shop => {
+        setForm({
+          name:            shop.name            ?? "",
+          address:         shop.address         ?? "",
+          phone:           shop.phone           ?? "",
+          email:           shop.email           ?? "",
+          description:     shop.description     ?? "",
+          googlePlaceId:   shop.googlePlaceId   ?? "",
+          googlePlacesKey: shop.googlePlacesKey ?? "",
+          mapsEmbed:       shop.mapsEmbed       ?? "",
+          social: {
+            instagram: shop.social?.instagram ?? "",
+            facebook:  shop.social?.facebook  ?? "",
+            tiktok:    shop.social?.tiktok    ?? "",
+            twitter:   shop.social?.twitter   ?? "",
+            website:   shop.social?.website   ?? "",
+          },
+        });
+        setLoaded(true);
+      })
+      .catch(() => { setLoaded(true); });
+  }, []);
+
+  const set  = (k)    => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const setSocial = (k) => (e) => setForm(f => ({ ...f, social: { ...f.social, [k]: e.target.value } }));
+
+  async function save(e) {
+    e.preventDefault();
+    setSaving(true); setToast(null);
+    try {
+      await apiFetch("/api/admin/shop", {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...form,
+          social: Object.fromEntries(Object.entries(form.social).map(([k, v]) => [k, v.trim() || null])),
+        }),
+      });
+      setToast("success");
+    } catch (err) {
+      setToast(err.message || "Hata");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setToast(null), 3500);
+    }
+  }
+
+  if (!loaded) return <div style={{ padding: "40px 0", textAlign: "center", color: C.muted, fontSize: 13 }}>Yükleniyor…</div>;
+
+  const fi = { width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", padding: "8px 12px", fontSize: "13px", color: C.primary, outline: "none", boxSizing: "border-box" };
+
+  return (
+    <form onSubmit={save}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
+
+        {/* Basic info */}
+        <Section title="Temel Bilgiler">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+            <Field label="Salon Adı *">
+              <input required value={form.name} onChange={set("name")} style={fi}
+                onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+            </Field>
+            <Field label="Telefon">
+              <input value={form.phone} onChange={set("phone")} placeholder="0532 123 45 67" style={fi}
+                onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+            </Field>
+            <Field label="E-posta">
+              <input type="email" value={form.email} onChange={set("email")} style={fi}
+                onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+            </Field>
+          </div>
+          <Field label="Adres">
+            <input value={form.address} onChange={set("address")} placeholder="Mahalle, Cadde, İlçe, Şehir" style={fi}
+              onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+          </Field>
+          <Field label="Açıklama">
+            <textarea value={form.description} onChange={set("description")} rows={3} placeholder="Salonunuz hakkında kısa bir açıklama…"
+              style={{ ...fi, resize: "vertical", lineHeight: 1.6 }}
+              onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+          </Field>
+        </Section>
+
+        {/* Social links */}
+        <Section title="Sosyal Medya">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+            {[["instagram","Instagram"],["facebook","Facebook"],["tiktok","TikTok"],["twitter","X / Twitter"],["website","Web Sitesi"]].map(([k, label]) => (
+              <Field key={k} label={label}>
+                <input value={form.social[k]} onChange={setSocial(k)} placeholder={k === "website" ? "https://example.com" : `https://${k}.com/…`} style={fi}
+                  onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+              </Field>
+            ))}
+          </div>
+        </Section>
+
+        {/* Google / Maps */}
+        <Section title="Google & Harita">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+            <Field label="Google Place ID" hint="Google'da işletme sayfanızın Place ID'si">
+              <input value={form.googlePlaceId} onChange={set("googlePlaceId")} placeholder="ChIJ…" style={fi}
+                onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+            </Field>
+            <Field label="Google Places API Key" hint="Boş bırakırsanız platform anahtarı kullanılır">
+              <input value={form.googlePlacesKey} onChange={set("googlePlacesKey")} placeholder="AIza…" type="password" style={fi}
+                onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+            </Field>
+          </div>
+          <Field label="Google Maps Embed URL" hint="Google Maps → Haritayı paylaş → Haritayı yerleştir bağlantısı">
+            <input value={form.mapsEmbed} onChange={set("mapsEmbed")} placeholder="https://www.google.com/maps/embed?pb=…" style={fi}
+              onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+          </Field>
+        </Section>
+
+        {/* Save bar */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <button type="submit" disabled={saving}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: saving ? C.dim : C.primary, color: "#fff", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "13px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
+            <Save size={14} />
+            {saving ? "Kaydediliyor…" : "Kaydet"}
+          </button>
+          {toast === "success" && (
+            <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#15803D" }}>
+              <CheckCircle size={14} /> Kaydedildi
+            </motion.div>
+          )}
+          {toast && toast !== "success" && (
+            <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: C.primary }}>
+              <AlertCircle size={14} /> {toast}
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </form>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
+      <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}`, fontSize: "11px", fontWeight: 600, color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase" }}>{title}</div>
+      <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>{children}</div>
+    </div>
+  );
+}
+
 /* ─── Helper ──────────────────────────────────────────────────────────────── */
 
-function Field({ label, children }) {
+function Field({ label, hint, children }) {
   return (
     <div>
       <label style={{ display: "block", fontSize: "11px", color: C.muted, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
         {label}
       </label>
       {children}
+      {hint && <div style={{ fontSize: "10px", color: C.dim, marginTop: "4px" }}>{hint}</div>}
     </div>
   );
 }

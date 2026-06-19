@@ -25,10 +25,13 @@ model Shop {
   phone       String?
   email       String?
   description String?    @db.Text
-  social      Json?      // { instagram, facebook, tiktok, twitter, website }
-  status      ShopStatus @default(ACTIVE)
-  timezone    String     @default("Europe/Istanbul")
-  currency    String     @default("TRY")
+  social          Json?      // { instagram, facebook, tiktok, twitter, website }
+  googlePlaceId   String?              // per-shop Google Place ID for reviews widget
+  googlePlacesKey String?              // per-shop Google Places API key (overrides global env)
+  mapsEmbed       String?  @db.Text   // custom Google Maps embed URL
+  status          ShopStatus @default(ACTIVE)
+  timezone        String     @default("Europe/Istanbul")
+  currency        String     @default("TRY")
 
   users        User[]
   barbers      Barber[]

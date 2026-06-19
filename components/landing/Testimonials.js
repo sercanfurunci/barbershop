@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { testimonials } from "@/lib/data";
 import { useLang } from "@/contexts/LanguageContext";
+import { useShop } from "@/contexts/ShopContext";
 import { Star } from "lucide-react";
 
 const C = {
@@ -31,14 +32,16 @@ export default function Testimonials() {
   const [googleData, setGoogleData] = useState(null);
   const [loading, setLoading]       = useState(true);
   const { lang } = useLang();
+  const shop = useShop();
 
   useEffect(() => {
-    fetch("/api/reviews")
+    const url = shop?.id ? `/api/reviews?shopId=${shop.id}` : "/api/reviews";
+    fetch(url)
       .then(r => r.json())
       .then(data => { if (data.reviews?.length) setGoogleData(data); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [shop?.id]);
 
   const isGoogle    = !!(googleData?.reviews?.length);
   const items       = isGoogle ? googleData.reviews : testimonials;

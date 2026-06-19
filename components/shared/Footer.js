@@ -57,11 +57,10 @@ export default function Footer() {
   const bookHref  = shop?.slug ? `/${shop.slug}/book` : "/book";
   const socialLinks = buildSocialLinks(shop?.social ?? {});
 
-  const mapsQuery     = encodeURIComponent(`${shopName}${shopAddr ? ` ${shopAddr}` : ""}`);
-  const mapsLink      = `https://www.google.com/maps/search/${mapsQuery}`;
-  // ponytail: name-only embed avoids routing mode; add Shop.placeId for exact pin
-  const mapsEmbedQ    = encodeURIComponent(shopName);
-  const mapsEmbed     = `https://maps.google.com/maps?q=${mapsEmbedQ}&output=embed&hl=tr&z=16`;
+  const mapsQuery  = encodeURIComponent(`${shopName}${shopAddr ? ` ${shopAddr}` : ""}`);
+  const mapsLink   = `https://www.google.com/maps/search/${mapsQuery}`;
+  const mapsEmbed  = shop?.mapsEmbed
+    || `https://maps.google.com/maps?q=${encodeURIComponent(shopName)}&output=embed&hl=tr&z=16`;
 
   return (
     <footer className="md:pb-0" style={{ background: "#111111", paddingBottom: "calc(72px + env(safe-area-inset-bottom))" }}>
