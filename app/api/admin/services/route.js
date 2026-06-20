@@ -58,8 +58,8 @@ export async function POST(request) {
   if (!VALID_CATEGORIES.includes(category)) {
     return NextResponse.json({ error: `Geçersiz kategori. Seçenekler: ${VALID_CATEGORIES.join(", ")}` }, { status: 400 });
   }
-  if (Number(duration) < 5 || Number(price) < 0) {
-    return NextResponse.json({ error: "Geçersiz süre veya fiyat" }, { status: 400 });
+  if (Number(duration) < 5 || Number(duration) > 480 || Number(price) < 0 || Number(price) > 100000) {
+    return NextResponse.json({ error: "Süre 5–480 dk, fiyat 0–100000 ₺ arasında olmalı" }, { status: 400 });
   }
 
   const service = await prisma.service.create({

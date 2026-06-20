@@ -45,11 +45,14 @@ export async function POST(request) {
   if (!slug || !nameTr || !titleTr || !avatar) {
     return NextResponse.json({ error: "slug, nameTr, titleTr ve avatar zorunlu" }, { status: 400 });
   }
-  if (!email || !email.includes("@")) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: "Geçerli bir e-posta adresi gerekli" }, { status: 400 });
   }
-  if (!password || password.length < 6) {
-    return NextResponse.json({ error: "Şifre en az 6 karakter olmalı" }, { status: 400 });
+  if (!password || password.length < 8) {
+    return NextResponse.json({ error: "Şifre en az 8 karakter olmalı" }, { status: 400 });
+  }
+  if (!/^[a-z0-9-]{2,40}$/.test(slug)) {
+    return NextResponse.json({ error: "Slug sadece küçük harf, rakam ve tire içerebilir (2-40 karakter)" }, { status: 400 });
   }
 
   const dupe = await prisma.barber.findFirst({ where: { shopId, slug } });

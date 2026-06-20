@@ -31,8 +31,11 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const date     = searchParams.get("date");
   const barberId = searchParams.get("barberId");
-  const status   = searchParams.get("status");
-  const limit    = parseInt(searchParams.get("limit") ?? "200");
+  const rawStatus = searchParams.get("status");
+  const VALID_STATUSES = ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED", "NOSHOW"];
+  const status = VALID_STATUSES.includes(rawStatus) ? rawStatus : null;
+  const limit = Math.min(Math.max(parseInt(searchParams.get("limit") ?? "200") || 200, 1), 500);
+  const offset = Math.max(parseInt(searchParams.get("offset") ?? "0") || 0, 0);
 
   const shopId =
     payload.role === "SUPER_ADMIN"
@@ -59,6 +62,7 @@ export async function GET(request) {
       service: { select: { id: true, nameTr: true, nameEn: true, icon: true } },
     },
     orderBy: [{ date: "desc" }, { time: "desc" }],
+    skip: offset,
     take: limit,
   });
 
@@ -119,22 +123,21 @@ export async function POST(request) {
       return NextResponse.json({ error: "Geçersiz saat formatı." }, { status: 400 });
     }
 
-    // Fetch service, barber, existing client, and slot conflicts in parallel.
-    const [service, barber, existingClient, slotConflicts] = await Promise.all([
+    // Fetch service, barber, junction, existing client in parallel.
+    const [service, barber, barberOffersService, existingClient] = await Promise.all([
       prisma.service.findFirst({ where: { id: serviceId, shopId } }),
       prisma.barber.findFirst({ where: { id: barberId, shopId } }),
+      prisma.barberService.findUnique({ where: { barberId_serviceId: { barberId, serviceId } } }),
       prisma.client.findUnique({
         where: { shopId_phone: { shopId, phone } },
         select: { id: true, blocked: true },
-      }),
-      prisma.appointment.findMany({
-        where: { shopId, barberId, date, status: { notIn: ["CANCELLED", "NOSHOW"] } },
-        select: { time: true, duration: true },
       }),
     ]);
 
     if (!service) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
     if (!barber)  return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
+    if (!barber.available) return NextResponse.json({ error: "Bu berber şu an randevu kabul etmiyor." }, { status: 409 });
+    if (!barberOffersService) return NextResponse.json({ error: "Seçilen berber bu hizmeti vermiyor." }, { status: 409 });
 
     // ── Phone-based spam guard: max 2 active upcoming appointments per phone ──
     if (existingClient?.blocked) {
@@ -157,48 +160,59 @@ export async function POST(request) {
       }
     }
 
-    // ── Slot conflict check ───────────────────────────────────────────────────
     const [h, m] = time.split(":").map(Number);
     const startMin = h * 60 + m;
     const endMin   = startMin + service.duration;
 
-    const conflict = slotConflicts.some(a => {
-      const aStart = parseInt(a.time.split(":")[0]) * 60 + parseInt(a.time.split(":")[1]);
-      const aEnd   = aStart + a.duration;
-      return startMin < aEnd && endMin > aStart;
-    });
-
-    if (conflict) {
-      return NextResponse.json({ error: "Bu saat dilimi dolu. Lütfen başka bir saat seçin." }, { status: 409 });
-    }
-
-    // ── Find-or-create client ─────────────────────────────────────────────────
-    let client = existingClient
-      ? await prisma.client.update({
-          where: { id: existingClient.id },
-          data: { name: name.trim(), ...(email && { email }) },
-        })
-      : await prisma.client.create({
-          data: { shopId, name: name.trim(), phone, email: email || null },
+    // Serializable transaction: re-check slot conflicts and create atomically.
+    // ponytail: Serializable retries on conflict — fine for ~5 bookings/sec.
+    // Upgrade to advisory locks if throughput becomes an issue.
+    let appointment;
+    try {
+      appointment = await prisma.$transaction(async (tx) => {
+        const slotConflicts = await tx.appointment.findMany({
+          where: { shopId, barberId, date, status: { notIn: ["CANCELLED", "NOSHOW"] } },
+          select: { time: true, duration: true },
         });
+        const conflict = slotConflicts.some(a => {
+          const aStart = parseInt(a.time.split(":")[0]) * 60 + parseInt(a.time.split(":")[1]);
+          const aEnd   = aStart + a.duration;
+          return startMin < aEnd && endMin > aStart;
+        });
+        if (conflict) throw new Error("SLOT_TAKEN");
 
-    // ── Create appointment ────────────────────────────────────────────────────
-    const appointment = await prisma.appointment.create({
-      data: {
-        shopId,
-        clientId:  client.id,
-        barberId,
-        serviceId,
-        date,
-        time,
-        duration:  service.duration,
-        price:     service.price,
-        status:    "PENDING",
-        source:    ALLOWED_SOURCES.has(source) ? source : "ONLINE",
-        notes:     notes?.trim().slice(0, 500) ?? null,
-      },
-      include: { shop: { select: { name: true, address: true, phone: true } } },
-    });
+        const client = existingClient
+          ? await tx.client.update({
+              where: { id: existingClient.id },
+              data: { name: name.trim(), ...(email && { email }) },
+            })
+          : await tx.client.create({
+              data: { shopId, name: name.trim(), phone, email: email || null },
+            });
+
+        return tx.appointment.create({
+          data: {
+            shopId,
+            clientId:  client.id,
+            barberId,
+            serviceId,
+            date,
+            time,
+            duration:  service.duration,
+            price:     service.price,
+            status:    "PENDING",
+            source:    ALLOWED_SOURCES.has(source) ? source : "ONLINE",
+            notes:     notes?.trim().slice(0, 500) ?? null,
+          },
+          include: { shop: { select: { name: true, address: true, phone: true } } },
+        });
+      }, { isolationLevel: "Serializable" });
+    } catch (e) {
+      if (e.message === "SLOT_TAKEN") {
+        return NextResponse.json({ error: "Bu saat dilimi dolu. Lütfen başka bir saat seçin." }, { status: 409 });
+      }
+      throw e;
+    }
 
     // Queue notifications (non-blocking — don't let this fail the response)
     queueNotifications(appointment.id, "CREATED").catch(err =>

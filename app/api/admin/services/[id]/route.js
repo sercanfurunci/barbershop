@@ -39,8 +39,18 @@ export async function PATCH(request, { params }) {
     if (body[key] !== undefined) data[key] = body[key];
   }
 
-  if (data.duration !== undefined) data.duration = Number(data.duration);
-  if (data.price    !== undefined) data.price    = Number(data.price);
+  if (data.duration !== undefined) {
+    data.duration = Number(data.duration);
+    if (data.duration < 5 || data.duration > 480) {
+      return NextResponse.json({ error: "Süre 5–480 dk arasında olmalı" }, { status: 400 });
+    }
+  }
+  if (data.price !== undefined) {
+    data.price = Number(data.price);
+    if (data.price < 0 || data.price > 100000) {
+      return NextResponse.json({ error: "Fiyat 0–100000 ₺ arasında olmalı" }, { status: 400 });
+    }
+  }
   if (data.sortOrder !== undefined) data.sortOrder = Number(data.sortOrder);
   if (data.category && !VALID_CATEGORIES.includes(data.category)) {
     return NextResponse.json({ error: "Geçersiz kategori" }, { status: 400 });
@@ -58,9 +68,11 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   const payload = await requireAuth(request);
   const { id } = await params;
-  const { err } = await resolve(id, payload);
+  const { err, service } = await resolve(id, payload);
   if (err) return err;
 
-  await prisma.service.delete({ where: { id } });
+  // Defense-in-depth shopId scope.
+  const { count } = await prisma.service.deleteMany({ where: { id: service.id, shopId: service.shopId } });
+  if (!count) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

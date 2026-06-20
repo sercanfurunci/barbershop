@@ -72,9 +72,11 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   const payload = await requireAuth(request);
   const { id } = await params;
-  const { err } = await resolveBarber(id, payload);
+  const { err, barber } = await resolveBarber(id, payload);
   if (err) return err;
 
-  await prisma.barber.delete({ where: { id } });
+  // Defense-in-depth: scope by shopId in case resolveBarber gets bypassed later.
+  const { count } = await prisma.barber.deleteMany({ where: { id: barber.id, shopId: barber.shopId } });
+  if (!count) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

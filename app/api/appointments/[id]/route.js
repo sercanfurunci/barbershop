@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { todayStr } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -48,10 +49,21 @@ export async function PATCH(request, { params }) {
   const body = await request.json();
   const { notes, date, time } = body;
 
-  // If rescheduling, re-check conflicts within the same shop
+  // If rescheduling, validate format + not-in-past + re-check conflicts.
   if (date || time) {
     const newDate = date ?? appt.date;
     const newTime = time ?? appt.time;
+
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return NextResponse.json({ error: "Geçersiz tarih formatı." }, { status: 400 });
+    }
+    if (time && !/^\d{2}:\d{2}$/.test(time)) {
+      return NextResponse.json({ error: "Geçersiz saat formatı." }, { status: 400 });
+    }
+    if (newDate < todayStr()) {
+      return NextResponse.json({ error: "Geçmiş bir tarihe taşınamaz." }, { status: 400 });
+    }
+
     const [h, m]  = newTime.split(":").map(Number);
     const startMin = h * 60 + m;
     const endMin   = startMin + appt.duration;
@@ -77,7 +89,7 @@ export async function PATCH(request, { params }) {
   }
 
   const updated = await prisma.appointment.update({
-    where: { id },
+    where: { id: appt.id },
     data: {
       ...(notes !== undefined && { notes }),
       ...(date  && { date }),
@@ -100,6 +112,8 @@ export async function DELETE(request, { params }) {
   if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
   if (!canAccess(payload, appt)) return forbidden();
 
-  await prisma.appointment.delete({ where: { id } });
+  // Defense-in-depth: scope delete by shopId even though canAccess already checked.
+  const { count } = await prisma.appointment.deleteMany({ where: { id: appt.id, shopId: appt.shopId } });
+  if (!count) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

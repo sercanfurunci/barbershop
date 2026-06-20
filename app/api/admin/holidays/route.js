@@ -43,6 +43,11 @@ export async function POST(request) {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "Geçerli tarih gerekli (YYYY-MM-DD)" }, { status: 400 });
   }
+  // Reject Feb 30, Apr 31, etc. by round-trip check.
+  const d = new Date(date + "T00:00:00Z");
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== date) {
+    return NextResponse.json({ error: "Geçersiz tarih" }, { status: 400 });
+  }
 
   // If a barber is specified, ensure they belong to the caller's shop
   if (barberId) {

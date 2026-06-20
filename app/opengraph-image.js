@@ -44,7 +44,14 @@ export default function OgImage() {
               borderRadius: "10px",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <span style={{ color: "#111", fontSize: "20px", fontWeight: 700 }}>M</span>
+              <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="#111" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="8" cy="8" r="2.6" />
+                <circle cx="24" cy="8" r="2.6" />
+                <path d="M8 10.6 L8 25" />
+                <path d="M24 10.6 L24 25" />
+                <path d="M8 10.6 L16 22 L24 10.6" />
+                <circle cx="16" cy="22" r="0.9" fill="#111" stroke="none" />
+              </svg>
             </div>
             <span style={{ color: "#F7F4EE", fontSize: "18px", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600 }}>
               MAKAS

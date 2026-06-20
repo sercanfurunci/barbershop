@@ -39,6 +39,31 @@ function scrollTo(id) {
 
 const fade = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
 
+// "M" letterform with scissor-handle rings on top + pivot dot at center V.
+// Reads as M first, scissors second.
+function MakasMark({ size = 20, color = "#fff" }) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      width={size}
+      height={size}
+      fill="none"
+      stroke={color}
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="8" cy="8" r="2.6" />
+      <circle cx="24" cy="8" r="2.6" />
+      <path d="M8 10.6 L8 25" />
+      <path d="M24 10.6 L24 25" />
+      <path d="M8 10.6 L16 22 L24 10.6" />
+      <circle cx="16" cy="22" r="0.9" fill={color} stroke="none" />
+    </svg>
+  );
+}
+
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
 function Navbar() {
@@ -76,13 +101,9 @@ function Navbar() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 16,
-              letterSpacing: "-0.5px",
             }}
           >
-            M
+            <MakasMark size={20} color="#fff" />
           </div>
           <span
             style={{
@@ -96,8 +117,8 @@ function Navbar() {
           </span>
         </div>
 
-        {/* CTAs */}
-        <div style={{ display: "flex", gap: 10 }}>
+        {/* CTAs — desktop: both, mobile: only primary */}
+        <div className="hidden sm:flex" style={{ gap: 10 }}>
           <button
             onClick={() => scrollTo("demo")}
             style={{
@@ -129,6 +150,22 @@ function Navbar() {
             İletişime Geç
           </button>
         </div>
+        <button
+          onClick={() => scrollTo("contact")}
+          className="sm:hidden"
+          style={{
+            padding: "8px 14px",
+            border: "none",
+            borderRadius: 8,
+            background: C.primary,
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          İletişim
+        </button>
       </nav>
     </header>
   );
@@ -754,12 +791,9 @@ function Footer() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: C.primary,
-                fontWeight: 800,
-                fontSize: 15,
               }}
             >
-              M
+              <MakasMark size={19} color={C.primary} />
             </div>
             <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: "-0.5px" }}>MAKAS</span>
           </div>
