@@ -1,9 +1,15 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
-export const runtime = "edge";
 export const alt = "MAKAS — Berber Randevu Sistemi";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+async function logoDataUrl() {
+  const buf = await readFile(path.join(process.cwd(), "public/logo-dark.png"));
+  return `data:image/png;base64,${buf.toString("base64")}`;
+}
 
 const FEATURES = [
   { icon: "📅", label: "Online Randevu" },
@@ -12,7 +18,8 @@ const FEATURES = [
   { icon: "⭐", label: "Google Yorumları" },
 ];
 
-export default function OgImage() {
+export default async function OgImage() {
+  const logo = await logoDataUrl();
   return new ImageResponse(
     (
       <div style={{
@@ -38,21 +45,7 @@ export default function OgImage() {
         }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <div style={{
-              width: "44px", height: "44px",
-              background: "#F7F4EE",
-              borderRadius: "10px",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="#111" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="8" cy="8" r="2.6" />
-                <circle cx="24" cy="8" r="2.6" />
-                <path d="M8 10.6 L8 25" />
-                <path d="M24 10.6 L24 25" />
-                <path d="M8 10.6 L16 22 L24 10.6" />
-                <circle cx="16" cy="22" r="0.9" fill="#111" stroke="none" />
-              </svg>
-            </div>
+            <img src={logo} width={56} height={56} alt="" style={{ borderRadius: "10px" }} />
             <span style={{ color: "#F7F4EE", fontSize: "18px", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600 }}>
               MAKAS
             </span>

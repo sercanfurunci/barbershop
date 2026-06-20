@@ -39,28 +39,11 @@ function scrollTo(id) {
 
 const fade = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
 
-// "M" letterform with scissor-handle rings on top + pivot dot at center V.
-// Reads as M first, scissors second.
-function MakasMark({ size = 20, color = "#fff" }) {
+// MAKAS mark: raster logo. `variant="dark"` = white-on-black, "light" = black-on-cream.
+function MakasMark({ size = 32, variant = "dark" }) {
+  const src = variant === "dark" ? "/logo-dark.png" : "/logo-light.png";
   return (
-    <svg
-      viewBox="0 0 32 32"
-      width={size}
-      height={size}
-      fill="none"
-      stroke={color}
-      strokeWidth={2.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="8" cy="8" r="2.6" />
-      <circle cx="24" cy="8" r="2.6" />
-      <path d="M8 10.6 L8 25" />
-      <path d="M24 10.6 L24 25" />
-      <path d="M8 10.6 L16 22 L24 10.6" />
-      <circle cx="16" cy="22" r="0.9" fill={color} stroke="none" />
-    </svg>
+    <img src={src} alt="MAKAS" width={size} height={size} style={{ display: "block", borderRadius: 6 }} />
   );
 }
 
@@ -92,19 +75,7 @@ function Navbar() {
       >
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              background: C.primary,
-              borderRadius: 6,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <MakasMark size={20} color="#fff" />
-          </div>
+          <MakasMark size={32} variant="dark" />
           <span
             style={{
               fontWeight: 700,
@@ -782,19 +753,7 @@ function Footer() {
         {/* Brand */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                background: "#fff",
-                borderRadius: 6,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <MakasMark size={19} color={C.primary} />
-            </div>
+            <MakasMark size={30} variant="light" />
             <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: "-0.5px" }}>MAKAS</span>
           </div>
           <p style={{ fontSize: 13, color: "rgba(248,246,242,0.6)", lineHeight: 1.6 }}>
