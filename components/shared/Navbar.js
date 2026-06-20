@@ -57,18 +57,28 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 xl:px-16">
           <div className="flex items-center justify-between h-[68px]">
 
-            {/* Logo */}
-            <Link href={shopSlug ? `/${shopSlug}` : "/"} className="flex items-center gap-3 group shrink-0">
+            {/* Logo — Link allowed to shrink so long names wrap instead of overflowing */}
+            <Link
+              href={shopSlug ? `/${shopSlug}` : "/"}
+              className="flex items-center gap-3 group min-w-0 flex-1 md:flex-initial md:max-w-[420px]"
+            >
               <div
-                className="flex items-center justify-center transition-all duration-200 group-hover:opacity-90"
+                className="flex items-center justify-center transition-all duration-200 group-hover:opacity-90 shrink-0"
                 style={{ width: "32px", height: "32px", background: C.primary, borderRadius: "6px" }}
               >
-                <span className="font-display font-bold text-white" style={{ fontSize: "14px" }}>{(shop?.name ?? "M")[0].toUpperCase()}</span>
+                <span className="font-display font-bold text-white" style={{ fontSize: "14px" }}>
+                  {(shop?.name ?? "M")[0].toUpperCase()}
+                </span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1, minWidth: 0 }}>
+              <div className="min-w-0 flex-1" style={{ display: "flex", flexDirection: "column" }}>
                 <span
-                  className="font-display font-light"
-                  style={{ fontSize: "13px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "clamp(100px, 30vw, 260px)" }}
+                  className="font-display font-light uppercase text-[11.5px] sm:text-[13px] line-clamp-2 md:truncate"
+                  style={{
+                    letterSpacing: "0.06em",
+                    color: C.primary,
+                    lineHeight: 1.2,
+                    wordBreak: "break-word",
+                  }}
                 >
                   {shop?.name ?? "MAKAS"}
                 </span>
