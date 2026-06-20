@@ -2,13 +2,14 @@ import { ImageResponse } from "next/og";
 import { resolveShopBySlug } from "@/lib/shop";
 import { prisma } from "@/lib/prisma";
 
-export const runtime = "edge";
+// ponytail: Node runtime — Prisma needs `node:util/types`, not available on Edge.
 export const alt = "Online Randevu";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export async function generateImageMetadata({ params }) {
   const { shopSlug } = await params;
+  if (!shopSlug) return [{ id: "default", alt: "Online Randevu" }];
   const shop = await resolveShopBySlug(shopSlug);
   return [{ id: shopSlug, alt: shop?.name ?? shopSlug }];
 }
