@@ -16,6 +16,8 @@ import {
   Layers,
   ExternalLink,
   CheckCircle,
+  ChevronDown,
+  ArrowRight,
 } from "lucide-react";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -187,7 +189,7 @@ function Hero() {
             whiteSpace: "pre-line",
           }}
         >
-          {"Berberiniz için\npremium randevu sistemi."}
+          {"Boş koltukları azaltın.\nRandevularınızı otomatik yönetin."}
         </motion.h1>
 
         <motion.p
@@ -200,7 +202,7 @@ function Hero() {
             lineHeight: 1.6,
           }}
         >
-          Müşterileriniz kolayca randevu alsın, ekibinizi yönetin, gelirlerinizi takip edin.
+          Telefon trafiğini azaltın, müşterileriniz online randevu alsın.
         </motion.p>
 
         <motion.div
@@ -208,7 +210,7 @@ function Hero() {
           style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}
         >
           <button
-            onClick={() => scrollTo("demo")}
+            onClick={() => scrollTo("contact")}
             style={{
               padding: "14px 28px",
               borderRadius: 10,
@@ -220,7 +222,7 @@ function Hero() {
               cursor: "pointer",
             }}
           >
-            Demo Gör
+            Demo Talep Et
           </button>
           <button
             onClick={() => scrollTo("contact")}
@@ -238,7 +240,137 @@ function Hero() {
             İletişime Geç
           </button>
         </motion.div>
+
+        <motion.p
+          variants={fade}
+          style={{
+            fontSize: 13,
+            color: C.muted,
+            marginTop: 14,
+          }}
+        >
+          Kurulum ve demo için bizimle iletişime geçin.
+        </motion.p>
+
+        <motion.ul
+          variants={fade}
+          style={{
+            listStyle: "none",
+            padding: 0,
+            margin: "32px auto 0",
+            maxWidth: 720,
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: "10px 22px",
+          }}
+        >
+          {[
+            "1 günde kurulum",
+            "Size özel salon adresi",
+            "WhatsApp destek hattı",
+            "Mobil uyumlu kullanım",
+          ].map((t) => (
+            <li
+              key={t}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 13.5,
+                color: C.secondary,
+                fontWeight: 500,
+              }}
+            >
+              <CheckCircle size={15} strokeWidth={2.2} style={{ color: C.primary, flexShrink: 0 }} />
+              {t}
+            </li>
+          ))}
+        </motion.ul>
       </motion.div>
+    </section>
+  );
+}
+
+// ─── How It Works ─────────────────────────────────────────────────────────────
+
+const STEPS = [
+  { Icon: Zap,       title: "Kurulum",            desc: "Salonunuza özel sisteminizi kuruyoruz." },
+  { Icon: Scissors,  title: "Özelleştirme",       desc: "Hizmetlerinizi, berberlerinizi ve çalışma saatlerinizi ayarlıyoruz." },
+  { Icon: Calendar,  title: "Kullanıma Başlayın", desc: "Müşterileriniz online randevu almaya başlıyor." },
+];
+
+function HowItWorks() {
+  return (
+    <section id="how" style={{ padding: "72px 24px 40px", background: C.bg }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          style={{ textAlign: "center", marginBottom: 40 }}
+        >
+          <h2 style={{ fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 700, letterSpacing: "-1px", color: C.primary, marginBottom: 10 }}>
+            Nasıl Çalışır
+          </h2>
+          <p style={{ fontSize: 15, color: C.muted, maxWidth: 520, margin: "0 auto" }}>
+            Üç adımda salonunuz yayında.
+          </p>
+        </motion.div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: 18,
+          }}
+        >
+          {STEPS.map(({ Icon, title, desc }, i) => (
+            <motion.div
+              key={title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+              whileHover={{ y: -3, boxShadow: "0 10px 28px rgba(17,17,17,0.08)" }}
+              style={{
+                background: C.card,
+                border: `1px solid ${C.border}`,
+                borderRadius: 16,
+                padding: "26px 24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+                position: "relative",
+                transition: "box-shadow 0.2s, transform 0.2s",
+              }}
+            >
+              <span style={{
+                position: "absolute", top: 18, right: 20,
+                fontSize: 12, fontWeight: 700, letterSpacing: "0.18em",
+                color: C.muted,
+              }}>
+                0{i + 1}
+              </span>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: C.surface,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: C.primary,
+              }}>
+                <Icon size={22} strokeWidth={1.8} />
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: C.primary, letterSpacing: "-0.3px" }}>
+                {title}
+              </h3>
+              <p style={{ fontSize: 14.5, color: C.muted, lineHeight: 1.6 }}>
+                {desc}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
@@ -252,8 +384,8 @@ const FEATURES = [
   { Icon: DollarSign,    title: "Hizmet & Fiyat",       desc: "Hizmetlerinizi ve fiyatlarınızı kolayca yönetin" },
   { Icon: MessageCircle, title: "SMS/WhatsApp",          desc: "Otomatik randevu hatırlatmaları" },
   { Icon: BarChart2,     title: "Gelir Takibi",         desc: "Günlük, haftalık gelir raporları" },
-  { Icon: Star,          title: "Müşteri Yorumları",    desc: "Google yorumları entegrasyonu" },
-  { Icon: Building2,     title: "Çoklu Şube",           desc: "Birden fazla lokasyon desteği" },
+  { Icon: Star,          title: "Otomatik Yorum",       desc: "Randevu sonrası SMS ile yorum daveti" },
+  { Icon: Building2,     title: "Müşteri Yönetimi",     desc: "Notlar, geçmiş randevular, telefon takibi" },
 ];
 
 function Features() {
@@ -401,9 +533,8 @@ function WhyUs() {
 // ─── Demo Showcase ────────────────────────────────────────────────────────────
 
 const DEMOS = [
-  { name: "Abdurrahman Çelik Exclusive Salon", slug: "abdurrahman", tag: "Klasik berber deneyimi" },
-  { name: "Fade Zone",  slug: "fadezone",     tag: "Modern fade & skin cut uzmanı" },
-  { name: "Royal Cut",  slug: "royalcut",     tag: "Premium saç & sakal bakımı" },
+  { name: "Abdurrahman Çelik Exclusive Salon", slug: "abdurrahman", tag: "Gerçek müşterimiz · Darıca, Kocaeli" },
+  { name: "Makas Demo Salon",                  slug: "demo",        tag: "Sistemi inceleyin — örnek salon" },
 ];
 
 function DemoShowcase() {
@@ -442,8 +573,10 @@ function DemoShowcase() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: 20,
+            maxWidth: 760,
+            margin: "0 auto",
           }}
         >
           {DEMOS.map(({ name, slug, tag }, i) => (
@@ -511,6 +644,467 @@ function DemoShowcase() {
         </div>
       </div>
     </section>
+  );
+}
+
+// ─── Pricing ──────────────────────────────────────────────────────────────────
+
+const PLANS = [
+  {
+    name: "Starter",
+    monthly: "₺599",
+    annual: "₺6.490",
+    annualNote: "1 ay hediye",
+    features: ["3 berbere kadar", "Sınırsız randevu", "Admin paneli", "Müşteri yönetimi", "Temel raporlar"],
+  },
+  {
+    name: "Pro",
+    monthly: "₺999",
+    annual: "₺10.790",
+    annualNote: "1 ay hediye",
+    features: ["Sınırsız berber", "Gelişmiş raporlar", "Müşteri notları", "Otomatik yorum toplama", "Berber performansı", "Google Calendar dışa aktarma"],
+    highlight: true,
+  },
+  {
+    name: "Enterprise",
+    monthly: "Özel teklif",
+    annual: "Özel teklif",
+    features: ["Özel SLA", "Öncelikli destek", "Özel eğitim", "Özel entegrasyonlar"],
+  },
+];
+
+const ADDONS = [
+  { name: "WhatsApp hatırlatma", detail: "100 mesaj / ay dahil, sonrası kullanım başına" },
+  { name: "SMS cüzdanı",          detail: "Ön ödemeli paket — kullandıkça düşer" },
+  { name: "Özel alan adı yönetimi", detail: "₺200 / yıl (alan adı ücreti hariç)" },
+];
+
+function Pricing() {
+  const [annual, setAnnual] = useState(true);
+  return (
+    <section id="pricing" style={{ padding: "80px 24px", background: C.bg }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          style={{ textAlign: "center", marginBottom: 28 }}
+        >
+          <h2 style={{ fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 700, letterSpacing: "-1px", color: C.primary, marginBottom: 12 }}>
+            Şeffaf fiyatlandırma
+          </h2>
+          <p style={{ fontSize: 15, color: C.muted, maxWidth: 560, margin: "0 auto" }}>
+            Kurulum ve yapılandırma işletmenize göre özelleştirilir.
+          </p>
+        </motion.div>
+
+        {/* Toggle */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 36 }}>
+          <div style={{
+            display: "inline-flex", padding: 4,
+            background: C.surface, border: `1px solid ${C.border}`,
+            borderRadius: 999,
+          }}>
+            {[
+              { id: "annual",  label: "Yıllık", badge: "Kurulum hediye" },
+              { id: "monthly", label: "Aylık" },
+            ].map((t) => {
+              const active = (t.id === "annual") === annual;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setAnnual(t.id === "annual")}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8,
+                    padding: "8px 18px", borderRadius: 999,
+                    background: active ? C.primary : "transparent",
+                    color: active ? "#F8F6F2" : C.secondary,
+                    fontSize: 14, fontWeight: 600,
+                    border: "none", cursor: "pointer",
+                    transition: "background 0.18s, color 0.18s",
+                    minHeight: 36,
+                  }}
+                >
+                  {t.label}
+                  {t.badge && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+                      padding: "2px 8px", borderRadius: 999,
+                      background: active ? "#F8F6F2" : C.card,
+                      color: active ? C.primary : C.secondary,
+                      border: active ? "none" : `1px solid ${C.border}`,
+                      textTransform: "uppercase",
+                    }}>
+                      {t.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+          {PLANS.map((p) => {
+            const price = annual ? p.annual : p.monthly;
+            const isEnterprise = p.monthly === "Özel teklif";
+            const suffix = isEnterprise ? "" : annual ? "/ yıl" : "/ ay";
+            return (
+              <motion.div
+                key={p.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4 }}
+                style={{
+                  background: p.highlight ? C.primary : C.card,
+                  color: p.highlight ? "#F8F6F2" : C.primary,
+                  border: `1px solid ${p.highlight ? "transparent" : C.border}`,
+                  borderRadius: 16,
+                  padding: "32px 26px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 18,
+                  position: "relative",
+                  boxShadow: p.highlight ? "0 12px 40px rgba(17,17,17,0.18)" : "none",
+                }}
+              >
+                {p.highlight && (
+                  <span style={{
+                    position: "absolute", top: 16, right: 16,
+                    fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                    background: "#F8F6F2", color: C.primary,
+                    padding: "4px 10px", borderRadius: 999, textTransform: "uppercase",
+                  }}>
+                    En popüler
+                  </span>
+                )}
+                <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.85 }}>{p.name}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: isEnterprise ? 26 : 34, fontWeight: 800, letterSpacing: "-1px" }}>{price}</span>
+                    {suffix && <span style={{ fontSize: 13, opacity: 0.75 }}>{suffix}</span>}
+                  </div>
+                  {!isEnterprise && annual && p.annualNote && (
+                    <span style={{ fontSize: 12, opacity: 0.8, fontWeight: 600, letterSpacing: "0.04em" }}>
+                      {p.annualNote} · Kurulum dahil
+                    </span>
+                  )}
+                  {!isEnterprise && !annual && (
+                    <span style={{ fontSize: 12, opacity: 0.7 }}>
+                      Tek seferlik ₺3.000 kurulum
+                    </span>
+                  )}
+                </div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+                  {p.features.map((f) => (
+                    <li key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+                      <CheckCircle size={15} strokeWidth={2.2} style={{ flexShrink: 0, opacity: 0.9 }} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => scrollTo("contact")}
+                  style={{
+                    marginTop: "auto",
+                    padding: "12px 18px",
+                    borderRadius: 10,
+                    background: p.highlight ? "#F8F6F2" : C.primary,
+                    color: p.highlight ? C.primary : "#F8F6F2",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  Demo Talep Et
+                </button>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Add-ons */}
+        <div style={{
+          marginTop: 40,
+          background: C.card,
+          border: `1px solid ${C.border}`,
+          borderRadius: 16,
+          padding: "22px 24px",
+        }}>
+          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", color: C.muted, textTransform: "uppercase", marginBottom: 14 }}>
+            Ek hizmetler
+          </p>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+            {ADDONS.map((a) => (
+              <li key={a.name} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: C.primary }}>{a.name}</span>
+                <span style={{ fontSize: 13, color: C.muted }}>{a.detail}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p style={{ textAlign: "center", fontSize: 12.5, color: C.muted, marginTop: 18 }}>
+          Fiyatlara KDV dahil değildir. Tüm planlar sales-led onboarding ile aktive edilir.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+
+const FAQS = [
+  { q: "Kurulum ne kadar sürer?",                  a: "Genellikle 1 gün içinde kurulum tamamlanır." },
+  { q: "Salonumun kendi adresi olacak mı?",        a: "Evet. Her salona özel salonadi.makas.tech adresi verilir. Kendi alan adınızı bağlamak isterseniz kurumsal pakette ek hizmet olarak sunuyoruz." },
+  { q: "WhatsApp hatırlatma var mı?",              a: "Evet. İsteğe bağlı olarak WhatsApp ve SMS hatırlatma entegrasyonu eklenebilir." },
+  { q: "Birden fazla berber ekleyebilir miyim?",   a: "Evet. Tüm ekip üyelerinizi sisteme ekleyebilir ve yönetebilirsiniz." },
+  { q: "Müşteri bilgilerini takip edebilir miyim?",a: "Evet. Notlar, geçmiş randevular ve müşteri takibi sistemde yer alır." },
+  { q: "Fiyatlandırma nasıl çalışıyor?",           a: "Kurulum tek seferliktir. Sonrasında aylık kullanım ücreti ve isteğe bağlı mesaj maliyetleri uygulanır." },
+];
+
+function FAQItem({ q, a, isOpen, onToggle }) {
+  return (
+    <div
+      style={{
+        background: C.card,
+        border: `1px solid ${C.border}`,
+        borderRadius: 14,
+        overflow: "hidden",
+      }}
+    >
+      <button
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        style={{
+          width: "100%",
+          padding: "18px 22px",
+          background: "transparent",
+          border: "none",
+          textAlign: "left",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 14,
+          color: C.primary,
+          fontSize: 16,
+          fontWeight: 600,
+          letterSpacing: "-0.2px",
+          minHeight: 56,
+        }}
+      >
+        <span>{q}</span>
+        <motion.span
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.22, ease: "easeInOut" }}
+          style={{ display: "inline-flex", color: C.secondary, flexShrink: 0 }}
+        >
+          <ChevronDown size={20} strokeWidth={2.2} />
+        </motion.span>
+      </button>
+      <motion.div
+        initial={false}
+        animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        style={{ overflow: "hidden" }}
+      >
+        <p style={{
+          padding: "0 22px 20px",
+          margin: 0,
+          fontSize: 15,
+          color: C.muted,
+          lineHeight: 1.65,
+        }}>
+          {a}
+        </p>
+      </motion.div>
+    </div>
+  );
+}
+
+function FAQ() {
+  const [open, setOpen] = useState(0);
+  return (
+    <section id="faq" style={{ padding: "80px 24px", background: C.bg }}>
+      <div style={{ maxWidth: 760, margin: "0 auto" }}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          style={{ textAlign: "center", marginBottom: 40 }}
+        >
+          <h2 style={{ fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 700, letterSpacing: "-1px", color: C.primary, marginBottom: 10 }}>
+            Sıkça Sorulan Sorular
+          </h2>
+          <p style={{ fontSize: 15, color: C.muted }}>
+            Aklınızdaki sorulara cevaplar.
+          </p>
+        </motion.div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {FAQS.map((f, i) => (
+            <FAQItem
+              key={f.q}
+              q={f.q}
+              a={f.a}
+              isOpen={open === i}
+              onToggle={() => setOpen(open === i ? -1 : i)}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Closing CTA ──────────────────────────────────────────────────────────────
+
+function ClosingCTA() {
+  return (
+    <section style={{ padding: "80px 24px", background: C.bg }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        style={{
+          maxWidth: 980,
+          margin: "0 auto",
+          padding: "clamp(40px, 7vw, 72px) clamp(28px, 5vw, 64px)",
+          background: C.primary,
+          color: "#F8F6F2",
+          borderRadius: 22,
+          textAlign: "center",
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: "0 20px 60px rgba(17,17,17,0.18)",
+        }}
+      >
+        <div
+          aria-hidden
+          style={{
+            position: "absolute", inset: 0,
+            background: "radial-gradient(ellipse 60% 80% at 80% 30%, rgba(248,246,242,0.08) 0%, transparent 60%)",
+            pointerEvents: "none",
+          }}
+        />
+        <p style={{
+          position: "relative",
+          fontSize: 13,
+          fontWeight: 600,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          opacity: 0.7,
+          marginBottom: 14,
+        }}>
+          Hazır mısınız?
+        </p>
+        <h2 style={{
+          position: "relative",
+          fontSize: "clamp(28px, 5vw, 48px)",
+          fontWeight: 800,
+          letterSpacing: "-1.2px",
+          lineHeight: 1.15,
+          marginBottom: 16,
+        }}>
+          Salonunuzu dijitale taşıyın.
+        </h2>
+        <p style={{
+          position: "relative",
+          fontSize: "clamp(15px, 1.6vw, 18px)",
+          opacity: 0.78,
+          maxWidth: 560,
+          margin: "0 auto 32px",
+          lineHeight: 1.6,
+        }}>
+          Randevularınızı kolayca yönetin, müşteri kaybını azaltın.
+        </p>
+        <div style={{
+          position: "relative",
+          display: "flex", gap: 12,
+          justifyContent: "center", flexWrap: "wrap",
+        }}>
+          <button
+            onClick={() => scrollTo("contact")}
+            style={{
+              padding: "14px 28px",
+              borderRadius: 10,
+              background: "#F8F6F2",
+              color: C.primary,
+              fontSize: 15,
+              fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+              display: "inline-flex", alignItems: "center", gap: 8,
+              minHeight: 48,
+            }}
+          >
+            Demo Talep Et <ArrowRight size={16} />
+          </button>
+          <button
+            onClick={() => scrollTo("contact")}
+            style={{
+              padding: "14px 28px",
+              borderRadius: 10,
+              background: "transparent",
+              color: "#F8F6F2",
+              fontSize: 15,
+              fontWeight: 600,
+              border: "1.5px solid rgba(248,246,242,0.32)",
+              cursor: "pointer",
+              minHeight: 48,
+            }}
+          >
+            Bizimle İletişime Geç
+          </button>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+// ─── Sticky Mobile CTA ────────────────────────────────────────────────────────
+
+function StickyMobileCTA() {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: 0, right: 0, bottom: 0,
+        padding: "10px 14px calc(10px + env(safe-area-inset-bottom))",
+        background: "rgba(248,246,242,0.92)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        borderTop: `1px solid ${C.border}`,
+        zIndex: 50,
+      }}
+      className="makas-sticky-cta"
+    >
+      <button
+        onClick={() => scrollTo("contact")}
+        style={{
+          width: "100%",
+          padding: "14px 18px",
+          borderRadius: 10,
+          background: C.primary,
+          color: "#fff",
+          fontSize: 16,
+          fontWeight: 600,
+          border: "none",
+          cursor: "pointer",
+        }}
+      >
+        Demo Talep Et
+      </button>
+      <style>{`
+        @media (min-width: 768px) { .makas-sticky-cta { display: none !important; } }
+      `}</style>
+    </div>
   );
 }
 
@@ -767,8 +1361,11 @@ function Footer() {
             Gezinti
           </p>
           {[
+            { label: "Nasıl Çalışır", id: "how" },
             { label: "Özellikler", id: "features" },
             { label: "Demo",       id: "demo" },
+            { label: "Fiyatlandırma", id: "pricing" },
+            { label: "SSS",        id: "faq" },
             { label: "İletişim",   id: "contact" },
           ].map(({ label, id }) => (
             <button
@@ -830,16 +1427,22 @@ function Footer() {
 
 export default function LandingPage() {
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "inherit" }}>
+    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "inherit", paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <style>{`@media (max-width: 767px){ body{ padding-bottom: 76px; } }`}</style>
       <Navbar />
       <main>
         <Hero />
+        <HowItWorks />
         <Features />
         <WhyUs />
         <DemoShowcase />
+        <Pricing />
+        <FAQ />
         <LeadForm />
+        <ClosingCTA />
       </main>
       <Footer />
+      <StickyMobileCTA />
     </div>
   );
 }

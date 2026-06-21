@@ -17,9 +17,10 @@ datasource db {
 // status: SUSPENDED shops cannot accept new bookings or admin logins
 
 model Shop {
-  id          String     @id @default(cuid())
-  slug        String     @unique
-  name        String
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  customDomain String?  @unique  // e.g. "mehmetberber.com" — set by super admin after DNS is wired
+  name         String
   logo        String?
   address     String?    @db.Text
   phone       String?

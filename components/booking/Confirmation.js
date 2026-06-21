@@ -83,6 +83,13 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
       toast.error(s4.errorMsg ?? "Lütfen tüm zorunlu alanları doldurun");
       return;
     }
+    // "any" must be resolved to a real barber by TimeSelect/DateTimeSelect before this point.
+    // If it isn't, the API rejects null with a confusing error — surface a clear one instead.
+    const resolvedBarberId = booking.barber?.id;
+    if (!resolvedBarberId || resolvedBarberId === "any") {
+      toast.error("Berber seçiminde bir sorun oluştu. Lütfen saati yeniden seçin.");
+      return;
+    }
     setLoadingState(true);
     try {
       const dateStr = booking.date instanceof Date
@@ -98,7 +105,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
           email:     form.email,
           notes:     form.notes,
           serviceId: booking.service?.id,
-          barberId:  booking.barber?.id === "any" ? null : booking.barber?.id,
+          barberId:  resolvedBarberId,
           date:      dateStr,
           time:      booking.time,
           source:    "ONLINE",
