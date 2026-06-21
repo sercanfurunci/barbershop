@@ -45,7 +45,7 @@ export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexShrink: 0 }}>
         <button
           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          style={{ width: "38px", height: "38px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "9px", color: C.secondary, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          style={{ width: "44px", height: "44px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "9px", color: C.secondary, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
         >
           <ChevronLeft size={17} />
         </button>
@@ -54,7 +54,7 @@ export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
         </span>
         <button
           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          style={{ width: "38px", height: "38px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "9px", color: C.secondary, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          style={{ width: "44px", height: "44px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "9px", color: C.secondary, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
         >
           <ChevronRight size={17} />
         </button>

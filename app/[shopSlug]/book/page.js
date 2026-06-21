@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { resolveShopBySlug } from "@/lib/shop";
+import { canAcceptPublicBookings } from "@/lib/subscription";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/shared/Navbar";
 import BookingFlow from "@/components/booking/BookingFlow";
@@ -19,6 +20,37 @@ export default async function BookPage({ params, searchParams }) {
 
   const shop = await resolveShopBySlug(shopSlug);
   if (!shop || shop.status !== "ACTIVE") notFound();
+
+  // Subscription gate. SUSPENDED / CANCELLED shops keep the page reachable
+  // but show a maintenance notice instead of the booking form.
+  if (!canAcceptPublicBookings(shop)) {
+    return (
+      <div style={{ background: "#F6F3EE", minHeight: "100dvh" }}>
+        <Navbar />
+        <div style={{ maxWidth: "560px", margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
+          <div style={{ fontSize: "20px", fontWeight: 700, color: "#111", marginBottom: "12px" }}>
+            Online randevu alımı şu anda kapalı
+          </div>
+          <p style={{ fontSize: "14px", color: "#4A4A4A", lineHeight: 1.6, marginBottom: "20px" }}>
+            {shop.name} şu anda online randevu kabul etmiyor. Lütfen doğrudan iletişime geçin.
+          </p>
+          {shop.phone && (
+            <a
+              href={`tel:${shop.phone}`}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "8px",
+                background: "#111", color: "#fff", padding: "12px 20px",
+                borderRadius: "8px", textDecoration: "none", fontWeight: 600,
+                fontSize: "14px", minHeight: "44px",
+              }}
+            >
+              {shop.phone}
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   let initialServices = [], initialBarbers = [];
   try {
@@ -59,7 +91,7 @@ export default async function BookPage({ params, searchParams }) {
   }
 
   return (
-    <div style={{ background: "#F6F3EE", minHeight: "100vh" }}>
+    <div style={{ background: "#F6F3EE", minHeight: "100dvh" }}>
       <Navbar />
       <BookingFlow
         shopId={shop.id}

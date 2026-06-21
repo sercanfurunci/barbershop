@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Check, Calendar, Clock, User, Scissors, Phone, Mail, ArrowRight, CalendarPlus, Download } from "lucide-react";
 import { googleCalendarUrl } from "@/lib/calendar";
@@ -70,8 +70,12 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
     setErrors(validateForm({ ...form }));
   };
 
+  const submittingRef = useRef(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Synchronous guard — blocks rapid double-clicks before React re-renders the disabled button.
+    if (submittingRef.current) return;
     const errs = validateForm(form);
     setErrors(errs);
     setTouched({ name: true, phone: true, email: true });
@@ -90,6 +94,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
       toast.error("Berber seçiminde bir sorun oluştu. Lütfen saati yeniden seçin.");
       return;
     }
+    submittingRef.current = true;
     setLoadingState(true);
     try {
       const dateStr = booking.date instanceof Date
@@ -118,9 +123,12 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
       toast.success(success.confirmed ?? "Randevunuz onaylandı!");
     } catch (err) {
       toast.error(err.message ?? "Randevu oluşturulamadı. Bağlantınızı kontrol edip tekrar deneyin.");
+      submittingRef.current = false;
     } finally {
       setLoadingState(false);
     }
+    // On success we intentionally keep submittingRef true — view switches to Confirmation success screen,
+    // so re-submit is impossible. Leaving it locked prevents any edge-case race.
   };
 
   const serviceName = booking.service

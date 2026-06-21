@@ -34,6 +34,17 @@ model Shop {
   timezone        String     @default("Europe/Istanbul")
   currency        String     @default("TRY")
 
+  // ─── Subscription / billing ────────────────────────────────────────────────
+  // Single source of truth for plan limits + access. Billing helpers in
+  // lib/subscription.js read these fields; plan limits in lib/plans.js key off
+  // planTier. paymentProviderRef holds the iyzico/stripe customer or sub id.
+  planTier             PlanTier           @default(STARTER)
+  subscriptionStatus   SubscriptionStatus @default(TRIAL)
+  trialEndsAt          DateTime?
+  currentPeriodEndsAt  DateTime?
+  paymentProvider      String?            // "iyzico" | "stripe" — null until wired
+  paymentProviderRef   String?            // provider-side customer / subscription id
+
   users        User[]
   barbers      Barber[]
   services     Service[]
@@ -45,6 +56,7 @@ model Shop {
   notificationSettings NotificationSettings?
   notificationJobs     NotificationJob[]
   reviewRequests       ReviewRequest[]
+  invoices             Invoice[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -53,6 +65,45 @@ model Shop {
 enum ShopStatus {
   ACTIVE
   SUSPENDED
+}
+
+enum PlanTier {
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+// Subscription lifecycle. SUSPENDED blocks public booking but admin/staff
+// panels remain accessible (see lib/subscription.js).
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELLED
+}
+
+// ─── Invoices ─────────────────────────────────────────────────────────────────
+// Append-only ledger of payment events. The provider webhook handler inserts
+// rows; we never UPDATE except on refunds.
+model Invoice {
+  id                String   @id @default(cuid())
+  shopId            String
+  shop              Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  providerInvoiceId String?  @unique  // iyzico/stripe ref — null for manual entries
+  provider          String?            // "iyzico" | "stripe" | "manual"
+  amount            Int                // minor units (kuruş for TRY)
+  currency          String   @default("TRY")
+  status            String             // "paid" | "failed" | "pending" | "refunded"
+  paidAt            DateTime?
+  paymentMethod     String?            // "card" | "transfer" | "manual"
+  periodStart       DateTime?
+  periodEnd         DateTime?
+  raw               Json?              // provider payload for audit
+  createdAt         DateTime @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([status])
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────

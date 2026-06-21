@@ -1081,7 +1081,7 @@ function StickyMobileCTA() {
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
         borderTop: `1px solid ${C.border}`,
-        zIndex: 50,
+        zIndex: 40,
       }}
       className="makas-sticky-cta"
     >
@@ -1427,7 +1427,7 @@ function Footer() {
 
 export default function LandingPage() {
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "inherit", paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div style={{ background: C.bg, minHeight: "100dvh", fontFamily: "inherit", paddingBottom: "env(safe-area-inset-bottom)" }}>
       <style>{`@media (max-width: 767px){ body{ padding-bottom: 76px; } }`}</style>
       <Navbar />
       <main>

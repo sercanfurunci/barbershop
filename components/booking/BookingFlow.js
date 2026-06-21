@@ -43,6 +43,11 @@ const slideTransition = { duration: 0.34, ease: [0.32, 0.72, 0, 1] };
 
 // ── Confirm-change bottom sheet ───────────────────────────────────────────────
 function ConfirmChangeDialog({ message, onConfirm, onCancel, lang }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -51,6 +56,8 @@ function ConfirmChangeDialog({ message, onConfirm, onCancel, lang }) {
       className="fixed inset-0 z-[80] flex items-end justify-center"
       style={{ padding: "16px", paddingBottom: "max(16px, env(safe-area-inset-bottom))", background: "rgba(17,17,17,0.5)" }}
       onClick={onCancel}
+      role="dialog"
+      aria-modal="true"
     >
       <motion.div
         initial={{ y: 48, opacity: 0 }}

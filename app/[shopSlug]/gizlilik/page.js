@@ -29,7 +29,7 @@ export default async function ShopGizlilikPage({ params }) {
   if (!shop) notFound();
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh" }}>
+    <div style={{ background: C.bg, minHeight: "100dvh" }}>
       <div style={{ maxWidth: "720px", margin: "0 auto", padding: "80px 24px 120px" }}>
 
         <Link href={`/${shopSlug}`} style={{ fontSize: "12px", color: C.muted, textDecoration: "none", letterSpacing: "0.06em", textTransform: "uppercase", display: "inline-block", marginBottom: "48px" }}>

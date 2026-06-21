@@ -10,6 +10,7 @@ import { apiFetch } from "@/lib/api";
 import { todayStr, toDateStr } from "@/lib/utils";
 import ManualBookingModal from "@/components/admin/ManualBookingModal";
 import ImageCropModal from "@/components/shared/ImageCropModal";
+import SubscriptionBanner from "@/components/admin/SubscriptionBanner";
 import Link from "next/link";
 import {
   Plus, LogOut, ChevronLeft, ChevronRight, ExternalLink,
@@ -583,6 +584,8 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
             </button>
           </div>
         </header>
+
+        <SubscriptionBanner shop={user?.shop} />
 
         {/* Page content — extra bottom padding so content clears mobile bottom nav */}
         <div className="px-4 pt-5 pb-24 lg:px-7 lg:pt-7 lg:pb-10">

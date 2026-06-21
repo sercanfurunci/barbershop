@@ -124,7 +124,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
         style={{
           position: "fixed", inset: 0,
           background: "rgba(17,17,17,0.4)",
-          zIndex: 200,
+          zIndex: 80,
           display: "flex", alignItems: "center", justifyContent: "center",
           padding: "20px",
         }}

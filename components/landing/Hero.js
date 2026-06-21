@@ -308,7 +308,7 @@ export default function Hero({ services = [], barbers = [] }) {
       <div className="relative z-10 flex-1 flex items-start lg:items-center">
         <div className="w-full max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 pt-10 pb-12 lg:pt-0 lg:pb-0">
           <div
-            className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-14 lg:min-h-[calc(100vh-72px)]"
+            className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-14 lg:min-h-[calc(100dvh-72px)]"
             style={{
               paddingTop: "clamp(0px, 4vh, 40px)",
               paddingBottom: "clamp(16px, 4vh, 40px)",

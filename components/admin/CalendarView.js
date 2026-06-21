@@ -138,7 +138,7 @@ function AppointmentBlock({ appt, onStatusChange }) {
       <AnimatePresence>
         {open && (
           <>
-            <div style={{ position: "fixed", inset: 0, zIndex: 200 }} onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
+            <div style={{ position: "fixed", inset: 0, zIndex: 70 }} onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -148,7 +148,7 @@ function AppointmentBlock({ appt, onStatusChange }) {
               style={{
                 position: "fixed", top: "50%", left: "50%",
                 transform: "translate(-50%, -50%)",
-                zIndex: 300,
+                zIndex: 71,
                 background: "#FFFFFF",
                 border: `1px solid ${C.border}`,
                 borderTop: `2px solid ${sc.color}`,
@@ -398,13 +398,13 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
           const sc = SC[appt.status] ?? SC.pending;
           return (
             <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAppt(null)} style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.35)", zIndex: 200 }} />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAppt(null)} style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.35)", zIndex: 80 }} />
               <motion.div
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 300, background: "#FFFFFF", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))" }}
+                style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 90, background: "#FFFFFF", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))" }}
               >
                 {/* Handle */}
                 <div style={{ width: "36px", height: "3px", background: C.border, borderRadius: "2px", margin: "0 auto 16px" }} />

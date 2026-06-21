@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { startTrialFields } from "@/lib/subscription";
 import bcrypt from "bcryptjs";
 
 function gate(payload) {
@@ -74,6 +75,7 @@ export async function POST(request) {
         phone:   phone ?? null,
         email:   email ?? null,
         status:  "ACTIVE",
+        ...startTrialFields(),
       },
     });
     const admin = await tx.user.create({

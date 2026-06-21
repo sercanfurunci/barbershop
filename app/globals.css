@@ -4,6 +4,20 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* z-index scale (single source of truth — keep numbers in this range):
+   0–10   page content / decorative absolute layers
+   20     sticky sub-headers (admin/barber/booking alert)
+   30     desktop sidebars
+   40     bottom CTAs / mobile tab nav / floating action bars
+   50     top Navbar + Sheet/Dialog backdrops (shadcn convention)
+   55     mobile menu scrim (under nav, over content)
+   60     mobile drawer panel (admin/barber mobile sidebar)
+   70–71  portal popovers (user-menu, calendar-day popover)
+   80     modal backdrops (custom modals, confirm dialog, appt detail)
+   90     modal content (sheet content, ImageCrop, bottom sheet)
+   100    toast container (reserved — none mounted today)
+   Never exceed 100. If a new layer needs to go higher, redesign the conflict. */
+
 /* Safety net: if framer-motion fails to hydrate (old browsers, JS parse error,
    slow connection), reveal SSR'd opacity:0 / translated content after 2s
    so users never see a blank page. Real motion overrides this before it fires. */
@@ -11,8 +25,11 @@
   to { opacity: 1; transform: none; }
 }
 [style*="opacity:0"],
-[style*="opacity: 0"] {
-  animation: motion-safety-fade 0.4s ease-out 2s forwards;
+[style*="opacity: 0"],
+[style*="translateX"],
+[style*="translateY"],
+[style*="translate3d"] {
+  animation: motion-safety-fade 0.4s ease-out 0.8s forwards;
 }
 
 @custom-variant dark (&:is(.dark *));

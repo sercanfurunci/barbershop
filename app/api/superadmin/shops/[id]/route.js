@@ -56,6 +56,49 @@ export async function PATCH(request, { params }) {
     data.status = body.status;
   }
 
+  // Subscription fields — manual override for sales-led billing.
+  if (body.subscriptionStatus !== undefined) {
+    const valid = ["TRIAL", "ACTIVE", "PAST_DUE", "SUSPENDED", "CANCELLED"];
+    if (!valid.includes(body.subscriptionStatus)) {
+      return NextResponse.json({ error: "Geçersiz subscriptionStatus" }, { status: 400 });
+    }
+    data.subscriptionStatus = body.subscriptionStatus;
+  }
+  if (body.planTier !== undefined) {
+    const valid = ["STARTER", "PRO", "ENTERPRISE"];
+    if (!valid.includes(body.planTier)) {
+      return NextResponse.json({ error: "Geçersiz planTier" }, { status: 400 });
+    }
+    data.planTier = body.planTier;
+  }
+  // startTrialDays: set trialEndsAt = now + N, flip to TRIAL. For shops that
+  // never got a trial set (legacy backfill or pre-trial-default rows).
+  if (body.startTrialDays !== undefined) {
+    const n = Number(body.startTrialDays);
+    if (!Number.isFinite(n) || n <= 0 || n > 365) {
+      return NextResponse.json({ error: "startTrialDays 1-365 olmalı" }, { status: 400 });
+    }
+    data.trialEndsAt = new Date(Date.now() + n * 86_400_000);
+    if (data.subscriptionStatus === undefined) data.subscriptionStatus = "TRIAL";
+  }
+  // extendDays: add N days to currentPeriodEndsAt (or now if null/past).
+  // Also flips to ACTIVE if not already, since we just got paid.
+  if (body.extendDays !== undefined) {
+    const n = Number(body.extendDays);
+    if (!Number.isFinite(n) || n <= 0 || n > 3650) {
+      return NextResponse.json({ error: "extendDays 1-3650 olmalı" }, { status: 400 });
+    }
+    const current = await prisma.shop.findUnique({
+      where: { id }, select: { currentPeriodEndsAt: true },
+    });
+    if (!current) return NextResponse.json({ error: "Salon bulunamadı" }, { status: 404 });
+    const base = current.currentPeriodEndsAt && current.currentPeriodEndsAt > new Date()
+      ? current.currentPeriodEndsAt
+      : new Date();
+    data.currentPeriodEndsAt = new Date(base.getTime() + n * 86_400_000);
+    if (data.subscriptionStatus === undefined) data.subscriptionStatus = "ACTIVE";
+  }
+
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "Güncellenecek alan yok" }, { status: 400 });
   }

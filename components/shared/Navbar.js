@@ -44,6 +44,19 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handle);
   }, []);
 
+  // Body scroll lock + Escape-to-close while mobile menu open.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
   return (
     <>
       <nav
@@ -164,13 +177,27 @@ export default function Navbar() {
       {/* Mobile menu */}
       <AnimatePresence>
         {menuOpen && (
+          <>
+            {/* Scrim — tap to close */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setMenuOpen(false)}
+              className="fixed inset-0 z-[55] md:hidden"
+              style={{ background: "rgba(17,17,17,0.32)", top: "68px" }}
+              aria-hidden="true"
+            />
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.22 }}
-            className="fixed left-0 right-0 z-40 md:hidden"
+            className="fixed left-0 right-0 z-[60] md:hidden"
             style={{ top: "68px", background: "rgba(247,244,238,0.98)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${C.border}` }}
+            role="dialog"
+            aria-modal="true"
           >
             <div className="max-w-7xl mx-auto px-6 py-4 space-y-1">
               {navLinks.map((link) => (
@@ -205,6 +232,7 @@ export default function Navbar() {
               </div>
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
 

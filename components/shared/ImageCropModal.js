@@ -61,7 +61,7 @@ export default function ImageCropModal({ file, onConfirm, onCancel }) {
 
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 2000,
+      position: "fixed", inset: 0, zIndex: 90,
       background: "rgba(0,0,0,0.82)",
       display: "flex", alignItems: "center", justifyContent: "center",
       backdropFilter: "blur(6px)",

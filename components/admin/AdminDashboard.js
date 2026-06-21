@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Calendar, Users, Settings,
   Bell, Search, Menu, ExternalLink, Plus, CalendarDays, LogOut, Scissors,
   UserCheck, TrendingUp, User, MoreHorizontal, X,
-  ChevronLeft, ChevronRight, Activity, Clock, Star,
+  ChevronLeft, ChevronRight, Activity, Clock, Star, CreditCard,
 } from "lucide-react";
 import {
   BarberDayView, BarberAppointmentsList, BarberCustomersView,
@@ -23,6 +23,8 @@ import SettingsPage from "./SettingsPage";
 import ServicesManagement from "./ServicesManagement";
 import NotificationsPage from "@/components/admin/NotificationsPage";
 import ReviewsPage from "@/components/admin/ReviewsPage";
+import BillingPage from "@/components/admin/BillingPage";
+import SubscriptionBanner from "@/components/admin/SubscriptionBanner";
 import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
@@ -69,6 +71,7 @@ const NAV_SECTIONS = (lang) => [
       { id: "revenue",        label: "Gelir",        icon: TrendingUp      },
       { id: "reviews",        label: "Yorumlar",     icon: Star            },
       { id: "notifications", label: "Bildirimler",  icon: Bell            },
+      { id: "billing",       label: "Abonelik",     icon: CreditCard      },
       { id: "settings",      label: "Ayarlar",      icon: Settings        },
     ],
   },
@@ -228,8 +231,8 @@ export default function AdminDashboard() {
               </button>
               {userMenu && mounted && createPortal(
                 <>
-                  <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setUserMenu(false)} />
-                  <div style={{ position: "fixed", top: "58px", right: "16px", background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "10px", padding: "6px", zIndex: 9999, minWidth: "160px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 8px 24px rgba(17,17,17,0.12)" }}>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 70 }} onClick={() => setUserMenu(false)} />
+                  <div style={{ position: "fixed", top: "58px", right: "16px", background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "10px", padding: "6px", zIndex: 71, minWidth: "160px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 8px 24px rgba(17,17,17,0.12)" }}>
                     <div style={{ padding: "8px 10px 10px", borderBottom: `1px solid ${C.border}`, marginBottom: "4px" }}>
                       <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{user?.displayName ?? user?.username ?? "Admin"}</div>
                       <div style={{ fontSize: "10px", color: C.secondary }}>{user?.role === "SUPER_ADMIN" ? "Süper Admin" : user?.role === "ADMIN" ? "Admin" : user?.role === "BARBER" ? "Berber" : "Yönetici"}</div>
@@ -267,6 +270,8 @@ export default function AdminDashboard() {
           <BarberSelectorBar globalBarberId={globalBarberId} setGlobalBarberId={setGlobalBarberId} realBarbers={realBarbers} />
         </div>
 
+        <SubscriptionBanner shop={user?.shop} onUpgrade={() => setTab("billing")} />
+
         {/* Page body — calendar tab gets full height, others get scrollable padding */}
         {tab === "calendar" ? (
           <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", paddingBottom: "env(safe-area-inset-bottom)" }}>
@@ -290,6 +295,7 @@ export default function AdminDashboard() {
                 {tab === "revenue"        && <RevenuePage tx={tx} barberId={globalBarberId} realBarbers={realBarbers} />}
                 {tab === "reviews"        && <ReviewsPage />}
                 {tab === "notifications" && <NotificationsPage />}
+                {tab === "billing"        && <BillingPage />}
                 {tab === "settings"      && <SettingsPage />}
                 {tab === "barber-ops"    && <BarberOpsPage barberId={globalBarberId} />}
               </motion.div>

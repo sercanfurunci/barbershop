@@ -40,15 +40,19 @@ export default function TimeSelect({ shopId, booking, allBarbers = [], onSelect,
     const dateStr  = format(booking.date, "yyyy-MM-dd");
     const base     = `shopId=${shopId}&serviceId=${serviceId}&date=${dateStr}`;
 
+    // Stale-response guard: when deps change rapidly (user clicks dates fast),
+    // older slow requests can resolve after newer ones and overwrite fresh slots.
+    let cancelled = false;
+
     setLoading(true);
     setSlots([]);
     setSlotBarberMap({});
 
     if (!isAny) {
       apiFetch(`/api/availability?${base}&barberId=${booking.barber.id}`)
-        .then((data) => setSlots(data.slots ?? []))
-        .catch(() => setSlots([]))
-        .finally(() => setLoading(false));
+        .then((data) => { if (!cancelled) setSlots(data.slots ?? []); })
+        .catch(() => { if (!cancelled) setSlots([]); })
+        .finally(() => { if (!cancelled) setLoading(false); });
     } else {
       const barberList = allBarbers.filter((b) => b.available);
       if (barberList.length === 0) { setLoading(false); return; }
@@ -59,6 +63,7 @@ export default function TimeSelect({ shopId, booking, allBarbers = [], onSelect,
             .catch(() => ({ barberId: b.id, slots: [] }))
         )
       ).then((results) => {
+        if (cancelled) return;
         const map = {};
         for (const { barberId, slots: s } of results) {
           for (const slot of s) {
@@ -67,8 +72,9 @@ export default function TimeSelect({ shopId, booking, allBarbers = [], onSelect,
         }
         setSlotBarberMap(map);
         setSlots(Object.keys(map).sort());
-      }).finally(() => setLoading(false));
+      }).finally(() => { if (!cancelled) setLoading(false); });
     }
+    return () => { cancelled = true; };
   }, [booking.date, booking.barber?.id, booking.service?.id]);
 
   const handleSlotClick = (slot) => {

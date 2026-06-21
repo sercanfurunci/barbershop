@@ -129,7 +129,7 @@ function ServiceModal({ service, onClose, onSaved }) {
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+        style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
@@ -243,7 +243,7 @@ function DeleteModal({ service, onClose, onDeleted }) {
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+        style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { canCreateBarber } from "@/lib/subscription";
 import bcrypt from "bcryptjs";
 
 function guard(payload) {
@@ -57,6 +58,16 @@ export async function POST(request) {
 
   const dupe = await prisma.barber.findFirst({ where: { shopId, slug } });
   if (dupe) return NextResponse.json({ error: "Bu slug zaten kullanılıyor" }, { status: 409 });
+
+  // Plan limit gate. 402 Payment Required is the conventional status for
+  // "this is a billing limit, not a permission issue".
+  const limit = await canCreateBarber(shopId);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: limit.reason, limit: limit.limit, current: limit.current },
+      { status: 402 }
+    );
+  }
 
   const normalizedEmail = email.toLowerCase().trim();
   const userDupe = await prisma.user.findFirst({ where: { email: normalizedEmail } });

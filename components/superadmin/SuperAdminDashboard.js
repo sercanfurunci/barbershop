@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
+import { PLANS } from "@/lib/plans";
 import {
   Building2, Scissors, Calendar, TrendingUp,
   Plus, LogOut, MoreVertical, Pause, Play, Trash2, X, Pencil,
-  Loader2, Search, ChevronLeft, LayoutDashboard,
+  Loader2, Search, ChevronLeft, LayoutDashboard, CreditCard,
 } from "lucide-react";
 
 const C = {
@@ -54,6 +55,7 @@ export default function SuperAdminDashboard() {
   const [search, setSearch]       = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [editShop, setEditShop]     = useState(null);
+  const [billingShop, setBillingShop] = useState(null);
 
   useEffect(() => {
     if (!loaded) return;
@@ -103,7 +105,7 @@ export default function SuperAdminDashboard() {
   );
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: C.bg, overflowX: "hidden" }}>
+    <div style={{ display: "flex", minHeight: "100dvh", background: C.bg, overflowX: "hidden" }}>
 
       {/* ──────────── Desktop sidebar ──────────── */}
       <aside style={{
@@ -197,6 +199,7 @@ export default function SuperAdminDashboard() {
               toggleStatus={toggleStatus} deleteShop={deleteShop}
               onNew={() => setCreateOpen(true)}
               onEdit={setEditShop}
+              onBilling={setBillingShop}
               showKpis={page === "dashboard"}
             />
           ) : (
@@ -239,12 +242,15 @@ export default function SuperAdminDashboard() {
       {editShop && (
         <EditShopModal shop={editShop} onClose={() => setEditShop(null)} onSaved={() => { setEditShop(null); reload(); }} />
       )}
+      {billingShop && (
+        <BillingModal shop={billingShop} onClose={() => setBillingShop(null)} onSaved={() => { setBillingShop(null); reload(); }} />
+      )}
     </div>
   );
 }
 
 /* ── Dashboard page content ── */
-function DashboardContent({ stats, shops, filtered, loading, error, search, setSearch, toggleStatus, deleteShop, onNew, onEdit, showKpis }) {
+function DashboardContent({ stats, shops, filtered, loading, error, search, setSearch, toggleStatus, deleteShop, onNew, onEdit, onBilling, showKpis }) {
   return (
     <div style={{ maxWidth: 1080, margin: "0 auto" }}>
       {showKpis && (
@@ -265,6 +271,12 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
             <Kpi icon={Scissors}   label="Berberler"       value={stats?.totalBarbers ?? "—"} />
             <Kpi icon={Calendar}   label="Bu Ay Randevu"   value={stats?.monthlyAppointments ?? "—"} />
             <Kpi icon={TrendingUp} label="Bu Ay Gelir"     value={stats ? fmtTRY(stats.monthlyRevenue) : "—"} />
+            <Kpi
+              icon={CreditCard}
+              label="Tahmini MRR"
+              value={fmtTRY(shops.reduce((acc, s) => s.subscriptionStatus === "ACTIVE" ? acc + (PLANS[s.planTier]?.priceMonthlyTry ?? 0) : acc, 0))}
+              sub={`${shops.filter(s => s.subscriptionStatus === "TRIAL").length} deneme · ${shops.filter(s => s.subscriptionStatus === "PAST_DUE").length} gecikmiş`}
+            />
           </div>
         </>
       )}
@@ -305,6 +317,8 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
                     <Th>Slug</Th>
                     <Th align="right">Berber</Th>
                     <Th align="right">Randevu</Th>
+                    <Th>Plan</Th>
+                    <Th>Abonelik</Th>
                     <Th>Durum</Th>
                     <Th align="right" style={{ width: 40 }}></Th>
                   </tr>
@@ -319,9 +333,13 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
                       <Td><code style={{ fontSize: 11, color: C.muted }}>{s.slug}</code></Td>
                       <Td align="right">{s._count.barbers}</Td>
                       <Td align="right">{s._count.appointments}</Td>
+                      <Td>
+                        <span style={{ fontSize: 11, color: C.muted }}>{PLANS[s.planTier]?.label ?? s.planTier}</span>
+                      </Td>
+                      <Td><SubscriptionBadge status={s.subscriptionStatus} /></Td>
                       <Td><StatusBadge status={s.status} /></Td>
                       <Td align="right">
-                        <ActionMenu shop={s} onToggle={() => toggleStatus(s)} onDelete={() => deleteShop(s)} onEdit={() => onEdit(s)} />
+                        <ActionMenu shop={s} onToggle={() => toggleStatus(s)} onDelete={() => deleteShop(s)} onEdit={() => onEdit(s)} onBilling={() => onBilling(s)} />
                       </Td>
                     </tr>
                   ))}
@@ -337,16 +355,17 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 14, fontWeight: 600, color: C.ink }}>{s.name}</span>
                       <StatusBadge status={s.status} />
+                      <SubscriptionBadge status={s.subscriptionStatus} />
                     </div>
                     <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>
-                      <code>{s.slug}</code>
+                      <code>{s.slug}</code> · {PLANS[s.planTier]?.label ?? s.planTier}
                     </div>
                     <div style={{ display: "flex", gap: 14, fontSize: 11, color: C.muted }}>
                       <span>{s._count.barbers} berber</span>
                       <span>{s._count.appointments} randevu</span>
                     </div>
                   </div>
-                  <ActionMenu shop={s} onToggle={() => toggleStatus(s)} onDelete={() => deleteShop(s)} onEdit={() => onEdit(s)} />
+                  <ActionMenu shop={s} onToggle={() => toggleStatus(s)} onDelete={() => deleteShop(s)} onEdit={() => onEdit(s)} onBilling={() => onBilling(s)} />
                 </div>
               ))}
             </div>
@@ -358,7 +377,7 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
 }
 
 /* Dropdown with fixed positioning — never clipped by table overflow */
-function ActionMenu({ shop, onToggle, onDelete, onEdit }) {
+function ActionMenu({ shop, onToggle, onDelete, onEdit, onBilling }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos]   = useState({ top: 0, right: 0 });
   const btnRef          = useRef(null);
@@ -382,12 +401,12 @@ function ActionMenu({ shop, onToggle, onDelete, onEdit }) {
       {open && (
         <>
           {/* Invisible overlay catches outside clicks */}
-          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 998 }} />
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 70 }} />
           <div style={{
             position: "fixed",
             top: pos.top,
             right: pos.right,
-            zIndex: 999,
+            zIndex: 71,
             background: C.panel,
             border: `1px solid ${C.border}`,
             borderRadius: 10,
@@ -397,6 +416,9 @@ function ActionMenu({ shop, onToggle, onDelete, onEdit }) {
           }}>
           <MenuItem onClick={() => { setOpen(false); onEdit(); }}>
             <Pencil size={14} /> Düzenle
+          </MenuItem>
+          <MenuItem onClick={() => { setOpen(false); onBilling(); }}>
+            <CreditCard size={14} /> Abonelik
           </MenuItem>
           <MenuItem onClick={() => { setOpen(false); onToggle(); }}>
             {shop.status === "ACTIVE" ? <><Pause size={14} /> Askıya al</> : <><Play size={14} /> Aktifleştir</>}
@@ -435,6 +457,18 @@ function StatusBadge({ status }) {
     SUSPENDED: { label: "Askıda", color: C.amber, bg: "rgba(180,83,9,0.08)"  },
   };
   const s = map[status] ?? { label: status, color: C.muted, bg: C.surface };
+  return <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, color: s.color, background: s.bg, whiteSpace: "nowrap" }}>{s.label}</span>;
+}
+
+function SubscriptionBadge({ status }) {
+  const map = {
+    TRIAL:     { label: "Deneme",   color: "#1E40AF", bg: "rgba(30,64,175,0.08)" },
+    ACTIVE:    { label: "Aktif",    color: C.green,    bg: "rgba(31,122,60,0.08)" },
+    PAST_DUE:  { label: "Gecikmiş", color: C.amber,    bg: "rgba(180,83,9,0.08)"  },
+    SUSPENDED: { label: "Askıda",   color: "#991B1B", bg: "rgba(153,27,27,0.08)" },
+    CANCELLED: { label: "İptal",    color: C.muted,    bg: C.surface },
+  };
+  const s = map[status] ?? { label: status ?? "—", color: C.muted, bg: C.surface };
   return <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, color: s.color, background: s.bg, whiteSpace: "nowrap" }}>{s.label}</span>;
 }
 
@@ -560,6 +594,134 @@ function EditShopModal({ shop, onClose, onSaved }) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+/* ── Billing / subscription modal (manual sales-led billing) ── */
+function BillingModal({ shop, onClose, onSaved }) {
+  const [subscriptionStatus, setSubscriptionStatus] = useState(shop.subscriptionStatus ?? "TRIAL");
+  const [planTier, setPlanTier] = useState(shop.planTier ?? "STARTER");
+  const [extendDays, setExtendDays] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr]   = useState("");
+
+  const fmtDate = (d) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const submit = async (body) => {
+    setBusy(true); setErr("");
+    try {
+      await apiFetch(`/api/superadmin/shops/${shop.id}`, { method: "PATCH", body: JSON.stringify(body) });
+      onSaved();
+    } catch (e) { setErr(e.message || "Güncelleme başarısız"); }
+    finally { setBusy(false); }
+  };
+
+  const saveStatusAndPlan = (e) => {
+    e.preventDefault();
+    const body = {};
+    if (subscriptionStatus !== shop.subscriptionStatus) body.subscriptionStatus = subscriptionStatus;
+    if (planTier !== shop.planTier) body.planTier = planTier;
+    if (Object.keys(body).length === 0) { onClose(); return; }
+    submit(body);
+  };
+
+  const extend = (n) => submit({ extendDays: n });
+
+  const customExtend = (e) => {
+    e.preventDefault();
+    const n = Number(extendDays);
+    if (!Number.isFinite(n) || n <= 0) { setErr("Gün sayısı 1+ olmalı"); return; }
+    submit({ extendDays: n });
+  };
+
+  return (
+    <div onClick={onClose} className="sa-modal-backdrop">
+      <div onClick={e => e.stopPropagation()} className="sa-modal-sheet"
+        style={{ width: "100%", maxWidth: 460, background: C.panel, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}
+      >
+        <div className="sa-drag-handle" style={{ justifyContent: "center", padding: "10px 0 0", flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.dim }} />
+        </div>
+        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: C.ink }}>Abonelik Yönet</h3>
+            <p style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{shop.name}</p>
+          </div>
+          <button onClick={onClose} style={{ width: 30, height: 30, background: C.surface, border: "none", borderRadius: 7, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.muted }}><X size={15} /></button>
+        </div>
+
+        <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", paddingBottom: "calc(16px + env(safe-area-inset-bottom))" }}>
+          {/* Period summary */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 12 }}>
+            <div>
+              <div style={{ color: C.muted, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Deneme bitiş</div>
+              <div style={{ color: C.ink, marginTop: 2 }}>{fmtDate(shop.trialEndsAt)}</div>
+              {!shop.trialEndsAt && (
+                <button onClick={() => submit({ startTrialDays: 14 })} disabled={busy}
+                  style={{ marginTop: 6, padding: "5px 9px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: C.ink, color: "#fff", border: "none", cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
+                  14 gün başlat
+                </button>
+              )}
+            </div>
+            <div>
+              <div style={{ color: C.muted, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Dönem bitiş</div>
+              <div style={{ color: C.ink, marginTop: 2 }}>{fmtDate(shop.currentPeriodEndsAt)}</div>
+            </div>
+          </div>
+
+          <form onSubmit={saveStatusAndPlan} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <Field label="Abonelik Durumu">
+              <select value={subscriptionStatus} onChange={(e) => setSubscriptionStatus(e.target.value)} style={{ ...fi, cursor: "pointer" }}>
+                <option value="TRIAL">Deneme</option>
+                <option value="ACTIVE">Aktif</option>
+                <option value="PAST_DUE">Gecikmiş</option>
+                <option value="SUSPENDED">Askıda</option>
+                <option value="CANCELLED">İptal</option>
+              </select>
+            </Field>
+            <Field label="Plan">
+              <select value={planTier} onChange={(e) => setPlanTier(e.target.value)} style={{ ...fi, cursor: "pointer" }}>
+                <option value="STARTER">{PLANS.STARTER?.label ?? "Başlangıç"}</option>
+                <option value="PRO">{PLANS.PRO?.label ?? "Pro"}</option>
+                <option value="ENTERPRISE">{PLANS.ENTERPRISE?.label ?? "Kurumsal"}</option>
+              </select>
+            </Field>
+            <button type="submit" disabled={busy} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: C.ink, color: "#fff", border: "none", cursor: "pointer", opacity: busy ? 0.7 : 1 }}>
+              {busy && <Loader2 size={13} className="animate-spin" />} Kaydet
+            </button>
+          </form>
+
+          <div style={{ height: 1, background: C.border }} />
+
+          {/* Period extension — payment received */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.ink, marginBottom: 4 }}>Süreyi Uzat</div>
+            <div style={{ fontSize: 11, color: C.muted, marginBottom: 8 }}>Ödeme alındıysa dönem bitişine ekle. Otomatik olarak ACTIVE'e çekilir.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 8 }}>
+              {[30, 90, 365].map(n => (
+                <button key={n} onClick={() => extend(n)} disabled={busy}
+                  style={{ padding: "9px 0", borderRadius: 7, fontSize: 12, fontWeight: 500, background: C.surface, color: C.ink, border: `1px solid ${C.border}`, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
+                  +{n} gün
+                </button>
+              ))}
+            </div>
+            <form onSubmit={customExtend} style={{ display: "flex", gap: 6 }}>
+              <input type="number" min="1" max="3650" placeholder="Özel gün sayısı" value={extendDays} onChange={(e) => setExtendDays(e.target.value)}
+                style={{ flex: 1, padding: "8px 10px", fontSize: 12, borderRadius: 7, background: C.surface, color: C.ink, border: `1px solid ${C.border}`, outline: "none" }} />
+              <button type="submit" disabled={busy || !extendDays}
+                style={{ padding: "8px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600, background: C.ink, color: "#fff", border: "none", cursor: "pointer", opacity: (busy || !extendDays) ? 0.5 : 1 }}>
+                Ekle
+              </button>
+            </form>
+          </div>
+
+          {err && <div style={{ fontSize: 12, padding: "8px 10px", borderRadius: 7, color: "#B91C1C", background: "rgba(185,28,28,0.06)" }}>{err}</div>}
+        </div>
       </div>
     </div>
   );
