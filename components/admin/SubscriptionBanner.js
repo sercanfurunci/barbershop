@@ -5,7 +5,8 @@
 // Banner copy for SUSPENDED is the exact line product agreed on.
 
 import { AlertCircle } from "lucide-react";
-import { shouldShowBillingBanner } from "@/lib/subscription";
+
+const BANNER_STATUSES = new Set(["PAST_DUE", "SUSPENDED", "CANCELLED"]);
 
 const COPY = {
   PAST_DUE:  "Son ödeme alınamadı. Aboneliğiniz kısa sürede askıya alınabilir. Lütfen bizimle iletişime geçin.",
@@ -20,7 +21,7 @@ const STYLE = {
 };
 
 export default function SubscriptionBanner({ shop, onUpgrade }) {
-  if (!shouldShowBillingBanner(shop)) return null;
+  if (!shop || !BANNER_STATUSES.has(shop.subscriptionStatus)) return null;
   const status = shop.subscriptionStatus;
   const s = STYLE[status] ?? STYLE.SUSPENDED;
   const text = COPY[status];
