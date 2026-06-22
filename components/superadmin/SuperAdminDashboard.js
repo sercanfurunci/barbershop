@@ -317,7 +317,6 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
                     <Th>Slug</Th>
                     <Th align="right">Berber</Th>
                     <Th align="right">Randevu</Th>
-                    <Th>Plan</Th>
                     <Th>Abonelik</Th>
                     <Th>Durum</Th>
                     <Th align="right" style={{ width: 40 }}></Th>
@@ -333,9 +332,6 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
                       <Td><code style={{ fontSize: 11, color: C.muted }}>{s.slug}</code></Td>
                       <Td align="right">{s._count.barbers}</Td>
                       <Td align="right">{s._count.appointments}</Td>
-                      <Td>
-                        <span style={{ fontSize: 11, color: C.muted }}>{PLANS[s.planTier]?.label ?? s.planTier}</span>
-                      </Td>
                       <Td><SubscriptionBadge status={s.subscriptionStatus} /></Td>
                       <Td><StatusBadge status={s.status} /></Td>
                       <Td align="right">
@@ -358,7 +354,7 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
                       <SubscriptionBadge status={s.subscriptionStatus} />
                     </div>
                     <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>
-                      <code>{s.slug}</code> · {PLANS[s.planTier]?.label ?? s.planTier}
+                      <code>{s.slug}</code>
                     </div>
                     <div style={{ display: "flex", gap: 14, fontSize: 11, color: C.muted }}>
                       <span>{s._count.barbers} berber</span>
@@ -602,7 +598,6 @@ function EditShopModal({ shop, onClose, onSaved }) {
 /* ── Billing / subscription modal (manual sales-led billing) ── */
 function BillingModal({ shop, onClose, onSaved }) {
   const [subscriptionStatus, setSubscriptionStatus] = useState(shop.subscriptionStatus ?? "TRIAL");
-  const [planTier, setPlanTier] = useState(shop.planTier ?? "STARTER");
   const [extendDays, setExtendDays] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr]   = useState("");
@@ -621,13 +616,10 @@ function BillingModal({ shop, onClose, onSaved }) {
     finally { setBusy(false); }
   };
 
-  const saveStatusAndPlan = (e) => {
+  const saveStatus = (e) => {
     e.preventDefault();
-    const body = {};
-    if (subscriptionStatus !== shop.subscriptionStatus) body.subscriptionStatus = subscriptionStatus;
-    if (planTier !== shop.planTier) body.planTier = planTier;
-    if (Object.keys(body).length === 0) { onClose(); return; }
-    submit(body);
+    if (subscriptionStatus === shop.subscriptionStatus) { onClose(); return; }
+    submit({ subscriptionStatus });
   };
 
   const extend = (n) => submit({ extendDays: n });
@@ -674,7 +666,7 @@ function BillingModal({ shop, onClose, onSaved }) {
             </div>
           </div>
 
-          <form onSubmit={saveStatusAndPlan} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <form onSubmit={saveStatus} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <Field label="Abonelik Durumu">
               <select value={subscriptionStatus} onChange={(e) => setSubscriptionStatus(e.target.value)} style={{ ...fi, cursor: "pointer" }}>
                 <option value="TRIAL">Deneme</option>
@@ -682,13 +674,6 @@ function BillingModal({ shop, onClose, onSaved }) {
                 <option value="PAST_DUE">Gecikmiş</option>
                 <option value="SUSPENDED">Askıda</option>
                 <option value="CANCELLED">İptal</option>
-              </select>
-            </Field>
-            <Field label="Plan">
-              <select value={planTier} onChange={(e) => setPlanTier(e.target.value)} style={{ ...fi, cursor: "pointer" }}>
-                <option value="STARTER">{PLANS.STARTER?.label ?? "Başlangıç"}</option>
-                <option value="PRO">{PLANS.PRO?.label ?? "Pro"}</option>
-                <option value="ENTERPRISE">{PLANS.ENTERPRISE?.label ?? "Kurumsal"}</option>
               </select>
             </Field>
             <button type="submit" disabled={busy} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: C.ink, color: "#fff", border: "none", cursor: "pointer", opacity: busy ? 0.7 : 1 }}>

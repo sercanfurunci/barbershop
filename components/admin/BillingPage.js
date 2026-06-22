@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import {
-  CreditCard, Calendar, AlertCircle, CheckCircle2, Loader2,
+  CreditCard, Calendar, AlertCircle, Loader2,
   Users, MessageSquare, Smartphone, TrendingUp, Mail,
 } from "lucide-react";
 
@@ -112,8 +112,7 @@ export default function BillingPage() {
             </div>
             <div style={{ fontSize: "22px", fontWeight: 700, color: C.primary }}>{plan.label}</div>
             <div style={{ fontSize: "13px", color: C.secondary, marginTop: "2px" }}>
-              {formatTry(plan.priceMonthlyTry)} / ay
-              {plan.maxBarbers ? ` • en fazla ${plan.maxBarbers} berber` : " • sınırsız berber"}
+              {formatTry(plan.priceMonthlyTry)} / ay • sınırsız berber
             </div>
           </div>
           <StatusBadge status={subscription.status} />
@@ -151,49 +150,22 @@ export default function BillingPage() {
           <StatTile Icon={TrendingUp}  label="Randevu"     value={usage.bookingsThisMonth} />
           <StatTile Icon={Smartphone}  label="SMS"         value={usage.smsSent} />
           <StatTile Icon={MessageSquare} label="WhatsApp"  value={usage.waSent} />
-          <StatTile Icon={Users}       label="Aktif Berber" value={usage.activeBarbers}
-            hint={plan.maxBarbers ? `${plan.maxBarbers} üst sınır` : "sınırsız"} />
+          <StatTile Icon={Users}       label="Aktif Berber" value={usage.activeBarbers} hint="sınırsız" />
           <StatTile Icon={Users}       label="Toplam Müşteri" value={usage.customerCount} />
         </div>
       </div>
 
-      {/* Features */}
-      <Card>
-        <div style={{ fontSize: "13px", fontWeight: 700, color: C.primary }}>Plan Özellikleri</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "8px" }}>
-          {[
-            ["basicBooking",      "Temel randevu sistemi"],
-            ["reviews",           "Müşteri değerlendirmeleri"],
-            ["analytics",         "Temel analitik"],
-            ["calendarSync",      "Takvim senkronizasyonu"],
-            ["multiLocation",     "Çoklu lokasyon"],
-            ["advancedAnalytics", "Gelişmiş analitik"],
-          ].map(([key, label]) => {
-            const on = !!plan.features[key];
-            return (
-              <div key={key} style={{
-                display: "flex", alignItems: "center", gap: "8px",
-                fontSize: "12px", color: on ? C.primary : C.muted,
-              }}>
-                <CheckCircle2 size={14} color={on ? "#065F46" : C.muted} />
-                <span style={{ textDecoration: on ? "none" : "line-through" }}>{label}</span>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* Upgrade CTA — sales-led */}
+      {/* Renew / contact CTA — sales-led, no online checkout yet */}
       <Card style={{ background: C.primary, border: "none", color: "#fff" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <CreditCard size={18} />
-          <div style={{ fontSize: "15px", fontWeight: 700 }}>Plan yükseltmek veya değiştirmek mi istiyorsunuz?</div>
+          <div style={{ fontSize: "15px", fontWeight: 700 }}>Süreyi uzatmak ister misiniz?</div>
         </div>
         <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.75)" }}>
-          Ekibimiz size en uygun planı seçmeniz için yardımcı olur. İletişime geçtiğinizde 24 saat içinde dönüş yaparız.
+          Ödeme almak için bizimle iletişime geçin. 24 saat içinde dönüş yapıyoruz.
         </div>
         <a
-          href="mailto:satis@makas.app?subject=Plan%20Yükseltme%20Talebi"
+          href="mailto:satis@makas.app?subject=Abonelik%20Yenileme"
           style={{
             display: "inline-flex", alignItems: "center", gap: "6px",
             background: "#fff", color: C.primary, fontWeight: 700,

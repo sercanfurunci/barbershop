@@ -649,29 +649,18 @@ function DemoShowcase() {
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 
-const PLANS = [
-  {
-    name: "Starter",
-    monthly: "₺599",
-    annual: "₺6.490",
-    annualNote: "1 ay hediye",
-    features: ["3 berbere kadar", "Sınırsız randevu", "Admin paneli", "Müşteri yönetimi", "Temel raporlar"],
-  },
-  {
-    name: "Pro",
-    monthly: "₺999",
-    annual: "₺10.790",
-    annualNote: "1 ay hediye",
-    features: ["Sınırsız berber", "Gelişmiş raporlar", "Müşteri notları", "Otomatik yorum toplama", "Berber performansı", "Google Calendar dışa aktarma"],
-    highlight: true,
-  },
-  {
-    name: "Enterprise",
-    monthly: "Özel teklif",
-    annual: "Özel teklif",
-    features: ["Özel SLA", "Öncelikli destek", "Özel eğitim", "Özel entegrasyonlar"],
-  },
-];
+const PLAN = {
+  monthly: "₺500",
+  features: [
+    "Sınırsız berber",
+    "Sınırsız randevu",
+    "Admin paneli + müşteri yönetimi",
+    "Kendi salonadi.makas.tech adresi",
+    "Müşteri notları + geçmiş takibi",
+    "Berber performans raporları",
+    "Mobil uyumlu rezervasyon sayfası",
+  ],
+};
 
 const ADDONS = [
   { name: "WhatsApp hatırlatma", detail: "100 mesaj / ay dahil, sonrası kullanım başına" },
@@ -680,7 +669,6 @@ const ADDONS = [
 ];
 
 function Pricing() {
-  const [annual, setAnnual] = useState(true);
   return (
     <section id="pricing" style={{ padding: "80px 24px", background: C.bg }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -689,141 +677,54 @@ function Pricing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          style={{ textAlign: "center", marginBottom: 28 }}
+          style={{ textAlign: "center", marginBottom: 36 }}
         >
           <h2 style={{ fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 700, letterSpacing: "-1px", color: C.primary, marginBottom: 12 }}>
-            Şeffaf fiyatlandırma
+            Tek plan, net fiyat
           </h2>
           <p style={{ fontSize: 15, color: C.muted, maxWidth: 560, margin: "0 auto" }}>
-            Kurulum ve yapılandırma işletmenize göre özelleştirilir.
+            Karmaşık paket yok, gizli ücret yok. Sınırsız her şey.
           </p>
         </motion.div>
 
-        {/* Toggle */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 36 }}>
-          <div style={{
-            display: "inline-flex", padding: 4,
-            background: C.surface, border: `1px solid ${C.border}`,
-            borderRadius: 999,
-          }}>
-            {[
-              { id: "annual",  label: "Yıllık", badge: "Kurulum hediye" },
-              { id: "monthly", label: "Aylık" },
-            ].map((t) => {
-              const active = (t.id === "annual") === annual;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setAnnual(t.id === "annual")}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 8,
-                    padding: "8px 18px", borderRadius: 999,
-                    background: active ? C.primary : "transparent",
-                    color: active ? "#F8F6F2" : C.secondary,
-                    fontSize: 14, fontWeight: 600,
-                    border: "none", cursor: "pointer",
-                    transition: "background 0.18s, color 0.18s",
-                    minHeight: 36,
-                  }}
-                >
-                  {t.label}
-                  {t.badge && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
-                      padding: "2px 8px", borderRadius: 999,
-                      background: active ? "#F8F6F2" : C.card,
-                      color: active ? C.primary : C.secondary,
-                      border: active ? "none" : `1px solid ${C.border}`,
-                      textTransform: "uppercase",
-                    }}>
-                      {t.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
-          {PLANS.map((p) => {
-            const price = annual ? p.annual : p.monthly;
-            const isEnterprise = p.monthly === "Özel teklif";
-            const suffix = isEnterprise ? "" : annual ? "/ yıl" : "/ ay";
-            return (
-              <motion.div
-                key={p.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4 }}
-                style={{
-                  background: p.highlight ? C.primary : C.card,
-                  color: p.highlight ? "#F8F6F2" : C.primary,
-                  border: `1px solid ${p.highlight ? "transparent" : C.border}`,
-                  borderRadius: 16,
-                  padding: "32px 26px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 18,
-                  position: "relative",
-                  boxShadow: p.highlight ? "0 12px 40px rgba(17,17,17,0.18)" : "none",
-                }}
-              >
-                {p.highlight && (
-                  <span style={{
-                    position: "absolute", top: 16, right: 16,
-                    fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
-                    background: "#F8F6F2", color: C.primary,
-                    padding: "4px 10px", borderRadius: 999, textTransform: "uppercase",
-                  }}>
-                    En popüler
-                  </span>
-                )}
-                <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.85 }}>{p.name}</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: isEnterprise ? 26 : 34, fontWeight: 800, letterSpacing: "-1px" }}>{price}</span>
-                    {suffix && <span style={{ fontSize: 13, opacity: 0.75 }}>{suffix}</span>}
-                  </div>
-                  {!isEnterprise && annual && p.annualNote && (
-                    <span style={{ fontSize: 12, opacity: 0.8, fontWeight: 600, letterSpacing: "0.04em" }}>
-                      {p.annualNote} · Kurulum dahil
-                    </span>
-                  )}
-                  {!isEnterprise && !annual && (
-                    <span style={{ fontSize: 12, opacity: 0.7 }}>
-                      Tek seferlik ₺3.000 kurulum
-                    </span>
-                  )}
-                </div>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-                  {p.features.map((f) => (
-                    <li key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
-                      <CheckCircle size={15} strokeWidth={2.2} style={{ flexShrink: 0, opacity: 0.9 }} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => scrollTo("contact")}
-                  style={{
-                    marginTop: "auto",
-                    padding: "12px 18px",
-                    borderRadius: 10,
-                    background: p.highlight ? "#F8F6F2" : C.primary,
-                    color: p.highlight ? C.primary : "#F8F6F2",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  Demo Talep Et
-                </button>
-              </motion.div>
-            );
-          })}
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4 }}
+            style={{
+              background: C.primary, color: "#F8F6F2",
+              borderRadius: 16, padding: "36px 32px",
+              display: "flex", flexDirection: "column", gap: 22,
+              width: "100%", maxWidth: 460,
+              boxShadow: "0 12px 40px rgba(17,17,17,0.18)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-1px" }}>{PLAN.monthly}</span>
+              <span style={{ fontSize: 14, opacity: 0.75 }}>/ ay</span>
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+              {PLAN.features.map((f) => (
+                <li key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+                  <CheckCircle size={15} strokeWidth={2.2} style={{ flexShrink: 0, opacity: 0.9 }} />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => scrollTo("contact")}
+              style={{
+                marginTop: 4, padding: "14px 18px", borderRadius: 10,
+                background: "#F8F6F2", color: C.primary,
+                fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer",
+                minHeight: 48,
+              }}
+            >
+              14 Gün Ücretsiz Dene
+            </button>
+          </motion.div>
         </div>
 
         {/* Add-ons */}
@@ -848,7 +749,7 @@ function Pricing() {
         </div>
 
         <p style={{ textAlign: "center", fontSize: 12.5, color: C.muted, marginTop: 18 }}>
-          Fiyatlara KDV dahil değildir. Tüm planlar sales-led onboarding ile aktive edilir.
+          Fiyata KDV dahil değildir. Kurulum ücretsiz, istediğin zaman iptal et.
         </p>
       </div>
     </section>
@@ -859,11 +760,11 @@ function Pricing() {
 
 const FAQS = [
   { q: "Kurulum ne kadar sürer?",                  a: "Genellikle 1 gün içinde kurulum tamamlanır." },
-  { q: "Salonumun kendi adresi olacak mı?",        a: "Evet. Her salona özel salonadi.makas.tech adresi verilir. Kendi alan adınızı bağlamak isterseniz kurumsal pakette ek hizmet olarak sunuyoruz." },
+  { q: "Salonumun kendi adresi olacak mı?",        a: "Evet. Her salona özel salonadi.makas.tech adresi verilir. Kendi alan adınızı bağlamak isterseniz ek hizmet olarak sunuyoruz." },
   { q: "WhatsApp hatırlatma var mı?",              a: "Evet. İsteğe bağlı olarak WhatsApp ve SMS hatırlatma entegrasyonu eklenebilir." },
   { q: "Birden fazla berber ekleyebilir miyim?",   a: "Evet. Tüm ekip üyelerinizi sisteme ekleyebilir ve yönetebilirsiniz." },
   { q: "Müşteri bilgilerini takip edebilir miyim?",a: "Evet. Notlar, geçmiş randevular ve müşteri takibi sistemde yer alır." },
-  { q: "Fiyatlandırma nasıl çalışıyor?",           a: "Kurulum tek seferliktir. Sonrasında aylık kullanım ücreti ve isteğe bağlı mesaj maliyetleri uygulanır." },
+  { q: "Fiyatlandırma nasıl çalışıyor?",           a: "Aylık 500 ₺ sabit ücret. Sınırsız berber, sınırsız randevu. WhatsApp/SMS gibi ek hizmetler kullandığın kadar." },
 ];
 
 function FAQItem({ q, a, isOpen, onToggle }) {
