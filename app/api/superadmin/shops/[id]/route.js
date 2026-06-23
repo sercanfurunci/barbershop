@@ -113,7 +113,8 @@ export async function PATCH(request, { params }) {
 }
 
 // DELETE /api/superadmin/shops/[id]
-// Cascade removes barbers, services, appointments, holidays, users (via schema onDelete: Cascade).
+// ponytail: soft delete. Invoice + AuditLog FKs are Restrict so hard deletes
+// would fail anyway. Setting deletedAt hides the shop from resolveShopBySlug.
 export async function DELETE(request, { params }) {
   const payload = await requireAuth(request);
   const reject = gate(payload);
@@ -121,7 +122,10 @@ export async function DELETE(request, { params }) {
 
   const { id } = await params;
   try {
-    await prisma.shop.delete({ where: { id } });
+    await prisma.shop.update({
+      where: { id },
+      data: { deletedAt: new Date(), status: "SUSPENDED" },
+    });
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e.code === "P2025") return NextResponse.json({ error: "Salon bulunamadı" }, { status: 404 });

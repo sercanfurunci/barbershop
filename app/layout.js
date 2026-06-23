@@ -7,7 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 export const metadata = {
   title: { default: "MAKAS — Berber Randevu Sistemi", template: "%s | MAKAS" },
   description: "Berberlere özel online randevu ve salon yönetim platformu. Müşteri kaybetme, randevuları otomatikleştir.",
-  metadataBase: new URL("https://makas.furunci.tech"),
+  // ponytail: env-driven so tenant custom domains resolve OG/canonical correctly.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://makas.furunci.tech"),
   applicationName: "MAKAS",
   keywords: [
     "berber randevu sistemi", "online randevu", "berber yazılımı",

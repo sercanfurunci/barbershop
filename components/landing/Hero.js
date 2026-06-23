@@ -151,7 +151,8 @@ function BookingWidget({ lang, services, barbers }) {
               <button key={svc.id}
                 onClick={() => setSelectedService(svc.id === selectedService ? null : svc.id)}
                 style={{
-                  padding: "6px 12px", borderRadius: "6px",
+                  minHeight: "36px",
+                  padding: "8px 12px", borderRadius: "6px",
                   fontSize: "11px", fontWeight: 500, cursor: "pointer",
                   border: `1px solid ${selectedService === svc.id ? C.primary : C.border}`,
                   background: selectedService === svc.id ? `rgba(17,17,17,0.08)` : "transparent",
@@ -283,20 +284,15 @@ function BookingWidget({ lang, services, barbers }) {
   );
 }
 
-export default function Hero({ services = [], barbers = [] }) {
+export default function Hero({ services = [], barbers = [], googleReviews = null }) {
   const { lang } = useLang();
   const tx = useT(lang);
   const shop = useShop();
   const bookBase = shop?.slug ? `/${shop.slug}/book` : "/book";
-  const [googleRating, setGoogleRating] = useState(null);
-
-  useEffect(() => {
-    if (!shop?.id) return;
-    fetch(`/api/reviews?shopId=${shop.id}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.rating) setGoogleRating({ rating: d.rating, total: d.totalRatings }); })
-      .catch(() => {});
-  }, [shop?.id]);
+  // ponytail: rating comes from SSR via prop. No client fetch.
+  const googleRating = googleReviews?.rating
+    ? { rating: googleReviews.rating, total: googleReviews.totalRatings }
+    : null;
 
   return (
     <section className="relative min-h-screen flex flex-col" style={{ background: C.bg }}>
@@ -306,9 +302,15 @@ export default function Hero({ services = [], barbers = [] }) {
       }} />
 
       <div className="relative z-10 flex-1 flex items-start lg:items-center">
-        <div className="w-full max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 pt-10 pb-12 lg:pt-0 lg:pb-0">
+        <div style={{
+          width: "min(1440px, 100%)",
+          marginInline: "auto",
+          paddingInline: "clamp(20px, 4vw, 32px)",
+          paddingTop: "40px",
+          paddingBottom: "48px",
+        }} className="lg:!pt-0 lg:!pb-0">
           <div
-            className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-14 lg:min-h-[calc(100dvh-72px)]"
+            className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-16 lg:min-h-[calc(100dvh-68px)]"
             style={{
               paddingTop: "clamp(0px, 4vh, 40px)",
               paddingBottom: "clamp(16px, 4vh, 40px)",
@@ -316,7 +318,7 @@ export default function Hero({ services = [], barbers = [] }) {
           >
 
             {/* ── LEFT ── */}
-            <div className="lg:col-span-5 flex flex-col justify-center">
+            <div className="lg:col-span-5 flex flex-col justify-center" style={{ maxWidth: "720px" }}>
 
               {/* Stars + location */}
               <div className="hero-badge flex items-center gap-3 mb-8" style={{ flexWrap: "wrap" }}>
@@ -339,13 +341,13 @@ export default function Hero({ services = [], barbers = [] }) {
                 className="font-display font-light hero-heading"
                 style={{ letterSpacing: "-0.025em", marginBottom: "20px" }}
               >
-                <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 88px)", color: C.primary, lineHeight: 1.0 }}>
+                <span style={{ display: "block", fontSize: "clamp(56px, 7vw, 104px)", color: C.primary, lineHeight: 0.98 }}>
                   {lang === "tr" ? "Ustalar" : "Masters"}
                 </span>
-                <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 88px)", color: C.primary, lineHeight: 1.0, fontStyle: "italic" }}>
+                <span style={{ display: "block", fontSize: "clamp(56px, 7vw, 104px)", color: C.primary, lineHeight: 0.98, fontStyle: "italic" }}>
                   {lang === "tr" ? "sizi" : "await"}
                 </span>
-                <span style={{ display: "block", fontSize: "clamp(52px, 6.5vw, 88px)", color: C.primary, lineHeight: 1.0, paddingBottom: "0.18em" }}>
+                <span style={{ display: "block", fontSize: "clamp(56px, 7vw, 104px)", color: C.primary, lineHeight: 0.98, paddingBottom: "0.18em" }}>
                   {lang === "tr" ? "bekliyor." : "you."}
                 </span>
               </h1>
@@ -419,7 +421,7 @@ export default function Hero({ services = [], barbers = [] }) {
 
             {/* ── RIGHT: Booking widget ── */}
             <div className="hero-right lg:col-span-7 flex items-center justify-center lg:justify-end">
-              <div style={{ width: "100%", maxWidth: "500px" }}>
+              <div style={{ width: "100%", maxWidth: "560px" }}>
                 <StatusCard lang={lang} barbers={barbers} />
                 <BookingWidget lang={lang} services={services} barbers={barbers} />
               </div>

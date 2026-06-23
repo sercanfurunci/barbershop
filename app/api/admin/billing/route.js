@@ -28,6 +28,7 @@ export async function GET(request) {
       trialEndsAt: true,
       currentPeriodEndsAt: true,
       paymentProvider: true,
+      createdAt: true,
     },
   });
   if (!shop) return NextResponse.json({ error: "Shop not found" }, { status: 404 });
@@ -45,6 +46,7 @@ export async function GET(request) {
     },
     subscription: {
       status: shop.subscriptionStatus,
+      startedAt: shop.createdAt, // ponytail: trial start = signup. Refine when paid lifecycle lands.
       trialEndsAt: shop.trialEndsAt,
       trialDaysLeft: daysUntilTrialEnds(shop),
       currentPeriodEndsAt: shop.currentPeriodEndsAt,

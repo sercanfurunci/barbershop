@@ -50,7 +50,12 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
     <section id="barbers" style={{ background: C.bg, position: "relative" }}>
       <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, #E5DFD6 30%, #E5DFD6 70%, transparent)" }} />
 
-      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "72px 32px 64px" }}>
+      <div style={{
+        width: "min(1440px, 100%)",
+        marginInline: "auto",
+        paddingInline: "clamp(20px, 4vw, 32px)",
+        paddingBlock: "clamp(72px, 10vw, 120px)",
+      }}>
 
         {/* Header */}
         <div
@@ -89,8 +94,12 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
           </motion.p>
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+        {/* Grid — auto-fit, min 260px so cards never cramp */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))",
+          gap: "24px",
+        }}>
           {barbers.map((barber, i) => (
             <BarberCard key={barber.id} barber={barber} lang={lang} tx={tx} index={i} />
           ))}
@@ -169,7 +178,7 @@ function BarberCard({ barber, lang, tx, index }) {
         }}
       >
         {/* ── Image ── */}
-        <div style={{ position: "relative", height: "300px", flexShrink: 0, background: "#1a1210", overflow: "hidden" }}>
+        <div style={{ position: "relative", aspectRatio: "3 / 4", flexShrink: 0, background: "#1a1210", overflow: "hidden" }}>
           {barber.profilePhoto ? (
             <Image
               src={barber.profilePhoto}
@@ -283,12 +292,19 @@ function BarberCard({ barber, lang, tx, index }) {
               </span>
             </div>
 
-            {barber.yearsExp > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                <Scissors size={10} style={{ color: C.muted, flexShrink: 0 }} />
-                <span style={{ fontSize: "11px", color: C.muted }}>{barber.yearsExp} {tx.barbers.yearsExp}</span>
-              </div>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              {barber.completedCount > 0 && (
+                <span style={{ fontSize: "11px", color: C.muted, fontWeight: 600 }}>
+                  {barber.completedCount}+ {lang === "tr" ? "tamamlanan" : "completed"}
+                </span>
+              )}
+              {barber.yearsExp > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Scissors size={10} style={{ color: C.muted, flexShrink: 0 }} />
+                  <span style={{ fontSize: "11px", color: C.muted }}>{barber.yearsExp} {tx.barbers.yearsExp}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

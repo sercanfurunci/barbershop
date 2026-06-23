@@ -392,7 +392,7 @@ function Features() {
   return (
     <section
       style={{
-        padding: "80px 24px",
+        padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)",
         background: C.surface,
       }}
     >
@@ -471,7 +471,7 @@ const WHY = [
 
 function WhyUs() {
   return (
-    <section style={{ padding: "80px 24px", maxWidth: 1100, margin: "0 auto" }}>
+    <section style={{ padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)", maxWidth: 1100, margin: "0 auto" }}>
       <motion.h2
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -530,6 +530,119 @@ function WhyUs() {
   );
 }
 
+// ─── Own Your Brand ───────────────────────────────────────────────────────────
+
+function OwnYourBrand() {
+  return (
+    <section style={{ padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)", background: C.bg }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          style={{ textAlign: "center", marginBottom: 48 }}
+        >
+          <h2 style={{
+            fontSize: "clamp(26px, 4.2vw, 44px)", fontWeight: 700,
+            letterSpacing: "-1px", color: C.primary, marginBottom: 14, lineHeight: 1.15,
+          }}>
+            Kendi markan. Kendi sistemin.<br />Kendi müşterin.
+          </h2>
+          <p style={{
+            fontSize: 16, color: C.muted, lineHeight: 1.65,
+            maxWidth: 620, margin: "0 auto",
+          }}>
+            Instagram'da paylaşıldığında müşteri başka platformu değil, <strong style={{ color: C.primary, fontWeight: 700 }}>seni</strong> görür.
+          </p>
+        </motion.div>
+
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 18,
+        }}>
+          {/* Marketplace */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.45 }}
+            style={{
+              background: C.card,
+              border: `1px solid ${C.border}`,
+              borderRadius: 16,
+              padding: "26px 24px",
+              opacity: 0.78,
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: C.muted, textTransform: "uppercase", marginBottom: 14 }}>
+              Pazaryeri Platformları
+            </div>
+            <div style={{
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+              fontSize: 12, color: "#7a7a7a",
+              padding: "10px 12px", background: C.surface, borderRadius: 8,
+              wordBreak: "break-all", marginBottom: 16,
+            }}>
+              platform.com/s/DsJTCVXovTS21DUFJ…
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                "Müşteri senin değil, platformun markasını hatırlar",
+                "Aynı sayfada rakip salonlar bir tık ötede",
+                "Müşteriler platformun veritabanında — sen değil",
+              ].map((t) => (
+                <li key={t} style={{ display: "flex", gap: 10, fontSize: 14, color: C.secondary, lineHeight: 1.5 }}>
+                  <span style={{ color: "#9a9a9a", fontWeight: 700, flexShrink: 0 }}>—</span>{t}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* Makas */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.45, delay: 0.1 }}
+            style={{
+              background: C.primary,
+              borderRadius: 16,
+              padding: "26px 24px",
+              color: "#fff",
+              boxShadow: "0 12px 40px rgba(17,17,17,0.18)",
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: "rgba(255,255,255,0.7)", textTransform: "uppercase", marginBottom: 14 }}>
+              Makas ile
+            </div>
+            <div style={{
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+              fontSize: 13, color: "#fff",
+              padding: "10px 12px", background: "rgba(255,255,255,0.08)", borderRadius: 8,
+              wordBreak: "break-all", marginBottom: 16, fontWeight: 600,
+            }}>
+              senin-salonun.com
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                "Müşteri salonu değil, seni hatırlar",
+                "Rakip yok — sayfanda sadece sen varsın",
+                "Müşteri verisi ve geçmişi tamamen senin",
+              ].map((t) => (
+                <li key={t} style={{ display: "flex", gap: 10, fontSize: 14, color: "rgba(255,255,255,0.92)", lineHeight: 1.5 }}>
+                  <span style={{ color: "#fff", fontWeight: 700, flexShrink: 0 }}>✓</span>{t}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── Demo Showcase ────────────────────────────────────────────────────────────
 
 const DEMOS = [
@@ -542,7 +655,7 @@ function DemoShowcase() {
     <section
       id="demo"
       style={{
-        padding: "80px 24px",
+        padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)",
         background: C.surface,
       }}
     >
@@ -670,7 +783,7 @@ const ADDONS = [
 
 function Pricing() {
   return (
-    <section id="pricing" style={{ padding: "80px 24px", background: C.bg }}>
+    <section id="pricing" style={{ padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)", background: C.bg }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -830,7 +943,7 @@ function FAQItem({ q, a, isOpen, onToggle }) {
 function FAQ() {
   const [open, setOpen] = useState(0);
   return (
-    <section id="faq" style={{ padding: "80px 24px", background: C.bg }}>
+    <section id="faq" style={{ padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)", background: C.bg }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -867,7 +980,7 @@ function FAQ() {
 
 function ClosingCTA() {
   return (
-    <section style={{ padding: "80px 24px", background: C.bg }}>
+    <section style={{ padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)", background: C.bg }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -1065,7 +1178,7 @@ function LeadForm() {
     <section
       id="contact"
       style={{
-        padding: "80px 24px",
+        padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)",
         maxWidth: 1100,
         margin: "0 auto",
       }}
@@ -1336,6 +1449,7 @@ export default function LandingPage() {
         <HowItWorks />
         <Features />
         <WhyUs />
+        <OwnYourBrand />
         <DemoShowcase />
         <Pricing />
         <FAQ />

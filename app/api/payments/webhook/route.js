@@ -27,8 +27,26 @@ export async function POST(request) {
     return NextResponse.json({ ok: true, ignored: true });
   }
 
-  const { event, shopId, invoiceData } = verified;
+  const { event, shopId, invoiceData, eventId } = verified;
   const provider = getProvider().name;
+
+  // ponytail: idempotency via PK conflict. Replays from the provider become no-ops.
+  // Verified payloads should include eventId; if missing, fall back to
+  // providerInvoiceId so payment.succeeded still dedupes.
+  const dedupeId = eventId || invoiceData?.providerInvoiceId;
+  if (dedupeId) {
+    try {
+      await prisma.processedWebhookEvent.create({
+        data: { provider, eventId: dedupeId },
+      });
+    } catch (err) {
+      // Prisma P2002 = unique constraint violation = already processed.
+      if (err.code === "P2002") {
+        return NextResponse.json({ ok: true, duplicate: true });
+      }
+      throw err;
+    }
+  }
 
   try {
     if (event === "payment.succeeded") {

@@ -278,7 +278,7 @@ export default function AdminDashboard() {
             <CalendarView />
           </main>
         ) : (
-          <main className="flex-1 p-5 lg:p-8 pb-24 lg:pb-8">
+          <main className="flex-1 w-full p-5 lg:p-8 pb-24 lg:pb-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={tab}
@@ -286,6 +286,7 @@ export default function AdminDashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
+                className="w-full"
               >
                 {tab === "overview"      && <OverviewPage setTab={setTab} tx={tx} lang={lang} onNewBooking={() => setShowBooking(true)} barberId={globalBarberId} realBarbers={realBarbers} />}
                 {tab === "appointments"  && <AppointmentsPage tx={tx} barberId={globalBarberId} realBarbers={realBarbers} />}

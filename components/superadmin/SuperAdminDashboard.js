@@ -332,7 +332,10 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
                       <Td><code style={{ fontSize: 11, color: C.muted }}>{s.slug}</code></Td>
                       <Td align="right">{s._count.barbers}</Td>
                       <Td align="right">{s._count.appointments}</Td>
-                      <Td><SubscriptionBadge status={s.subscriptionStatus} /></Td>
+                      <Td>
+                        <SubscriptionBadge status={s.subscriptionStatus} />
+                        <SubscriptionEndHint shop={s} />
+                      </Td>
                       <Td><StatusBadge status={s.status} /></Td>
                       <Td align="right">
                         <ActionMenu shop={s} onToggle={() => toggleStatus(s)} onDelete={() => deleteShop(s)} onEdit={() => onEdit(s)} onBilling={() => onBilling(s)} />
@@ -353,6 +356,7 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
                       <StatusBadge status={s.status} />
                       <SubscriptionBadge status={s.subscriptionStatus} />
                     </div>
+                    <SubscriptionEndHint shop={s} />
                     <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>
                       <code>{s.slug}</code>
                     </div>
@@ -466,6 +470,23 @@ function SubscriptionBadge({ status }) {
   };
   const s = map[status] ?? { label: status ?? "—", color: C.muted, bg: C.surface };
   return <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, color: s.color, background: s.bg, whiteSpace: "nowrap" }}>{s.label}</span>;
+}
+
+// ponytail: end-date hint shown under SubscriptionBadge in the shop list.
+// Picks trialEndsAt for TRIAL, currentPeriodEndsAt otherwise.
+function SubscriptionEndHint({ shop }) {
+  const end = shop.subscriptionStatus === "TRIAL" ? shop.trialEndsAt : shop.currentPeriodEndsAt;
+  if (!end) return null;
+  const ms = new Date(end).getTime() - Date.now();
+  const days = Math.ceil(ms / 86_400_000);
+  const dateStr = new Date(end).toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
+  const color = days < 0 ? "#991B1B" : days <= 3 ? C.amber : C.muted;
+  const tail = days < 0 ? `${Math.abs(days)}g gecikti` : days === 0 ? "bugün" : `${days}g kaldı`;
+  return (
+    <div style={{ fontSize: 10, color, marginTop: 3, whiteSpace: "nowrap" }}>
+      {dateStr} · {tail}
+    </div>
+  );
 }
 
 function MenuItem({ children, onClick, danger }) {

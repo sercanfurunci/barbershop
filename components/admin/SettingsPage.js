@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/lib/api";
 import { todayStr } from "@/lib/utils";
-import { Clock, Calendar, Plus, Trash2, Save, CheckCircle, AlertCircle, ChevronDown, Store } from "lucide-react";
+import { Clock, Calendar, Plus, Trash2, Save, CheckCircle, AlertCircle, ChevronDown, Store, QrCode, Download, Copy } from "lucide-react";
 
 const C = {
   bg:       "#F7F4EE",
@@ -588,6 +588,7 @@ function RulesTab() {
 function ShopProfileTab() {
   const empty = { name: "", address: "", phone: "", email: "", description: "", googlePlaceId: "", googlePlacesKey: "", mapsEmbed: "", social: { instagram: "", facebook: "", tiktok: "", twitter: "", website: "" } };
   const [form, setForm]   = useState(empty);
+  const [slug, setSlug]   = useState(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast]   = useState(null); // "success" | "error" | string
   const [loaded, setLoaded] = useState(false);
@@ -595,6 +596,7 @@ function ShopProfileTab() {
   useEffect(() => {
     apiFetch("/api/admin/shop")
       .then(shop => {
+        setSlug(shop.slug ?? null);
         setForm({
           name:            shop.name            ?? "",
           address:         shop.address         ?? "",
@@ -705,6 +707,9 @@ function ShopProfileTab() {
           </Field>
         </Section>
 
+        {/* QR & public link */}
+        {slug && <QRSection slug={slug} />}
+
         {/* Save bar */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <button type="submit" disabled={saving}
@@ -725,6 +730,63 @@ function ShopProfileTab() {
         </div>
       </div>
     </form>
+  );
+}
+
+function QRSection({ slug }) {
+  // ponytail: external QR API (api.qrserver.com). Swap to `qrcode` npm package
+  // if uptime/offline matters. Saves an install + a server route.
+  const url = typeof window !== "undefined" ? `${window.location.origin}/${slug}` : `/${slug}`;
+  const qrPng = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&margin=12&data=${encodeURIComponent(url)}`;
+  const qrThumb = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=8&data=${encodeURIComponent(url)}`;
+  const [copied, setCopied] = useState(false);
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  }
+
+  return (
+    <Section title="QR Kod & Bağlantı">
+      <div style={{ display: "flex", gap: "16px", alignItems: "flex-start", flexWrap: "wrap" }}>
+        <img
+          src={qrThumb}
+          alt="Salon QR"
+          width={120}
+          height={120}
+          style={{ borderRadius: "8px", border: `1px solid ${C.border}`, background: "#fff" }}
+        />
+        <div style={{ flex: 1, minWidth: "220px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ fontSize: "12px", color: C.muted }}>
+            Müşterileriniz QR'ı okutarak salon sayfanıza ulaşır.
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <code style={{
+              fontSize: "12px", padding: "6px 10px", background: C.surface,
+              border: `1px solid ${C.border}`, borderRadius: "6px", color: C.primary,
+              wordBreak: "break-all",
+            }}>{url}</code>
+            <button type="button" onClick={copyLink}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, background: "#fff", border: `1px solid ${C.border}`, borderRadius: "6px", cursor: "pointer", color: C.primary }}>
+              <Copy size={12} /> {copied ? "Kopyalandı" : "Kopyala"}
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <a href={qrPng} download={`makas-${slug}-qr.png`} target="_blank" rel="noopener noreferrer"
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, background: C.primary, color: "#fff", borderRadius: "8px", textDecoration: "none" }}>
+              <Download size={13} /> QR İndir (PNG)
+            </a>
+            <a href={`/${slug}`} target="_blank" rel="noopener noreferrer"
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, background: "#fff", color: C.primary, border: `1px solid ${C.border}`, borderRadius: "8px", textDecoration: "none" }}>
+              <QrCode size={13} /> Sayfayı Aç
+            </a>
+          </div>
+        </div>
+      </div>
+    </Section>
   );
 }
 

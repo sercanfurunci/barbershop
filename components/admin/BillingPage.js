@@ -67,6 +67,11 @@ function formatTry(n) {
   return new Intl.NumberFormat("tr-TR").format(n) + " ₺";
 }
 
+function fmtDate(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+}
+
 export default function BillingPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -102,7 +107,7 @@ export default function BillingPage() {
   const isTrial = subscription.status === "TRIAL";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "960px" }}>
+    <div className="w-full" style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "none" }}>
       {/* Plan + status card */}
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
@@ -116,6 +121,34 @@ export default function BillingPage() {
             </div>
           </div>
           <StatusBadge status={subscription.status} />
+        </div>
+
+        {/* Subscription dates: start + end (trial or paid period) */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "12px",
+          padding: "12px",
+          background: C.bg,
+          borderRadius: "8px",
+          border: `1px solid ${C.border}`,
+        }}>
+          <div>
+            <div style={{ fontSize: "10px", color: C.muted, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: "3px" }}>
+              {isTrial ? "Deneme başlangıcı" : "Üyelik başlangıcı"}
+            </div>
+            <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>
+              {fmtDate(subscription.startedAt)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: "10px", color: C.muted, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: "3px" }}>
+              {isTrial ? "Deneme bitişi" : "Sonraki ödeme"}
+            </div>
+            <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>
+              {fmtDate(isTrial ? subscription.trialEndsAt : subscription.currentPeriodEndsAt)}
+            </div>
+          </div>
         </div>
 
         {isTrial && subscription.trialDaysLeft !== null && (
@@ -146,7 +179,7 @@ export default function BillingPage() {
         <div style={{ fontSize: "13px", fontWeight: 700, color: C.primary, marginBottom: "8px" }}>
           Bu Ayki Kullanım
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
           <StatTile Icon={TrendingUp}  label="Randevu"     value={usage.bookingsThisMonth} />
           <StatTile Icon={Smartphone}  label="SMS"         value={usage.smsSent} />
           <StatTile Icon={MessageSquare} label="WhatsApp"  value={usage.waSent} />

@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { testimonials } from "@/lib/data";
 import { useLang } from "@/contexts/LanguageContext";
-import { useShop } from "@/contexts/ShopContext";
 import { Star } from "lucide-react";
 
 const C = {
@@ -28,25 +26,13 @@ const GoogleIcon = () => (
   </svg>
 );
 
-export default function Testimonials() {
-  const [googleData, setGoogleData] = useState(null);
-  const [loading, setLoading]       = useState(true);
+export default function Testimonials({ googleReviews = null }) {
   const { lang } = useLang();
-  const shop = useShop();
-
-  useEffect(() => {
-    const url = shop?.id ? `/api/reviews?shopId=${shop.id}` : "/api/reviews";
-    fetch(url)
-      .then(r => r.json())
-      .then(data => { if (data.reviews?.length) setGoogleData(data); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [shop?.id]);
-
-  const isGoogle    = !!(googleData?.reviews?.length);
-  const items       = isGoogle ? googleData.reviews : testimonials;
-  const displayRating = isGoogle ? googleData.rating?.toFixed(1) : "4.9";
-  const displayTotal  = isGoogle ? `${googleData.totalRatings}+` : "400+";
+  // ponytail: SSR-provided. No client fetch, no loading skeleton.
+  const isGoogle      = !!(googleReviews?.reviews?.length);
+  const items         = isGoogle ? googleReviews.reviews : testimonials;
+  const displayRating = isGoogle ? googleReviews.rating?.toFixed(1) : "4.9";
+  const displayTotal  = isGoogle ? `${googleReviews.totalRatings}+` : "400+";
 
   const getText = (item) =>
     isGoogle ? item.text : (typeof item.text === "object" ? item.text[lang] : item.text);
@@ -57,7 +43,12 @@ export default function Testimonials() {
     <section id="testimonials" style={{ background: C.bg }}>
       <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, #E5DFD6 30%, #E5DFD6 70%, transparent)" }} />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 py-20 lg:py-28">
+      <div style={{
+        width: "min(1440px, 100%)",
+        marginInline: "auto",
+        paddingInline: "clamp(20px, 4vw, 32px)",
+        paddingBlock: "clamp(72px, 10vw, 120px)",
+      }}>
 
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12 lg:mb-14">
@@ -102,21 +93,13 @@ export default function Testimonials() {
           </motion.div>
         </div>
 
-        {/* Loading skeleton */}
-        {loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[0,1,2,3].map(i => (
-              <div key={i} style={{
-                height: "220px", background: C.card,
-                border: `1px solid ${C.border}`, borderRadius: "10px", opacity: 0.4,
-              }} />
-            ))}
-          </div>
-        )}
-
         {/* Equal card grid */}
-        {!loading && items.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {items.length > 0 && (
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
+            gap: "20px",
+          }}>
             {items.slice(0, 4).map((item, i) => (
               <motion.div
                 key={i}
@@ -130,11 +113,12 @@ export default function Testimonials() {
                   style={{
                     background: C.card,
                     border: `1px solid ${C.border}`,
-                    borderRadius: "10px",
+                    borderRadius: "12px",
                     padding: "24px",
                     display: "flex",
                     flexDirection: "column",
                     height: "100%",
+                    minHeight: "180px",
                     transition: "border-color 0.2s, box-shadow 0.2s",
                   }}
                   onMouseEnter={e => {
@@ -156,11 +140,11 @@ export default function Testimonials() {
                     ))}
                   </div>
 
-                  {/* Quote — line-clamp-4 for equal height */}
-                  <p className="line-clamp-4" style={{
-                    fontSize: "13px",
+                  {/* Quote — line-clamp-5 for equal height */}
+                  <p className="line-clamp-5" style={{
+                    fontSize: "16px",
                     color: C.secondary,
-                    lineHeight: 1.65,
+                    lineHeight: 1.6,
                     flex: 1,
                     marginBottom: "16px",
                   }}>

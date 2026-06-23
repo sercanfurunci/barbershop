@@ -124,10 +124,14 @@ export async function POST(request) {
     }
 
     // Fetch service, barber, junction, existing client in parallel.
-    const [service, barber, barberOffersService, existingClient] = await Promise.all([
+    // ponytail: BarberService is an opt-in restriction list. If the barber has
+    // ZERO junction rows, treat it as "offers everything" — no admin UI maintains
+    // the junction yet, so every shop would otherwise hit a 409.
+    const [service, barber, barberOffersService, barberServiceCount, existingClient] = await Promise.all([
       prisma.service.findFirst({ where: { id: serviceId, shopId } }),
       prisma.barber.findFirst({ where: { id: barberId, shopId } }),
       prisma.barberService.findUnique({ where: { barberId_serviceId: { barberId, serviceId } } }),
+      prisma.barberService.count({ where: { barberId } }),
       prisma.client.findUnique({
         where: { shopId_phone: { shopId, phone } },
         select: { id: true, blocked: true },
@@ -137,7 +141,9 @@ export async function POST(request) {
     if (!service) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
     if (!barber)  return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
     if (!barber.available) return NextResponse.json({ error: "Bu berber şu an randevu kabul etmiyor." }, { status: 409 });
-    if (!barberOffersService) return NextResponse.json({ error: "Seçilen berber bu hizmeti vermiyor." }, { status: 409 });
+    if (barberServiceCount > 0 && !barberOffersService) {
+      return NextResponse.json({ error: "Seçilen berber bu hizmeti vermiyor." }, { status: 409 });
+    }
 
     // ── Phone-based spam guard: max 2 active upcoming appointments per phone ──
     if (existingClient?.blocked) {

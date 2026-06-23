@@ -67,7 +67,7 @@ export default function Navbar() {
           borderBottom: `1px solid ${scrolled ? C.border : "transparent"}`,
         }}
       >
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 xl:px-16">
+        <div style={{ width: "min(1440px, 100%)", marginInline: "auto", paddingInline: "clamp(20px, 4vw, 32px)" }}>
           <div className="flex items-center justify-between h-[68px]">
 
             {/* Logo — Link allowed to shrink so long names wrap instead of overflowing */}
@@ -236,8 +236,9 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
-      {/* Mobile sticky bottom book bar — hidden on booking and staff pages */}
-      {!isBookPage && !isStaffPage && <div
+      {/* Mobile sticky bottom book bar — only on global marketing site (no shop).
+          ponytail: tenant pages use richer <StickyActionBar/> with WhatsApp/Call/Maps. */}
+      {!isBookPage && !isStaffPage && !shop && <div
         className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
         style={{
           background: "rgba(247,244,238,0.97)",

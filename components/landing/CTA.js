@@ -27,99 +27,107 @@ export default function CTA() {
 
   return (
     <section style={{ background: C.surface, position: "relative", overflow: "hidden" }}>
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 py-24 lg:py-32">
+      <div style={{
+        width: "min(1100px, 100%)",
+        marginInline: "auto",
+        paddingInline: "clamp(20px, 4vw, 32px)",
+        paddingBlock: "clamp(72px, 10vw, 120px)",
+      }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
 
-        {/* Headline */}
-        <motion.h2
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="font-display font-light"
-          style={{
-            fontSize: "clamp(48px, 7vw, 96px)",
-            letterSpacing: "-0.03em",
-            lineHeight: 0.92,
-            marginBottom: "52px",
-            textWrap: "balance",
-          }}
-        >
-          <span style={{ color: C.primary, display: "block" }}>{tx.cta.title[0]}</span>
-          <span style={{ color: C.muted, fontStyle: "italic", display: "block" }}>
-            {tx.cta.title[1]}
-          </span>
-        </motion.h2>
-
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="flex flex-col sm:flex-row gap-3 mb-16"
-        >
-          <Link
-            href={bookHref}
-            className="group inline-flex items-center justify-center gap-2"
+          {/* Left: headline */}
+          <motion.h2
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            className="font-display font-light"
             style={{
-              background: C.primary,
-              color: "#fff",
-              padding: "17px 40px",
-              borderRadius: "8px",
-              fontSize: "15px",
-              fontWeight: 700,
-              letterSpacing: "0.01em",
-              textDecoration: "none",
-              transition: "opacity 0.15s",
-              whiteSpace: "nowrap",
+              fontSize: "clamp(40px, 5.5vw, 72px)",
+              letterSpacing: "-0.03em",
+              lineHeight: 0.95,
+              textWrap: "balance",
+              margin: 0,
             }}
-            onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
           >
-            {tx.cta.bookButton}
-            <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-          <a
-            href="tel:+905373305973"
-            className="inline-flex items-center justify-center gap-2"
-            style={{
-              color: C.secondary,
-              padding: "17px 28px",
-              borderRadius: "8px",
-              fontSize: "15px",
-              fontWeight: 500,
-              border: `1px solid ${C.border}`,
-              background: C.bgSoft,
-              textDecoration: "none",
-              transition: "all 0.15s",
-              whiteSpace: "nowrap",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = C.primary; }}
-            onMouseLeave={e => { e.currentTarget.style.color = C.secondary; e.currentTarget.style.borderColor = C.border; }}
-          >
-            <Phone size={15} />
-            {tx.cta.callButton}
-          </a>
-        </motion.div>
+            <span style={{ color: C.primary, display: "block" }}>{tx.cta.title[0]}</span>
+            <span style={{ color: C.muted, fontStyle: "italic", display: "block" }}>
+              {tx.cta.title[1]}
+            </span>
+          </motion.h2>
 
-        {/* Trust row */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.35 }}
-          className="flex flex-wrap gap-x-10 gap-y-2 pt-7"
-          style={{ borderTop: `1px solid ${C.border}` }}
-        >
-          {tx.cta.trust.map(item => (
-            <div key={item} className="flex items-center gap-2">
-              <div style={{ width: "3px", height: "3px", background: C.dim, borderRadius: "50%", flexShrink: 0 }} />
-              <span style={{ fontSize: "12px", color: C.muted, letterSpacing: "0.03em" }}>
-                {item}
-              </span>
+          {/* Right: CTAs + trust */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+          >
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href={bookHref}
+                className="group inline-flex items-center justify-center gap-2"
+                style={{
+                  background: C.primary,
+                  color: "#fff",
+                  padding: "17px 32px",
+                  borderRadius: "8px",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  letterSpacing: "0.01em",
+                  textDecoration: "none",
+                  transition: "opacity 0.15s",
+                  whiteSpace: "nowrap",
+                  minHeight: "52px",
+                  boxSizing: "border-box",
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              >
+                {tx.cta.bookButton}
+                <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <a
+                href="tel:+905373305973"
+                className="inline-flex items-center justify-center gap-2"
+                style={{
+                  color: C.secondary,
+                  padding: "17px 24px",
+                  borderRadius: "8px",
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  border: `1px solid ${C.border}`,
+                  background: C.bgSoft,
+                  textDecoration: "none",
+                  transition: "all 0.15s",
+                  whiteSpace: "nowrap",
+                  minHeight: "52px",
+                  boxSizing: "border-box",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = C.primary; }}
+                onMouseLeave={e => { e.currentTarget.style.color = C.secondary; e.currentTarget.style.borderColor = C.border; }}
+              >
+                <Phone size={15} />
+                {tx.cta.callButton}
+              </a>
             </div>
-          ))}
-        </motion.div>
+
+            <div
+              className="flex flex-wrap gap-x-6 gap-y-2 pt-5"
+              style={{ borderTop: `1px solid ${C.border}` }}
+            >
+              {tx.cta.trust.map(item => (
+                <div key={item} className="flex items-center gap-2">
+                  <div style={{ width: "3px", height: "3px", background: C.dim, borderRadius: "50%", flexShrink: 0 }} />
+                  <span style={{ fontSize: "12px", color: C.muted, letterSpacing: "0.03em" }}>
+                    {item}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

@@ -13,6 +13,30 @@ const PLATFORM_HOSTS = new Set([
   "127.0.0.1:3000",
 ]);
 
+// ponytail: opt-in super-admin IP allowlist. Unset = no enforcement.
+const SUPERADMIN_PATH = /^\/(superadmin|api\/superadmin)(\/|$)/;
+const TRUSTED_PROXY_HOPS = 0;
+
+function clientIp(req) {
+  const xff = req.headers.get("x-forwarded-for");
+  if (!xff) return null;
+  const ips = xff.split(",").map((s) => s.trim()).filter(Boolean);
+  return ips[Math.max(0, TRUSTED_PROXY_HOPS)] ?? null;
+}
+
+function checkSuperadminAllowlist(req) {
+  if (!SUPERADMIN_PATH.test(req.nextUrl.pathname)) return null;
+  const allowlist = process.env.SUPER_ADMIN_IP_ALLOWLIST;
+  if (!allowlist) return null;
+  const allowed = new Set(allowlist.split(",").map((s) => s.trim()).filter(Boolean));
+  const ip = clientIp(req);
+  if (ip && allowed.has(ip)) return null;
+  if (req.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  return new NextResponse("Forbidden", { status: 403 });
+}
+
 // In-process cache: host → slug (or null = "not a custom domain").
 // ponytail: per-instance Map, 5 min TTL. Swap for Redis if instances proliferate
 // or if you need cache invalidation on customDomain updates faster than 5 min.
@@ -34,6 +58,9 @@ async function resolveSlug(host) {
 }
 
 export async function proxy(request) {
+  const blocked = checkSuperadminAllowlist(request);
+  if (blocked) return blocked;
+
   const host = request.headers.get("host")?.toLowerCase();
   if (!host) return NextResponse.next();
 
@@ -57,9 +84,11 @@ export async function proxy(request) {
   return NextResponse.rewrite(url);
 }
 
-// Skip assets, image opt, API (already shop-scoped via body), and any path with a file extension.
+// Skip assets, image opt, most API (already shop-scoped via body), and any path with a file extension.
+// /api/superadmin is allow-listed so the IP-allowlist check above can run.
 export const config = {
   matcher: [
     "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*).*)",
+    "/api/superadmin/:path*",
   ],
 };

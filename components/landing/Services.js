@@ -29,7 +29,12 @@ export default function Services({ services = [] }) {
     <section id="services" style={{ background: C.bg, position: "relative" }}>
       <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, #E5DED3 30%, #E5DED3 70%, transparent)" }} />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 xl:px-16 py-20 lg:py-28">
+      <div style={{
+        width: "min(1440px, 100%)",
+        marginInline: "auto",
+        paddingInline: "clamp(20px, 4vw, 32px)",
+        paddingBlock: "clamp(72px, 10vw, 120px)",
+      }}>
 
         {/* Section header */}
         <motion.div
