@@ -7,8 +7,8 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 async function logoDataUrl() {
-  const buf = await readFile(path.join(process.cwd(), "public/logo-dark.png"));
-  return `data:image/png;base64,${buf.toString("base64")}`;
+  const buf = await readFile(path.join(process.cwd(), "public/logo-light.svg"));
+  return `data:image/svg+xml;base64,${buf.toString("base64")}`;
 }
 
 const FEATURES = [
@@ -45,7 +45,7 @@ export default async function OgImage() {
         }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <img src={logo} width={56} height={56} alt="" style={{ borderRadius: "10px" }} />
+            <img src={logo} width={56} height={56} alt="" />
             <span style={{ color: "#F7F4EE", fontSize: "18px", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600 }}>
               MAKAS
             </span>

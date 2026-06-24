@@ -150,7 +150,7 @@ export default async function ShopHome({ params }) {
         <Barbers barbers={barbers} />
         <Testimonials googleReviews={googleReviews} />
         <CTA />
-        <SalonInfo shop={shop} barbers={barbers} hours={hours} />
+        <SalonInfo shop={shop} barbers={barbers} hours={hours} googleReviews={googleReviews} />
       </main>
       <StickyActionBar shop={shop} />
       <Footer />

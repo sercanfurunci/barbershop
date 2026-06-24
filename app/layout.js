@@ -19,6 +19,12 @@ export const metadata = {
   publisher: "MAKAS",
   formatDetection: { email: false, address: false, telephone: false },
   alternates: { canonical: "/" },
+  icons: {
+    icon: [
+      { url: "/favicon-light.svg", media: "(prefers-color-scheme: light)" },
+      { url: "/favicon-dark.svg",  media: "(prefers-color-scheme: dark)"  },
+    ],
+  },
   robots: {
     index: true, follow: true,
     googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },

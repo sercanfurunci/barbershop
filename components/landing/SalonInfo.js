@@ -26,8 +26,14 @@ function todayKey() {
   return DAYS[(new Date().getDay() + 6) % 7][0];
 }
 
-export default function SalonInfo({ shop, hours }) {
+export default function SalonInfo({ shop, hours, googleReviews }) {
   if (!shop) return null;
+
+  const placeHref = googleReviews?.placeId
+    ? `https://www.google.com/maps/place/?q=place_id:${googleReviews.placeId}`
+    : shop.address
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address)}`
+      : null;
 
   const todayHours = hours?.find((h) => h.day === todayKey());
   const isOpen = (() => {
@@ -217,72 +223,66 @@ export default function SalonInfo({ shop, hours }) {
           )}
         </div>
 
-        {/* ── Right: edge-to-edge map ── */}
-        <div
-          style={{
-            position: "relative",
-            minHeight: "320px",
-            background: "#000",
-            overflow: "hidden",
-          }}
-        >
-          {/* ponytail: iframe oversized + negative offsets push Google's place card
-              off-screen while keeping the pin (iframe center) in view */}
+        {/* ── Right: map fills its column ── */}
+        <div style={{ position: "relative", minHeight: "320px", padding: "clamp(16px, 2vw, 24px)" }}>
           <style>{`
+            .salon-map-card {
+              position: relative;
+              width: 100%;
+              height: 100%;
+              min-height: 280px;
+              border-radius: 18px;
+              overflow: hidden;
+              background: #000;
+              box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+              border: 1px solid rgba(255,255,255,0.06);
+            }
+            @media (min-width: 768px) {
+              .salon-map-card { border-radius: 24px; }
+            }
             .salon-map-frame {
               position: absolute;
-              top: -160px; left: 0;
+              inset: 0;
               width: 100%;
-              height: calc(100% + 320px);
+              height: 100%;
               border: 0; display: block;
               filter: saturate(0.85) brightness(0.95);
             }
-            @media (min-width: 768px) {
-              .salon-map-frame { left: -90px; width: calc(100% + 180px); }
-            }
           `}</style>
-          {shop.mapsEmbed ? (
-            <iframe
-              className="salon-map-frame"
-              src={shop.mapsEmbed}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Konum"
-            />
-          ) : shop.address ? (
-            <iframe
-              className="salon-map-frame"
-              src={`https://maps.google.com/maps?q=${encodeURIComponent(shop.address)}&output=embed`}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Konum"
-            />
-          ) : (
-            <div style={{
-              position: "absolute", inset: 0,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "rgba(255,255,255,0.4)", fontSize: "13px",
-            }}>
-              Konum belirtilmemiş
-            </div>
-          )}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="salon-map-card"
+          >
+            {shop.mapsEmbed ? (
+              <iframe
+                className="salon-map-frame"
+                src={shop.mapsEmbed}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Konum"
+              />
+            ) : shop.address ? (
+              <iframe
+                className="salon-map-frame"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(shop.address)}&output=embed`}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Konum"
+              />
+            ) : (
+              <div style={{
+                position: "absolute", inset: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "rgba(255,255,255,0.4)", fontSize: "13px",
+              }}>
+                Konum belirtilmemiş
+              </div>
+            )}
 
-          {/* Cinematic radial overlay */}
-          <div style={{
-            position: "absolute", inset: 0, pointerEvents: "none",
-            background:
-              "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.30) 75%, rgba(0,0,0,0.55) 100%)",
-          }} />
-
-          {/* Soft fade to left panel on desktop */}
-          <div
-            className="hidden md:block"
-            style={{
-              position: "absolute", top: 0, bottom: 0, left: 0, width: "60px",
-              pointerEvents: "none",
-              background: "linear-gradient(to right, #111111, transparent)",
-            }}
-          />
+          </motion.div>
         </div>
       </div>
     </section>

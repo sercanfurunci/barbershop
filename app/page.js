@@ -41,11 +41,17 @@ function scrollTo(id) {
 
 const fade = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
 
-// MAKAS mark: raster logo. `variant="dark"` = white-on-black, "light" = black-on-cream.
-function MakasMark({ size = 32, variant = "dark" }) {
-  const src = variant === "dark" ? "/logo-dark.png" : "/logo-light.png";
+// MAKAS mark. `variant="dark"` = black mark on light bg; "light" = white mark on dark bg.
+function MakasMark({ size, variant = "dark", className }) {
+  const src = variant === "dark" ? "/logo-dark.svg" : "/logo-light.svg";
   return (
-    <img src={src} alt="MAKAS" width={size} height={size} style={{ display: "block", borderRadius: 6 }} />
+    <img
+      src={src}
+      alt="MAKAS"
+      className={className}
+      {...(size ? { width: size, height: size } : {})}
+      style={{ display: "block" }}
+    />
   );
 }
 
@@ -65,25 +71,26 @@ function Navbar() {
       }}
     >
       <nav
+        className="h-[68px] md:h-[76px]"
         style={{
           maxWidth: 1100,
           margin: "0 auto",
           padding: "0 24px",
-          height: 60,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
         }}
       >
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <MakasMark size={32} variant="dark" />
+        <div className="flex items-center gap-3.5 md:gap-4">
+          <MakasMark variant="dark" className="block h-9 w-9 md:h-12 md:w-12" />
           <span
+            className="font-display text-[22px] md:text-[26px]"
             style={{
-              fontWeight: 700,
-              fontSize: 18,
-              letterSpacing: "-0.5px",
+              fontWeight: 800,
+              letterSpacing: "-0.02em",
               color: C.primary,
+              lineHeight: 1,
             }}
           >
             MAKAS
@@ -1360,9 +1367,9 @@ function Footer() {
       >
         {/* Brand */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-            <MakasMark size={30} variant="light" />
-            <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: "-0.5px" }}>MAKAS</span>
+          <div className="flex items-center gap-3.5" style={{ marginBottom: 10 }}>
+            <MakasMark variant="light" className="block h-10 w-10" />
+            <span className="font-display" style={{ fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", lineHeight: 1 }}>MAKAS</span>
           </div>
           <p style={{ fontSize: 13, color: "rgba(248,246,242,0.6)", lineHeight: 1.6 }}>
             Premium berber çözümleri
