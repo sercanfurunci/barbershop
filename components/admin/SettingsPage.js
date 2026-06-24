@@ -4,7 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/lib/api";
 import { todayStr } from "@/lib/utils";
-import { Clock, Calendar, Plus, Trash2, Save, CheckCircle, AlertCircle, ChevronDown, Store, QrCode, Download, Copy } from "lucide-react";
+import { Clock, Calendar, Plus, Trash2, Save, CheckCircle, AlertCircle, ChevronDown, Store, QrCode, Download, Copy, Upload, X, Image as ImageIcon, MapPin, GripVertical } from "lucide-react";
+import { DndContext, PointerSensor, TouchSensor, KeyboardSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, arrayMove, useSortable, sortableKeyboardCoordinates, rectSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const C = {
   bg:       "#F7F4EE",
@@ -585,54 +588,80 @@ function RulesTab() {
 
 /* ─── Shop Profile Tab ────────────────────────────────────────────────────── */
 
+const SHOP_TYPE_OPTIONS = [
+  { value: "",       label: "Seçiniz" },
+  { value: "male",   label: "Erkek"   },
+  { value: "female", label: "Kadın"   },
+  { value: "unisex", label: "Unisex"  },
+];
+
+const ABOUT_MAX = 500;
+
 function ShopProfileTab() {
-  const empty = { name: "", address: "", phone: "", email: "", description: "", googlePlaceId: "", googlePlacesKey: "", mapsEmbed: "", social: { instagram: "", facebook: "", tiktok: "", twitter: "", website: "" } };
-  const [form, setForm]   = useState(empty);
-  const [slug, setSlug]   = useState(null);
+  const empty = {
+    name: "", ownerName: "", foundedYear: "", shopType: "",
+    phone: "", whatsappNumber: "", email: "",
+    addressLine: "", city: "", latitude: "", longitude: "",
+    description: "", about: "",
+    instagramUrl: "", facebookUrl: "", tiktokUrl: "",
+    googlePlaceId: "", googlePlacesKey: "", mapsEmbed: "",
+  };
+  const [form, setForm]     = useState(empty);
+  const [slug, setSlug]     = useState(null);
+  const [logo, setLogo]     = useState(null);
+  const [cover, setCover]   = useState(null);
+  const [gallery, setGallery] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast]   = useState(null); // "success" | "error" | string
+  const [toast, setToast]   = useState(null);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     apiFetch("/api/admin/shop")
       .then(shop => {
         setSlug(shop.slug ?? null);
+        setLogo(shop.logo ?? null);
+        setCover(shop.coverImage ?? null);
+        setGallery(shop.gallery ?? []);
         setForm({
           name:            shop.name            ?? "",
-          address:         shop.address         ?? "",
+          ownerName:       shop.ownerName       ?? "",
+          foundedYear:     shop.foundedYear     ?? "",
+          shopType:        shop.shopType        ?? "",
           phone:           shop.phone           ?? "",
+          whatsappNumber:  shop.whatsappNumber  ?? "",
           email:           shop.email           ?? "",
+          addressLine:     shop.addressLine     ?? shop.address ?? "",
+          city:            shop.city            ?? "",
+          latitude:        shop.latitude        ?? "",
+          longitude:       shop.longitude       ?? "",
           description:     shop.description     ?? "",
+          about:           shop.about           ?? "",
+          instagramUrl:    shop.instagramUrl    ?? shop.social?.instagram ?? "",
+          facebookUrl:     shop.facebookUrl     ?? shop.social?.facebook  ?? "",
+          tiktokUrl:       shop.tiktokUrl       ?? shop.social?.tiktok    ?? "",
           googlePlaceId:   shop.googlePlaceId   ?? "",
           googlePlacesKey: shop.googlePlacesKey ?? "",
           mapsEmbed:       shop.mapsEmbed       ?? "",
-          social: {
-            instagram: shop.social?.instagram ?? "",
-            facebook:  shop.social?.facebook  ?? "",
-            tiktok:    shop.social?.tiktok    ?? "",
-            twitter:   shop.social?.twitter   ?? "",
-            website:   shop.social?.website   ?? "",
-          },
         });
         setLoaded(true);
       })
       .catch(() => { setLoaded(true); });
   }, []);
 
-  const set  = (k)    => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
-  const setSocial = (k) => (e) => setForm(f => ({ ...f, social: { ...f.social, [k]: e.target.value } }));
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
   async function save(e) {
     e.preventDefault();
     setSaving(true); setToast(null);
     try {
-      await apiFetch("/api/admin/shop", {
-        method: "PATCH",
-        body: JSON.stringify({
-          ...form,
-          social: Object.fromEntries(Object.entries(form.social).map(([k, v]) => [k, v.trim() || null])),
-        }),
-      });
+      const body = { ...form };
+      // Cast empty strings on numeric fields to null so server doesn't reject.
+      body.foundedYear = form.foundedYear === "" ? null : Number(form.foundedYear);
+      body.latitude    = form.latitude    === "" ? null : Number(form.latitude);
+      body.longitude   = form.longitude   === "" ? null : Number(form.longitude);
+      await apiFetch("/api/admin/shop", { method: "PATCH", body: JSON.stringify(body) });
       setToast("success");
     } catch (err) {
       setToast(err.message || "Hata");
@@ -645,65 +674,173 @@ function ShopProfileTab() {
   if (!loaded) return <div style={{ padding: "40px 0", textAlign: "center", color: C.muted, fontSize: 13 }}>Yükleniyor…</div>;
 
   const fi = { width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", padding: "8px 12px", fontSize: "13px", color: C.primary, outline: "none", boxSizing: "border-box" };
+  const aboutLen = (form.about ?? "").length;
+
+  // Content completeness — % of meaningful profile fields filled. Drives empty-state nudging.
+  const checks = [
+    { label: "Logo",     done: !!logo },
+    { label: "Kapak",    done: !!cover },
+    { label: "Hakkımızda", done: !!form.about?.trim() },
+    { label: "Galeri",   done: gallery.length > 0 },
+    { label: "Telefon",  done: !!form.phone?.trim() },
+    { label: "Adres",    done: !!form.addressLine?.trim() || !!form.city?.trim() },
+    { label: "WhatsApp", done: !!form.whatsappNumber?.trim() },
+    { label: "Sosyal",   done: !!(form.instagramUrl || form.facebookUrl || form.tiktokUrl) },
+  ];
+  const completeness = Math.round((checks.filter(c => c.done).length / checks.length) * 100);
 
   return (
     <form onSubmit={save}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
 
+        {/* Completeness score */}
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px",
+          padding: "14px 16px",
+          display: "flex", flexDirection: "column", gap: "10px",
+        }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: C.primary }}>Profil Tamamlanma</div>
+            <div style={{ fontSize: "20px", fontWeight: 300, color: completeness === 100 ? "#16a34a" : C.primary, letterSpacing: "-0.01em" }}>
+              {completeness}%
+            </div>
+          </div>
+          <div style={{ height: 6, borderRadius: 999, background: C.surface, overflow: "hidden" }}>
+            <div style={{
+              width: `${completeness}%`, height: "100%",
+              background: completeness === 100 ? "#16a34a" : C.primary,
+              transition: "width 0.3s ease",
+            }} />
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {checks.map(c => (
+              <span key={c.label} style={{
+                fontSize: 11, padding: "3px 8px", borderRadius: 100,
+                background: c.done ? "rgba(22,163,74,0.10)" : C.surface,
+                color: c.done ? "#15803d" : C.muted,
+                border: `1px solid ${c.done ? "rgba(22,163,74,0.22)" : C.border}`,
+                letterSpacing: "0.02em",
+              }}>
+                {c.done ? "✓ " : ""}{c.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Brand assets */}
+        <Section title="Logo & Kapak">
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(160px, 200px) 1fr", gap: "16px" }}
+               className="!grid-cols-1 sm:!grid-cols-[minmax(160px,200px)_1fr]">
+            <UploadField
+              label="Logo"
+              endpoint="/api/admin/shop/logo"
+              current={logo}
+              aspect="1 / 1"
+              onChange={setLogo}
+              hint="512×512 önerilir"
+            />
+            <UploadField
+              label="Kapak görseli"
+              endpoint="/api/admin/shop/cover"
+              current={cover}
+              aspect="16 / 9"
+              onChange={setCover}
+              hint="Hero alanında gözükür (1920×1080)"
+            />
+          </div>
+        </Section>
+
         {/* Basic info */}
         <Section title="Temel Bilgiler">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
             <Field label="Salon Adı *">
-              <input required value={form.name} onChange={set("name")} style={fi}
-                onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+              <input required value={form.name} onChange={set("name")} style={fi} />
+            </Field>
+            <Field label="Salon Sahibi">
+              <input value={form.ownerName} onChange={set("ownerName")} placeholder="Ad Soyad" style={fi} />
+            </Field>
+            <Field label="Kuruluş Yılı">
+              <input type="number" min="1900" max={new Date().getFullYear() + 1} value={form.foundedYear} onChange={set("foundedYear")} placeholder="2015" style={fi} />
+            </Field>
+            <Field label="Salon Tipi">
+              <select value={form.shopType} onChange={set("shopType")} style={fi}>
+                {SHOP_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
             </Field>
             <Field label="Telefon">
-              <input value={form.phone} onChange={set("phone")} placeholder="0532 123 45 67" style={fi}
-                onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+              <input value={form.phone} onChange={set("phone")} placeholder="0532 123 45 67" style={fi} />
+            </Field>
+            <Field label="WhatsApp">
+              <input value={form.whatsappNumber} onChange={set("whatsappNumber")} placeholder="+90 532 123 45 67" style={fi} />
             </Field>
             <Field label="E-posta">
-              <input type="email" value={form.email} onChange={set("email")} style={fi}
-                onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+              <input type="email" value={form.email} onChange={set("email")} style={fi} />
             </Field>
           </div>
-          <Field label="Adres">
-            <input value={form.address} onChange={set("address")} placeholder="Mahalle, Cadde, İlçe, Şehir" style={fi}
-              onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
-          </Field>
-          <Field label="Açıklama">
-            <textarea value={form.description} onChange={set("description")} rows={3} placeholder="Salonunuz hakkında kısa bir açıklama…"
+        </Section>
+
+        {/* About */}
+        <Section title="Hakkımızda">
+          <Field label={`Uzun açıklama (${aboutLen}/${ABOUT_MAX})`} hint="Salon sayfasında 'Hakkımızda' bölümünde gözükür">
+            <textarea
+              value={form.about}
+              onChange={(e) => setForm(f => ({ ...f, about: e.target.value.slice(0, ABOUT_MAX) }))}
+              rows={5}
+              placeholder="Salonunuzun hikayesi, vizyonu, müşterilere verdiği değerler…"
               style={{ ...fi, resize: "vertical", lineHeight: 1.6 }}
-              onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+            />
+          </Field>
+          <Field label="Kısa açıklama" hint="Sayfa metası / OG için kullanılır">
+            <textarea value={form.description} onChange={set("description")} rows={2}
+              placeholder="Salonunuz hakkında 1-2 cümlelik özet"
+              style={{ ...fi, resize: "vertical", lineHeight: 1.6 }} />
           </Field>
         </Section>
 
-        {/* Social links */}
+        {/* Social */}
         <Section title="Sosyal Medya">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
-            {[["instagram","Instagram"],["facebook","Facebook"],["tiktok","TikTok"],["twitter","X / Twitter"],["website","Web Sitesi"]].map(([k, label]) => (
-              <Field key={k} label={label}>
-                <input value={form.social[k]} onChange={setSocial(k)} placeholder={k === "website" ? "https://example.com" : `https://${k}.com/…`} style={fi}
-                  onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
-              </Field>
-            ))}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+            <SocialLinkField label="Instagram" value={form.instagramUrl} onChange={set("instagramUrl")} placeholder="https://instagram.com/…" fi={fi} />
+            <SocialLinkField label="Facebook"  value={form.facebookUrl}  onChange={set("facebookUrl")}  placeholder="https://facebook.com/…"  fi={fi} />
+            <SocialLinkField label="TikTok"    value={form.tiktokUrl}    onChange={set("tiktokUrl")}    placeholder="https://tiktok.com/@…"   fi={fi} />
           </div>
+        </Section>
+
+        {/* Location */}
+        <Section title="Konum">
+          <Field label="Adres">
+            <input value={form.addressLine} onChange={set("addressLine")} placeholder="Mahalle, Cadde, No" style={fi} />
+          </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
+            <Field label="Şehir">
+              <input value={form.city} onChange={set("city")} placeholder="İstanbul" style={fi} />
+            </Field>
+            <Field label="Enlem (lat)" hint="Mini harita için">
+              <input value={form.latitude} onChange={set("latitude")} placeholder="41.0082" inputMode="decimal" style={fi} />
+            </Field>
+            <Field label="Boylam (lng)">
+              <input value={form.longitude} onChange={set("longitude")} placeholder="28.9784" inputMode="decimal" style={fi} />
+            </Field>
+          </div>
+        </Section>
+
+        {/* Gallery */}
+        <Section title={`Galeri (${gallery.length}/12)`}>
+          <GalleryGrid items={gallery} onChange={setGallery} />
         </Section>
 
         {/* Google / Maps */}
         <Section title="Google & Harita">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
             <Field label="Google Place ID" hint="Google'da işletme sayfanızın Place ID'si">
-              <input value={form.googlePlaceId} onChange={set("googlePlaceId")} placeholder="ChIJ…" style={fi}
-                onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+              <input value={form.googlePlaceId} onChange={set("googlePlaceId")} placeholder="ChIJ…" style={fi} />
             </Field>
             <Field label="Google Places API Key" hint="Boş bırakırsanız platform anahtarı kullanılır">
-              <input value={form.googlePlacesKey} onChange={set("googlePlacesKey")} placeholder="AIza…" type="password" style={fi}
-                onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+              <input value={form.googlePlacesKey} onChange={set("googlePlacesKey")} placeholder="AIza…" type="password" style={fi} />
             </Field>
           </div>
           <Field label="Google Maps Embed URL" hint="Google Maps → Haritayı paylaş → Haritayı yerleştir bağlantısı">
-            <input value={form.mapsEmbed} onChange={set("mapsEmbed")} placeholder="https://www.google.com/maps/embed?pb=…" style={fi}
-              onFocus={e => e.target.style.borderColor="#555"} onBlur={e => e.target.style.borderColor=C.border} />
+            <input value={form.mapsEmbed} onChange={set("mapsEmbed")} placeholder="https://www.google.com/maps/embed?pb=…" style={fi} />
           </Field>
         </Section>
 
@@ -730,6 +867,262 @@ function ShopProfileTab() {
         </div>
       </div>
     </form>
+  );
+}
+
+/* ─── Reusable: UploadField (cover, logo) ─────────────────────────────────── */
+
+function UploadField({ label, endpoint, current, aspect = "1 / 1", onChange, hint }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr]   = useState(null);
+
+  async function pick(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setErr("Sadece görsel yükleyin"); return; }
+    if (file.size > 5 * 1024 * 1024)     { setErr("5 MB'dan büyük olamaz");   return; }
+    setBusy(true); setErr(null);
+    try {
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload  = () => res(r.result);
+        r.onerror = () => rej(r.error);
+        r.readAsDataURL(file);
+      });
+      const r = await apiFetch(endpoint, { method: "POST", body: JSON.stringify({ dataUrl }) });
+      onChange(Object.values(r)[0]);
+    } catch (ex) {
+      setErr(ex.message || "Yüklenemedi");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!confirm("Görseli silmek istediğine emin misin?")) return;
+    setBusy(true); setErr(null);
+    try {
+      await apiFetch(endpoint, { method: "DELETE" });
+      onChange(null);
+    } catch (ex) {
+      setErr(ex.message || "Silinemedi");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Field label={label} hint={hint}>
+      <div style={{
+        position: "relative", aspectRatio: aspect, width: "100%",
+        background: C.surface, border: `1px dashed ${C.border}`, borderRadius: "10px",
+        overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {current ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={current} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <button type="button" onClick={remove} disabled={busy}
+              style={{
+                position: "absolute", top: 6, right: 6, padding: "5px 7px",
+                background: "rgba(0,0,0,0.55)", color: "#fff", border: "none",
+                borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 11,
+              }}>
+              <Trash2 size={11} /> Sil
+            </button>
+          </>
+        ) : (
+          <div style={{ color: C.muted, fontSize: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+            <ImageIcon size={20} />
+            Görsel yok
+          </div>
+        )}
+        <label style={{
+          position: "absolute", bottom: 6, left: 6,
+          padding: "6px 10px", background: "rgba(255,255,255,0.94)",
+          border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 11, fontWeight: 600,
+          cursor: busy ? "wait" : "pointer", display: "inline-flex", alignItems: "center", gap: 6, color: C.primary,
+        }}>
+          <Upload size={11} /> {current ? "Değiştir" : "Yükle"}
+          <input type="file" accept="image/*" onChange={pick} disabled={busy} style={{ display: "none" }} />
+        </label>
+      </div>
+      {err && <div style={{ fontSize: 11, color: "#b91c1c", marginTop: 4 }}>{err}</div>}
+    </Field>
+  );
+}
+
+/* ─── Reusable: SocialLinkField ───────────────────────────────────────────── */
+
+function SocialLinkField({ label, value, onChange, placeholder, fi }) {
+  return (
+    <Field label={label}>
+      <input value={value} onChange={onChange} placeholder={placeholder} style={fi} />
+    </Field>
+  );
+}
+
+/* ─── Reusable: GalleryGrid ───────────────────────────────────────────────── */
+
+function SortableTile({ url, busy, onRemove }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: url });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        position: "relative",
+        aspectRatio: "1 / 1",
+        borderRadius: 8,
+        overflow: "hidden",
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        opacity: isDragging ? 0.4 : 1,
+        zIndex: isDragging ? 5 : 1,
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} loading="lazy" />
+
+      {/* Drag handle — top-left */}
+      <button
+        type="button"
+        aria-label="Sürükleyerek sırala"
+        {...attributes}
+        {...listeners}
+        style={{
+          position: "absolute", top: 4, left: 4, padding: 4,
+          background: "rgba(0,0,0,0.6)", color: "#fff", border: "none",
+          borderRadius: 999, cursor: "grab", display: "flex", alignItems: "center",
+          touchAction: "none",
+        }}
+      >
+        <GripVertical size={12} />
+      </button>
+
+      {/* Remove — top-right */}
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={busy}
+        aria-label="Fotoğrafı sil"
+        style={{
+          position: "absolute", top: 4, right: 4, padding: 4,
+          background: "rgba(0,0,0,0.6)", color: "#fff", border: "none",
+          borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center",
+        }}
+      >
+        <X size={12} />
+      </button>
+    </div>
+  );
+}
+
+function GalleryGrid({ items, onChange }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr]   = useState(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor,   { activationConstraint: { delay: 180, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  async function addMany(e) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+    setBusy(true); setErr(null);
+    let current = items;
+    try {
+      for (const file of files) {
+        if (current.length >= 12) { setErr("Galeri en fazla 12 fotoğraf alır"); break; }
+        if (!file.type.startsWith("image/")) continue;
+        if (file.size > 5 * 1024 * 1024) { setErr(`${file.name}: 5 MB'dan büyük`); continue; }
+        const dataUrl = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload  = () => res(r.result);
+          r.onerror = () => rej(r.error);
+          r.readAsDataURL(file);
+        });
+        const r = await apiFetch("/api/admin/shop/gallery", { method: "POST", body: JSON.stringify({ dataUrl }) });
+        current = r.gallery;
+        onChange(current);
+      }
+    } catch (ex) {
+      setErr(ex.message || "Yüklenemedi");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(index) {
+    if (!confirm("Bu fotoğrafı silmek istediğine emin misin?")) return;
+    setBusy(true); setErr(null);
+    try {
+      const r = await apiFetch("/api/admin/shop/gallery", { method: "DELETE", body: JSON.stringify({ index }) });
+      onChange(r.gallery);
+    } catch (ex) {
+      setErr(ex.message || "Silinemedi");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDragEnd(event) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = items.indexOf(active.id);
+    const newIndex = items.indexOf(over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(items, oldIndex, newIndex);
+    // Optimistic — revert on server reject.
+    onChange(next);
+    setErr(null);
+    try {
+      const r = await apiFetch("/api/admin/shop/gallery", { method: "PUT", body: JSON.stringify({ order: next }) });
+      onChange(r.gallery);
+    } catch (ex) {
+      onChange(items);
+      setErr(ex.message || "Sıralanamadı");
+    }
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={items} strategy={rectSortingStrategy}>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+            gap: 10,
+          }}>
+            {items.map((url, i) => (
+              <SortableTile key={url} url={url} busy={busy} onRemove={() => remove(i)} />
+            ))}
+            {items.length < 12 && (
+              <label style={{
+                aspectRatio: "1 / 1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                gap: 4, background: C.surface, border: `1px dashed ${C.border}`, borderRadius: 8,
+                color: C.muted, fontSize: 11, cursor: busy ? "wait" : "pointer",
+              }}>
+                <Plus size={18} />
+                {busy ? "Yükleniyor…" : "Ekle"}
+                <input type="file" multiple accept="image/*" onChange={addMany} disabled={busy} style={{ display: "none" }} />
+              </label>
+            )}
+          </div>
+        </SortableContext>
+      </DndContext>
+      {items.length > 1 && (
+        <div style={{ fontSize: 11, color: C.muted }}>
+          İpucu: tutamacı sürükleyerek fotoğraf sırasını değiştirebilirsin. İlk fotoğraf kapak yedeği olarak kullanılır.
+        </div>
+      )}
+      {err && <div style={{ fontSize: 11, color: "#b91c1c" }}>{err}</div>}
+    </div>
   );
 }
 

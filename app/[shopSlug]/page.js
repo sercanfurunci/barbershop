@@ -2,15 +2,24 @@ import { prisma } from "@/lib/prisma";
 import { resolveShopBySlug } from "@/lib/shop";
 import { getGoogleReviews } from "@/lib/googleReviews";
 import { notFound } from "next/navigation";
+import dynamic from "next/dynamic";
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
+import CoverBanner from "@/components/landing/CoverBanner";
 import Hero from "@/components/landing/Hero";
-import SalonInfo from "@/components/landing/SalonInfo";
-import Services from "@/components/landing/Services";
-import Barbers from "@/components/landing/Barbers";
-import Testimonials from "@/components/landing/Testimonials";
-import CTA from "@/components/landing/CTA";
+import About from "@/components/landing/About";
 import StickyActionBar from "@/components/landing/StickyActionBar";
+import TrackPageView from "@/components/landing/TrackPageView";
+
+// ponytail: below-fold sections deferred via next/dynamic. SSR stays on so
+// SEO + initial paint are unchanged; only the JS bundle is split out and
+// fetched on demand. Each of these imports framer-motion which is heavy.
+const Services     = dynamic(() => import("@/components/landing/Services"));
+const Barbers      = dynamic(() => import("@/components/landing/Barbers"));
+const Gallery      = dynamic(() => import("@/components/landing/Gallery"));
+const Testimonials = dynamic(() => import("@/components/landing/Testimonials"));
+const CTA          = dynamic(() => import("@/components/landing/CTA"));
+const SalonInfo    = dynamic(() => import("@/components/landing/SalonInfo"));
 
 export const revalidate = 300;
 
@@ -36,8 +45,9 @@ export async function generateMetadata({ params }) {
   const shop = await resolveShopBySlug(shopSlug);
   if (!shop) return { title: "Bulunamadı" };
 
-  const title = shop.name;
+  const title = `${shop.name} | Online Randevu`;
   const description =
+    shop.about ||
     shop.description ||
     `${shop.name} — online randevu alın, bekleme yok. Premium saç ve sakal bakımı.`;
   const url = shop.customDomain
@@ -132,10 +142,18 @@ export default async function ShopHome({ params }) {
     console.error(`[ShopHome:${shopSlug}] DB error:`, err.message);
   }
 
+  const localBusinessLd = buildLocalBusinessLd(shop, googleReviews, hours);
+
   return (
     <div className="flex flex-col min-h-screen bg-[#F6F3EE]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessLd) }}
+      />
+      <TrackPageView shopId={shop.id} />
       <Navbar />
       <main className="flex-1">
+        <CoverBanner shop={shop} googleReviews={googleReviews} />
         <Hero services={services} barbers={barbers} googleReviews={googleReviews} />
         {last24h > 2 && (
           <div style={{
@@ -146,8 +164,10 @@ export default async function ShopHome({ params }) {
             Son 24 saatte <strong style={{ color: "#111" }}>{last24h}</strong> randevu alındı
           </div>
         )}
+        <About about={shop.about} />
         <Services services={services} />
         <Barbers barbers={barbers} />
+        <Gallery images={shop.gallery} shopName={shop.name} />
         <Testimonials googleReviews={googleReviews} />
         <CTA />
         <SalonInfo shop={shop} barbers={barbers} hours={hours} googleReviews={googleReviews} />
@@ -156,4 +176,48 @@ export default async function ShopHome({ params }) {
       <Footer />
     </div>
   );
+}
+
+const LD_DAY = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
+function minToHM(m) { return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; }
+
+function buildLocalBusinessLd(shop, googleReviews, hours) {
+  const sameAs = [shop.instagramUrl, shop.facebookUrl, shop.tiktokUrl].filter(Boolean);
+  const openingHours = (hours ?? [])
+    .filter((h) => h.start != null && h.end != null)
+    .map((h) => ({
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: LD_DAY[h.day],
+      opens:  minToHM(h.start),
+      closes: minToHM(h.end),
+    }));
+  return {
+    "@context": "https://schema.org",
+    "@type":    "HairSalon",
+    name:        shop.name || shop.slug,
+    description: shop.about || shop.description || undefined,
+    image:       shop.coverImage || shop.logo || undefined,
+    logo:        shop.logo || undefined,
+    url:         shop.customDomain ? `https://${shop.customDomain}` : `https://makas.furunci.tech/${shop.slug}`,
+    telephone:   shop.phone || undefined,
+    address: shop.addressLine || shop.city || shop.address ? {
+      "@type": "PostalAddress",
+      streetAddress:   shop.addressLine || undefined,
+      addressLocality: shop.city || undefined,
+      addressCountry:  "TR",
+    } : undefined,
+    geo: shop.latitude != null && shop.longitude != null ? {
+      "@type":   "GeoCoordinates",
+      latitude:  shop.latitude,
+      longitude: shop.longitude,
+    } : undefined,
+    openingHoursSpecification: openingHours.length ? openingHours : undefined,
+    foundingDate: shop.foundedYear ? String(shop.foundedYear) : undefined,
+    sameAs: sameAs.length ? sameAs : undefined,
+    aggregateRating: googleReviews?.rating != null ? {
+      "@type":      "AggregateRating",
+      ratingValue:  googleReviews.rating,
+      reviewCount:  googleReviews.totalRatings,
+    } : undefined,
+  };
 }

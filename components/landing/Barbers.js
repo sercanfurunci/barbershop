@@ -31,6 +31,7 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
   const tx = useT(lang);
   const shop = useShop();
   const bookHref = shop?.slug ? `/${shop.slug}/book` : "/book";
+  if (!barbers.length) return null;
 
   // Lazily fetch profile photos from the CDN-cached public API.
   // Not in SSR payload to keep initial HTML small (~150–200 KB per photo).
@@ -51,15 +52,15 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
       <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, #E5DFD6 30%, #E5DFD6 70%, transparent)" }} />
 
       <div style={{
-        width: "min(1440px, 100%)",
+        width: "min(1280px, 100%)",
         marginInline: "auto",
         paddingInline: "clamp(20px, 4vw, 32px)",
-        paddingBlock: "clamp(72px, 10vw, 120px)",
+        paddingBlock: "clamp(48px, 7vw, 84px)",
       }}>
 
         {/* Header */}
         <div
-          style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "48px" }}
+          style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "36px" }}
           className="lg:flex-row lg:items-end lg:justify-between"
         >
           <motion.div
@@ -94,12 +95,65 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
           </motion.p>
         </div>
 
-        {/* Grid — auto-fit, min 260px so cards never cramp */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))",
-          gap: "24px",
-        }}>
+        {/* Layout — adaptive by count:
+              1   → single 320px card, centered
+              2/3 → fixed col count at 280px each, centered
+              4+  → auto-fit (240–280px), centered
+            Mobile is always a horizontal snap carousel.
+            Centering uses `width: fit-content; margin-inline: auto` so cards
+            never stretch to fill the section width. */}
+        <style>{`
+          .barbers-track {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-padding-inline: clamp(20px, 4vw, 32px);
+            padding-inline: clamp(20px, 4vw, 32px);
+            margin-inline: calc(-1 * clamp(20px, 4vw, 32px));
+            -webkit-overflow-scrolling: touch;
+          }
+          .barbers-track::-webkit-scrollbar { display: none; }
+          .barbers-track { scrollbar-width: none; }
+          .barbers-track > * {
+            flex: 0 0 82vw;
+            min-width: 82vw;
+            max-width: 320px;
+            scroll-snap-align: start;
+          }
+          @media (min-width: 768px) {
+            .barbers-track {
+              display: grid;
+              grid-template-columns: ${
+                barbers.length === 1
+                  ? "minmax(240px, 320px)"
+                  : "repeat(2, minmax(240px, 280px))"
+              };
+              gap: 20px;
+              overflow: visible;
+              padding-inline: 0;
+              margin-inline: auto;
+              width: fit-content;
+              max-width: 100%;
+              justify-content: center;
+            }
+            .barbers-track > * { flex: initial; min-width: 0; max-width: none; }
+          }
+          @media (min-width: 1024px) {
+            .barbers-track {
+              grid-template-columns: ${
+                barbers.length === 1
+                  ? "minmax(240px, 320px)"
+                  : barbers.length === 2
+                    ? "repeat(2, minmax(240px, 280px))"
+                    : barbers.length === 3
+                      ? "repeat(3, minmax(240px, 280px))"
+                      : "repeat(auto-fit, minmax(240px, 280px))"
+              };
+            }
+          }
+        `}</style>
+        <div className="barbers-track">
           {barbers.map((barber, i) => (
             <BarberCard key={barber.id} barber={barber} lang={lang} tx={tx} index={i} />
           ))}
@@ -178,13 +232,13 @@ function BarberCard({ barber, lang, tx, index }) {
         }}
       >
         {/* ── Image ── */}
-        <div style={{ position: "relative", aspectRatio: "3 / 4", flexShrink: 0, background: "#1a1210", overflow: "hidden" }}>
+        <div style={{ position: "relative", aspectRatio: "4 / 5", flexShrink: 0, background: "#1a1210", overflow: "hidden" }}>
           {barber.profilePhoto ? (
             <Image
               src={barber.profilePhoto}
               alt={name}
               fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+              sizes="(max-width: 767px) 82vw, (max-width: 1023px) 50vw, 280px"
               style={{ objectFit: "cover", objectPosition: "center center" }}
               className="group-hover:scale-[1.04] transition-transform duration-500"
             />
@@ -236,8 +290,7 @@ function BarberCard({ barber, lang, tx, index }) {
 
           {/* Name */}
           <h3
-            className="font-display font-light"
-            style={{ fontSize: "18px", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "3px" }}
+            style={{ fontSize: "16px", color: C.primary, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.25, marginBottom: "3px" }}
           >
             {name}
           </h3>

@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { Phone, MessageCircle, MapPin, Calendar } from "lucide-react";
+import { track } from "@/lib/track";
 
 const C = {
   card:    "#FFFFFF",
@@ -25,11 +26,12 @@ function waHref(num) {
 export default function StickyActionBar({ shop }) {
   if (!shop) return null;
   const phone   = shop.phone;
-  const address = shop.address;
-  const wa      = waHref(phone);
-  const map     = address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
-    : null;
+  const wa      = waHref(shop.whatsappNumber ?? phone);
+  const map     = shop.latitude && shop.longitude
+    ? `https://www.google.com/maps/dir/?api=1&destination=${shop.latitude},${shop.longitude}`
+    : shop.address
+      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(shop.address)}`
+      : null;
   const bookHref = shop.slug ? `/${shop.slug}/book` : "/book";
 
   return (
@@ -51,21 +53,25 @@ export default function StickyActionBar({ shop }) {
         height: "62px",
       }}>
         {wa && (
-          <BarBtn href={wa} Icon={MessageCircle} label="WhatsApp" external />
+          <BarBtn href={wa} Icon={MessageCircle} label="WhatsApp" external
+            onClick={() => track(shop.id, "whatsapp_click", { source: "sticky" })} />
         )}
         {phone && (
-          <BarBtn href={`tel:${phone}`} Icon={Phone} label="Ara" />
+          <BarBtn href={`tel:${phone}`} Icon={Phone} label="Ara"
+            onClick={() => track(shop.id, "call_click", { source: "sticky" })} />
         )}
         {map && (
-          <BarBtn href={map} Icon={MapPin} label="Yol Tarifi" external />
+          <BarBtn href={map} Icon={MapPin} label="Yol Tarifi" external
+            onClick={() => track(shop.id, "directions_click", { source: "sticky" })} />
         )}
-        <BarBtn href={bookHref} Icon={Calendar} label="Randevu" primary />
+        <BarBtn href={bookHref} Icon={Calendar} label="Randevu" primary
+          onClick={() => track(shop.id, "book_click", { source: "sticky" })} />
       </div>
     </div>
   );
 }
 
-function BarBtn({ href, Icon, label, external, primary }) {
+function BarBtn({ href, Icon, label, external, primary, onClick }) {
   const inner = (
     <div style={{
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -78,6 +84,6 @@ function BarBtn({ href, Icon, label, external, primary }) {
       <span>{label}</span>
     </div>
   );
-  if (external) return <a href={href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>{inner}</a>;
-  return <Link href={href} style={{ textDecoration: "none" }}>{inner}</Link>;
+  if (external) return <a href={href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }} onClick={onClick}>{inner}</a>;
+  return <Link href={href} style={{ textDecoration: "none" }} onClick={onClick}>{inner}</Link>;
 }

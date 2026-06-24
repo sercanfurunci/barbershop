@@ -1,0 +1,307 @@
+"use client";
+
+// ponytail: native <dialog> for ESC + a11y baseline; arrow nav, swipe,
+// thumb rail, adjacent-only preload added on top. No focus-trap lib —
+// dialog.showModal() already traps tab within the dialog subtree.
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
+
+const SWIPE_THRESHOLD = 40;
+
+export default function Gallery({ images, shopName }) {
+  const [open, setOpen]   = useState(null); // index or null
+  const dialogRef = useRef(null);
+  const closeBtnRef = useRef(null);
+  const touchStartX = useRef(null);
+  const thumbsRef = useRef(null);
+
+  const total = images?.length ?? 0;
+
+  const next = useCallback(() => {
+    setOpen((i) => (i == null ? i : (i + 1) % total));
+  }, [total]);
+  const prev = useCallback(() => {
+    setOpen((i) => (i == null ? i : (i - 1 + total) % total));
+  }, [total]);
+  const close = useCallback(() => setOpen(null), []);
+
+  useEffect(() => {
+    const d = dialogRef.current;
+    if (!d) return;
+    if (open != null && !d.open) {
+      d.showModal();
+      // focus the close button so first Tab cycles within the dialog
+      requestAnimationFrame(() => closeBtnRef.current?.focus({ preventScroll: true }));
+    }
+    if (open == null && d.open) d.close();
+  }, [open]);
+
+  // Lock body scroll while the lightbox is open (some browsers leak wheel
+  // events through the dialog backdrop).
+  useEffect(() => {
+    if (open == null) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
+  // Keyboard arrows. ESC is handled by <dialog> natively.
+  useEffect(() => {
+    if (open == null) return;
+    const onKey = (e) => {
+      if (e.key === "ArrowRight") { e.preventDefault(); next(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, next, prev]);
+
+  // Scroll active thumb into view (only within thumb rail, never the page)
+  useEffect(() => {
+    if (open == null) return;
+    const rail = thumbsRef.current;
+    const el   = rail?.querySelector(`[data-idx="${open}"]`);
+    if (!rail || !el) return;
+    const target = el.offsetLeft - rail.clientWidth / 2 + el.clientWidth / 2;
+    rail.scrollTo({ left: target, behavior: "smooth" });
+  }, [open]);
+
+  if (!images || images.length === 0) return null;
+
+  const showThumbs = images.length >= 5;
+
+  const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e) => {
+    if (touchStartX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > SWIPE_THRESHOLD) (dx < 0 ? next : prev)();
+    touchStartX.current = null;
+  };
+
+  return (
+    <section style={{
+      background: "#FBF8F2",
+      padding: "clamp(56px, 8vw, 96px) clamp(20px, 5vw, 40px)",
+    }}>
+      <div style={{ maxWidth: 1200, marginInline: "auto" }}>
+        <div style={{
+          textAlign: "center", marginBottom: "clamp(28px, 4vw, 48px)",
+          display: "flex", flexDirection: "column", gap: "12px",
+        }}>
+          <div style={{
+            fontSize: 11, fontWeight: 600, letterSpacing: "0.22em",
+            textTransform: "uppercase", color: "rgba(17,17,17,0.45)",
+          }}>
+            Salondan
+          </div>
+          <h2 className="font-display" style={{
+            fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 300,
+            letterSpacing: "-0.02em", lineHeight: 1.08, color: "#111", margin: 0,
+          }}>
+            Galeri
+          </h2>
+        </div>
+
+        <div
+          className={
+            images.length === 1
+              ? "grid grid-cols-1 gap-3 md:gap-4 max-w-[820px] mx-auto"
+              : images.length === 2
+                ? "grid grid-cols-2 gap-3 md:gap-4 max-w-[960px] mx-auto"
+                : images.length === 3
+                  ? "grid grid-cols-3 gap-3 md:gap-4"
+                  : "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4"
+          }
+        >
+          {images.map((url, i) => (
+            <button
+              key={url + i}
+              type="button"
+              onClick={() => setOpen(i)}
+              style={{
+                position: "relative",
+                aspectRatio: images.length === 1 ? "16 / 9" : "1 / 1",
+                border: 0, padding: 0, cursor: "pointer",
+                borderRadius: 10, overflow: "hidden",
+                background: "#eee",
+              }}
+              aria-label={`Galeri görseli ${i + 1}`}
+            >
+              <Image
+                src={url}
+                alt={shopName ? `${shopName} — Galeri ${i + 1}` : `Galeri ${i + 1}`}
+                fill
+                sizes="(max-width: 768px) 48vw, (max-width: 1024px) 48vw, 24vw"
+                loading="lazy"
+                style={{ objectFit: "cover", transition: "transform 0.4s ease" }}
+                className="hover:scale-105"
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Lightbox */}
+      <style>{`
+        .gallery-lightbox::backdrop {
+          background: rgba(0,0,0,0.72);
+          backdrop-filter: blur(2px);
+        }
+      `}</style>
+      <dialog
+        ref={dialogRef}
+        className="gallery-lightbox"
+        onClose={close}
+        onClick={(e) => { if (e.target === dialogRef.current) close(); }}
+        aria-label="Galeri görüntüleyici"
+        style={{
+          background: "#0a0a0a",
+          border: "1px solid rgba(255,255,255,0.08)",
+          padding: 0,
+          width: "min(92vw, 1100px)",
+          height: "min(86vh, 780px)",
+          maxWidth: "92vw", maxHeight: "86vh",
+          borderRadius: 14,
+          overflow: "hidden",
+          color: "#fff",
+          margin: "auto",
+        }}
+      >
+        {open != null && (
+          <div
+            style={{
+              position: "relative", width: "100%", height: "100%",
+              display: "flex", flexDirection: "column",
+            }}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
+            {/* Top bar */}
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "14px 18px", flexShrink: 0,
+            }}>
+              <div style={{
+                fontSize: 13, fontVariantNumeric: "tabular-nums",
+                color: "rgba(255,255,255,0.75)", letterSpacing: "0.05em",
+              }}>
+                {open + 1} / {total}
+              </div>
+              <button
+                ref={closeBtnRef}
+                type="button"
+                onClick={close}
+                aria-label="Kapat"
+                style={{
+                  width: 38, height: 38, borderRadius: 999,
+                  background: "rgba(255,255,255,0.08)", color: "#fff",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Image stage */}
+            <div style={{
+              position: "relative", flex: 1, minHeight: 0,
+              overflow: "hidden",
+            }}>
+              <Image
+                src={images[open]}
+                alt={shopName ? `${shopName} — Galeri ${open + 1}` : `Galeri ${open + 1}`}
+                fill
+                sizes="(max-width: 1200px) 92vw, 1100px"
+                priority
+                style={{ objectFit: "contain" }}
+              />
+
+              {total > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={prev}
+                    aria-label="Önceki görsel"
+                    style={navBtn("left")}
+                  >
+                    <ChevronLeft size={22} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={next}
+                    aria-label="Sonraki görsel"
+                    style={navBtn("right")}
+                  >
+                    <ChevronRight size={22} />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Thumbnail rail */}
+            {showThumbs && (
+              <div
+                ref={thumbsRef}
+                style={{
+                  display: "flex", gap: 8, padding: "12px 16px 18px",
+                  overflowX: "auto", flexShrink: 0,
+                  scrollbarWidth: "none",
+                  WebkitOverflowScrolling: "touch",
+                  justifyContent: "center",
+                }}
+              >
+                {images.map((url, i) => (
+                  <button
+                    key={i}
+                    data-idx={i}
+                    type="button"
+                    onClick={() => setOpen(i)}
+                    aria-label={`Görsel ${i + 1}'e git`}
+                    aria-current={i === open}
+                    style={{
+                      position: "relative", flex: "0 0 auto",
+                      width: 64, height: 64, borderRadius: 6, overflow: "hidden",
+                      border: i === open
+                        ? "2px solid #fff"
+                        : "2px solid rgba(255,255,255,0.18)",
+                      padding: 0, cursor: "pointer",
+                      background: "#111",
+                      opacity: i === open ? 1 : 0.6,
+                      transition: "opacity 0.15s, border-color 0.15s",
+                    }}
+                  >
+                    <Image
+                      src={url}
+                      alt=""
+                      fill
+                      sizes="64px"
+                      style={{ objectFit: "cover" }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </dialog>
+    </section>
+  );
+}
+
+function navBtn(side) {
+  return {
+    position: "absolute",
+    top: 0, bottom: 0, margin: "auto 0",
+    [side]: 12,
+    width: 44, height: 44, borderRadius: 999,
+    background: "rgba(0,0,0,0.45)",
+    color: "#fff",
+    border: "1px solid rgba(255,255,255,0.2)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    cursor: "pointer", zIndex: 2,
+  };
+}

@@ -12,6 +12,7 @@ import Confirmation from "./Confirmation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { apiFetch } from "@/lib/api";
+import { track } from "@/lib/track";
 import { format } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 
@@ -240,6 +241,7 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
 
   // ── Selection handlers ──────────────────────────────────────────────────────
   const onServiceSelect = (s) => {
+    track(shopId, "service_select", { serviceId: s.id });
     if (booking.service?.id === s.id) { nextStep(); return; }
     // Only reset downstream if service is being CHANGED (not set for the first time)
     const hasDownstream = booking.service && (booking.barber || booking.date || booking.time);
@@ -258,6 +260,7 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
   };
 
   const onBarberSelect = (b) => {
+    track(shopId, "barber_select", { barberId: b.id });
     if (booking.barber?.id === b.id) { nextStep(); return; }
     // Only reset downstream if barber is being CHANGED (not set for the first time)
     const hasDownstream = booking.barber && (booking.date || booking.time);
@@ -440,7 +443,13 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
                     booking={booking}
                     onBack={prevStep}
                     onLoadingChange={setConfirming}
-                    onSuccess={() => setBookingDone(true)}
+                    onSuccess={() => {
+                    track(shopId, "booking_complete", {
+                      serviceId: booking.service?.id,
+                      barberId:  booking.barber?.id,
+                    });
+                    setBookingDone(true);
+                  }}
                     lang={lang}
                     tx={tx}
                     compact
@@ -608,7 +617,13 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
                 <DateTimeSelect shopId={shopId} booking={booking} allBarbers={barbers} selectedDate={booking.date} selectedTime={booking.time} onSelect={onDateTimeSelect} onNext={desktopNextStep} onBack={prevStep} lang={lang} tx={tx} />
               )}
               {step === 5 && (
-                <Confirmation shopId={shopId} booking={booking} onBack={prevStep} onLoadingChange={setConfirming} onSuccess={() => setBookingDone(true)} lang={lang} tx={tx} />
+                <Confirmation shopId={shopId} booking={booking} onBack={prevStep} onLoadingChange={setConfirming} onSuccess={() => {
+                    track(shopId, "booking_complete", {
+                      serviceId: booking.service?.id,
+                      barberId:  booking.barber?.id,
+                    });
+                    setBookingDone(true);
+                  }} lang={lang} tx={tx} />
               )}
             </motion.div>
           </AnimatePresence>

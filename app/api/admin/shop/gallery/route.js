@@ -1,0 +1,116 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { rateLimit, getIp } from "@/lib/rateLimit";
+import { uploadShopAsset, deleteShopAsset } from "@/lib/cloudinary";
+import { validateImageDataUrl } from "@/lib/validation";
+
+const ALLOWED_ROLES = ["ADMIN", "SUPER_ADMIN"];
+const GALLERY_MAX = 12;
+
+function guard(payload) {
+  if (!payload) return { error: unauthorized() };
+  if (!ALLOWED_ROLES.includes(payload.role)) return { error: forbidden() };
+  if (payload.role === "SUPER_ADMIN") return { shopId: null };
+  if (!payload.shopId) return { error: forbidden() };
+  return { shopId: payload.shopId };
+}
+
+async function resolveShopId(request, g) {
+  return g.shopId ?? new URL(request.url).searchParams.get("shopId");
+}
+
+// POST { dataUrl } — appends one image to gallery (max 12)
+export async function POST(request) {
+  const payload = await requireAuth(request);
+  const g = guard(payload);
+  if (g.error) return g.error;
+
+  const ip = getIp(request);
+  if (!rateLimit(`shop-gallery:${ip}`, { limit: 30, windowMs: 5 * 60_000 })) {
+    return NextResponse.json({ error: "Çok fazla istek" }, { status: 429 });
+  }
+
+  const shopId = await resolveShopId(request, g);
+  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+
+  const { dataUrl } = await request.json().catch(() => ({}));
+  const err = validateImageDataUrl(dataUrl);
+  if (err) return NextResponse.json({ error: err }, { status: 400 });
+
+  const current = await prisma.shop.findUnique({ where: { id: shopId }, select: { gallery: true } });
+  const existing = current?.gallery ?? [];
+  if (existing.length >= GALLERY_MAX) {
+    return NextResponse.json({ error: `Galeri en fazla ${GALLERY_MAX} fotoğraf alır` }, { status: 400 });
+  }
+
+  const slot = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const { url } = await uploadShopAsset(dataUrl, shopId, "gallery", slot);
+
+  const updated = await prisma.shop.update({
+    where: { id: shopId },
+    data: { gallery: [...existing, url] },
+    select: { gallery: true },
+  });
+  return NextResponse.json(updated);
+}
+
+// PUT { order: string[] } — reorder gallery. Must be a permutation of the
+// existing URLs (no add/remove here, just sort).
+export async function PUT(request) {
+  const payload = await requireAuth(request);
+  const g = guard(payload);
+  if (g.error) return g.error;
+
+  const shopId = await resolveShopId(request, g);
+  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+
+  const { order } = await request.json().catch(() => ({}));
+  if (!Array.isArray(order) || !order.every((u) => typeof u === "string")) {
+    return NextResponse.json({ error: "order: string[] bekleniyor" }, { status: 400 });
+  }
+
+  const current = await prisma.shop.findUnique({ where: { id: shopId }, select: { gallery: true } });
+  const existing = current?.gallery ?? [];
+  if (order.length !== existing.length || new Set(order).size !== new Set(existing).size
+      || order.some((u) => !existing.includes(u))) {
+    return NextResponse.json({ error: "order mevcut galeriyle eşleşmiyor" }, { status: 400 });
+  }
+
+  const updated = await prisma.shop.update({
+    where: { id: shopId },
+    data: { gallery: order },
+    select: { gallery: true },
+  });
+  return NextResponse.json(updated);
+}
+
+// DELETE { index } — removes one image by index (so we don't need an extra row id)
+export async function DELETE(request) {
+  const payload = await requireAuth(request);
+  const g = guard(payload);
+  if (g.error) return g.error;
+
+  const shopId = await resolveShopId(request, g);
+  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+
+  const { index } = await request.json().catch(() => ({}));
+  const idx = Number(index);
+  if (!Number.isInteger(idx) || idx < 0) {
+    return NextResponse.json({ error: "Geçersiz index" }, { status: 400 });
+  }
+
+  const current = await prisma.shop.findUnique({ where: { id: shopId }, select: { gallery: true } });
+  const list = current?.gallery ?? [];
+  if (idx >= list.length) return NextResponse.json({ error: "Index dışı" }, { status: 400 });
+
+  const [removed] = list.splice(idx, 1);
+  if (removed) await deleteShopAsset(removed);
+
+  const updated = await prisma.shop.update({
+    where: { id: shopId },
+    data: { gallery: list },
+    select: { gallery: true },
+  });
+  return NextResponse.json(updated);
+}

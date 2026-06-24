@@ -4,7 +4,7 @@
 // (dark) Footer so the two flow into one cinematic block — no margin, no card.
 
 import { motion } from "framer-motion";
-import { MapPin, Phone, Clock, ArrowUpRight } from "lucide-react";
+import { MapPin, Phone, Clock, ArrowUpRight, Share2 } from "lucide-react";
 
 const DAYS = [
   ["mon", "Pazartesi"],
@@ -47,8 +47,12 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
     ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(shop.address)}`
     : null;
 
+  // No map column when there's nothing to embed → info panel takes full width.
+  const hasMap = !!(shop.mapsEmbed || shop.address);
+
   return (
     <section
+      className="salon-info"
       style={{
         background: "#0f0f0f",
         color: "#fff",
@@ -56,29 +60,70 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
         position: "relative",
       }}
     >
-      <div
-        style={{
-          width: "min(1440px, 100%)",
-          marginInline: "auto",
-          display: "grid",
-          gridTemplateColumns: "1fr",
-          minHeight: "520px",
-        }}
-        className="md:!grid-cols-[45fr_55fr]"
-      >
+      <style>{`
+        /* Fixed-rhythm container — section height stays constant per breakpoint
+           so the page rhythm doesn't shift between tenants with very different
+           content lengths. Long content clamps inside; it never expands the box. */
+        .salon-info-grid {
+          width: min(1440px, 100%);
+          margin-inline: auto;
+          display: grid;
+          grid-template-columns: 1fr;
+          align-items: stretch;
+        }
+        .salon-info-left {
+          padding: 32px clamp(20px, 4vw, 32px);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 24px;
+          background: #111111;
+          position: relative;
+          z-index: 2;
+          min-width: 0;
+        }
+        .salon-info-map {
+          position: relative;
+          padding: 0;
+          min-height: 320px;
+        }
+        .salon-info-hours {
+          display: flex; flex-direction: column; gap: 4px;
+        }
+
+        @media (min-width: 768px) {
+          .salon-info-grid {
+            ${hasMap ? "grid-template-columns: 45fr 55fr;" : ""}
+            min-height: 480px;
+          }
+          .salon-info-left {
+            padding: 40px clamp(28px, 4vw, 56px);
+            overflow: hidden;            /* clip overflow on fixed-height layouts */
+          }
+          .salon-info-map { padding: clamp(16px, 2vw, 24px); min-height: 0; }
+          /* Clamp long descriptions only when section has a fixed height. */
+          .salon-info-desc {
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+          /* Hours block scrolls internally if it overflows its slot. */
+          .salon-info-hours {
+            max-height: 220px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+          }
+          .salon-info-hours::-webkit-scrollbar { width: 4px; }
+          .salon-info-hours::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
+        }
+        @media (min-width: 1024px) {
+          .salon-info-grid { min-height: 540px; }
+        }
+      `}</style>
+      <div className="salon-info-grid">
         {/* ── Left: dark info panel ── */}
-        <div
-          style={{
-            padding: "clamp(40px, 6vw, 72px) clamp(24px, 4vw, 56px)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: "32px",
-            background: "#111111",
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
+        <div className="salon-info-left">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -108,7 +153,7 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
             </h2>
 
             {shop.description && (
-              <p style={{
+              <p className="salon-info-desc" style={{
                 fontSize: "14.5px", color: "rgba(255,255,255,0.62)",
                 lineHeight: 1.7, maxWidth: "460px", margin: 0,
               }}>
@@ -150,6 +195,16 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
               </Block>
             )}
 
+            {(shop.instagramUrl || shop.facebookUrl || shop.tiktokUrl) && (
+              <Block Icon={Share2} label="Sosyal Medya">
+                <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                  {shop.instagramUrl && <SocialLink href={shop.instagramUrl} label="Instagram" />}
+                  {shop.facebookUrl  && <SocialLink href={shop.facebookUrl}  label="Facebook"  />}
+                  {shop.tiktokUrl    && <SocialLink href={shop.tiktokUrl}    label="TikTok"    />}
+                </div>
+              </Block>
+            )}
+
             {hours && hours.some((h) => h.start != null) && (
               <Block Icon={Clock} label="Çalışma Saatleri" badge={
                 <span style={{
@@ -162,7 +217,7 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
                   {isOpen ? "AÇIK" : "KAPALI"}
                 </span>
               }>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div className="salon-info-hours" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   {hours.map(({ day, start, end }) => {
                     const isToday = day === todayKey();
                     const label   = DAYS.find(([k]) => k === day)[1];
@@ -224,7 +279,7 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
         </div>
 
         {/* ── Right: map fills its column ── */}
-        <div style={{ position: "relative", minHeight: "320px", padding: "clamp(16px, 2vw, 24px)" }}>
+        {hasMap && <div className="salon-info-map">
           <style>{`
             .salon-map-card {
               position: relative;
@@ -264,7 +319,7 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
                 referrerPolicy="no-referrer-when-downgrade"
                 title="Konum"
               />
-            ) : shop.address ? (
+            ) : (
               <iframe
                 className="salon-map-frame"
                 src={`https://maps.google.com/maps?q=${encodeURIComponent(shop.address)}&output=embed`}
@@ -272,20 +327,29 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
                 referrerPolicy="no-referrer-when-downgrade"
                 title="Konum"
               />
-            ) : (
-              <div style={{
-                position: "absolute", inset: 0,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "rgba(255,255,255,0.4)", fontSize: "13px",
-              }}>
-                Konum belirtilmemiş
-              </div>
             )}
 
           </motion.div>
-        </div>
+        </div>}
       </div>
     </section>
+  );
+}
+
+function SocialLink({ href, label }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        fontSize: 13, color: "rgba(255,255,255,0.85)", letterSpacing: "0.02em",
+        textDecoration: "none", borderBottom: "1px solid rgba(255,255,255,0.2)",
+        paddingBottom: 1,
+      }}
+    >
+      {label}
+    </a>
   );
 }
 

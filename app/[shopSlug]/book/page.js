@@ -90,6 +90,38 @@ export default async function BookPage({ params, searchParams }) {
     console.error(`[BookPage:${shopSlug}] DB error:`, err.message);
   }
 
+  if (!initialServices.length || !initialBarbers.length) {
+    const msg = !initialServices.length
+      ? "Hizmetler yakında eklenecek"
+      : "Yakında randevu açılacak";
+    return (
+      <div style={{ background: "#F6F3EE", minHeight: "100dvh" }}>
+        <Navbar />
+        <div style={{ maxWidth: "560px", margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
+          <div style={{ fontSize: "20px", fontWeight: 700, color: "#111", marginBottom: "12px" }}>
+            {msg}
+          </div>
+          <p style={{ fontSize: "14px", color: "#4A4A4A", lineHeight: 1.6, marginBottom: "20px" }}>
+            {shop.name} online randevu için hazırlanıyor. Lütfen kısa süre içinde tekrar deneyin.
+          </p>
+          {shop.phone && (
+            <a
+              href={`tel:${shop.phone}`}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "8px",
+                background: "#111", color: "#fff", padding: "12px 20px",
+                borderRadius: "8px", textDecoration: "none", fontWeight: 600,
+                fontSize: "14px", minHeight: "44px",
+              }}
+            >
+              {shop.phone}
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ background: "#F6F3EE", minHeight: "100dvh" }}>
       <Navbar />

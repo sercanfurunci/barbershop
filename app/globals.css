@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+/* Fonts are loaded via next/font in app/layout.js (self-hosted, preloaded,
+   non-render-blocking) and exposed as CSS variables on <html>. */
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -140,7 +141,7 @@ html {
 body {
   background-color: var(--makas-bg);
   color: var(--makas-ink);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-outfit), 'Outfit', system-ui, sans-serif;
   line-height: 1.6;
   overflow-x: clip;
   max-width: 100%;
@@ -177,10 +178,10 @@ body {
 
 /* Font utilities */
 .font-display {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
 }
 .font-mono-custom {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-dm-mono), 'DM Mono', ui-monospace, monospace;
 }
 
 /* Hero CSS animations — JS-independent, always visible */

@@ -25,6 +25,7 @@ import NotificationsPage from "@/components/admin/NotificationsPage";
 import ReviewsPage from "@/components/admin/ReviewsPage";
 import BillingPage from "@/components/admin/BillingPage";
 import SubscriptionBanner from "@/components/admin/SubscriptionBanner";
+import LandingAnalyticsPanel from "@/components/admin/LandingAnalyticsPanel";
 import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
@@ -1452,6 +1453,9 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, barberId, realBarbers = 
 
       {/* Business KPIs */}
       <BusinessKPIs barberId={barberId} activeBarberCount={realBarbers.filter(b => b.available).length} />
+
+      {/* Landing-page analytics (last 30d) */}
+      {!barberId && <LandingAnalyticsPanel />}
 
       {/* Staff performance + Pending confirmations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1fr_1fr_340px] gap-4">

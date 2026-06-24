@@ -1,8 +1,31 @@
 import "./globals.css";
+import { Outfit, Cormorant_Garamond, DM_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AppointmentsProvider } from "@/contexts/AppointmentsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+
+// ponytail: self-hosted via next/font so no render-blocking @import + CLS
+// is preempted by the font-display: swap default.
+const outfit = Outfit({
+  subsets: ["latin", "latin-ext"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
+  display: "swap",
+});
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin", "latin-ext"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
+  display: "swap",
+});
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  variable: "--font-dm-mono",
+  display: "swap",
+});
 
 export const metadata = {
   title: { default: "MAKAS — Berber Randevu Sistemi", template: "%s | MAKAS" },
@@ -69,7 +92,7 @@ const orgJsonLd = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="tr" className="h-full antialiased">
+    <html lang="tr" className={`h-full antialiased ${outfit.variable} ${cormorant.variable} ${dmMono.variable}`}>
       <head>
         <script
           type="application/ld+json"

@@ -22,11 +22,28 @@ model Shop {
   customDomain    String?    @unique // e.g. "mehmetberber.com" — set by super admin after DNS is wired
   name            String
   logo            String?
+  coverImage      String? // hero banner for public landing
   address         String?    @db.Text
+  addressLine     String? // street line; pairs with city for structured display
+  city            String?
+  latitude        Float?
+  longitude       Float?
   phone           String?
+  whatsappNumber  String? // E.164 — opens wa.me on landing
   email           String?
   description     String?    @db.Text
-  social          Json? // { instagram, facebook, tiktok, twitter, website }
+  about           String?    @db.Text // long-form "Hakkımızda" copy, max 500 chars
+  ownerName       String?
+  foundedYear     Int?
+  shopType        String? // "male" | "female" | "unisex"
+  // ponytail: separate columns for socials so we can validate URLs per-field at
+  // write time. Existing `social` JSON kept for backward compat; new admin UI
+  // writes both for now, public page reads the new columns first.
+  instagramUrl    String?
+  facebookUrl     String?
+  tiktokUrl       String?
+  gallery         String[] @default([]) // ordered Cloudinary URLs, max 12
+  social          Json? // legacy { instagram, facebook, tiktok, twitter, website }
   googlePlaceId   String? // per-shop Google Place ID for reviews widget
   googlePlacesKey String? // per-shop Google Places API key (overrides global env)
   mapsEmbed       String?    @db.Text // custom Google Maps embed URL
@@ -61,9 +78,25 @@ model Shop {
   notificationJobs     NotificationJob[]
   reviewRequests       ReviewRequest[]
   invoices             Invoice[]
+  analyticsEvents      AnalyticsEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Lightweight conversion-funnel telemetry. Public ingest, never blocks UX.
+// ponytail: single table, no aggregation. Add a daily rollup table if event
+// volume crosses ~100k/day per shop.
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  eventType String   // see lib/analytics.js EVENT_TYPES allowlist
+  metadata  Json?    // tiny payload — serviceId, barberId, source, etc.
+  createdAt DateTime @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([shopId, eventType, createdAt])
 }
 
 enum ShopStatus {

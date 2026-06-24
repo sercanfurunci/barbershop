@@ -31,6 +31,7 @@ export default function Testimonials({ googleReviews = null }) {
   // ponytail: SSR-provided. No client fetch, no loading skeleton.
   const isGoogle      = !!(googleReviews?.reviews?.length);
   const items         = isGoogle ? googleReviews.reviews : testimonials;
+  if (!items.length) return null;
   const displayRating = isGoogle ? googleReviews.rating?.toFixed(1) : "4.9";
   const displayTotal  = isGoogle ? `${googleReviews.totalRatings}+` : "400+";
 
@@ -47,11 +48,11 @@ export default function Testimonials({ googleReviews = null }) {
         width: "min(1440px, 100%)",
         marginInline: "auto",
         paddingInline: "clamp(20px, 4vw, 32px)",
-        paddingBlock: "clamp(72px, 10vw, 120px)",
+        paddingBlock: "clamp(56px, 7vw, 88px)",
       }}>
 
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12 lg:mb-14">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8 lg:mb-10">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -80,8 +81,9 @@ export default function Testimonials({ googleReviews = null }) {
             className="shrink-0"
           >
             <div className="flex items-baseline gap-2 mb-1">
-              <span className="font-display font-light" style={{
-                fontSize: "40px", color: C.primary, lineHeight: 1, letterSpacing: "-0.03em",
+              <span style={{
+                fontSize: "34px", fontWeight: 600, color: C.primary,
+                lineHeight: 1, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums",
               }}>
                 {displayRating}
               </span>
@@ -93,110 +95,150 @@ export default function Testimonials({ googleReviews = null }) {
           </motion.div>
         </div>
 
-        {/* Equal card grid */}
+        {/* Layout:
+            mobile  — horizontal snap slider, cards 78vw
+            tablet  — 2-col grid
+            desktop — up to 4 columns, each capped at ~300px */}
         {items.length > 0 && (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
-            gap: "20px",
-          }}>
-            {items.slice(0, 4).map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 16, scale: 0.98 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                style={{ height: "100%" }}
-              >
-                <div
-                  style={{
-                    background: C.card,
-                    border: `1px solid ${C.border}`,
-                    borderRadius: "12px",
-                    padding: "24px",
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                    minHeight: "180px",
-                    transition: "border-color 0.2s, box-shadow 0.2s",
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = "rgba(17,17,17,0.25)";
-                    e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.06)";
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = C.border;
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
+          <>
+            <style>{`
+              .testimonials-track {
+                display: flex;
+                gap: 16px;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                scroll-padding-inline: clamp(20px, 4vw, 32px);
+                padding-inline: clamp(20px, 4vw, 32px);
+                margin-inline: calc(-1 * clamp(20px, 4vw, 32px));
+                -webkit-overflow-scrolling: touch;
+              }
+              .testimonials-track::-webkit-scrollbar { display: none; }
+              .testimonials-track { scrollbar-width: none; }
+              .testimonials-track > * {
+                flex: 0 0 78vw;
+                max-width: 340px;
+                scroll-snap-align: start;
+              }
+              @media (min-width: 768px) {
+                .testimonials-track {
+                  display: grid;
+                  grid-template-columns: repeat(2, 1fr);
+                  gap: 16px;
+                  overflow: visible;
+                  padding-inline: 0;
+                  margin-inline: 0;
+                }
+                .testimonials-track > * { flex: initial; max-width: none; }
+              }
+              @media (min-width: 1024px) {
+                .testimonials-track {
+                  grid-template-columns: repeat(${Math.min(items.length, 4)}, minmax(0, 1fr));
+                  gap: 16px;
+                  max-width: ${items.length <= 2 ? `${items.length * 360}px` : "none"};
+                  margin-inline: ${items.length <= 2 ? "auto" : 0};
+                }
+              }
+            `}</style>
+            <div className="testimonials-track">
+              {items.slice(0, 4).map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ height: "100%" }}
                 >
-                  {/* Stars */}
-                  <div className="flex gap-0.5 mb-4">
-                    {[1,2,3,4,5].map(s => (
-                      <Star key={s} size={11}
-                        fill={s <= (item.rating ?? 5) ? C.primary : "transparent"}
-                        style={{ color: C.primary }}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Quote — line-clamp-5 for equal height */}
-                  <p className="line-clamp-5" style={{
-                    fontSize: "16px",
-                    color: C.secondary,
-                    lineHeight: 1.6,
-                    flex: 1,
-                    marginBottom: "16px",
-                  }}>
-                    &ldquo;{getText(item)}&rdquo;
-                  </p>
-
-                  {/* Author */}
                   <div
-                    className="flex items-center gap-3"
-                    style={{ borderTop: `1px solid ${C.border}`, paddingTop: "16px" }}
+                    style={{
+                      background: C.card,
+                      border: `1px solid ${C.border}`,
+                      borderRadius: "12px",
+                      padding: "20px",
+                      display: "flex",
+                      flexDirection: "column",
+                      height: "100%",
+                      minHeight: "160px",
+                      transition: "border-color 0.2s, box-shadow 0.2s",
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = "rgba(17,17,17,0.25)";
+                      e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.06)";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = C.border;
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
                   >
-                    {item.profilePhoto ? (
-                      <img
-                        src={item.profilePhoto}
-                        alt={item.name}
-                        referrerPolicy="no-referrer"
-                        style={{
-                          width: "34px", height: "34px",
-                          borderRadius: "7px", objectFit: "cover", flexShrink: 0,
-                        }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: "34px", height: "34px", borderRadius: "7px",
-                        background: C.primary, flexShrink: 0,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "11px", fontWeight: 700, color: "#fff",
-                      }}>
-                        {item.avatar || item.name?.[0]}
-                      </div>
-                    )}
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{
-                        fontSize: "13px", color: C.primary, fontWeight: 500,
-                        lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                      }}>
-                        {item.name}
-                      </div>
-                      <div style={{ fontSize: "10px", color: C.muted, marginTop: "1px" }}>
-                        {getRole(item)}
-                      </div>
+                    {/* Stars */}
+                    <div className="flex gap-0.5 mb-3">
+                      {[1,2,3,4,5].map(s => (
+                        <Star key={s} size={11}
+                          fill={s <= (item.rating ?? 5) ? C.primary : "transparent"}
+                          style={{ color: C.primary }}
+                        />
+                      ))}
                     </div>
-                    {isGoogle && (
-                      <div style={{ flexShrink: 0 }}>
-                        <GoogleIcon />
+
+                    {/* Quote — clamp 4 lines for denser rows */}
+                    <p className="line-clamp-4" style={{
+                      fontSize: "14px",
+                      color: C.secondary,
+                      lineHeight: 1.55,
+                      flex: 1,
+                      marginBottom: "14px",
+                    }}>
+                      &ldquo;{getText(item)}&rdquo;
+                    </p>
+
+                    {/* Author */}
+                    <div
+                      className="flex items-center gap-3"
+                      style={{ borderTop: `1px solid ${C.border}`, paddingTop: "12px" }}
+                    >
+                      {item.profilePhoto ? (
+                        <img
+                          src={item.profilePhoto}
+                          alt={item.name}
+                          referrerPolicy="no-referrer"
+                          style={{
+                            width: "32px", height: "32px",
+                            borderRadius: "7px", objectFit: "cover", flexShrink: 0,
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: "32px", height: "32px", borderRadius: "7px",
+                          background: C.primary, flexShrink: 0,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "11px", fontWeight: 700, color: "#fff",
+                        }}>
+                          {item.avatar || item.name?.[0]}
+                        </div>
+                      )}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{
+                          fontSize: "13px", color: C.primary, fontWeight: 600,
+                          letterSpacing: "-0.005em",
+                          lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                        }}>
+                          {item.name}
+                        </div>
+                        <div style={{ fontSize: "10px", color: C.muted, marginTop: "1px" }}>
+                          {getRole(item)}
+                        </div>
                       </div>
-                    )}
+                      {isGoogle && (
+                        <div style={{ flexShrink: 0 }}>
+                          <GoogleIcon />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </section>

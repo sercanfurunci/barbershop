@@ -24,6 +24,7 @@ export default function Services({ services = [] }) {
   const tx = useT(lang);
   const shop = useShop();
   const bookHref = shop?.slug ? `/${shop.slug}/book` : "/book";
+  if (!services.length) return null;
 
   return (
     <section id="services" style={{ background: C.bg, position: "relative" }}>
@@ -87,13 +88,15 @@ export default function Services({ services = [] }) {
                   onMouseEnter={e => { e.currentTarget.style.paddingLeft = "12px"; }}
                   onMouseLeave={e => { e.currentTarget.style.paddingLeft = "0"; }}
                 >
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: "14px", marginBottom: "6px", flexWrap: "wrap" }}>
-                      <h3 className="font-display font-light" style={{
-                        fontSize: "clamp(24px, 3.2vw, 42px)",
+                      <h3 className="line-clamp-2" style={{
+                        fontSize: "clamp(18px, 2.2vw, 26px)",
+                        fontWeight: 600,
                         color: C.primary,
-                        letterSpacing: "-0.02em",
-                        lineHeight: 1.05,
+                        letterSpacing: "-0.015em",
+                        lineHeight: 1.2,
+                        textWrap: "balance",
                       }}>
                         {service.name[lang]}
                       </h3>
@@ -113,19 +116,28 @@ export default function Services({ services = [] }) {
                         </span>
                       )}
                     </div>
-                    <p style={{ fontSize: "13px", color: C.muted, lineHeight: 1.6 }}>
-                      {service.description[lang]} · {service.duration} {tx.services.min}
-                    </p>
+                    {(service.description?.[lang] || service.duration) && (
+                      <p className="line-clamp-2" style={{ fontSize: "13px", color: C.muted, lineHeight: 1.6 }}>
+                        {[
+                          service.description?.[lang],
+                          service.duration ? `${service.duration} ${tx.services.min}` : null,
+                        ].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "16px", flexShrink: 0 }}>
-                    <span className="font-display font-light" style={{
-                      fontSize: "clamp(22px, 2.8vw, 34px)",
-                      color: C.primary,
-                      letterSpacing: "-0.02em",
-                    }}>
-                      ₺{service.price.toLocaleString()}
-                    </span>
+                    {service.price != null && (
+                      <span style={{
+                        fontSize: "clamp(18px, 2.2vw, 24px)",
+                        fontWeight: 600,
+                        color: C.primary,
+                        letterSpacing: "-0.015em",
+                        fontVariantNumeric: "tabular-nums",
+                      }}>
+                        ₺{service.price.toLocaleString()}
+                      </span>
+                    )}
                     <ArrowRight
                       size={16}
                       className="opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150"

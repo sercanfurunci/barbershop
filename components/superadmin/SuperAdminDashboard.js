@@ -202,6 +202,8 @@ export default function SuperAdminDashboard() {
               onBilling={setBillingShop}
               showKpis={page === "dashboard"}
             />
+          ) : page === "analytics" ? (
+            <PlatformAnalytics />
           ) : (
             <div style={{ textAlign: "center", padding: "80px 0", color: C.muted, fontSize: 14 }}>Bu bölüm yakında gelecek.</div>
           )}
@@ -729,6 +731,76 @@ function BillingModal({ shop, onClose, onSaved }) {
           {err && <div style={{ fontSize: 12, padding: "8px 10px", borderRadius: 7, color: "#B91C1C", background: "rgba(185,28,28,0.06)" }}>{err}</div>}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Platform analytics page ── */
+const EVENT_LABELS = {
+  page_view: "Sayfa Görüntüleme",
+  book_click: "Randevu Tıklama",
+  whatsapp_click: "WhatsApp",
+  call_click: "Telefon",
+  directions_click: "Yol Tarifi",
+  service_select: "Hizmet Seçim",
+  barber_select: "Berber Seçim",
+  booking_complete: "Randevu Onay",
+};
+function PlatformAnalytics() {
+  const [data, setData] = useState(null);
+  const [err, setErr]   = useState("");
+  useEffect(() => {
+    apiFetch("/api/superadmin/analytics")
+      .then(setData)
+      .catch((e) => setErr(e.message || "Yüklenemedi"));
+  }, []);
+
+  const grand = data ? Object.values(data.totals).reduce((a, b) => a + b, 0) : 0;
+
+  return (
+    <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+      <div style={{ marginBottom: 16 }}>
+        <h1 style={{ fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, color: C.ink, letterSpacing: "-0.02em" }}>Platform Analitiği</h1>
+        <p style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>Tüm salonların son 30 günlük landing-page etkileşimi.</p>
+      </div>
+
+      {err && <div style={{ padding: 16, fontSize: 13, color: "#B91C1C", background: "rgba(185,28,28,0.06)", borderRadius: 10 }}>{err}</div>}
+      {!err && !data && <div style={{ padding: 40, fontSize: 13, color: C.muted, textAlign: "center" }}>Yükleniyor…</div>}
+
+      {data && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
+            <Kpi icon={TrendingUp} label="Toplam Olay" value={grand.toLocaleString("tr-TR")} sub="Son 30 gün" />
+            {Object.entries(data.totals).map(([k, v]) => (
+              <Kpi key={k} icon={TrendingUp} label={EVENT_LABELS[k] ?? k} value={v.toLocaleString("tr-TR")} />
+            ))}
+          </div>
+
+          <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 600, color: C.ink, marginBottom: 10 }}>En Aktif Salonlar</h2>
+            {data.topShops.length === 0 ? (
+              <div style={{ fontSize: 13, color: C.muted, padding: "16px 0" }}>Henüz veri yok.</div>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: C.surface }}>
+                    <Th>Salon</Th><Th>Slug</Th><Th align="right">Olay</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.topShops.map((s) => (
+                    <tr key={s.shopId} style={{ borderTop: `1px solid ${C.border}` }}>
+                      <td style={{ padding: "10px 12px", color: C.ink }}>{s.name}</td>
+                      <td style={{ padding: "10px 12px", color: C.muted, fontFamily: "ui-monospace, monospace", fontSize: 12 }}>{s.slug ?? "—"}</td>
+                      <td style={{ padding: "10px 12px", textAlign: "right", color: C.ink, fontVariantNumeric: "tabular-nums" }}>{s.events.toLocaleString("tr-TR")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
