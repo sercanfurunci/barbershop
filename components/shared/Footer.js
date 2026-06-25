@@ -31,11 +31,6 @@ function TikTokIcon({ size = 15 }) {
   );
 }
 
-const serviceNames = {
-  tr: ["Klasik Kesim", "Fade & Taper", "Sakal Şekillendirme", "Usta Tıraşı", "Kesim & Sakal", "VIP Bakım"],
-  en: ["Classic Cut", "Fade & Taper", "Beard Sculpt", "Royal Shave", "Cut & Beard", "VIP Grooming"],
-};
-
 function buildSocialLinks(social = {}) {
   const links = [];
   if (social.instagram) links.push({ href: social.instagram, icon: <InstagramIcon size={14} />, label: "Instagram" });
@@ -51,7 +46,6 @@ export default function Footer() {
   const shop = useShop();
 
   const shopName  = shop?.name ?? "MAKAS";
-  const bookHref  = shop?.slug ? `/${shop.slug}/book` : "/book";
   const socialLinks = buildSocialLinks(shop?.social ?? {});
 
   return (
@@ -65,7 +59,7 @@ export default function Footer() {
           paddingTop: "48px",
           paddingBottom: "32px",
         }}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 pb-10" style={{ borderBottom: "1px solid #1E1E1E" }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pb-10" style={{ borderBottom: "1px solid #1E1E1E" }}>
 
             {/* Brand */}
             <div>
@@ -91,22 +85,6 @@ export default function Footer() {
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Services */}
-            <div>
-              <h4 style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#F7F4EE", marginBottom: "20px", fontWeight: 600 }}>{ft.services}</h4>
-              <ul style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {serviceNames[lang].map((s) => (
-                  <li key={s}>
-                    <Link href={bookHref} style={{ fontSize: "12px", color: "#888582", textDecoration: "none", transition: "color 0.2s", letterSpacing: "0.01em" }}
-                      onMouseEnter={e => e.currentTarget.style.color = "#F6F3EE"}
-                      onMouseLeave={e => e.currentTarget.style.color = "#888582"}>
-                      {s}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
             </div>
 
             {/* Company */}
