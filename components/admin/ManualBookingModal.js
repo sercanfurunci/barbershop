@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { todayStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { X, Check, Phone, User, Calendar, Clock } from "lucide-react";
 
 const C = {
@@ -59,6 +60,7 @@ function generateTimeSlots(startH, endH) {
 }
 
 export default function ManualBookingModal({ onClose, defaultBarberId = "", initialDate = "" }) {
+  useBodyScrollLock();
   const { addAppointment } = useAppointments();
   const [form, setForm] = useState({
     client: "",
@@ -125,8 +127,11 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
           position: "fixed", inset: 0,
           background: "rgba(17,17,17,0.4)",
           zIndex: 80,
+          overflowY: "auto",
+          overscrollBehavior: "contain",
+          WebkitOverflowScrolling: "touch",
           display: "flex", alignItems: "center", justifyContent: "center",
-          padding: "20px",
+          padding: "20px max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))",
         }}
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
@@ -144,6 +149,8 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
             maxWidth: "480px",
             maxHeight: "90vh",
             overflowY: "auto",
+            overscrollBehavior: "contain",
+            WebkitOverflowScrolling: "touch",
           }}
         >
           {/* Header */}
@@ -234,7 +241,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                     <option value="">Hizmet Seçin</option>
                     {services.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.nameTr} — ₺{s.price.toLocaleString()} ({s.duration}dk)
+                        {s.nameTr} — {s.price == null ? "Sorulur" : `₺${s.price.toLocaleString()}`} ({s.duration}dk)
                       </option>
                     ))}
                   </select>
@@ -309,7 +316,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                       {selectedService.nameTr} · {selectedService.duration}dk
                     </div>
                     <div style={{ fontSize: "16px", color: C.primary, fontWeight: 600 }}>
-                      ₺{selectedService.price.toLocaleString()}
+                      {selectedService.price == null ? "Sorulur" : `₺${selectedService.price.toLocaleString()}`}
                     </div>
                   </div>
                 )}

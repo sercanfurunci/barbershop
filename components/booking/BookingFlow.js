@@ -481,7 +481,7 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
                         {serviceName}
                       </div>
                       <div style={{ fontSize: "11px", color: C.muted, marginTop: "1px" }}>
-                        ₺{booking.service.price?.toLocaleString()} · {booking.service.duration} {lang === "tr" ? "dk" : "min"}
+                        {booking.service.price == null ? "Sorulur" : `₺${booking.service.price.toLocaleString()}`} · {booking.service.duration} {lang === "tr" ? "dk" : "min"}
                       </div>
                     </>
                   ) : (

@@ -8,6 +8,7 @@
 import Link from "next/link";
 import { Phone, MessageCircle, MapPin, Calendar } from "lucide-react";
 import { track } from "@/lib/track";
+import { telHref, waHref } from "@/lib/validation";
 
 const C = {
   card:    "#FFFFFF",
@@ -16,17 +17,10 @@ const C = {
   muted:   "#8A8480",
 };
 
-function waHref(num) {
-  if (!num) return null;
-  const digits = String(num).replace(/[^\d]/g, "");
-  if (!digits) return null;
-  return `https://wa.me/${digits.startsWith("90") ? digits : "90" + digits.replace(/^0/, "")}`;
-}
-
 export default function StickyActionBar({ shop }) {
   if (!shop) return null;
-  const phone   = shop.phone;
-  const wa      = waHref(shop.whatsappNumber ?? phone);
+  const tel     = telHref(shop.phone);
+  const wa      = waHref(shop.whatsappNumber ?? shop.phone);
   const map     = shop.latitude && shop.longitude
     ? `https://www.google.com/maps/dir/?api=1&destination=${shop.latitude},${shop.longitude}`
     : shop.address
@@ -49,15 +43,15 @@ export default function StickyActionBar({ shop }) {
     >
       <div style={{
         display: "grid",
-        gridTemplateColumns: `repeat(${[wa, phone, map, true].filter(Boolean).length}, 1fr)`,
+        gridTemplateColumns: `repeat(${[wa, tel, map, true].filter(Boolean).length}, 1fr)`,
         height: "62px",
       }}>
         {wa && (
           <BarBtn href={wa} Icon={MessageCircle} label="WhatsApp" external
             onClick={() => track(shop.id, "whatsapp_click", { source: "sticky" })} />
         )}
-        {phone && (
-          <BarBtn href={`tel:${phone}`} Icon={Phone} label="Ara"
+        {tel && (
+          <BarBtn href={tel} Icon={Phone} label="Ara"
             onClick={() => track(shop.id, "call_click", { source: "sticky" })} />
         )}
         {map && (

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import { apiFetch } from "@/lib/api";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import ManualBookingModal from "./ManualBookingModal";
 import {
   ChevronLeft, ChevronRight, Plus, Clock, X, Check,
@@ -56,7 +57,8 @@ function isToday(dateStr) {
 }
 
 function fmtCurrency(v) {
-  return `₺${(v || 0).toLocaleString("tr-TR")}`;
+  if (v == null) return "Sorulur";
+  return `₺${v.toLocaleString("tr-TR")}`;
 }
 
 // ─── Appointment block ────────────────────────────────────────────────────────
@@ -249,6 +251,8 @@ function BreakBlock({ brk }) {
 // ─── Mobile Agenda View ───────────────────────────────────────────────────────
 function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayRevenue, totalToday, confirmedCnt, pendingCnt, activeBarber, setActiveBarber, statusFilter, setStatusFilter, onNewAppt, updateStatus, barbers }) {
   const [selectedAppt, setSelectedAppt] = useState(null);
+  // Lock background scroll while the detail sheet is open.
+  useBodyScrollLock(!!selectedAppt);
 
   const sorted = [...displayAppts].sort((a, b) => a.time.localeCompare(b.time));
 
@@ -301,7 +305,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
           </div>
           {/* Price */}
           <div style={{ flexShrink: 0, textAlign: "right" }}>
-            <div style={{ fontSize: "14px", color: C.primary, fontWeight: 700 }}>₺{appt.price.toLocaleString()}</div>
+            <div style={{ fontSize: "14px", color: C.primary, fontWeight: 700 }}>{fmtCurrency(appt.price)}</div>
           </div>
         </div>
       </motion.div>
@@ -404,7 +408,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 90, background: "#FFFFFF", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))" }}
+                style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 90, background: "#FFFFFF", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
               >
                 {/* Handle */}
                 <div style={{ width: "36px", height: "3px", background: C.border, borderRadius: "2px", margin: "0 auto 16px" }} />
@@ -420,7 +424,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
                 </div>
                 {/* Info rows */}
                 <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "12px 14px", marginBottom: "14px" }}>
-                  {[["Hizmet", appt.service], ["Saat", `${appt.time} — ${appt.duration}dk`], ["Ücret", `₺${appt.price.toLocaleString()}`], appt.notes && ["Not", appt.notes]].filter(Boolean).map(([k, v]) => (
+                  {[["Hizmet", appt.service], ["Saat", `${appt.time} — ${appt.duration}dk`], ["Ücret", fmtCurrency(appt.price)], appt.notes && ["Not", appt.notes]].filter(Boolean).map(([k, v]) => (
                     <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: "12px", padding: "5px 0", borderBottom: `1px solid ${C.border}` }}>
                       <span style={{ fontSize: "12px", color: C.secondary }}>{k}</span>
                       <span style={{ fontSize: "12px", color: C.primary, textAlign: "right" }}>{v}</span>

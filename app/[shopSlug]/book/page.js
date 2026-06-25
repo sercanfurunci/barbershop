@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { resolveShopBySlug } from "@/lib/shop";
 import { canAcceptPublicBookings } from "@/lib/subscription";
+import { telHref } from "@/lib/validation";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/shared/Navbar";
 import BookingFlow from "@/components/booking/BookingFlow";
@@ -36,7 +37,7 @@ export default async function BookPage({ params, searchParams }) {
           </p>
           {shop.phone && (
             <a
-              href={`tel:${shop.phone}`}
+              href={telHref(shop.phone)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: "8px",
                 background: "#111", color: "#fff", padding: "12px 20px",
@@ -106,7 +107,7 @@ export default async function BookPage({ params, searchParams }) {
           </p>
           {shop.phone && (
             <a
-              href={`tel:${shop.phone}`}
+              href={telHref(shop.phone)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: "8px",
                 background: "#111", color: "#fff", padding: "12px 20px",

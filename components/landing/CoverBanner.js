@@ -9,6 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Star, Phone, MessageCircle, MapPin, Calendar } from "lucide-react";
 import { track } from "@/lib/track";
+import { telHref, waHref } from "@/lib/validation";
 
 const C = {
   bg: "#F7F4EE",
@@ -32,10 +33,8 @@ export default function CoverBanner({ shop, googleReviews }) {
   const heroImage = shop.coverImage || (Array.isArray(shop.gallery) && shop.gallery[0]) || null;
 
   const bookHref = `/${shop.slug}/book`;
-  const phoneHref = shop.phone ? `tel:${shop.phone.replace(/[^\d+]/g, "")}` : null;
-  const waHref = shop.whatsappNumber
-    ? `https://wa.me/${shop.whatsappNumber.replace(/[^\d]/g, "")}`
-    : null;
+  const phoneHref = telHref(shop.phone);
+  const whatsappHref = waHref(shop.whatsappNumber);
   const mapHref = shop.latitude && shop.longitude
     ? `https://www.google.com/maps/dir/?api=1&destination=${shop.latitude},${shop.longitude}`
     : shop.address
@@ -158,9 +157,9 @@ export default function CoverBanner({ shop, googleReviews }) {
                   <Phone size={15} /> Ara
                 </a>
               )}
-              {waHref && (
+              {whatsappHref && (
                 <a
-                  href={waHref} target="_blank" rel="noopener noreferrer"
+                  href={whatsappHref} target="_blank" rel="noopener noreferrer"
                   style={secondaryCta}
                   onClick={() => track(shop.id, "whatsapp_click", { source: "cover" })}
                 >

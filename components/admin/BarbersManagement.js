@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MoreVertical, Plus, Loader2, X, Check, AlertCircle, Camera, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useLang } from "@/contexts/LanguageContext";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import ImageCropModal from "@/components/shared/ImageCropModal";
 
 const C = {
@@ -546,23 +547,48 @@ function CreateBarberModal({ onClose, onCreated }) {
 const inp = "w-full px-3 py-2 text-[13px] rounded-lg outline-none";
 
 function Modal({ title, onClose, children, wide }) {
+  useBodyScrollLock();
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(17,17,17,0.45)" }}
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{
+        background: "rgba(17,17,17,0.45)",
+        overflowY: "auto",
+        overscrollBehavior: "contain",
+        WebkitOverflowScrolling: "touch",
+        padding: "16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div
         initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
         transition={{ duration: 0.18 }}
-        className={`w-full rounded-2xl overflow-hidden ${wide ? "max-w-[560px]" : "max-w-[480px]"}`}
-        style={{ background: C.card, border: `1px solid ${C.border}` }}
+        className={`w-full rounded-2xl ${wide ? "max-w-[560px]" : "max-w-[480px]"}`}
+        style={{
+          background: C.card,
+          border: `1px solid ${C.border}`,
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
-        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: `1px solid ${C.border}` }}>
+        <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{ borderBottom: `1px solid ${C.border}` }}>
           <h3 className="text-[15px] font-semibold" style={{ color: C.primary }}>{title}</h3>
           <button onClick={onClose} style={{ color: C.muted }}><X size={18} /></button>
         </div>
-        <div className="px-5 py-5">{children}</div>
+        <div
+          className="px-5 py-5"
+          style={{
+            overflowY: "auto",
+            overscrollBehavior: "contain",
+            WebkitOverflowScrolling: "touch",
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
+          {children}
+        </div>
       </motion.div>
     </motion.div>
   );

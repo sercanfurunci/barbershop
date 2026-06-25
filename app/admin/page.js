@@ -8,6 +8,8 @@ export default function AdminRedirect() {
   const router = useRouter();
   useEffect(() => {
     if (!loaded) return;
+    // Superadmin has no tenant shop — send to the superadmin console.
+    if (user?.role === "SUPER_ADMIN") { router.replace("/superadmin"); return; }
     const slug = user?.shop?.slug;
     if (!slug) { router.replace("/"); return; }
     // Barbers land on their own dashboard, not the admin panel

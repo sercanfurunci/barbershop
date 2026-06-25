@@ -73,16 +73,44 @@ export function AppointmentsProvider({ children }) {
   }, []);
 
   const updateStatus = useCallback(async (id, status) => {
-    // status comes in as lowercase ("confirmed") — convert to API format
+    let priceToSet;
+    if (status === "completed") {
+      const current = appointments.find((a) => a.id === id);
+      if (current && current.price == null) {
+        const input = typeof window !== "undefined"
+          ? window.prompt("Bu randevu için ücret (₺):", "")
+          : "";
+        if (input === null) return; // cancelled
+        const trimmed = String(input).trim();
+        if (trimmed === "") {
+          priceToSet = null;
+        } else {
+          const n = Number(trimmed);
+          if (!Number.isFinite(n) || n < 0 || n > 100000) {
+            window.alert("Fiyat 0–100000 ₺ arasında olmalı.");
+            return;
+          }
+          priceToSet = n;
+        }
+      }
+    }
+
+    if (priceToSet !== undefined) {
+      await apiFetch(`/api/appointments/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ price: priceToSet }),
+      });
+    }
+
     const apiStatus = status.toUpperCase().replace("-", "_");
     await apiFetch(`/api/appointments/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status: apiStatus }),
     });
     setAppointments((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status } : a))
+      prev.map((a) => (a.id === id ? { ...a, status, ...(priceToSet !== undefined && { price: priceToSet }) } : a))
     );
-  }, []);
+  }, [appointments]);
 
   const updateAppointment = useCallback(async (id, patch) => {
     await apiFetch(`/api/appointments/${id}`, {

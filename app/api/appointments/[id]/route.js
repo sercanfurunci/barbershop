@@ -47,7 +47,19 @@ export async function PATCH(request, { params }) {
   if (!canAccess(payload, appt)) return forbidden();
 
   const body = await request.json();
-  const { notes, date, time } = body;
+  const { notes, date, time, price } = body;
+
+  let priceVal;
+  if (price !== undefined) {
+    if (price === null || price === "") {
+      priceVal = null;
+    } else {
+      priceVal = Number(price);
+      if (!Number.isFinite(priceVal) || priceVal < 0 || priceVal > 100000) {
+        return NextResponse.json({ error: "Fiyat 0–100000 ₺ arasında olmalı" }, { status: 400 });
+      }
+    }
+  }
 
   // If rescheduling, validate format + not-in-past + re-check conflicts.
   if (date || time) {
@@ -94,6 +106,7 @@ export async function PATCH(request, { params }) {
       ...(notes !== undefined && { notes }),
       ...(date  && { date }),
       ...(time  && { time }),
+      ...(price !== undefined && { price: priceVal }),
     },
   });
 

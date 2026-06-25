@@ -183,7 +183,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600 }}>₺{appt.price.toLocaleString()}</div>
+                  <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600 }}>{appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}</div>
                   <div style={{ fontSize: "10px", color: C.secondary, marginTop: "1px", fontFamily: "'DM Mono', monospace" }}>{appt.time}</div>
                 </div>
               </div>
@@ -273,7 +273,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                     <div style={{ fontSize: "10px", color: C.secondary, fontFamily: "'DM Mono', monospace", lineHeight: 1.4 }}>{appt.time}</div>
                   </td>
                   <td style={{ padding: "12px 16px" }}>
-                    <span className="font-display font-light" style={{ fontSize: "16px", color: C.primary }}>₺{appt.price.toLocaleString()}</span>
+                    <span className="font-display font-light" style={{ fontSize: "16px", color: C.primary }}>{appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}</span>
                   </td>
                   <td style={{ padding: "12px 16px" }}>
                     <StatusPill status={appt.status} label={statusLabel} style={statusStyle} />

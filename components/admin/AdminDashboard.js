@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Calendar, Users, Settings,
-  Bell, Search, Menu, ExternalLink, Plus, CalendarDays, LogOut, Scissors,
+  Bell, Search, ExternalLink, Plus, CalendarDays, LogOut, Scissors,
   UserCheck, TrendingUp, User, MoreHorizontal, X,
   ChevronLeft, ChevronRight, Activity, Clock, Star, CreditCard,
 } from "lucide-react";
@@ -26,6 +25,7 @@ import ReviewsPage from "@/components/admin/ReviewsPage";
 import BillingPage from "@/components/admin/BillingPage";
 import SubscriptionBanner from "@/components/admin/SubscriptionBanner";
 import LandingAnalyticsPanel from "@/components/admin/LandingAnalyticsPanel";
+import DashboardTopbar from "@/components/admin/DashboardTopbar";
 import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
@@ -33,7 +33,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useParams } from "next/navigation";
 import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, setPreviewShopId } from "@/lib/api";
+import { useShop } from "@/contexts/ShopContext";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 const C = {
   bg:       "#F7F4EE",
@@ -80,27 +82,39 @@ const NAV_SECTIONS = (lang) => [
 
 export default function AdminDashboard() {
   const [tab, setTab]               = useState("overview");
-  const [drawer, setDrawer]         = useState(false);
   const [moreOpen, setMoreOpen]     = useState(false);
   const [showBooking, setShowBooking] = useState(false);
-  const [userMenu, setUserMenu]       = useState(false);
   const [globalBarberId, setGlobalBarberId] = useState(null);
   const { lang, setLang }           = useLang();
   const tx = useT(lang);
   const { logout, role, loaded, user } = useAuth();
   const router = useRouter();
   const params = useParams();
+  const shop = useShop();
   const shopSlug = user?.shop?.slug ?? params?.shopSlug;
+  const isSuperPreview = role === "superadmin" && !!shop?.id;
   const [mounted, setMounted] = useState(false);
   const [realBarbers, setRealBarbers] = useState([]);
+
+  useBodyScrollLock(moreOpen);
+
+  // Superadmin preview: stamp tenant shopId so apiFetch auto-scopes admin calls.
+  // ponytail: module-level state in lib/api.js — single dashboard mounts at a time.
+  useEffect(() => {
+    if (!isSuperPreview) return;
+    setPreviewShopId(shop.id);
+    return () => setPreviewShopId(null);
+  }, [isSuperPreview, shop?.id]);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
     if (!loaded || !role) return;
+    // Wait until preview shopId is set before fetching, so the request is scoped.
+    if (isSuperPreview && !shop?.id) return;
     apiFetch("/api/admin/barbers")
       .then(list => setRealBarbers(Array.isArray(list) ? list : []))
       .catch(() => {});
-  }, [loaded, role]);
+  }, [loaded, role, isSuperPreview, shop?.id]);
 
   const handleLogout = () => { const s = user?.shop?.slug ?? shopSlug; logout(); router.push(s ? `/${s}/barber` : "/"); };
   const navSections = NAV_SECTIONS(lang);
@@ -136,72 +150,35 @@ export default function AdminDashboard() {
         <Sidebar tab={tab} setTab={setTab} navSections={navSections} tx={tx} lang={lang} setLang={setLang} handleLogout={handleLogout} user={user} />
       </aside>
 
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {drawer && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 lg:hidden"
-              style={{ background: "rgba(17,17,17,0.35)", backdropFilter: "blur(4px)" }}
-              onClick={() => setDrawer(false)}
-            />
-            <motion.aside
-              initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
-              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-0 left-0 bottom-0 z-50 w-[220px] flex flex-col lg:hidden"
-              style={{ background: C.sidebar, borderRight: `1px solid ${C.border}` }}
-            >
-              <Sidebar tab={tab} setTab={(t) => { setTab(t); setDrawer(false); }} navSections={navSections} tx={tx} lang={lang} setLang={setLang} handleLogout={handleLogout} />
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-
       {/* Main */}
       <div className="flex-1 min-w-0 lg:ml-[220px] flex flex-col min-h-screen overflow-x-hidden">
 
-        {/* Topbar */}
-        <header
-          className="h-14 flex items-center gap-4 px-5 lg:px-7 sticky top-0 z-20"
-          style={{ background: `${C.bg}e8`, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}
-        >
-          <button onClick={() => setDrawer(true)} className="hidden lg:flex w-11 h-11 items-center justify-center" style={{ color: C.secondary }}>
-            <Menu size={18} />
-          </button>
-
-          {/* Mobile-only: user info (sidebar not visible on mobile) */}
-          <div className="flex lg:hidden flex-col" style={{ lineHeight: 1.2 }}>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: C.primary }}>{user?.displayName ?? user?.username ?? user?.email?.split("@")[0] ?? "Admin"}</span>
-            <span style={{ fontSize: "10px", color: C.muted }}>{user?.role === "SUPER_ADMIN" ? "Süper Admin" : user?.role === "ADMIN" ? "Admin" : "Yönetici"}</span>
+        {isSuperPreview && (
+          <div
+            className="px-5 lg:px-7 py-2 flex items-center justify-between gap-3 text-xs"
+            style={{ background: "#1F2937", color: "#F9FAFB", letterSpacing: "0.02em" }}
+          >
+            <span>
+              <strong style={{ fontWeight: 600 }}>Superadmin Preview Mode</strong>
+              {shop?.name ? ` — ${shop.name}` : ""}
+            </span>
+            <Link href="/superadmin" style={{ color: "#F9FAFB", opacity: 0.8, textDecoration: "underline" }}>
+              Konsola dön
+            </Link>
           </div>
+        )}
 
-          <div className="hidden sm:flex items-center gap-2 flex-1 max-w-xs px-3 h-8" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "6px" }}>
-            <Search size={12} style={{ color: C.muted }} />
-            <input
-              placeholder={tx.admin.appointments.search}
-              className="flex-1 bg-transparent text-xs outline-none"
-              style={{ color: C.primary, caretColor: C.primary }}
-            />
-          </div>
-
-          <div className="ml-auto flex items-center gap-3">
-            <button
-              onClick={() => setLang(lang === "tr" ? "en" : "tr")}
-              className="flex items-center gap-1"
-              style={{ fontSize: "10px", letterSpacing: "0.25em", color: C.secondary, height: "32px", padding: "0 8px", borderRadius: "4px" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = C.primary)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = C.secondary)}
-            >
-              {lang === "tr" ? "EN" : "TR"}
-            </button>
-
-            <button className="relative w-8 h-8 flex items-center justify-center" style={{ color: C.secondary }}>
-              <Bell size={15} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ background: C.primary }} />
-            </button>
-
-            {/* Berber Görünümü — top bar shortcut (md+, admin-only) */}
+        <DashboardTopbar
+          brand={{
+            href: user?.shop?.slug ? `/${user.shop.slug}` : "/",
+            label: user?.shop?.name ?? "Makas",
+            initial: (user?.shop?.name ?? "M")[0].toUpperCase(),
+          }}
+          search={{ placeholder: tx.admin.appointments.search }}
+          lang={lang}
+          onLangToggle={() => setLang(lang === "tr" ? "en" : "tr")}
+          notifications={{ badge: "dot" }}
+          extras={
             <button
               onClick={() => { setTab("barber-ops"); setMoreOpen(false); }}
               className="hidden md:flex items-center gap-1.5"
@@ -220,51 +197,19 @@ export default function AdminDashboard() {
               <Activity size={11} />
               Berber Görünümü
             </button>
-
-
-            {/* User menu dropdown */}
-            <div style={{ position: "relative" }}>
-              <button
-                onClick={() => setUserMenu(!userMenu)}
-                style={{ width: "44px", height: "44px", background: C.primary, borderRadius: "8px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff" }}
-              >
-                {(user?.displayName ?? user?.username ?? user?.email ?? "A").split(/[\s@]/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "A"}
-              </button>
-              {userMenu && mounted && createPortal(
-                <>
-                  <div style={{ position: "fixed", inset: 0, zIndex: 70 }} onClick={() => setUserMenu(false)} />
-                  <div style={{ position: "fixed", top: "58px", right: "16px", background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "10px", padding: "6px", zIndex: 71, minWidth: "160px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 8px 24px rgba(17,17,17,0.12)" }}>
-                    <div style={{ padding: "8px 10px 10px", borderBottom: `1px solid ${C.border}`, marginBottom: "4px" }}>
-                      <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{user?.displayName ?? user?.username ?? "Admin"}</div>
-                      <div style={{ fontSize: "10px", color: C.secondary }}>{user?.role === "SUPER_ADMIN" ? "Süper Admin" : user?.role === "ADMIN" ? "Admin" : user?.role === "BARBER" ? "Berber" : "Yönetici"}</div>
-                    </div>
-                    {[
-                      { label: "Profil", icon: User, action: () => { setUserMenu(false); } },
-                      { label: "Ayarlar", icon: Settings, action: () => { setTab("settings"); setUserMenu(false); } },
-                    ].map(({ label, icon: Icon, action }) => (
-                      <button key={label} onClick={action} style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "7px 10px", borderRadius: "6px", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: C.secondary, textAlign: "left" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = C.surface; e.currentTarget.style.color = C.primary; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.secondary; }}
-                      >
-                        <Icon size={12} />
-                        {label}
-                      </button>
-                    ))}
-                    <div style={{ height: "1px", background: C.border, margin: "4px 0" }} />
-                    <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "7px 10px", borderRadius: "6px", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#111111", textAlign: "left" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(17,17,17,0.08)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
-                    >
-                      <LogOut size={12} />
-                      Çıkış Yap
-                    </button>
-                  </div>
-                </>,
-                document.body
-              )}
-            </div>
-          </div>
-        </header>
+          }
+          userMenu={{
+            initials: (user?.displayName ?? user?.username ?? user?.email ?? "A").split(/[\s@]/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "A",
+            headerName: user?.displayName ?? user?.username ?? "Admin",
+            headerRole: user?.role === "SUPER_ADMIN" ? "Süper Admin" : user?.role === "ADMIN" ? "Admin" : user?.role === "BARBER" ? "Berber" : "Yönetici",
+            items: [
+              { icon: User,     label: "Profil",   action: () => {} },
+              { icon: Settings, label: "Ayarlar",  action: () => setTab("settings") },
+              { divider: true },
+              { icon: LogOut,   label: "Çıkış Yap", action: handleLogout, danger: true },
+            ],
+          }}
+        />
 
         {/* Barber selector bar — mobile only, sticky below header */}
         <div className="sticky top-14 z-20 lg:hidden" style={{ background: `${C.bg}f0`, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}>
@@ -384,6 +329,9 @@ const MORE_ITEMS = [
   { id: "barber-ops",    label: "Berber Görünümü", icon: Activity   },
   { id: "services-mgmt", label: "Hizmetler",       icon: Scissors   },
   { id: "revenue",       label: "Gelir",           icon: TrendingUp },
+  { id: "reviews",       label: "Yorumlar",        icon: Star       },
+  { id: "notifications", label: "Bildirimler",     icon: Bell       },
+  { id: "billing",       label: "Abonelik",        icon: CreditCard },
   { id: "settings",      label: "Ayarlar",         icon: Settings   },
 ];
 
@@ -430,6 +378,10 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
               borderRadius: "20px 20px 0 0",
               padding: "0 0 4px",
               boxShadow: "0 -8px 40px rgba(17,17,17,0.15)",
+              maxHeight: "calc(100dvh - 64px - env(safe-area-inset-bottom) - 24px)",
+              overflowY: "auto",
+              overscrollBehavior: "contain",
+              WebkitOverflowScrolling: "touch",
             }}
           >
             {/* Handle */}
@@ -1415,7 +1367,7 @@ function RecentActivityFeed() {
                   <span style={{ fontSize: "10px", color: isToday ? C.primary : C.muted, fontFamily: "'DM Mono', monospace" }}>{isToday ? appt.time : appt.date}</span>
                 </div>
               </div>
-              <span style={{ fontSize: "11px", color: C.primary, fontWeight: 600, flexShrink: 0 }}>₺{appt.price.toLocaleString()}</span>
+              <span style={{ fontSize: "11px", color: C.primary, fontWeight: 600, flexShrink: 0 }}>{appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}</span>
             </div>
           );
         })}

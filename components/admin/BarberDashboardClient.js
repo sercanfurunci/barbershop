@@ -8,9 +8,13 @@ import { useAppointments } from "@/contexts/AppointmentsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { todayStr, toDateStr } from "@/lib/utils";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { toTelHref } from "@/lib/validation";
 import ManualBookingModal from "@/components/admin/ManualBookingModal";
 import ImageCropModal from "@/components/shared/ImageCropModal";
 import SubscriptionBanner from "@/components/admin/SubscriptionBanner";
+import DashboardTopbar from "@/components/admin/DashboardTopbar";
+import { useLang } from "@/contexts/LanguageContext";
 import Link from "next/link";
 import {
   Plus, LogOut, ChevronLeft, ChevronRight, ExternalLink,
@@ -127,7 +131,7 @@ export function NextAppointmentCard({ appt, onAction }) {
             {sc.label}
           </div>
           <div style={{ fontSize: "14px", color: C.primary, fontWeight: 700, textAlign: "right" }}>
-            ₺{(appt.price || 0).toLocaleString()}
+            {appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}
           </div>
         </div>
       </div>
@@ -210,7 +214,7 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
 
           {/* Price */}
           <div style={{ fontSize: "14px", color: isDone ? C.secondary : C.primary, fontWeight: 600, flexShrink: 0 }}>
-            ₺{(appt.price || 0).toLocaleString()}
+            {appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}
           </div>
 
           {/* Status badge */}
@@ -333,9 +337,12 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
   const router = useRouter();
   const { role, user, logout, loaded: authLoaded } = useAuth();
   const { appointments, updateStatus, refresh } = useAppointments();
+  const { lang, setLang } = useLang();
   const [date, setDate]       = useState(todayStr());
   const [view, setView]       = useState("dashboard");
   const [moreSheet, setMoreSheet] = useState(false);
+  const [breakModal, setBreakModal] = useState(false);
+  useBodyScrollLock(moreSheet || breakModal);
   const [showModal, setShowModal] = useState(false);
   const [barberData, setBarberData] = useState(null);
   const [tick, setTick]     = useState(0);
@@ -411,6 +418,51 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
 
   // Stats
   const pending   = dayAppts.filter(a => a.status === "pending").length;
+  // Pending across all days — drives the topbar bell badge.
+  const allPending = appointments.filter(a =>
+    (realBarberId ? a.barberId === realBarberId : a.barberId === barberSlug) && a.status === "pending"
+  ).length;
+  const remainingToday = isViewingToday
+    ? dayAppts.filter(a => a.status !== "completed" && a.status !== "noshow" && a.time >= now).length
+    : 0;
+  const isSelf = user?.barber?.slug === barberSlug;
+
+  // Active break: today's one-off break whose [start, end] contains now.
+  const activeBreak = (() => {
+    const breaks = barberData?.breaks ?? [];
+    if (!breaks.length) return null;
+    return breaks.find(b => b.date === today && b.start <= now && now < b.end) ?? null;
+  })();
+
+  async function startBreak(minutes) {
+    try {
+      const brk = await apiFetch("/api/barber/me/break", { method: "POST", body: JSON.stringify({ minutes }) });
+      setBarberData(prev => prev ? { ...prev, breaks: [...(prev.breaks ?? []), brk] } : prev);
+      setBreakModal(false);
+    } catch (err) {
+      alert(err.message || "Mola başlatılamadı");
+    }
+  }
+  async function endBreak() {
+    try {
+      await apiFetch("/api/barber/me/break", { method: "DELETE" });
+      setBarberData(prev => prev ? { ...prev, breaks: (prev.breaks ?? []).filter(b => b.date !== today) } : prev);
+    } catch (err) {
+      alert(err.message || "Mola bitirilemedi");
+    }
+  }
+
+  async function toggleAvailability() {
+    if (!isSelf) return;
+    const next = !barber.available;
+    setBarberData(prev => prev ? { ...prev, available: next } : prev);
+    try {
+      await apiFetch("/api/barber/me/availability", { method: "POST", body: JSON.stringify({ available: next }) });
+    } catch (err) {
+      setBarberData(prev => prev ? { ...prev, available: !next } : prev);
+      alert(err.message || "Durum güncellenemedi");
+    }
+  }
   const confirmed = dayAppts.filter(a => a.status === "confirmed").length;
   const completed = dayAppts.filter(a => a.status === "completed").length;
   const noshow    = dayAppts.filter(a => a.status === "noshow").length;
@@ -532,7 +584,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
               className="fixed left-0 right-0 bottom-0 z-50 lg:hidden rounded-t-2xl"
-              style={{ background: C.card, border: `1px solid ${C.border}`, paddingBottom: "env(safe-area-inset-bottom, 16px)" }}>
+              style={{ background: C.card, border: `1px solid ${C.border}`, paddingBottom: "env(safe-area-inset-bottom, 16px)", maxHeight: "85dvh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               {/* Handle */}
               <div className="flex justify-center pt-3 pb-1">
                 <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: C.dim }} />
@@ -562,65 +614,170 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
       {/* ── Main area ── */}
       <div className="flex-1 min-w-0 lg:ml-[220px] flex flex-col min-h-screen overflow-x-hidden">
 
-        {/* Topbar */}
-        <header className="h-14 flex items-center gap-4 px-4 lg:px-7 sticky top-0 z-20"
-          style={{ background: `${C.bg}e8`, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}>
-          {/* Barber identity — mobile only, replaces hamburger */}
-          <div className="flex items-center gap-2 lg:hidden" style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
-            <div style={{ width: "28px", height: "28px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-              {barber.avatar}
-            </div>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: C.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{barber.nameTr ?? barber.name}</span>
-          </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button onClick={refresh} title="Yenile"
-              style={{ background: C.surface, color: C.secondary, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "0 12px", height: "36px", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-              ↻
-            </button>
-            <button onClick={() => setShowModal(true)}
-              className="flex items-center gap-1.5"
-              style={{ background: C.primary, color: "#fff", border: "none", borderRadius: "8px", padding: "0 14px", height: "36px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-              <Plus size={14} /> <span className="hidden sm:inline">Randevu Ekle</span><span className="sm:hidden">Ekle</span>
-            </button>
-          </div>
-        </header>
+        <DashboardTopbar
+          brand={{
+            href: user?.shop?.slug ? `/${user.shop.slug}` : "/",
+            label: user?.shop?.name ?? barber.nameTr ?? barber.name ?? "Makas",
+            initial: (user?.shop?.name ?? barber.nameTr ?? barber.name ?? "M")[0].toUpperCase(),
+          }}
+          lang={lang}
+          onLangToggle={() => setLang(lang === "tr" ? "en" : "tr")}
+          notifications={{
+            badge: allPending,
+            onClick: () => setView("appointments"),
+            title: "Bekleyen randevular",
+          }}
+          userMenu={{
+            initials: (barber.nameTr ?? barber.name ?? "B").split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase(),
+            statusDot: isSelf && barberData ? { available: barber.available } : null,
+            headerName: barber.nameTr ?? barber.name,
+            headerRole: barber.titleTr ?? barber.title?.tr ?? "Berber",
+            items: [
+              ...(isSelf && barberData ? [{
+                label: barber.available ? "Müsait" : "Müsait Değil",
+                action: toggleAvailability,
+                right: barber.available ? "Kapat" : "Aç",
+              }] : []),
+              ...(isSelf && barberData ? [
+                activeBreak
+                  ? { icon: Clock, label: `Molada · ${activeBreak.end}'a kadar`, action: endBreak, right: "Bitir", rightColor: "#DC2626" }
+                  : { icon: Clock, label: "Mola Başlat", action: () => setBreakModal(true) }
+              ] : []),
+              { label: "↻ Yenile", action: refresh },
+              { icon: Settings, label: "Profil", action: () => setView("profil") },
+              ...(role === "admin" ? [{
+                icon: ChevronLeft,
+                label: "Admin Paneli",
+                action: () => router.push(user?.shop?.slug ? `/${user.shop.slug}/admin` : "/admin"),
+              }] : []),
+              { divider: true },
+              {
+                icon: LogOut,
+                label: "Çıkış Yap",
+                danger: true,
+                action: () => {
+                  const s = user?.shop?.slug;
+                  loggingOut.current = true;
+                  logout();
+                  router.push(s ? `/${s}/barber` : "/superadmin/login");
+                },
+              },
+            ],
+          }}
+        />
+
+        {/* Today summary strip — mobile only; one-glance daily status */}
+        <div className="lg:hidden flex items-center gap-3 px-4 py-2" style={{ borderBottom: `1px solid ${C.border}`, background: `${C.surface}80`, fontSize: "11px", color: C.secondary, letterSpacing: "0.01em" }}>
+          <span><strong style={{ color: C.primary, fontWeight: 600 }}>₺{revenue.toLocaleString("tr-TR")}</strong> bugün</span>
+          <span style={{ opacity: 0.4 }}>·</span>
+          <span><strong style={{ color: C.primary, fontWeight: 600 }}>{remainingToday}</strong> randevu kaldı</span>
+          {pending > 0 && (<>
+            <span style={{ opacity: 0.4 }}>·</span>
+            <span style={{ color: "#B45309" }}>{pending} onay bekliyor</span>
+          </>)}
+          {activeBreak && (
+            <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "5px", padding: "2px 8px", borderRadius: "10px", background: "rgba(180,83,9,0.12)", color: "#B45309", fontWeight: 600 }}>
+              <Clock size={11} /> Mola {activeBreak.end}'a kadar
+            </span>
+          )}
+        </div>
+
+        {/* Break duration modal */}
+        <AnimatePresence>
+          {breakModal && (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[70]" style={{ background: "rgba(17,17,17,0.5)", backdropFilter: "blur(3px)" }}
+                onClick={() => setBreakModal(false)} />
+              <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="fixed left-1/2 top-1/2 z-[71] w-[92vw] max-w-[360px]"
+                style={{ transform: "translate(-50%, -50%)", background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "20px", boxShadow: "0 24px 60px rgba(17,17,17,0.25)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                  <h3 style={{ fontSize: "16px", fontWeight: 600, color: C.primary, margin: 0 }}>Mola Başlat</h3>
+                  <button onClick={() => setBreakModal(false)} aria-label="Kapat"
+                    style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "6px", width: "26px", height: "26px", display: "flex", alignItems: "center", justifyContent: "center", color: C.secondary, cursor: "pointer" }}>
+                    <X size={12} />
+                  </button>
+                </div>
+                <p style={{ fontSize: "12px", color: C.muted, margin: "0 0 14px" }}>Süreyi seç; o süre boyunca yeni randevu alınmaz.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[15, 30, 45, 60, 90, 120].map(min => (
+                    <button key={min} onClick={() => startBreak(min)}
+                      style={{ padding: "12px 8px", borderRadius: "10px", border: `1px solid ${C.border}`, background: C.surface, color: C.primary, fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = C.card; e.currentTarget.style.borderColor = C.primary; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = C.surface; e.currentTarget.style.borderColor = C.border; }}>
+                      <Clock size={13} /> {min < 60 ? `${min} dk` : min === 60 ? "1 saat" : `${min / 60} saat`}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         <SubscriptionBanner shop={user?.shop} />
 
         {/* Page content — extra bottom padding so content clears mobile bottom nav */}
         <div className="px-4 pt-5 pb-24 lg:px-7 lg:pt-7 lg:pb-10">
 
-        {/* Page header */}
-        <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
-          <div>
+        {/* Page header — left: title/date, right: primary CTA (matches Admin) */}
+        <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             {(view === "dashboard" || view === "schedule") && (
               <>
-                <h1 style={{ fontSize: "clamp(20px, 2.5vw, 26px)", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "4px" }}>
+                <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: "2px" }}>
                   {view === "dashboard" ? formatDateLong(today) : formatDateLong(viewing)}
                   {(view === "dashboard" || isViewingToday) && (
                     <span style={{ marginLeft: "10px", fontSize: "10px", color: C.primary, fontWeight: 700, letterSpacing: "0.12em", verticalAlign: "middle", textTransform: "uppercase" }}>Bugün</span>
                   )}
                 </h1>
-                <p style={{ fontSize: "13px", color: C.secondary }}>{String(Math.floor(wh.start/60)).padStart(2,"0")}:{String(wh.start%60).padStart(2,"0")} – {String(Math.floor(wh.end/60)).padStart(2,"0")}:{String(wh.end%60).padStart(2,"0")} · {dayAppts.length} randevu</p>
+                <p style={{ fontSize: "12px", color: C.secondary, marginTop: "3px" }}>{String(Math.floor(wh.start/60)).padStart(2,"0")}:{String(wh.start%60).padStart(2,"0")} – {String(Math.floor(wh.end/60)).padStart(2,"0")}:{String(wh.end%60).padStart(2,"0")} · {dayAppts.length} randevu</p>
               </>
             )}
-            {view === "appointments" && <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em" }}>Randevular</h1>}
-            {view === "customers" && <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em" }}>Müşteriler</h1>}
-            {view === "profil" && <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em" }}>Profil</h1>}
+            {view === "appointments" && (
+              <>
+                <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>Randevular</h1>
+                <p style={{ fontSize: "12px", color: C.secondary, marginTop: "3px" }}>Tüm randevuların listesi</p>
+              </>
+            )}
+            {view === "customers" && (
+              <>
+                <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>Müşteriler</h1>
+                <p style={{ fontSize: "12px", color: C.secondary, marginTop: "3px" }}>Geçmiş randevu kayıtları</p>
+              </>
+            )}
+            {view === "profil" && (
+              <>
+                <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>Profil</h1>
+                <p style={{ fontSize: "12px", color: C.secondary, marginTop: "3px" }}>Hesap ve görünüm ayarları</p>
+              </>
+            )}
           </div>
-          {view === "schedule" && (
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-              <button onClick={() => setDate(d => addDays(d, -1))} style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
-                <ChevronLeft size={15} />
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+            {view === "schedule" && (
+              <>
+                <button onClick={() => setDate(d => addDays(d, -1))} aria-label="Önceki gün" style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+                  <ChevronLeft size={15} />
+                </button>
+                {!isViewingToday && (
+                  <button onClick={() => setDate(today)} style={{ height: "36px", padding: "0 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>Bugün</button>
+                )}
+                <button onClick={() => setDate(d => addDays(d, 1))} aria-label="Sonraki gün" style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+                  <ChevronRight size={15} />
+                </button>
+              </>
+            )}
+            {(view === "dashboard" || view === "schedule" || view === "appointments") && (
+              <button
+                onClick={() => setShowModal(true)}
+                style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 14px", background: C.primary, border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "#fff", flexShrink: 0 }}
+              >
+                <Plus size={14} />
+                <span className="hidden sm:inline">Yeni Randevu</span>
               </button>
-              {!isViewingToday && (
-                <button onClick={() => setDate(today)} style={{ height: "36px", padding: "0 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>Bugün</button>
-              )}
-              <button onClick={() => setDate(d => addDays(d, 1))} style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* ── Dashboard / Schedule view ── */}
@@ -1449,7 +1606,7 @@ export function BarberAppointmentsList({ barberId, appointments, onAction, onNew
                           <div style={{ fontSize: "11px", color: C.secondary, marginTop: "1px" }}>{appt.service}</div>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
-                          <span style={{ fontSize: "13px", color: C.primary, fontWeight: 600 }}>₺{(appt.price || 0).toLocaleString()}</span>
+                          <span style={{ fontSize: "13px", color: C.primary, fontWeight: 600 }}>{appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}</span>
                           <span style={{ fontSize: "9px", padding: "2px 7px", borderRadius: "4px", background: sc.bg, color: sc.color, fontWeight: 600 }}>{sc.label}</span>
                         </div>
                       </div>
@@ -1627,9 +1784,9 @@ export function BarberCustomersView({ barberId, appointments, onNewBooking }) {
                       {lastAppt.date} · {lastAppt.service}
                     </span>
                   </div>
-                  {c.phone && (
+                  {toTelHref(c.phone) && (
                     <a
-                      href={`tel:${c.phone}`}
+                      href={toTelHref(c.phone)}
                       style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 10px", borderRadius: "7px", background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.2)", fontSize: "11px", color: "#2563EB", textDecoration: "none", fontWeight: 600 }}
                     >
                       <Phone size={11} /> Ara

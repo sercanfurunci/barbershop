@@ -236,9 +236,11 @@ model BarberBreak {
   start     String // "HH:MM"
   end       String // "HH:MM"
   label     String @default("Mola")
-  dayOfWeek Int? // 0=Sun … 6=Sat, null = every day
+  dayOfWeek Int? // 0=Sun … 6=Sat, null = recurring every day
+  date      String? // "YYYY-MM-DD" — set for one-off breaks (e.g. instant "Mola"). null = recurring.
 
   @@index([barberId])
+  @@index([date])
 }
 
 // ─── Services ─────────────────────────────────────────────────────────────────
@@ -252,7 +254,7 @@ model Service {
   descTr       String
   descEn       String
   duration     Int
-  price        Int
+  price        Int? // null = "Sorulur" — barber doesn't have to publish a fixed price
   icon         String          @default("✂️")
   image        String?
   category     ServiceCategory
@@ -322,7 +324,7 @@ model Appointment {
   date             String // "YYYY-MM-DD"
   time             String // "HH:MM"
   duration         Int
-  price            Int
+  price            Int? // null = "Sorulur" — final price set on completion
   status           AppointmentStatus @default(PENDING)
   source           BookingSource     @default(ONLINE)
   notes            String?           @db.Text

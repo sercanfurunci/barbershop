@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { rateLimit, getIp } from "@/lib/rateLimit";
 import {
-  validateHttpUrl, normalizePhone, sanitizeString, validateLatLng, SHOP_TYPES,
+  validateHttpUrl, normalizePhoneTR, sanitizeString, validateLatLng, SHOP_TYPES,
 } from "@/lib/validation";
 
 const ALLOWED_ROLES = ["ADMIN", "SUPER_ADMIN"];
@@ -93,15 +93,15 @@ export async function PATCH(request) {
 
   // ── Contact ──
   if (body.phone !== undefined) {
-    data.phone = body.phone ? normalizePhone(body.phone) : null;
+    data.phone = body.phone ? normalizePhoneTR(body.phone) : null;
     if (body.phone && !data.phone) {
-      return NextResponse.json({ error: "Geçersiz telefon" }, { status: 400 });
+      return NextResponse.json({ error: "Geçersiz telefon — Türkiye cep numarası girin" }, { status: 400 });
     }
   }
   if (body.whatsappNumber !== undefined) {
-    data.whatsappNumber = body.whatsappNumber ? normalizePhone(body.whatsappNumber) : null;
+    data.whatsappNumber = body.whatsappNumber ? normalizePhoneTR(body.whatsappNumber) : null;
     if (body.whatsappNumber && !data.whatsappNumber) {
-      return NextResponse.json({ error: "Geçersiz WhatsApp numarası" }, { status: 400 });
+      return NextResponse.json({ error: "Geçersiz WhatsApp numarası — Türkiye cep numarası girin" }, { status: 400 });
     }
   }
 

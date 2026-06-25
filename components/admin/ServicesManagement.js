@@ -7,6 +7,7 @@ import {
   Search, X, Check, AlertTriangle,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 const C = {
   bg:      "#F7F4EE",
@@ -67,6 +68,7 @@ const EMPTY_FORM = {
 };
 
 function ServiceModal({ service, onClose, onSaved }) {
+  useBodyScrollLock();
   const isEdit = !!service;
   const [form, setForm] = useState(
     isEdit
@@ -76,7 +78,7 @@ function ServiceModal({ service, onClose, onSaved }) {
           descTr:    service.descTr    ?? "",
           descEn:    service.descEn    ?? "",
           duration:  String(service.duration),
-          price:     String(service.price),
+          price:     service.price == null ? "" : String(service.price),
           icon:      service.icon      ?? "✂️",
           category:  service.category  ?? "CUTS",
           popular:   service.popular   ?? false,
@@ -94,7 +96,7 @@ function ServiceModal({ service, onClose, onSaved }) {
     e.preventDefault();
     if (!form.nameTr.trim())          { setError("Hizmet adı gerekli"); return; }
     if (!form.duration || Number(form.duration) < 5) { setError("Süre en az 5 dk olmalı"); return; }
-    if (form.price === "" || Number(form.price) < 0) { setError("Geçerli bir fiyat girin"); return; }
+    if (form.price !== "" && Number(form.price) < 0) { setError("Geçerli bir fiyat girin"); return; }
 
     setSaving(true);
     setError("");
@@ -104,7 +106,7 @@ function ServiceModal({ service, onClose, onSaved }) {
       descTr:    form.descTr.trim(),
       descEn:    form.descEn.trim(),
       duration:  Number(form.duration),
-      price:     Number(form.price),
+      price:     form.price === "" ? null : Number(form.price),
       icon:      form.icon || "✂️",
       category:  form.category,
       popular:   form.popular,
@@ -129,7 +131,7 @@ function ServiceModal({ service, onClose, onSaved }) {
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+        style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 80, overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))" }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
@@ -137,7 +139,7 @@ function ServiceModal({ service, onClose, onSaved }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.97 }}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "16px", width: "100%", maxWidth: "520px", maxHeight: "90vh", overflowY: "auto" }}
+          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "16px", width: "100%", maxWidth: "520px", maxHeight: "90vh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
         >
           <div style={{ padding: "20px 24px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
@@ -172,7 +174,7 @@ function ServiceModal({ service, onClose, onSaved }) {
                 <input type="number" min="5" step="5" value={form.duration} onChange={e => set("duration", e.target.value)} placeholder="45" style={inputStyle} />
               </Field>
               <Field label="Fiyat (₺)" half>
-                <input type="number" min="0" step="10" value={form.price} onChange={e => set("price", e.target.value)} placeholder="200" style={inputStyle} />
+                <input type="number" min="0" step="10" value={form.price} onChange={e => set("price", e.target.value)} placeholder="Boş bırak → Sorulur" style={inputStyle} />
               </Field>
             </div>
 
@@ -227,6 +229,7 @@ function ServiceModal({ service, onClose, onSaved }) {
 
 /* ─── Delete Confirm Modal ─── */
 function DeleteModal({ service, onClose, onDeleted }) {
+  useBodyScrollLock();
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -243,13 +246,13 @@ function DeleteModal({ service, onClose, onDeleted }) {
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+        style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 80, overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))" }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", width: "100%", maxWidth: "360px", padding: "28px 24px", textAlign: "center" }}
+          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", width: "100%", maxWidth: "360px", maxHeight: "90vh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", padding: "28px 24px", textAlign: "center" }}
         >
           <div style={{ width: "48px", height: "48px", background: "rgba(17,17,17,0.1)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <AlertTriangle size={22} color={C.primary} />
@@ -440,7 +443,7 @@ export default function ServicesManagement() {
                     </span>
                   </td>
                   <td style={{ padding: "12px 16px" }}><span style={{ fontSize: "12px", color: C.secondary }}>{s.duration} dk</span></td>
-                  <td style={{ padding: "12px 16px" }}><span style={{ fontSize: "15px", color: C.primary, fontWeight: 600, letterSpacing: "-0.01em" }}>₺{s.price.toLocaleString()}</span></td>
+                  <td style={{ padding: "12px 16px" }}><span style={{ fontSize: "15px", color: C.primary, fontWeight: 600, letterSpacing: "-0.01em" }}>{s.price == null ? "Sorulur" : `₺${s.price.toLocaleString()}`}</span></td>
                   <td style={{ padding: "12px 16px" }}>
                     <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "4px", background: s.active ? "rgba(22,163,74,0.1)" : "rgba(156,163,175,0.15)", color: s.active ? "#16a34a" : C.muted }}>
                       {s.active ? "Aktif" : "Pasif"}
@@ -487,7 +490,7 @@ export default function ServicesManagement() {
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                <span style={{ fontSize: "16px", color: C.primary, fontWeight: 600 }}>₺{s.price.toLocaleString()}</span>
+                <span style={{ fontSize: "16px", color: C.primary, fontWeight: 600 }}>{s.price == null ? "Sorulur" : `₺${s.price.toLocaleString()}`}</span>
                 <ServiceMenu
                   service={s}
                   onEdit={() => setEditService(s)}

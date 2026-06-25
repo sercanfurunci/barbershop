@@ -10,6 +10,7 @@ import { tr as dateFnsTr, enUS } from "date-fns/locale";
 import { toast } from "sonner";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { formatPhoneTRDisplay, toLocal10 } from "@/lib/validation";
 
 const C = {
   bg:       "#F7F4EE",
@@ -23,22 +24,12 @@ const C = {
   dim:      "#C5BEB5",
 };
 
-// Formats digits-only string to Turkish phone display: 532 123 45 67
-function formatPhoneDisplay(digits) {
-  const d = digits.replace(/\D/g, "").slice(0, 10);
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `${d.slice(0,3)} ${d.slice(3)}`;
-  if (d.length <= 8) return `${d.slice(0,3)} ${d.slice(3,6)} ${d.slice(6)}`;
-  return `${d.slice(0,3)} ${d.slice(3,6)} ${d.slice(6,8)} ${d.slice(8)}`;
-}
-
 function validateForm(form) {
   const errors = {};
   if (!form.name.trim() || form.name.trim().length < 2)
     errors.name = "En az 2 karakter olmalı";
-  const digits = form.phone.replace(/\D/g, "");
-  if (!digits || digits.length !== 10 || !digits.startsWith("5"))
-    errors.phone = "Geçerli bir numara girin (örn: 532 123 45 67)";
+  if (!toLocal10(form.phone))
+    errors.phone = "Geçerli bir cep telefonu girin.";
   if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
     errors.email = "Geçerli bir e-posta adresi girin";
   return errors;
@@ -61,8 +52,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
   const locale = lang === "tr" ? dateFnsTr : enUS;
 
   const handlePhoneChange = (raw) => {
-    const digits = raw.replace(/\D/g, "").slice(0, 10);
-    setForm(f => ({ ...f, phone: formatPhoneDisplay(digits) }));
+    setForm(f => ({ ...f, phone: formatPhoneTRDisplay(raw) }));
   };
 
   const handleBlur = (field) => {
@@ -106,7 +96,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
         body: JSON.stringify({
           shopId,
           name:      form.name,
-          phone:     form.phone,
+          phone:     toLocal10(form.phone),
           email:     form.email,
           notes:     form.notes,
           serviceId: booking.service?.id,
@@ -217,7 +207,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
               {success.detailsTitle}
             </div>
             <div className="space-y-3">
-              <SummaryRow icon={<Scissors size={13} />} label={serviceName} value={`₺${booking.service?.price?.toLocaleString()}`} />
+              <SummaryRow icon={<Scissors size={13} />} label={serviceName} value={booking.service?.price == null ? "Sorulur" : `₺${booking.service.price.toLocaleString()}`} />
               <SummaryRow icon={<User size={13} />} label={barberName} />
               <SummaryRow icon={<Calendar size={13} />} label={booking.date ? format(booking.date, "EEEE, d MMMM yyyy", { locale }) : ""} />
               <SummaryRow icon={<Clock size={13} />} label={booking.time} />
@@ -352,7 +342,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
           </div>
         </div>
         <span className="font-display font-light shrink-0" style={{ fontSize: "24px", color: C.primary, letterSpacing: "-0.02em" }}>
-          ₺{booking.service?.price?.toLocaleString()}
+          {booking.service?.price == null ? "Sorulur" : `₺${booking.service.price.toLocaleString()}`}
         </span>
       </div>
 
@@ -378,7 +368,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
             <div className="flex items-center justify-between">
               <span style={{ fontSize: "12px", color: C.secondary }}>{s4.labels?.total}</span>
               <span className="font-display font-light" style={{ fontSize: "28px", color: C.primary, letterSpacing: "-0.02em" }}>
-                ₺{booking.service?.price?.toLocaleString()}
+                {booking.service?.price == null ? "Sorulur" : `₺${booking.service.price.toLocaleString()}`}
               </span>
             </div>
 
@@ -400,13 +390,15 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
             />
             <FormField
               label={s4.formLabels?.phone ?? "Telefon"}
-              placeholder="532 123 45 67"
+              placeholder="0532 123 45 67"
               value={form.phone}
               onChange={handlePhoneChange}
               onBlur={() => handleBlur("phone")}
               error={touched.phone ? errors.phone : undefined}
               icon={<Phone size={13} />}
               inputMode="tel"
+              autoComplete="tel"
+              type="tel"
               required
             />
           </div>
@@ -497,7 +489,7 @@ function SummaryRow({ icon, label, value }) {
   );
 }
 
-function FormField({ label, placeholder, value, onChange, onBlur, type = "text", icon, required, error, inputMode }) {
+function FormField({ label, placeholder, value, onChange, onBlur, type = "text", icon, required, error, inputMode, autoComplete }) {
   return (
     <div>
       <label style={{ display: "block", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: error ? C.primary : C.muted, marginBottom: "8px", fontWeight: 500 }}>
@@ -512,6 +504,7 @@ function FormField({ label, placeholder, value, onChange, onBlur, type = "text",
         <input
           type={type}
           inputMode={inputMode}
+          autoComplete={autoComplete}
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}

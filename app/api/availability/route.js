@@ -24,9 +24,13 @@ function computeSlots(workingHours, breaks, bookedAppointments, date, serviceDur
 
   if (dayStart == null || dayEnd == null) return []; // day off
 
-  // Blocked intervals: breaks filtered by dayOfWeek
+  // Blocked intervals: one-off breaks pinned to a specific date win;
+  // otherwise fall back to recurring (dayOfWeek match or every-day).
   const blocked = breaks
-    .filter(b => b.dayOfWeek == null || b.dayOfWeek === dow)
+    .filter(b => {
+      if (b.date) return b.date === date;
+      return b.dayOfWeek == null || b.dayOfWeek === dow;
+    })
     .map(b => ({ start: timeToMin(b.start), end: timeToMin(b.end) }));
 
   // Add booked appointments

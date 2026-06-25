@@ -90,13 +90,13 @@ export default async function ShopHome({ params }) {
         orderBy: [{ category: "asc" }, { price: "asc" }],
       }),
       prisma.barber.findMany({
-        where: { shopId: shop.id, available: true },
+        where: { shopId: shop.id },
         select: {
           id: true, nameTr: true, titleTr: true, titleEn: true,
           bioTr: true, bioEn: true, rating: true, reviewCount: true,
           specialties: true, avatar: true, color: true, available: true, yearsExp: true,
         },
-        orderBy: { createdAt: "asc" },
+        orderBy: [{ available: "desc" }, { createdAt: "asc" }],
       }),
       prisma.appointment.groupBy({
         by: ["barberId"],

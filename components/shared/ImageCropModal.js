@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Cropper from "react-easy-crop";
 import { X, ZoomIn, ZoomOut, Check } from "lucide-react";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 const OUTPUT_SIZE = 600; // px — square output
 
@@ -30,6 +31,7 @@ function getCroppedCanvas(imageSrc, croppedAreaPixels) {
 }
 
 export default function ImageCropModal({ file, onConfirm, onCancel }) {
+  useBodyScrollLock();
   const [imageSrc, setImageSrc]             = useState(null);
   const [crop, setCrop]                     = useState({ x: 0, y: 0 });
   const [zoom, setZoom]                     = useState(1.2);
@@ -63,15 +65,21 @@ export default function ImageCropModal({ file, onConfirm, onCancel }) {
     <div style={{
       position: "fixed", inset: 0, zIndex: 90,
       background: "rgba(0,0,0,0.82)",
+      overflowY: "auto",
+      overscrollBehavior: "contain",
+      WebkitOverflowScrolling: "touch",
       display: "flex", alignItems: "center", justifyContent: "center",
       backdropFilter: "blur(6px)",
-      padding: "16px",
+      padding: "16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))",
     }}>
       <div style={{
         background: "#fff", borderRadius: "20px",
         width: "100%", maxWidth: "400px",
+        maxHeight: "90vh",
         boxShadow: "0 40px 100px rgba(0,0,0,0.40)",
-        overflow: "hidden",
+        overflowY: "auto",
+        overscrollBehavior: "contain",
+        WebkitOverflowScrolling: "touch",
         display: "flex", flexDirection: "column",
       }}>
         {/* Header */}

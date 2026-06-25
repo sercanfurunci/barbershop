@@ -14,7 +14,7 @@ export async function GET(request) {
       select: { id: true, displayName: true, username: true, email: true, role: true },
     }),
     prisma.barber.findMany({
-      where: { shopId, available: true },
+      where: { shopId },
       select: { id: true, slug: true, nameTr: true, titleTr: true, avatar: true, available: true },
       orderBy: { createdAt: "asc" },
     }),

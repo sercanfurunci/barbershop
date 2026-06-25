@@ -5,6 +5,7 @@
 
 import { motion } from "framer-motion";
 import { MapPin, Phone, Clock, ArrowUpRight, Share2 } from "lucide-react";
+import { telHref } from "@/lib/validation";
 
 const DAYS = [
   ["mon", "Pazartesi"],
@@ -178,10 +179,10 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
               </Block>
             )}
 
-            {shop.phone && (
+            {shop.phone && telHref(shop.phone) && (
               <Block Icon={Phone} label="Telefon">
                 <a
-                  href={`tel:${shop.phone}`}
+                  href={telHref(shop.phone)}
                   style={{
                     fontSize: "14.5px", color: "rgba(255,255,255,0.88)",
                     textDecoration: "none", letterSpacing: "0.02em",

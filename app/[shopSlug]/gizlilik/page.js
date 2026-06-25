@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { resolveShopBySlug } from "@/lib/shop";
 import { notFound } from "next/navigation";
+import { telHref } from "@/lib/validation";
 
 export async function generateMetadata({ params }) {
   const { shopSlug } = await params;
@@ -80,7 +81,7 @@ export default async function ShopGizlilikPage({ params }) {
 
         <Section title="5. KVKK Haklarınız">
           <p style={{ marginBottom: "10px" }}>6698 sayılı KVKK kapsamında verilerinize erişme, düzeltme, silme ve itiraz haklarına sahipsiniz.</p>
-          {shop.phone && <p>Telefon: <a href={`tel:${shop.phone.replace(/\s/g, "")}`} style={{ color: C.primary }}>{shop.phone}</a></p>}
+          {shop.phone && <p>Telefon: <a href={telHref(shop.phone)} style={{ color: C.primary }}>{shop.phone}</a></p>}
         </Section>
 
         <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: "32px" }}>

@@ -151,7 +151,7 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
                 {/* Price + check */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
                   <span style={{ fontSize: "16px", fontWeight: 700, color: isSelected ? C.primary : C.primary, letterSpacing: "-0.01em" }}>
-                    ₺{service.price.toLocaleString()}
+                    {service.price == null ? "Sorulur" : `₺${service.price.toLocaleString()}`}
                   </span>
                   {isSelected && (
                     <motion.div

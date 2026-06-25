@@ -46,9 +46,14 @@ export async function PATCH(request, { params }) {
     }
   }
   if (data.price !== undefined) {
-    data.price = Number(data.price);
-    if (data.price < 0 || data.price > 100000) {
-      return NextResponse.json({ error: "Fiyat 0–100000 ₺ arasında olmalı" }, { status: 400 });
+    // null / "" → leave blank ("Sorulur"). Number otherwise.
+    if (data.price === null || data.price === "") {
+      data.price = null;
+    } else {
+      data.price = Number(data.price);
+      if (!Number.isFinite(data.price) || data.price < 0 || data.price > 100000) {
+        return NextResponse.json({ error: "Fiyat 0–100000 ₺ arasında olmalı" }, { status: 400 });
+      }
     }
   }
   if (data.sortOrder !== undefined) data.sortOrder = Number(data.sortOrder);
