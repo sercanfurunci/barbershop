@@ -241,6 +241,43 @@ button, a, [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Landing CTA hover/active — applied via .makas-cta + variant class so each
+   call site doesn't need its own onMouseEnter handler. */
+.makas-cta {
+  transition: transform 0.18s cubic-bezier(0.16,1,0.3,1),
+              background 0.18s ease,
+              border-color 0.18s ease,
+              box-shadow 0.22s ease;
+  will-change: transform;
+}
+.makas-cta:hover    { transform: translateY(-1px); }
+.makas-cta:active   { transform: translateY(0); transition-duration: 0.08s; }
+
+.makas-cta-light:hover  { box-shadow: 0 8px 20px rgba(0,0,0,0.28); }
+.makas-cta-ghost:hover  {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.28);
+}
+/* Dark button on light surface (Hero, FAQ, CTA) */
+.makas-cta-dark:hover   { box-shadow: 0 10px 28px rgba(17,17,17,0.32); }
+/* Outline button on light surface */
+.makas-cta-outline:hover {
+  border-color: var(--makas-ink-muted);
+  background: rgba(17,17,17,0.025);
+}
+
+/* Sticky-bar press feedback — touch-first, no hover noise. */
+.makas-bar-btn {
+  transition: background 0.14s ease, transform 0.12s cubic-bezier(0.16,1,0.3,1);
+}
+.makas-bar-btn:active {
+  transform: scale(0.96);
+  background: rgba(17,17,17,0.04);
+}
+.makas-bar-btn.is-primary:active {
+  background: #000;
+}
+
 /* Interaction defaults — Tailwind v4 dropped the implicit pointer cursor on
    buttons. Restore it for every clickable affordance and add a consistent
    focus-visible ring so keyboard users always see where they are. */

@@ -18,6 +18,7 @@ const Services     = dynamic(() => import("@/components/landing/Services"));
 const Barbers      = dynamic(() => import("@/components/landing/Barbers"));
 const Gallery      = dynamic(() => import("@/components/landing/Gallery"));
 const Testimonials = dynamic(() => import("@/components/landing/Testimonials"));
+const FAQ          = dynamic(() => import("@/components/landing/FAQ"));
 const CTA          = dynamic(() => import("@/components/landing/CTA"));
 const SalonInfo    = dynamic(() => import("@/components/landing/SalonInfo"));
 
@@ -166,6 +167,7 @@ export default async function ShopHome({ params }) {
         <Barbers barbers={barbers} />
         <Gallery images={shop.gallery} shopName={shop.name} />
         <Testimonials googleReviews={googleReviews} />
+        <FAQ />
         <CTA />
         <SalonInfo shop={shop} barbers={barbers} hours={hours} googleReviews={googleReviews} />
       </main>

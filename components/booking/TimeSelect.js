@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 import { apiFetch } from "@/lib/api";
+import { CalendarX } from "lucide-react";
 
 function SlotSkeleton({ count = 12 }) {
   return (
@@ -114,8 +115,24 @@ export default function TimeSelect({ shopId, booking, allBarbers = [], onSelect,
         {loading ? (
           <SlotSkeleton count={12} />
         ) : slots.length === 0 ? (
-          <div className="text-muted-foreground" style={{ padding: "56px 24px", textAlign: "center", fontSize: "14px" }}>
-            {lang === "tr" ? "Bu tarihte müsait saat bulunamadı" : "No available times on this date"}
+          <div style={{
+            padding: "56px 24px", textAlign: "center",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: "10px",
+          }}>
+            <div className="bg-secondary text-muted-foreground" style={{
+              width: 44, height: 44, borderRadius: "999px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <CalendarX size={20} />
+            </div>
+            <div className="text-foreground" style={{ fontSize: "14px", fontWeight: 600 }}>
+              {lang === "tr" ? "Bu tarihte boş saat yok" : "No available times"}
+            </div>
+            <div className="text-muted-foreground" style={{ fontSize: "12px", maxWidth: 240, lineHeight: 1.5 }}>
+              {lang === "tr"
+                ? "Başka bir tarihi deneyin veya farklı bir berber seçin."
+                : "Try another date or pick a different barber."}
+            </div>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", padding: "4px 16px 16px" }}>

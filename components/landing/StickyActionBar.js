@@ -66,8 +66,9 @@ export default function StickyActionBar({ shop }) {
 }
 
 function BarBtn({ href, Icon, label, external, primary, onClick }) {
+  const cls = `makas-bar-btn${primary ? " is-primary" : ""}`;
   const inner = (
-    <div style={{
+    <div className={cls} style={{
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       gap: "2px", height: "100%",
       background: primary ? C.primary : "transparent",
@@ -78,6 +79,6 @@ function BarBtn({ href, Icon, label, external, primary, onClick }) {
       <span>{label}</span>
     </div>
   );
-  if (external) return <a href={href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }} onClick={onClick}>{inner}</a>;
-  return <Link href={href} style={{ textDecoration: "none" }} onClick={onClick}>{inner}</Link>;
+  if (external) return <a href={href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "block", height: "100%" }} onClick={onClick}>{inner}</a>;
+  return <Link href={href} style={{ textDecoration: "none", display: "block", height: "100%" }} onClick={onClick}>{inner}</Link>;
 }

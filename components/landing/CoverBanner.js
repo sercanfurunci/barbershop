@@ -143,6 +143,7 @@ export default function CoverBanner({ shop, googleReviews }) {
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
               <Link
                 href={bookHref}
+                className="makas-cta makas-cta-light"
                 style={primaryCta}
                 onClick={() => track(shop.id, "book_click", { source: "cover" })}
               >
@@ -151,6 +152,7 @@ export default function CoverBanner({ shop, googleReviews }) {
               {phoneHref && (
                 <a
                   href={phoneHref}
+                  className="makas-cta makas-cta-ghost"
                   style={secondaryCta}
                   onClick={() => track(shop.id, "call_click", { source: "cover" })}
                 >
@@ -160,6 +162,7 @@ export default function CoverBanner({ shop, googleReviews }) {
               {whatsappHref && (
                 <a
                   href={whatsappHref} target="_blank" rel="noopener noreferrer"
+                  className="makas-cta makas-cta-ghost"
                   style={secondaryCta}
                   onClick={() => track(shop.id, "whatsapp_click", { source: "cover" })}
                 >
@@ -169,6 +172,7 @@ export default function CoverBanner({ shop, googleReviews }) {
               {mapHref && (
                 <a
                   href={mapHref} target="_blank" rel="noopener noreferrer"
+                  className="makas-cta makas-cta-ghost"
                   style={secondaryCta}
                   onClick={() => track(shop.id, "directions_click", { source: "cover" })}
                 >

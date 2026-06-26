@@ -258,17 +258,16 @@ function BookingWidget({ lang, services, barbers }) {
           ...(selectedService               ? { service: selectedService }      : {}),
           ...(selectedBarber                ? { barber:  selectedBarber  }      : {}),
           ...(selectedDate !== null         ? { date:    String(selectedDate) } : {}),
-        }).toString()}`} style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-          background: C.primary, color: "#fff",
-          padding: "15px 24px", borderRadius: "9px",
-          fontSize: "14px", fontWeight: 700, letterSpacing: "0.03em",
-          textDecoration: "none",
-          boxShadow: "0 6px 20px rgba(17,17,17,0.28)",
-          transition: "all 0.2s",
-        }}
-          onMouseEnter={e => { e.currentTarget.style.background = "var(--makas-ink)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(17,17,17,0.38)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = C.primary; e.currentTarget.style.boxShadow = "0 6px 20px rgba(17,17,17,0.28)"; }}
+        }).toString()}`}
+          className="makas-cta makas-cta-dark"
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+            background: C.primary, color: "#fff",
+            padding: "15px 24px", borderRadius: "9px",
+            fontSize: "14px", fontWeight: 700, letterSpacing: "0.03em",
+            textDecoration: "none",
+            boxShadow: "0 6px 20px rgba(17,17,17,0.28)",
+          }}
         >
           {lang === "tr" ? "Randevu Al" : "Book Now"}
           <ChevronRight size={15} />
@@ -367,31 +366,29 @@ export default function Hero({ services = [], barbers = [], googleReviews = null
 
               {/* Desktop CTAs */}
               <div className="hero-ctas hidden sm:flex flex-row gap-3 mb-10">
-                <Link href={bookBase} style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                  background: C.primary, color: "#fff",
-                  padding: "13px 28px", borderRadius: "8px",
-                  fontSize: "14px", fontWeight: 600, letterSpacing: "0.02em",
-                  textDecoration: "none", transition: "background 0.15s",
-                  whiteSpace: "nowrap",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = "var(--makas-ink)"}
-                  onMouseLeave={e => e.currentTarget.style.background = C.primary}
+                <Link href={bookBase}
+                  className="makas-cta makas-cta-dark"
+                  style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                    background: C.primary, color: "#fff",
+                    padding: "13px 28px", borderRadius: "8px",
+                    fontSize: "14px", fontWeight: 600, letterSpacing: "0.02em",
+                    textDecoration: "none", whiteSpace: "nowrap",
+                  }}
                 >
                   {lang === "tr" ? "Randevu Al" : "Book Now"}
                   <ChevronRight size={14} />
                 </Link>
-                <a href="#services" style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                  background: "transparent", color: C.secondary,
-                  padding: "13px 22px", borderRadius: "8px",
-                  fontSize: "14px", fontWeight: 500,
-                  border: `1px solid ${C.border}`,
-                  textDecoration: "none", transition: "all 0.15s",
-                  whiteSpace: "nowrap",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = "var(--makas-ink-muted)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = C.secondary; e.currentTarget.style.borderColor = C.border; }}
+                <a href="#services"
+                  className="makas-cta makas-cta-outline"
+                  style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                    background: "transparent", color: C.secondary,
+                    padding: "13px 22px", borderRadius: "8px",
+                    fontSize: "14px", fontWeight: 500,
+                    border: `1px solid ${C.border}`,
+                    textDecoration: "none", whiteSpace: "nowrap",
+                  }}
                 >
                   {lang === "tr" ? "Hizmetleri Gör" : "View Services"}
                 </a>

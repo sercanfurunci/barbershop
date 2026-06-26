@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Clock, Check } from "lucide-react";
+import { Clock, Check, Scissors } from "lucide-react";
 
 const CATEGORY_LABELS = {
   tr: { all: "Tümü", cuts: "Kesim", beard: "Sakal", combo: "Kombo", premium: "Premium" },
@@ -58,8 +58,24 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
             </div>
           ))
         ) : services.length === 0 ? (
-          <div className="bg-card text-muted-foreground" style={{ padding: "32px 16px", textAlign: "center", fontSize: "13px" }}>
-            {lang === "tr" ? "Henüz hizmet eklenmemiş" : "No services available"}
+          <div className="bg-card" style={{
+            padding: "44px 16px", textAlign: "center",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: "10px",
+          }}>
+            <div className="bg-secondary text-muted-foreground" style={{
+              width: 44, height: 44, borderRadius: "999px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Scissors size={18} />
+            </div>
+            <div className="text-foreground" style={{ fontSize: "14px", fontWeight: 600 }}>
+              {lang === "tr" ? "Henüz hizmet yok" : "No services yet"}
+            </div>
+            <div className="text-muted-foreground" style={{ fontSize: "12px", maxWidth: 240, lineHeight: 1.5 }}>
+              {lang === "tr"
+                ? "Bu salon henüz hizmet eklemedi. Lütfen daha sonra tekrar deneyin."
+                : "This salon hasn't added services yet. Please check back soon."}
+            </div>
           </div>
         ) : (
           services.map((service, i) => {
