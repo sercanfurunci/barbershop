@@ -3,35 +3,24 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, Search } from "lucide-react";
-
-const C = {
-  bg:        "#F7F4EE",
-  card:      "#FFFFFF",
-  border:    "#E5DED3",
-  surface:   "#EFEAE2",
-  primary:   "#111111",
-  secondary: "#4A4A4A",
-  muted:     "#8A8480",
-};
+import { Bell } from "lucide-react";
+import { C, SHADOW } from "@/lib/adminTheme";
 
 /**
- * Unified dashboard header. Same structure for Admin and Barber.
- * Right cluster (lang → bell → extras → user menu) and left brand are
- * identical; only the props differ per role.
+ * Unified dashboard header. Same component for Admin and Barber.
+ * Matches the landing navbar's height, blur and rhythm so the
+ * dashboard reads as a continuation of the marketing surface.
  *
- *   brand          { href, label, initial }   — mobile-only logo link
- *   search         { placeholder }            — optional search field (sm+)
- *   lang           "tr" | "en"                — current language
- *   onLangToggle   () => void                 — switches language
+ *   brand          { href, label, initial }   — mobile-only brand mark
+ *   lang           "tr" | "en"
+ *   onLangToggle   () => void
  *   notifications  { badge, onClick, title }  — badge: number | "dot"
  *   extras         ReactNode                  — role-specific buttons before avatar
  *   userMenu       { initials, statusDot?, headerName, headerRole, items }
- *     items: [{ icon, label, action, right, danger } | { divider: true }]
+ *     items: [{ icon, label, action, right, rightColor, danger } | { divider: true }]
  */
 export default function DashboardTopbar({
   brand,
-  search,
   lang,
   onLangToggle,
   notifications,
@@ -44,33 +33,40 @@ export default function DashboardTopbar({
 
   return (
     <header
-      className="h-14 flex items-center gap-4 px-5 lg:px-7 sticky top-0 z-20"
+      className="h-16 lg:h-[68px] flex items-center gap-3 px-5 lg:px-8 sticky top-0 z-30"
       style={{
-        background: `${C.bg}e8`,
-        backdropFilter: "blur(16px)",
+        background: `${C.bg}d9`,
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
         borderBottom: `1px solid ${C.border}`,
       }}
     >
       {brand && (
         <Link
           href={brand.href}
-          className="flex lg:hidden items-center gap-2"
-          style={{ textDecoration: "none", minWidth: 0, overflow: "hidden" }}
+          className="flex lg:hidden items-center gap-2.5 no-underline min-w-0"
           aria-label="Ana sayfaya git"
         >
           <div
-            className="w-7 h-7 flex items-center justify-center"
-            style={{ background: C.primary, borderRadius: "6px", flexShrink: 0 }}
+            className="w-9 h-9 flex items-center justify-center flex-shrink-0"
+            style={{
+              background: C.primary,
+              borderRadius: "8px",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: "13px",
+              letterSpacing: "-0.02em",
+            }}
           >
-            <span className="font-bold text-white" style={{ fontSize: "11px" }}>
-              {brand.initial}
-            </span>
+            {brand.initial}
           </div>
           <span
+            className="font-display"
             style={{
-              fontSize: "14px",
+              fontSize: "17px",
               fontWeight: 600,
               color: C.primary,
+              letterSpacing: "-0.01em",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -81,35 +77,23 @@ export default function DashboardTopbar({
         </Link>
       )}
 
-      {search && (
-        <div
-          className="hidden sm:flex items-center gap-2 flex-1 max-w-xs px-3 h-8"
-          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "6px" }}
-        >
-          <Search size={12} style={{ color: C.muted }} />
-          <input
-            placeholder={search.placeholder}
-            className="flex-1 bg-transparent text-xs outline-none"
-            style={{ color: C.primary, caretColor: C.primary }}
-          />
-        </div>
-      )}
-
-      <div className="ml-auto flex items-center gap-3">
+      <div className="ml-auto flex items-center gap-1 sm:gap-2">
         {onLangToggle && (
           <button
             onClick={onLangToggle}
-            className="flex items-center gap-1"
+            className="font-mono-custom transition-colors"
             style={{
-              fontSize: "10px",
-              letterSpacing: "0.25em",
+              height: "36px",
+              padding: "0 10px",
+              fontSize: "11px",
+              letterSpacing: "0.16em",
               color: C.secondary,
-              height: "32px",
-              padding: "0 8px",
-              borderRadius: "4px",
+              background: "transparent",
+              border: "none",
+              borderRadius: "8px",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = C.primary)}
-            onMouseLeave={(e) => (e.currentTarget.style.color = C.secondary)}
+            onMouseEnter={(e) => { e.currentTarget.style.background = C.surface; e.currentTarget.style.color = C.primary; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.secondary; }}
           >
             {lang === "tr" ? "EN" : "TR"}
           </button>
@@ -119,22 +103,32 @@ export default function DashboardTopbar({
           <button
             onClick={notifications.onClick}
             title={notifications.title}
-            className="relative w-8 h-8 flex items-center justify-center"
-            style={{ color: C.secondary, background: "none", border: "none", cursor: "pointer" }}
+            aria-label={notifications.title ?? "Bildirimler"}
+            className="relative flex items-center justify-center transition-colors"
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "8px",
+              color: C.secondary,
+              background: "transparent",
+              border: "none",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = C.surface; e.currentTarget.style.color = C.primary; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.secondary; }}
           >
-            <Bell size={15} />
+            <Bell size={16} />
             {notifications.badge === "dot" && (
               <span
-                className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
-                style={{ background: C.primary }}
+                className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full"
+                style={{ background: "#DC2626" }}
               />
             )}
             {typeof notifications.badge === "number" && notifications.badge > 0 && (
               <span
                 style={{
                   position: "absolute",
-                  top: "-2px",
-                  right: "-2px",
+                  top: "4px",
+                  right: "4px",
                   minWidth: "16px",
                   height: "16px",
                   padding: "0 4px",
@@ -147,6 +141,7 @@ export default function DashboardTopbar({
                   alignItems: "center",
                   justifyContent: "center",
                   lineHeight: 1,
+                  border: `2px solid ${C.bg}`,
                 }}
               >
                 {notifications.badge > 9 ? "9+" : notifications.badge}
@@ -158,24 +153,26 @@ export default function DashboardTopbar({
         {extras}
 
         {userMenu && (
-          <div style={{ position: "relative" }}>
+          <div style={{ position: "relative", marginLeft: "4px" }}>
             <button
               onClick={() => setOpen((v) => !v)}
               aria-label="Kullanıcı menüsü"
+              aria-expanded={open}
               style={{
                 position: "relative",
                 width: "36px",
                 height: "36px",
                 background: C.primary,
-                borderRadius: "8px",
+                color: "#fff",
+                borderRadius: "9px",
                 border: "none",
-                cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "11px",
                 fontWeight: 700,
-                color: "#fff",
+                letterSpacing: "0.02em",
+                boxShadow: SHADOW.card,
               }}
             >
               {userMenu.initials}
@@ -185,8 +182,8 @@ export default function DashboardTopbar({
                     position: "absolute",
                     bottom: "-2px",
                     right: "-2px",
-                    width: "10px",
-                    height: "10px",
+                    width: "11px",
+                    height: "11px",
                     borderRadius: "50%",
                     background: userMenu.statusDot.available ? "#22C55E" : "#9CA3AF",
                     border: `2px solid ${C.bg}`,
@@ -204,31 +201,40 @@ export default function DashboardTopbar({
                   <div
                     style={{
                       position: "fixed",
-                      top: "58px",
-                      right: "16px",
+                      top: "64px",
+                      right: "20px",
                       background: C.card,
                       border: `1px solid ${C.border}`,
-                      borderRadius: "10px",
+                      borderRadius: "14px",
                       padding: "6px",
                       zIndex: 71,
-                      minWidth: "180px",
+                      minWidth: "220px",
                       maxWidth: "calc(100vw - 32px)",
-                      boxShadow: "0 8px 24px rgba(17,17,17,0.12)",
+                      boxShadow: SHADOW.pop,
                     }}
                   >
                     {userMenu.headerName && (
                       <div
                         style={{
-                          padding: "8px 10px 10px",
+                          padding: "10px 12px 12px",
                           borderBottom: `1px solid ${C.border}`,
                           marginBottom: "4px",
                         }}
                       >
-                        <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>
+                        <div style={{ fontSize: "13px", color: C.primary, fontWeight: 600, letterSpacing: "-0.01em" }}>
                           {userMenu.headerName}
                         </div>
                         {userMenu.headerRole && (
-                          <div style={{ fontSize: "10px", color: C.secondary }}>
+                          <div
+                            className="font-mono-custom"
+                            style={{
+                              fontSize: "10px",
+                              color: C.muted,
+                              letterSpacing: "0.12em",
+                              textTransform: "uppercase",
+                              marginTop: "2px",
+                            }}
+                          >
                             {userMenu.headerRole}
                           </div>
                         )}
@@ -257,35 +263,39 @@ export default function DashboardTopbar({
                             justifyContent: item.right ? "space-between" : "flex-start",
                             gap: "8px",
                             width: "100%",
-                            padding: "7px 10px",
-                            borderRadius: "6px",
-                            background: "none",
+                            padding: "9px 10px",
+                            borderRadius: "8px",
+                            background: "transparent",
                             border: "none",
-                            cursor: "pointer",
-                            fontSize: "12px",
+                            fontSize: "13px",
                             color: item.danger ? "#DC2626" : C.secondary,
                             textAlign: "left",
+                            minHeight: "36px",
+                            transition: "background 0.12s, color 0.12s",
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.background = item.danger
-                              ? "rgba(220,38,38,0.08)"
+                              ? "rgba(220,38,38,0.06)"
                               : C.surface;
+                            if (!item.danger) e.currentTarget.style.color = C.primary;
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "none";
+                            e.currentTarget.style.background = "transparent";
+                            if (!item.danger) e.currentTarget.style.color = C.secondary;
                           }}
                         >
-                          <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            {Icon && <Icon size={12} />}
+                          <span style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+                            {Icon && <Icon size={14} />}
                             {item.label}
                           </span>
                           {item.right && (
                             <span
+                              className="font-mono-custom"
                               style={{
                                 fontSize: "10px",
                                 color: item.rightColor ?? C.muted,
                                 textTransform: "uppercase",
-                                letterSpacing: "0.05em",
+                                letterSpacing: "0.1em",
                               }}
                             >
                               {item.right}

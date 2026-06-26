@@ -23,19 +23,7 @@ import {
   Settings, Eye, EyeOff, Save, Loader2, AtSign, Star, Camera, Trash2, MessageSquare,
 } from "lucide-react";
 
-const C = {
-  bg:       "#F7F4EE",
-  bgSoft:   "#FDFBF7",
-  card:     "#FFFFFF",
-  cardHi:   "#FDFBF7",
-  border:   "#E5DED3",
-  borderHi: "#C5BEB5",
-  surface:  "#EFEAE2",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
-  dim:      "#C5BEB5",
-};
+import { C, SHADOW } from "@/lib/adminTheme";
 
 // Simple 3-action flow: confirm arrival → done, or mark no-show
 export const FLOW = [
@@ -83,11 +71,11 @@ export function nowTimeStr() {
 export function NextAppointmentCard({ appt, onAction }) {
   if (!appt) {
     return (
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px 24px", display: "flex", alignItems: "center", gap: "16px" }}>
-        <div style={{ width: "44px", height: "44px", background: C.surface, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", opacity: 0.4 }}>✂</div>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px 24px", display: "flex", alignItems: "center", gap: "16px", boxShadow: SHADOW.card }}>
+        <div style={{ width: "46px", height: "46px", background: C.surface, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", opacity: 0.45 }}>✂</div>
         <div>
-          <div style={{ fontSize: "13px", color: C.secondary }}>Sonraki randevu yok</div>
-          <div style={{ fontSize: "11px", color: C.muted, marginTop: "2px" }}>Bugün geri kalan süre için müsaitsiniz</div>
+          <div style={{ fontSize: "13.5px", color: C.secondary, fontWeight: 500 }}>Sonraki randevu yok</div>
+          <div style={{ fontSize: "11.5px", color: C.muted, marginTop: "3px" }}>Bugün geri kalan süre için müsaitsiniz</div>
         </div>
       </div>
     );
@@ -101,11 +89,12 @@ export function NextAppointmentCard({ appt, onAction }) {
       layout
       style={{
         background: isActive ? "#EFF4FD" : C.card,
-        border: `1px solid ${isActive ? "rgba(96,165,250,0.25)" : sc.color + "40"}`,
-        borderRadius: "12px",
-        padding: "16px 20px",
+        border: `1px solid ${isActive ? "rgba(96,165,250,0.25)" : sc.color + "33"}`,
+        borderRadius: "14px",
+        padding: "18px 20px",
         position: "relative",
         overflow: "hidden",
+        boxShadow: SHADOW.card,
       }}
     >
       {isActive && (
@@ -113,24 +102,24 @@ export function NextAppointmentCard({ appt, onAction }) {
       )}
       <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
         <div style={{ textAlign: "center", flexShrink: 0 }}>
-          <div style={{ fontSize: "22px", color: sc.color, fontWeight: 700, lineHeight: 1, fontFamily: "'DM Mono', monospace" }}>{appt.time}</div>
-          <div style={{ fontSize: "10px", color: C.muted, marginTop: "2px" }}>{appt.duration}dk</div>
+          <div className="font-mono-custom" style={{ fontSize: "24px", color: sc.color, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.02em" }}>{appt.time}</div>
+          <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, marginTop: "4px", letterSpacing: "0.06em", textTransform: "uppercase" }}>{appt.duration} DK</div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: "16px", color: C.primary, fontWeight: 600, marginBottom: "3px" }}>{appt.client}</div>
+          <div style={{ fontSize: "16px", color: C.primary, fontWeight: 600, marginBottom: "3px", letterSpacing: "-0.01em" }}>{appt.client}</div>
           <div style={{ fontSize: "13px", color: C.secondary, marginBottom: appt.phone ? "3px" : 0 }}>{appt.service}</div>
           {appt.phone && (
             <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
               <Phone size={10} style={{ color: C.muted }} />
-              <span style={{ fontSize: "11px", color: C.muted }}>{appt.phone}</span>
+              <span className="font-mono-custom" style={{ fontSize: "11px", color: C.muted }}>{appt.phone}</span>
             </div>
           )}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", padding: "3px 8px", borderRadius: "5px", background: sc.bg, fontSize: "10px", color: sc.color, fontWeight: 600 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0, alignItems: "flex-end" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", padding: "4px 9px", borderRadius: "999px", background: sc.bg, fontSize: "10.5px", color: sc.color, fontWeight: 600, letterSpacing: "0.01em" }}>
             {sc.label}
           </div>
-          <div style={{ fontSize: "14px", color: C.primary, fontWeight: 700, textAlign: "right" }}>
+          <div className="font-mono-custom" style={{ fontSize: "15px", color: C.primary, fontWeight: 700, textAlign: "right" }}>
             {appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}
           </div>
         </div>
@@ -176,49 +165,50 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
         onClick={() => !isDone && setExpanded(v => !v)}
         style={{
           background: isNext ? C.cardHi : C.card,
-          border: `1px solid ${isNext ? sc.color + "55" : C.border}`,
-          borderRadius: "10px",
+          border: `1px solid ${isNext ? sc.color + "44" : C.border}`,
+          borderRadius: "12px",
           padding: "14px 16px",
           cursor: isDone ? "default" : "pointer",
           opacity: isPast && isDone ? 0.55 : 1,
-          transition: "all 0.15s",
+          transition: "border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease",
           position: "relative",
+          boxShadow: SHADOW.card,
         }}
-        onMouseEnter={e => { if (!isDone) { e.currentTarget.style.borderColor = sc.color + "55"; e.currentTarget.style.background = C.cardHi; }}}
-        onMouseLeave={e => { if (!isDone) { e.currentTarget.style.borderColor = isNext ? sc.color + "55" : C.border; e.currentTarget.style.background = isNext ? C.cardHi : C.card; }}}
+        onMouseEnter={e => { if (!isDone) { e.currentTarget.style.borderColor = sc.color + "55"; e.currentTarget.style.background = C.cardHi; e.currentTarget.style.boxShadow = SHADOW.elevated; }}}
+        onMouseLeave={e => { if (!isDone) { e.currentTarget.style.borderColor = isNext ? sc.color + "44" : C.border; e.currentTarget.style.background = isNext ? C.cardHi : C.card; e.currentTarget.style.boxShadow = SHADOW.card; }}}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           {/* Time */}
-          <div style={{ textAlign: "center", minWidth: "42px", flexShrink: 0 }}>
-            <div style={{ fontSize: "14px", color: isNext ? sc.color : C.primary, fontWeight: 700, fontFamily: "'DM Mono', monospace", lineHeight: 1 }}>
+          <div style={{ textAlign: "center", minWidth: "46px", flexShrink: 0 }}>
+            <div className="font-mono-custom" style={{ fontSize: "15px", color: isNext ? sc.color : C.primary, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.01em" }}>
               {appt.time}
             </div>
-            <div style={{ fontSize: "9px", color: C.muted, marginTop: "2px" }}>{appt.duration}dk</div>
+            <div className="font-mono-custom" style={{ fontSize: "9px", color: C.muted, marginTop: "3px", letterSpacing: "0.06em", textTransform: "uppercase" }}>{appt.duration}DK</div>
           </div>
 
           <div style={{ width: "1px", height: "36px", background: C.border, flexShrink: 0 }} />
 
           {/* Client + service */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: "13.5px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.005em" }}>
               {appt.client}
               {appt.source === "phone" && (
-                <span style={{ marginLeft: "6px", fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", fontWeight: 600, verticalAlign: "middle" }}>TEL</span>
+                <span className="font-mono-custom" style={{ marginLeft: "8px", fontSize: "8.5px", padding: "1.5px 6px", borderRadius: "999px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", fontWeight: 600, letterSpacing: "0.06em", verticalAlign: "middle" }}>TEL</span>
               )}
             </div>
-            <div style={{ fontSize: "11px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "1px" }}>
+            <div style={{ fontSize: "11.5px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "2px" }}>
               {appt.service}
-              {appt.phone && <span style={{ marginLeft: "8px", color: C.muted }}>· {appt.phone}</span>}
+              {appt.phone && <span className="font-mono-custom" style={{ marginLeft: "8px", color: C.muted }}>· {appt.phone}</span>}
             </div>
           </div>
 
           {/* Price */}
-          <div style={{ fontSize: "14px", color: isDone ? C.secondary : C.primary, fontWeight: 600, flexShrink: 0 }}>
+          <div className="font-mono-custom" style={{ fontSize: "14px", color: isDone ? C.secondary : C.primary, fontWeight: 600, flexShrink: 0 }}>
             {appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}
           </div>
 
           {/* Status badge */}
-          <div style={{ display: "inline-flex", alignItems: "center", padding: "3px 8px", borderRadius: "5px", background: sc.bg, fontSize: "10px", color: sc.color, fontWeight: 600, flexShrink: 0, minWidth: "60px", justifyContent: "center" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", padding: "4px 9px", borderRadius: "999px", background: sc.bg, fontSize: "10.5px", color: sc.color, fontWeight: 600, flexShrink: 0, minWidth: "66px", justifyContent: "center" }}>
             {sc.label}
           </div>
         </div>
@@ -277,7 +267,7 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
   return (
     <>
       {/* Stats strip */}
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2" style={{ marginBottom: "16px" }}>
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2" style={{ marginBottom: "18px" }}>
         {[
           { label: "Toplam",   value: dayAppts.length,    color: C.primary,   span: false },
           { label: "Onaylı",   value: confirmed,           color: "#15803D",   span: false },
@@ -285,9 +275,9 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
           { label: "Tamam",    value: completed,           color: C.secondary, span: false },
           { label: "Kasa",     value: `₺${revenue.toLocaleString()}`, color: C.primary, span: true },
         ].map((s, i) => (
-          <div key={i} className={s.span ? "col-span-2 sm:col-span-1" : ""} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "10px 12px", textAlign: "center" }}>
-            <div style={{ fontSize: "16px", color: s.color, fontWeight: 600, lineHeight: 1, marginBottom: "3px" }}>{s.value}</div>
-            <div style={{ fontSize: "9px", color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase" }}>{s.label}</div>
+          <div key={i} className={s.span ? "col-span-2 sm:col-span-1" : ""} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "12px 14px", textAlign: "center", boxShadow: SHADOW.card }}>
+            <div className="font-mono-custom" style={{ fontSize: "17px", color: s.color, fontWeight: 700, lineHeight: 1, marginBottom: "5px", letterSpacing: "-0.02em" }}>{s.value}</div>
+            <div className="font-mono-custom" style={{ fontSize: "9px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -502,70 +492,70 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
     <div className="flex min-h-screen" style={{ background: C.bg }}>
 
       {/* ── Desktop Sidebar ── */}
-      <aside className="hidden lg:flex flex-col fixed top-0 left-0 bottom-0 z-30 w-[220px]"
+      <aside className="hidden lg:flex flex-col fixed top-0 left-0 bottom-0 z-30 w-[232px]"
         style={{ background: C.card, borderRight: `1px solid ${C.border}` }}>
 
         {/* Logo / Barber identity */}
-        <div style={{ padding: "20px 20px 16px", borderBottom: `1px solid ${C.border}` }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "36px", height: "36px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+        <div style={{ padding: "22px 22px 18px", borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "11px" }}>
+            <div style={{ width: "38px", height: "38px", background: C.primary, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "#fff", flexShrink: 0, boxShadow: SHADOW.card }}>
               {barber.avatar}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: "13px", color: C.primary, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{barber.nameTr ?? barber.name}</div>
-              <div style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
+              <div className="font-display" style={{ fontSize: "15px", color: C.primary, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>{barber.nameTr ?? barber.name}</div>
+              <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: "2px", fontWeight: 500 }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
             </div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
+        <nav style={{ flex: 1, padding: "14px 12px", overflowY: "auto" }}>
           {SIDEBAR_NAV.map(({ id, label, icon: Icon }) => {
             const active = view === id;
             return (
               <button key={id} onClick={() => setView(id)}
-                className="w-full flex items-center gap-3 transition-all"
-                style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "2px", background: active ? `${C.primary}15` : "transparent", border: `1px solid ${active ? `${C.primary}30` : "transparent"}`, cursor: "pointer", textAlign: "left" }}
+                className="w-full flex items-center gap-3"
+                style={{ padding: "10px 12px", borderRadius: "10px", marginBottom: "2px", background: active ? C.surface : "transparent", border: "1px solid transparent", textAlign: "left", transition: "background 0.14s ease, color 0.14s ease" }}
                 onMouseEnter={e => { if (!active) e.currentTarget.style.background = C.surface; }}
                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
               >
-                <Icon size={15} style={{ color: active ? C.primary : C.muted, flexShrink: 0 }} />
-                <span style={{ fontSize: "13px", color: active ? C.primary : C.secondary, fontWeight: active ? 500 : 400 }}>{label}</span>
+                <Icon size={16} strokeWidth={active ? 2.2 : 1.75} style={{ color: active ? C.primary : C.muted, flexShrink: 0 }} />
+                <span style={{ fontSize: "13.5px", color: active ? C.primary : C.secondary, fontWeight: active ? 600 : 500, letterSpacing: "-0.005em" }}>{label}</span>
               </button>
             );
           })}
         </nav>
 
         {/* Sidebar footer */}
-        <div style={{ padding: "12px 10px", borderTop: `1px solid ${C.border}` }}>
+        <div style={{ padding: "12px 12px 18px", borderTop: `1px solid ${C.border}` }}>
           {role === "admin" && (
             <button onClick={() => router.push(user?.shop?.slug ? `/${user.shop.slug}/admin` : "/admin")}
-              className="w-full flex items-center gap-3 transition-all"
-              style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "4px", background: "transparent", border: "1px solid transparent", cursor: "pointer" }}
+              className="w-full flex items-center gap-3"
+              style={{ padding: "10px 12px", borderRadius: "10px", marginBottom: "2px", background: "transparent", border: "1px solid transparent", transition: "background 0.14s ease" }}
               onMouseEnter={e => { e.currentTarget.style.background = C.surface; }}
               onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
             >
-              <ChevronLeft size={15} style={{ color: C.muted }} />
-              <span style={{ fontSize: "13px", color: C.secondary }}>Admin Paneli</span>
+              <ChevronLeft size={16} style={{ color: C.muted }} />
+              <span style={{ fontSize: "13.5px", color: C.secondary, fontWeight: 500 }}>Admin Paneli</span>
             </button>
           )}
           <Link href={user?.shop?.slug ? `/${user.shop.slug}` : "/"}
-            className="w-full flex items-center gap-3 transition-all"
-            style={{ padding: "9px 10px", borderRadius: "8px", marginBottom: "4px", display: "flex", textDecoration: "none" }}
+            className="w-full flex items-center gap-3"
+            style={{ padding: "10px 12px", borderRadius: "10px", marginBottom: "2px", display: "flex", textDecoration: "none", transition: "background 0.14s ease" }}
             onMouseEnter={e => { e.currentTarget.style.background = C.surface; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
           >
-            <ExternalLink size={15} style={{ color: C.muted }} />
-            <span style={{ fontSize: "13px", color: C.secondary }}>Siteyi Gör</span>
+            <ExternalLink size={16} style={{ color: C.muted }} />
+            <span style={{ fontSize: "13.5px", color: C.secondary, fontWeight: 500 }}>Siteyi Gör</span>
           </Link>
           <button onClick={() => { { const s = user?.shop?.slug; loggingOut.current = true; logout(); router.push(s ? `/${s}/barber` : "/superadmin/login"); }; }}
-            className="w-full flex items-center gap-3 transition-all"
-            style={{ padding: "9px 10px", borderRadius: "8px", background: "transparent", border: "1px solid transparent", cursor: "pointer" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(248,113,113,0.06)"; }}
+            className="w-full flex items-center gap-3"
+            style={{ padding: "10px 12px", borderRadius: "10px", background: "transparent", border: "1px solid transparent", transition: "background 0.14s ease" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(220,38,38,0.06)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
           >
-            <LogOut size={15} style={{ color: "#111111" }} />
-            <span style={{ fontSize: "13px", color: "#111111" }}>Çıkış Yap</span>
+            <LogOut size={16} style={{ color: "#DC2626" }} />
+            <span style={{ fontSize: "13.5px", color: "#DC2626", fontWeight: 500 }}>Çıkış Yap</span>
           </button>
         </div>
       </aside>
@@ -696,8 +686,8 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
                   <h3 style={{ fontSize: "16px", fontWeight: 600, color: C.primary, margin: 0 }}>Mola Başlat</h3>
                   <button onClick={() => setBreakModal(false)} aria-label="Kapat"
-                    style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "6px", width: "26px", height: "26px", display: "flex", alignItems: "center", justifyContent: "center", color: C.secondary, cursor: "pointer" }}>
-                    <X size={12} />
+                    style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", color: C.secondary, cursor: "pointer" }}>
+                    <X size={16} />
                   </button>
                 </div>
                 <p style={{ fontSize: "12px", color: C.muted, margin: "0 0 14px" }}>Süreyi seç; o süre boyunca yeni randevu alınmaz.</p>
@@ -726,44 +716,44 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
           <div style={{ minWidth: 0, flex: 1 }}>
             {(view === "dashboard" || view === "schedule") && (
               <>
-                <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: "2px" }}>
+                <h1 className="font-display" style={{ fontSize: "28px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "4px" }}>
                   {view === "dashboard" ? formatDateLong(today) : formatDateLong(viewing)}
                   {(view === "dashboard" || isViewingToday) && (
-                    <span style={{ marginLeft: "10px", fontSize: "10px", color: C.primary, fontWeight: 700, letterSpacing: "0.12em", verticalAlign: "middle", textTransform: "uppercase" }}>Bugün</span>
+                    <span className="font-mono-custom" style={{ marginLeft: "12px", fontSize: "10px", color: C.primary, fontWeight: 600, letterSpacing: "0.16em", verticalAlign: "middle", textTransform: "uppercase" }}>Bugün</span>
                   )}
                 </h1>
-                <p style={{ fontSize: "12px", color: C.secondary, marginTop: "3px" }}>{String(Math.floor(wh.start/60)).padStart(2,"0")}:{String(wh.start%60).padStart(2,"0")} – {String(Math.floor(wh.end/60)).padStart(2,"0")}:{String(wh.end%60).padStart(2,"0")} · {dayAppts.length} randevu</p>
+                <p className="font-mono-custom" style={{ fontSize: "11px", color: C.muted, marginTop: "4px", letterSpacing: "0.06em", textTransform: "uppercase" }}>{String(Math.floor(wh.start/60)).padStart(2,"0")}:{String(wh.start%60).padStart(2,"0")} – {String(Math.floor(wh.end/60)).padStart(2,"0")}:{String(wh.end%60).padStart(2,"0")} · {dayAppts.length} randevu</p>
               </>
             )}
             {view === "appointments" && (
               <>
-                <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>Randevular</h1>
-                <p style={{ fontSize: "12px", color: C.secondary, marginTop: "3px" }}>Tüm randevuların listesi</p>
+                <h1 className="font-display" style={{ fontSize: "28px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Randevular</h1>
+                <p style={{ fontSize: "13px", color: C.secondary, marginTop: "4px" }}>Tüm randevuların listesi</p>
               </>
             )}
             {view === "customers" && (
               <>
-                <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>Müşteriler</h1>
-                <p style={{ fontSize: "12px", color: C.secondary, marginTop: "3px" }}>Geçmiş randevu kayıtları</p>
+                <h1 className="font-display" style={{ fontSize: "28px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Müşteriler</h1>
+                <p style={{ fontSize: "13px", color: C.secondary, marginTop: "4px" }}>Geçmiş randevu kayıtları</p>
               </>
             )}
             {view === "profil" && (
               <>
-                <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>Profil</h1>
-                <p style={{ fontSize: "12px", color: C.secondary, marginTop: "3px" }}>Hesap ve görünüm ayarları</p>
+                <h1 className="font-display" style={{ fontSize: "28px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Profil</h1>
+                <p style={{ fontSize: "13px", color: C.secondary, marginTop: "4px" }}>Hesap ve görünüm ayarları</p>
               </>
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
             {view === "schedule" && (
               <>
-                <button onClick={() => setDate(d => addDays(d, -1))} aria-label="Önceki gün" style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+                <button onClick={() => setDate(d => addDays(d, -1))} aria-label="Önceki gün" className="transition-colors" style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary, boxShadow: SHADOW.card }} onMouseEnter={(e) => { e.currentTarget.style.background = C.surface; e.currentTarget.style.color = C.primary; }} onMouseLeave={(e) => { e.currentTarget.style.background = C.card; e.currentTarget.style.color = C.secondary; }}>
                   <ChevronLeft size={15} />
                 </button>
                 {!isViewingToday && (
-                  <button onClick={() => setDate(today)} style={{ height: "36px", padding: "0 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>Bugün</button>
+                  <button onClick={() => setDate(today)} className="font-mono-custom transition-colors" style={{ height: "36px", padding: "0 14px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "9px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: C.secondary, cursor: "pointer", boxShadow: SHADOW.card }} onMouseEnter={(e) => { e.currentTarget.style.background = C.surface; e.currentTarget.style.color = C.primary; }} onMouseLeave={(e) => { e.currentTarget.style.background = C.card; e.currentTarget.style.color = C.secondary; }}>Bugün</button>
                 )}
-                <button onClick={() => setDate(d => addDays(d, 1))} aria-label="Sonraki gün" style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+                <button onClick={() => setDate(d => addDays(d, 1))} aria-label="Sonraki gün" className="transition-colors" style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary, boxShadow: SHADOW.card }} onMouseEnter={(e) => { e.currentTarget.style.background = C.surface; e.currentTarget.style.color = C.primary; }} onMouseLeave={(e) => { e.currentTarget.style.background = C.card; e.currentTarget.style.color = C.secondary; }}>
                   <ChevronRight size={15} />
                 </button>
               </>
@@ -771,9 +761,12 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
             {(view === "dashboard" || view === "schedule" || view === "appointments") && (
               <button
                 onClick={() => setShowModal(true)}
-                style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 14px", background: C.primary, border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "#fff", flexShrink: 0 }}
+                className="transition-transform"
+                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", background: C.primary, border: "none", borderRadius: "9px", cursor: "pointer", fontSize: "12.5px", fontWeight: 600, letterSpacing: "-0.005em", color: "#fff", flexShrink: 0, boxShadow: SHADOW.elevated }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
               >
-                <Plus size={14} />
+                <Plus size={14} strokeWidth={2.2} />
                 <span className="hidden sm:inline">Yeni Randevu</span>
               </button>
             )}
@@ -784,7 +777,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
         {(view === "dashboard" || view === "schedule") && (
           <>
             {/* KPI cards row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-4" style={{ marginBottom: "24px" }}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-4" style={{ marginBottom: "28px" }}>
               {[
                 { label: "Toplam",   value: dayAppts.length,                   color: C.primary   },
                 { label: "Onaylı",   value: confirmed,                          color: "#15803D"   },
@@ -792,10 +785,19 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
                 { label: "Tamam",    value: completed,                          color: C.secondary },
                 { label: "Bugün Kazanç", value: `₺${revenue.toLocaleString()}`, color: C.primary   },
               ].map((s, i) => (
-                <div key={i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 18px" }}>
-                  <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "8px" }}>{s.label}</div>
-                  <div style={{ fontSize: "24px", color: s.color, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1 }}>{s.value}</div>
-                </div>
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  whileHover={{ y: -2 }}
+                  style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "18px 20px", boxShadow: SHADOW.card, transition: "box-shadow 0.18s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = SHADOW.elevated; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = SHADOW.card; }}
+                >
+                  <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "10px" }}>{s.label}</div>
+                  <div className="font-display" style={{ fontSize: "28px", color: s.color, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>{s.value}</div>
+                </motion.div>
               ))}
             </div>
 
@@ -807,30 +809,31 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
                 {/* Pending banner */}
                 {pending > 0 && isViewingToday && (
                   <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                    style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "10px", padding: "12px 16px", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <AlertCircle size={14} style={{ color: "#B45309" }} />
-                      <span style={{ fontSize: "13px", color: "#B45309", fontWeight: 500 }}>{pending} randevu onay bekliyor</span>
+                    style={{ background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.22)", borderRadius: "12px", padding: "14px 18px", marginBottom: "18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <AlertCircle size={15} style={{ color: "#B45309" }} />
+                      <span style={{ fontSize: "13px", color: "#B45309", fontWeight: 600, letterSpacing: "-0.005em" }}>{pending} randevu onay bekliyor</span>
                     </div>
-                    <span style={{ fontSize: "11px", color: C.secondary }}>Aşağıdan güncelleyin</span>
+                    <span className="font-mono-custom" style={{ fontSize: "10px", color: "#92400E", letterSpacing: "0.12em", textTransform: "uppercase" }}>Aşağıdan güncelleyin</span>
                   </motion.div>
                 )}
 
-                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", overflow: "hidden" }}>
-                  <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", overflow: "hidden", boxShadow: SHADOW.card }}>
+                  <div style={{ padding: "18px 22px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div className="font-display" style={{ fontSize: "16px", color: C.primary, fontWeight: 500, letterSpacing: "-0.01em" }}>
                       {isViewingToday ? "Bugünün Programı" : "Günün Programı"}
                     </div>
-                    <span style={{ fontSize: "11px", color: C.muted, background: C.surface, padding: "2px 8px", borderRadius: "5px", border: `1px solid ${C.border}` }}>{dayAppts.length} randevu</span>
+                    <span className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, background: C.surface, padding: "4px 10px", borderRadius: "999px", letterSpacing: "0.1em", textTransform: "uppercase" }}>{dayAppts.length} Randevu</span>
                   </div>
-                  <div style={{ padding: "12px" }}>
+                  <div style={{ padding: "14px" }}>
                     {dayAppts.length === 0 ? (
-                      <div style={{ padding: "48px 24px", textAlign: "center" }}>
-                        <div style={{ fontSize: "28px", marginBottom: "10px", opacity: 0.2 }}>✂</div>
-                        <div style={{ fontSize: "13px", color: C.secondary, marginBottom: "14px" }}>Bu gün için randevu yok</div>
-                        <button onClick={() => setShowModal(true)}
-                          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "none", border: `1px solid rgba(17,17,17,0.3)`, borderRadius: "6px", padding: "7px 16px", fontSize: "12px", color: C.primary, cursor: "pointer" }}>
-                          <Plus size={12} /> Randevu Ekle
+                      <div style={{ padding: "56px 24px", textAlign: "center" }}>
+                        <div style={{ fontSize: "32px", marginBottom: "12px", opacity: 0.18, color: C.primary }}>✂</div>
+                        <div className="font-display" style={{ fontSize: "16px", color: C.primary, fontWeight: 500, marginBottom: "6px", letterSpacing: "-0.01em" }}>Bu gün için randevu yok</div>
+                        <div style={{ fontSize: "12px", color: C.muted, marginBottom: "18px" }}>İlk randevuyu eklemek için aşağıya tıkla</div>
+                        <button onClick={() => setShowModal(true)} className="transition-colors"
+                          style={{ display: "inline-flex", alignItems: "center", gap: "7px", background: C.primary, border: "none", borderRadius: "9px", padding: "10px 18px", fontSize: "12.5px", fontWeight: 600, color: "#fff", cursor: "pointer", boxShadow: SHADOW.card }}>
+                          <Plus size={13} strokeWidth={2.2} /> Randevu Ekle
                         </button>
                       </div>
                     ) : (
@@ -847,11 +850,11 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
               </div>
 
               {/* Right: next appt + weekly stats (dashboard only) */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                 {isViewingToday && (
                   <div>
-                    <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "10px" }}>
-                      {"Sonraki Randevu"}
+                    <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "12px" }}>
+                      Sonraki Randevu
                     </div>
                     <NextAppointmentCard appt={displayNext} onAction={updateStatus} />
                   </div>
@@ -860,35 +863,35 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
                 {view === "dashboard" && (
                   <>
                     {/* Weekly KPIs */}
-                    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "18px" }}>
-                      <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "14px" }}>Bu Hafta</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+                    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "20px", boxShadow: SHADOW.card }}>
+                      <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "16px" }}>Bu Hafta</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "18px" }}>
                         <div>
-                          <div style={{ fontSize: "20px", color: C.primary, fontWeight: 600, letterSpacing: "-0.02em" }}>₺{weekRevenue.toLocaleString()}</div>
-                          <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>Toplam kazanç</div>
+                          <div className="font-display" style={{ fontSize: "24px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>₺{weekRevenue.toLocaleString()}</div>
+                          <div style={{ fontSize: "11px", color: C.muted, marginTop: "6px" }}>Toplam kazanç</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: "20px", color: C.primary, fontWeight: 600, letterSpacing: "-0.02em" }}>{weekAppts}</div>
-                          <div style={{ fontSize: "11px", color: C.secondary, marginTop: "2px" }}>Tamamlanan</div>
+                          <div className="font-display" style={{ fontSize: "24px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>{weekAppts}</div>
+                          <div style={{ fontSize: "11px", color: C.muted, marginTop: "6px" }}>Tamamlanan</div>
                         </div>
                       </div>
 
                       {/* Mini bar chart */}
-                      <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "56px" }}>
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: "5px", height: "60px" }}>
                         {weekData.map((d, i) => {
                           const isToday_ = d.date === today;
                           const h = maxCount > 0 ? Math.max((d.count / maxCount) * 100, d.count > 0 ? 15 : 5) : 5;
                           const dayLabel = new Date(d.date + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "narrow" });
                           return (
-                            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", height: "100%" }}>
+                            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", height: "100%" }}>
                               <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
                                 <motion.div
                                   initial={{ height: 0 }} animate={{ height: `${h}%` }}
-                                  transition={{ delay: i * 0.04, duration: 0.35, ease: "easeOut" }}
-                                  style={{ width: "100%", background: isToday_ ? C.primary : d.count > 0 ? "rgba(17,17,17,0.3)" : C.dim, borderRadius: "3px 3px 0 0", minHeight: "3px" }}
+                                  transition={{ delay: i * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                                  style={{ width: "100%", background: isToday_ ? C.primary : d.count > 0 ? "rgba(17,17,17,0.32)" : C.dim, borderRadius: "4px 4px 0 0", minHeight: "3px" }}
                                 />
                               </div>
-                              <div style={{ fontSize: "8px", color: isToday_ ? C.primary : C.muted, fontWeight: isToday_ ? 700 : 400 }}>{dayLabel}</div>
+                              <div className="font-mono-custom" style={{ fontSize: "9px", color: isToday_ ? C.primary : C.muted, fontWeight: isToday_ ? 700 : 500, letterSpacing: "0.06em", textTransform: "uppercase" }}>{dayLabel}</div>
                             </div>
                           );
                         })}
@@ -896,17 +899,17 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
                     </div>
 
                     {/* Day summary */}
-                    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "18px" }}>
-                      <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "14px" }}>Gün Özeti</div>
+                    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "20px", boxShadow: SHADOW.card }}>
+                      <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "16px" }}>Gün Özeti</div>
                       {[
                         { label: "Tamamlanan",  value: completed,                      color: C.secondary },
                         { label: "Bugün Kazanç",value: `₺${revenue.toLocaleString()}`, color: C.primary   },
                         { label: "Gelmedi",     value: noshow,   color: noshow > 0 ? "#111111" : C.muted  },
                         { label: "Tahmini Müsait Slot", value: freeSlots,                color: C.muted     },
                       ].map((s, i) => (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: i < 3 ? "10px" : 0 }}>
-                          <span style={{ fontSize: "12px", color: C.secondary }}>{s.label}</span>
-                          <span style={{ fontSize: "13px", color: s.color, fontWeight: 500 }}>{s.value}</span>
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: i > 0 ? "12px" : 0, paddingBottom: i < 3 ? "12px" : 0, borderBottom: i < 3 ? `1px solid ${C.border}` : "none" }}>
+                          <span style={{ fontSize: "12.5px", color: C.secondary }}>{s.label}</span>
+                          <span className="font-mono-custom" style={{ fontSize: "13px", color: s.color, fontWeight: 600, letterSpacing: "-0.005em" }}>{s.value}</span>
                         </div>
                       ))}
                     </div>

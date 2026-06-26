@@ -4,10 +4,7 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Eye, Calendar, Phone, MessageCircle, MapPin, Scissors, User, CheckCircle2 } from "lucide-react";
 
-const C = {
-  card: "#FFFFFF", border: "#E5DED3",
-  primary: "#111111", secondary: "#4A4A4A", muted: "#8A8480",
-};
+import { C, SHADOW } from "@/lib/adminTheme";
 
 // label/icon per analytics event. Keep in sync with EVENT_TYPES in lib/analytics.js.
 const ROWS_TR = [

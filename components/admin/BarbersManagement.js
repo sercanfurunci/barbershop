@@ -9,18 +9,7 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import ImageCropModal from "@/components/shared/ImageCropModal";
 
-const C = {
-  bg:      "#F7F4EE",
-  bgSoft:  "#FDFBF7",
-  card:    "#FFFFFF",
-  border:  "#E5DED3",
-  surface: "#EFEAE2",
-  primary: "#111111",
-  secondary:"#4A4A4A",
-  muted:   "#8A8480",
-  dim:     "#C5BEB5",
-  green:   "#15803D",
-};
+import { C, SHADOW } from "@/lib/adminTheme";
 
 const DAYS_TR = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
 const DAYS_KEY = ["mon","tue","wed","thu","fri","sat","sun"];

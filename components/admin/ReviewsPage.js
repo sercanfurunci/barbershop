@@ -4,19 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Star, AlertTriangle, TrendingUp, MessageSquare, Users, Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
-const C = {
-  bg:       "#F7F4EE",
-  bgSoft:   "#FDFBF7",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
-  surface:  "#EFEAE2",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
-  dim:      "#C5BEB5",
-  green:    "#15803D",
-  yellow:   "#CA8A04",
-};
+import { C, SHADOW } from "@/lib/adminTheme";
 
 function StarRow({ rating, size = 12 }) {
   return (

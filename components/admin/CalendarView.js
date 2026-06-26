@@ -12,17 +12,7 @@ import {
   Timer, AlertCircle, CheckCircle2, Ban, Filter,
 } from "lucide-react";
 
-const C = {
-  bg:       "#F7F4EE",
-  bgSoft:   "#FDFBF7",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
-  surface:  "#EFEAE2",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
-  dim:      "#C5BEB5",
-};
+import { C, SHADOW } from "@/lib/adminTheme";
 
 const SLOT_H    = 48;
 const DAY_START = 9;
@@ -169,8 +159,26 @@ function AppointmentBlock({ appt, onStatusChange }) {
                     : <div style={{ fontSize: "11px", color: C.muted }}>{appt.time} · {appt.duration}dk</div>
                   }
                 </div>
-                <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, padding: "2px" }}>
-                  <X size={14} />
+                <button
+                  onClick={() => setOpen(false)}
+                  aria-label="Kapat"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: C.muted,
+                    width: 32,
+                    height: 32,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 8,
+                    margin: -6,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(17,17,17,0.06)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                >
+                  <X size={16} />
                 </button>
               </div>
 

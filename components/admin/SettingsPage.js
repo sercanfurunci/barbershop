@@ -9,19 +9,7 @@ import { DndContext, PointerSensor, TouchSensor, KeyboardSensor, closestCenter, 
 import { SortableContext, arrayMove, useSortable, sortableKeyboardCoordinates, rectSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-const C = {
-  bg:       "#F7F4EE",
-  bgSoft:   "#FDFBF7",
-  card:     "#FFFFFF",
-  cardHi:   "#FDFBF7",
-  border:   "#E5DED3",
-  borderHi: "#C5BEB5",
-  surface:  "#EFEAE2",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
-  dim:      "#C5BEB5",
-};
+import { C, SHADOW } from "@/lib/adminTheme";
 
 const DAYS = [
   { key: "mon", label: "Pazartesi" },

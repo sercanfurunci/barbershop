@@ -7,16 +7,7 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { apiFetch } from "@/lib/api";
 
-const C = {
-  bg:        "#F7F4EE",
-  card:      "#FFFFFF",
-  border:    "#E5DED3",
-  surface:   "#EFEAE2",
-  primary:   "#111111",
-  secondary: "#4A4A4A",
-  muted:     "#8A8480",
-  dim:       "#C5BEB5",
-};
+import { C, SHADOW } from "@/lib/adminTheme";
 
 function buildSparkPath(data, w, h) {
   if (!data || data.length < 2) return { path: `M 0 ${h} L ${w} ${h}`, pts: [] };
@@ -69,11 +60,14 @@ function KPICard({ card, delay, vsLabel }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -2 }}
       className="relative overflow-hidden"
-      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 20px", display: "flex", flexDirection: "column" }}
+      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "18px 20px", display: "flex", flexDirection: "column", boxShadow: SHADOW.card, transition: "box-shadow 0.18s" }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = SHADOW.elevated; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = SHADOW.card; }}
     >
       <div className="flex items-center justify-between mb-4">
-        <span style={{ fontSize: "11px", letterSpacing: "0.06em", color: C.secondary, textTransform: "uppercase" }}>
+        <span className="font-mono-custom" style={{ fontSize: "10px", letterSpacing: "0.14em", color: C.muted, textTransform: "uppercase" }}>
           {card.label}
         </span>
         <span
@@ -96,8 +90,8 @@ function KPICard({ card, delay, vsLabel }) {
       </div>
 
       <div
-        className="font-display font-light"
-        style={{ fontSize: "24px", color: C.primary, lineHeight: 1, letterSpacing: "-0.02em" }}
+        className="font-display"
+        style={{ fontSize: "28px", color: C.primary, lineHeight: 1, letterSpacing: "-0.02em", fontWeight: 400 }}
       >
         {card.format(animated)}
       </div>
@@ -163,7 +157,7 @@ export default function KPICards() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.07, duration: 0.4 }}
-            style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 20px", height: "110px" }}
+            style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "18px 20px", height: "118px", boxShadow: SHADOW.card }}
           >
             <div style={{ height: "8px", background: C.surface, borderRadius: "4px", width: "60%", marginBottom: "16px" }} />
             <div style={{ height: "28px", background: C.surface, borderRadius: "4px", width: "50%" }} />

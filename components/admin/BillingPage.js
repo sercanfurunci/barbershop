@@ -11,14 +11,7 @@ import {
   Users, MessageSquare, Smartphone, TrendingUp, Mail,
 } from "lucide-react";
 
-const C = {
-  bg:        "#F7F4EE",
-  card:      "#FFFFFF",
-  border:    "#E5DED3",
-  primary:   "#111111",
-  secondary: "#4A4A4A",
-  muted:     "#8A8480",
-};
+import { C, SHADOW } from "@/lib/adminTheme";
 
 const STATUS_BADGE = {
   TRIAL:     { bg: "#DBEAFE", color: "#1E40AF", label: "Deneme" },

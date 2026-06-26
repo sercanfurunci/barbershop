@@ -50,3 +50,12 @@ PRODUCT.md
 DESIGN.md
 .impeccable/
 .claude/
+
+# IDE
+.vscode/
+
+# Playwright / browser tool artifacts
+.playwright-mcp/
+
+# Ad-hoc screenshots in repo root (committed assets live under public/)
+/*.png

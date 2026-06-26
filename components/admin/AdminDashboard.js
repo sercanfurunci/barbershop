@@ -36,19 +36,7 @@ import { useAppointments } from "@/contexts/AppointmentsContext";
 import { apiFetch, setPreviewShopId } from "@/lib/api";
 import { useShop } from "@/contexts/ShopContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
-
-const C = {
-  bg:       "#F7F4EE",
-  bgSoft:   "#FDFBF7",
-  sidebar:  "#FFFFFF",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
-  surface:  "#EFEAE2",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
-  dim:      "#C5BEB5",
-};
+import { C, SHADOW } from "@/lib/adminTheme";
 
 const NAV_SECTIONS = (lang) => [
   {
@@ -174,7 +162,6 @@ export default function AdminDashboard() {
             label: user?.shop?.name ?? "Makas",
             initial: (user?.shop?.name ?? "M")[0].toUpperCase(),
           }}
-          search={{ placeholder: tx.admin.appointments.search }}
           lang={lang}
           onLangToggle={() => setLang(lang === "tr" ? "en" : "tr")}
           notifications={{ badge: "dot" }}
@@ -212,7 +199,7 @@ export default function AdminDashboard() {
         />
 
         {/* Barber selector bar — mobile only, sticky below header */}
-        <div className="sticky top-14 z-20 lg:hidden" style={{ background: `${C.bg}f0`, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}>
+        <div className="sticky top-16 z-20 lg:hidden" style={{ background: `${C.bg}f0`, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}>
           <BarberSelectorBar globalBarberId={globalBarberId} setGlobalBarberId={setGlobalBarberId} realBarbers={realBarbers} />
         </div>
 
@@ -1024,8 +1011,8 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, us
             <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.displayName ?? user?.username ?? "Admin"}</div>
             <div style={{ fontSize: "10px", color: C.secondary }}>{user?.role === "SUPER_ADMIN" ? "Süper Admin" : user?.role === "ADMIN" ? "Admin" : user?.role === "BARBER" ? "Berber" : "Yönetici"}</div>
           </div>
-          <button onClick={handleLogout} title="Çıkış" style={{ width: "28px", height: "28px", background: "none", border: `1px solid ${C.border}`, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary, flexShrink: 0 }}>
-            <LogOut size={12} />
+          <button onClick={handleLogout} title="Çıkış" aria-label="Çıkış" style={{ width: "36px", height: "36px", background: "none", border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary, flexShrink: 0 }}>
+            <LogOut size={14} />
           </button>
         </div>
       </div>
