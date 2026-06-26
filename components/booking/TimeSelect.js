@@ -5,19 +5,15 @@ import { format } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 import { apiFetch } from "@/lib/api";
 
-const C = {
-  bg: "#F7F4EE", bgSoft: "#FDFBF7", surface: "#EFEAE2", card: "#FFFFFF",
-  border: "#E5DED3", primary: "#111111", secondary: "#4A4A4A", muted: "#8A8480", dim: "#C5BEB5",
-};
-
 function SlotSkeleton({ count = 12 }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", padding: "8px 16px 16px" }}>
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
+          className="bg-secondary"
           style={{
-            height: "54px", background: C.surface, borderRadius: "10px",
+            height: "54px", borderRadius: "10px",
             animation: "pulse 1.4s ease-in-out infinite",
             animationDelay: `${i * 0.06}s`,
           }}
@@ -94,17 +90,20 @@ export default function TimeSelect({ shopId, booking, allBarbers = [], onSelect,
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* Date chip header */}
       <div style={{ padding: "12px 16px 8px", flexShrink: 0 }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: "7px",
-          padding: "7px 14px",
-          background: C.card, border: `1px solid ${C.border}`, borderRadius: "20px",
-          fontSize: "12px", color: C.secondary, fontWeight: 500,
-        }}>
-          <span style={{ color: C.primary, fontSize: "13px" }}>◷</span>
+        <div
+          className="bg-card border-border text-secondary-foreground"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: "7px",
+            padding: "7px 14px",
+            borderWidth: "1px", borderStyle: "solid", borderRadius: "20px",
+            fontSize: "12px", fontWeight: 500,
+          }}
+        >
+          <span className="text-foreground" style={{ fontSize: "13px" }}>◷</span>
           {dateLabel}
         </div>
         {!loading && slots.length > 0 && (
-          <span style={{ marginLeft: "8px", fontSize: "11px", color: C.muted }}>
+          <span className="text-muted-foreground" style={{ marginLeft: "8px", fontSize: "11px" }}>
             {slots.length} {lang === "tr" ? "uygun saat" : "available times"}
           </span>
         )}
@@ -115,7 +114,7 @@ export default function TimeSelect({ shopId, booking, allBarbers = [], onSelect,
         {loading ? (
           <SlotSkeleton count={12} />
         ) : slots.length === 0 ? (
-          <div style={{ padding: "56px 24px", textAlign: "center", fontSize: "14px", color: C.muted }}>
+          <div className="text-muted-foreground" style={{ padding: "56px 24px", textAlign: "center", fontSize: "14px" }}>
             {lang === "tr" ? "Bu tarihte müsait saat bulunamadı" : "No available times on this date"}
           </div>
         ) : (
@@ -124,22 +123,22 @@ export default function TimeSelect({ shopId, booking, allBarbers = [], onSelect,
               <button
                 key={slot}
                 onClick={() => handleSlotClick(slot)}
+                className="bg-card border-border text-foreground"
                 style={{
                   height: "54px", borderRadius: "10px",
-                  border: `1px solid ${C.border}`,
-                  background: C.card, color: C.primary,
+                  borderWidth: "1px", borderStyle: "solid",
                   fontSize: "14px", fontWeight: 500,
                   cursor: "pointer", transition: "all 0.12s",
                 }}
                 onTouchStart={(e) => {
-                  e.currentTarget.style.background = C.surface;
-                  e.currentTarget.style.borderColor = C.primary;
-                  e.currentTarget.style.color = C.primary;
+                  e.currentTarget.style.background = "var(--makas-surface2)";
+                  e.currentTarget.style.borderColor = "var(--makas-ink)";
+                  e.currentTarget.style.color = "var(--makas-ink)";
                 }}
                 onTouchEnd={(e) => {
-                  e.currentTarget.style.background = C.card;
-                  e.currentTarget.style.borderColor = C.border;
-                  e.currentTarget.style.color = C.primary;
+                  e.currentTarget.style.background = "var(--makas-surface)";
+                  e.currentTarget.style.borderColor = "var(--makas-border)";
+                  e.currentTarget.style.color = "var(--makas-ink)";
                 }}
               >
                 {slot}

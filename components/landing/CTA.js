@@ -8,14 +8,14 @@ import { useShop } from "@/contexts/ShopContext";
 import { ArrowRight, Phone } from "lucide-react";
 
 const C = {
-  bg:       "#F7F4EE",
+  bg:       "var(--makas-bg)",
   bgSoft:   "#FDFBF7",
-  surface:  "#EFEAE2",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
+  surface:  "var(--makas-surface2)",
+  card:     "var(--makas-surface)",
+  border:   "var(--makas-border)",
+  primary:  "var(--makas-ink)",
+  secondary:"var(--makas-ink-secondary)",
+  muted:    "var(--makas-ink-muted)",
   dim:      "#C5BEB5",
 };
 

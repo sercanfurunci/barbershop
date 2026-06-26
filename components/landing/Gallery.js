@@ -82,7 +82,7 @@ export default function Gallery({ images, shopName }) {
 
   return (
     <section style={{
-      background: "#FBF8F2",
+      background: "var(--makas-bg)",
       padding: "clamp(56px, 8vw, 96px) clamp(20px, 5vw, 40px)",
     }}>
       <div style={{ maxWidth: 1200, marginInline: "auto" }}>
@@ -98,7 +98,7 @@ export default function Gallery({ images, shopName }) {
           </div>
           <h2 className="font-display" style={{
             fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 300,
-            letterSpacing: "-0.02em", lineHeight: 1.08, color: "#111", margin: 0,
+            letterSpacing: "-0.02em", lineHeight: 1.08, color: "var(--makas-ink)", margin: 0,
           }}>
             Galeri
           </h2>

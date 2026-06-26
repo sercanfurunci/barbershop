@@ -9,15 +9,15 @@ import { useShop } from "@/contexts/ShopContext";
 import { Star, ChevronRight, Clock, Check } from "lucide-react";
 
 const C = {
-  bg:       "#F7F4EE",
+  bg:       "var(--makas-bg)",
   bgSoft:   "#FDFBF7",
-  surface:  "#EFEAE2",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
+  surface:  "var(--makas-surface2)",
+  card:     "var(--makas-surface)",
+  border:   "var(--makas-border)",
   borderHi: "#D4CECC",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
+  primary:  "var(--makas-ink)",
+  secondary:"var(--makas-ink-secondary)",
+  muted:    "var(--makas-ink-muted)",
   dim:      "#C5BEB5",
 };
 
@@ -56,7 +56,7 @@ function StatusCard({ lang, barbers }) {
           {displayBarbers.slice(0, 4).map((b, i) => (
             <div key={b.id} style={{
               width: "22px", height: "22px", borderRadius: "50%",
-              background: `linear-gradient(135deg, ${C.primary}, #7f1d1d)`,
+              background: C.primary,
               border: `2px solid ${C.card}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "7px", fontWeight: 700, color: "#fff",
@@ -267,7 +267,7 @@ function BookingWidget({ lang, services, barbers }) {
           boxShadow: "0 6px 20px rgba(17,17,17,0.28)",
           transition: "all 0.2s",
         }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#111111"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(17,17,17,0.38)"; }}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--makas-ink)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(17,17,17,0.38)"; }}
           onMouseLeave={e => { e.currentTarget.style.background = C.primary; e.currentTarget.style.boxShadow = "0 6px 20px rgba(17,17,17,0.28)"; }}
         >
           {lang === "tr" ? "Randevu Al" : "Book Now"}
@@ -375,7 +375,7 @@ export default function Hero({ services = [], barbers = [], googleReviews = null
                   textDecoration: "none", transition: "background 0.15s",
                   whiteSpace: "nowrap",
                 }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#111111"}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--makas-ink)"}
                   onMouseLeave={e => e.currentTarget.style.background = C.primary}
                 >
                   {lang === "tr" ? "Randevu Al" : "Book Now"}
@@ -390,7 +390,7 @@ export default function Hero({ services = [], barbers = [], googleReviews = null
                   textDecoration: "none", transition: "all 0.15s",
                   whiteSpace: "nowrap",
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = "#6B7280"; }}
+                  onMouseEnter={e => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = "var(--makas-ink-muted)"; }}
                   onMouseLeave={e => { e.currentTarget.style.color = C.secondary; e.currentTarget.style.borderColor = C.border; }}
                 >
                   {lang === "tr" ? "Hizmetleri Gör" : "View Services"}

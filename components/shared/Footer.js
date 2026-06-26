@@ -49,7 +49,7 @@ export default function Footer() {
   const socialLinks = buildSocialLinks(shop?.social ?? {});
 
   return (
-    <footer className="md:pb-0" style={{ background: "#111111", paddingBottom: "calc(72px + env(safe-area-inset-bottom))" }}>
+    <footer className="md:pb-0" style={{ background: "var(--makas-footer)", paddingBottom: "calc(72px + env(safe-area-inset-bottom))" }}>
 
       <div style={{ borderTop: "1px solid #1E1E1E" }}>
         <div style={{
@@ -64,11 +64,11 @@ export default function Footer() {
             {/* Brand */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                <div style={{ width: "32px", height: "32px", background: "#F7F4EE", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: "32px", height: "32px", background: "var(--makas-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span style={{ fontFamily: "var(--font-display, serif)", fontSize: "14px", fontWeight: 700, color: "#fff" }}>{shopName[0].toUpperCase()}</span>
                 </div>
                 <div>
-                  <div style={{ fontSize: "11px", letterSpacing: "0.2em", color: "#F6F3EE", textTransform: "uppercase", fontWeight: 600, lineHeight: 1 }}>{shopName}</div>
+                  <div style={{ fontSize: "11px", letterSpacing: "0.2em", color: "var(--makas-bg)", textTransform: "uppercase", fontWeight: 600, lineHeight: 1 }}>{shopName}</div>
                 </div>
               </div>
               <p style={{ fontSize: "12px", color: "#888582", lineHeight: 1.8, marginBottom: "24px" }}>{ft.tagline}</p>
@@ -77,7 +77,7 @@ export default function Footer() {
                   {socialLinks.map(({ href, icon, label }) => (
                     <a key={href} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
                       style={{ width: "34px", height: "34px", border: "1px solid #2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", color: "#888582", textDecoration: "none", transition: "all 0.2s" }}
-                      onMouseEnter={e => { e.currentTarget.style.color = "#F6F3EE"; e.currentTarget.style.borderColor = "#F7F4EE"; }}
+                      onMouseEnter={e => { e.currentTarget.style.color = "var(--makas-bg)"; e.currentTarget.style.borderColor = "var(--makas-bg)"; }}
                       onMouseLeave={e => { e.currentTarget.style.color = "#888582"; e.currentTarget.style.borderColor = "#2a2a2a"; }}
                     >
                       {icon}
@@ -89,7 +89,7 @@ export default function Footer() {
 
             {/* Company */}
             <div>
-              <h4 style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#F7F4EE", marginBottom: "20px", fontWeight: 600 }}>{ft.company}</h4>
+              <h4 style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--makas-bg)", marginBottom: "20px", fontWeight: 600 }}>{ft.company}</h4>
               <ul style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {ft.companyLinks.map((item) => {
                   const slug = shop?.slug ?? "";
@@ -99,7 +99,7 @@ export default function Footer() {
                   return (
                   <li key={item.href}>
                     <Link href={href} style={{ fontSize: "12px", color: "#888582", textDecoration: "none", transition: "color 0.2s" }}
-                      onMouseEnter={e => e.currentTarget.style.color = "#F6F3EE"}
+                      onMouseEnter={e => e.currentTarget.style.color = "var(--makas-bg)"}
                       onMouseLeave={e => e.currentTarget.style.color = "#888582"}>
                       {item.label}
                     </Link>

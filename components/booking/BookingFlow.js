@@ -16,18 +16,6 @@ import { track } from "@/lib/track";
 import { format } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 
-const C = {
-  bg:       "#F7F4EE",
-  bgSoft:   "#FDFBF7",
-  surface:  "#EFEAE2",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
-  dim:      "#C5BEB5",
-};
-
 // Mobile: 5 steps (service / barber / date / time / confirm)
 const STEP_TITLES = {
   tr: ["Hizmet Seç", "Berber Seç", "Tarih Seç", "Saat Seç", "Bilgilerini Gir"],
@@ -66,14 +54,15 @@ function ConfirmChangeDialog({ message, onConfirm, onCancel, lang }) {
         exit={{ y: 48, opacity: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 28 }}
         onClick={(e) => e.stopPropagation()}
-        style={{ background: C.card, borderRadius: "16px", padding: "20px", width: "100%", maxWidth: "420px", border: `1px solid ${C.border}` }}
+        className="bg-card border-border"
+        style={{ borderRadius: "16px", padding: "20px", width: "100%", maxWidth: "420px", borderWidth: "1px", borderStyle: "solid" }}
       >
-        <p style={{ fontSize: "14px", color: C.primary, lineHeight: 1.55, marginBottom: "16px" }}>{message}</p>
+        <p className="text-foreground" style={{ fontSize: "14px", lineHeight: 1.55, marginBottom: "16px" }}>{message}</p>
         <div style={{ display: "flex", gap: "8px" }}>
-          <button onClick={onCancel} style={{ flex: 1, height: "46px", borderRadius: "10px", border: `1px solid ${C.border}`, background: C.surface, color: C.secondary, fontSize: "14px", fontWeight: 500, cursor: "pointer" }}>
+          <button onClick={onCancel} className="bg-secondary border-border text-secondary-foreground" style={{ flex: 1, height: "46px", borderRadius: "10px", borderWidth: "1px", borderStyle: "solid", fontSize: "14px", fontWeight: 500, cursor: "pointer" }}>
             {lang === "tr" ? "İptal" : "Cancel"}
           </button>
-          <button onClick={onConfirm} style={{ flex: 1, height: "46px", borderRadius: "10px", border: "none", background: C.primary, color: "#fff", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onConfirm} className="bg-foreground text-background" style={{ flex: 1, height: "46px", borderRadius: "10px", border: "none", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
             {lang === "tr" ? "Devam Et" : "Continue"}
           </button>
         </div>
@@ -97,14 +86,14 @@ function DesktopStepper({ activeStep, steps, onGoTo }) {
               onClick={() => done && onGoTo(idx)}
               disabled={future}
               className="flex-1 flex items-center gap-2.5 py-4 px-3 relative transition-all duration-150 min-w-0"
-              style={{ color: active ? C.primary : done ? C.secondary : C.muted, cursor: done ? "pointer" : "default" }}
+              style={{ color: active ? "var(--makas-ink)" : done ? "var(--makas-ink-secondary)" : "var(--makas-ink-muted)", cursor: done ? "pointer" : "default" }}
             >
               <div style={{
                 width: "24px", height: "24px", borderRadius: "50%", flexShrink: 0,
-                background: done ? C.primary : "transparent",
-                border: done ? "none" : active ? `1.5px solid ${C.primary}` : `1.5px solid ${C.muted}`,
+                background: done ? "var(--makas-ink)" : "transparent",
+                border: done ? "none" : active ? `1.5px solid var(--makas-ink)` : `1.5px solid var(--makas-ink-muted)`,
                 fontSize: "11px", fontWeight: 600,
-                color: done ? "#fff" : active ? C.primary : C.muted,
+                color: done ? "var(--makas-bg)" : active ? "var(--makas-ink)" : "var(--makas-ink-muted)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transition: "all 0.2s",
               }}>
@@ -112,15 +101,15 @@ function DesktopStepper({ activeStep, steps, onGoTo }) {
               </div>
               <div className="min-w-0">
                 <div style={{ fontSize: "12px", fontWeight: active ? 600 : 400, letterSpacing: "0.02em", whiteSpace: "nowrap" }}>{s.label}</div>
-                <div style={{ fontSize: "10px", color: C.muted, whiteSpace: "nowrap" }}>{s.desc}</div>
+                <div className="text-muted-foreground" style={{ fontSize: "10px", whiteSpace: "nowrap" }}>{s.desc}</div>
               </div>
               {active && (
-                <motion.div layoutId="desk-step-indicator" className="absolute bottom-0 left-0 right-0" style={{ height: "2px", background: C.primary, borderRadius: "1px" }} />
+                <motion.div layoutId="desk-step-indicator" className="absolute bottom-0 left-0 right-0 bg-foreground" style={{ height: "2px", borderRadius: "1px" }} />
               )}
             </button>
             {i < steps.length - 1 && (
               <div className="flex items-center shrink-0 px-1">
-                <ChevronRight size={12} style={{ color: C.muted }} />
+                <ChevronRight size={12} className="text-muted-foreground" />
               </div>
             )}
           </div>
@@ -335,39 +324,38 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
           MOBILE: Fixed full-screen step flow
       ═══════════════════════════════════════════════════════════════════════ */}
       <div
-        className="md:hidden flex flex-col overflow-hidden"
+        className="md:hidden flex flex-col overflow-hidden bg-background"
         style={{
           position: "fixed",
           top: "68px", left: 0, right: 0, bottom: 0,
           zIndex: 10,
-          background: C.bg,
         }}
       >
         {/* ── Top navigation bar ── */}
         {!bookingDone && (
-          <div style={{
+          <div className="bg-background border-border" style={{
             flexShrink: 0,
             display: "flex", alignItems: "center",
             padding: "0 16px",
             height: "52px",
-            borderBottom: `1px solid ${C.border}`,
-            background: C.bg,
+            borderBottomWidth: "1px", borderBottomStyle: "solid",
           }}>
             <div style={{ width: "60px" }}>
               {step > 1 && (
                 <button
                   onClick={prevStep}
-                  style={{ display: "flex", alignItems: "center", gap: "3px", color: C.secondary, background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "14px" }}
+                  className="text-secondary-foreground"
+                  style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "14px" }}
                 >
                   <ChevronLeft size={16} />
                   {lang === "tr" ? "Geri" : "Back"}
                 </button>
               )}
             </div>
-            <div style={{ flex: 1, textAlign: "center", fontSize: "14px", fontWeight: 600, color: C.primary, letterSpacing: "-0.01em" }}>
+            <div className="text-foreground" style={{ flex: 1, textAlign: "center", fontSize: "14px", fontWeight: 600, letterSpacing: "-0.01em" }}>
               {stepTitle}
             </div>
-            <div style={{ width: "60px", textAlign: "right", fontSize: "12px", color: C.muted }}>
+            <div className="text-muted-foreground" style={{ width: "60px", textAlign: "right", fontSize: "12px" }}>
               {step}/5
             </div>
           </div>
@@ -375,9 +363,10 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
 
         {/* ── Progress bar ── */}
         {!bookingDone && (
-          <div style={{ height: "2px", background: C.border, flexShrink: 0 }}>
+          <div className="bg-border" style={{ height: "2px", flexShrink: 0 }}>
             <motion.div
-              style={{ height: "100%", background: C.primary }}
+              className="bg-foreground"
+              style={{ height: "100%" }}
               animate={{ width: `${(step / 5) * 100}%` }}
               transition={{ duration: 0.38, ease: [0.32, 0.72, 0, 1] }}
             />
@@ -462,12 +451,12 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
 
         {/* ── Bottom action bar ── */}
         {!bookingDone && (
-          <div style={{
+          <div className="border-border" style={{
             flexShrink: 0,
             background: "rgba(246,243,238,0.96)",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
-            borderTop: `1px solid ${C.border}`,
+            borderTopWidth: "1px", borderTopStyle: "solid",
             padding: "10px 16px",
             paddingBottom: "max(10px, env(safe-area-inset-bottom))",
           }}>
@@ -477,15 +466,15 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
                 <div style={{ flex: 1, minWidth: 0 }}>
                   {serviceName ? (
                     <>
-                      <div style={{ fontSize: "13px", fontWeight: 600, color: C.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div className="text-foreground" style={{ fontSize: "13px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {serviceName}
                       </div>
-                      <div style={{ fontSize: "11px", color: C.muted, marginTop: "1px" }}>
+                      <div className="text-muted-foreground" style={{ fontSize: "11px", marginTop: "1px" }}>
                         {booking.service.price == null ? "Sorulur" : `₺${booking.service.price.toLocaleString()}`} · {booking.service.duration} {lang === "tr" ? "dk" : "min"}
                       </div>
                     </>
                   ) : (
-                    <div style={{ fontSize: "13px", color: C.muted }}>
+                    <div className="text-muted-foreground" style={{ fontSize: "13px" }}>
                       {lang === "tr" ? "Hizmet seçiniz" : "Select a service"}
                     </div>
                   )}
@@ -495,11 +484,11 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
                 {canAdvance && (
                   <button
                     onClick={nextStep}
+                    className="bg-foreground text-background"
                     style={{
                       flexShrink: 0,
                       height: "44px", padding: "0 18px",
                       borderRadius: "10px",
-                      background: C.primary, color: "#fff",
                       fontSize: "13px", fontWeight: 600,
                       border: "none", cursor: "pointer",
                       display: "flex", alignItems: "center", gap: "3px",
@@ -519,8 +508,8 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
                 style={{
                   width: "100%", height: "52px",
                   borderRadius: "12px",
-                  background: confirming ? C.surface : C.primary,
-                  color: confirming ? C.muted : "#fff",
+                  background: confirming ? "var(--makas-surface2)" : "var(--makas-ink)",
+                  color: confirming ? "var(--makas-ink-muted)" : "var(--makas-bg)",
                   fontSize: "15px", fontWeight: 600,
                   border: "none",
                   cursor: confirming ? "not-allowed" : "pointer",
@@ -529,7 +518,7 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
               >
                 {confirming ? (
                   <>
-                    <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,0.12)", borderTopColor: C.muted }} />
+                    <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,0.12)", borderTopColor: "var(--makas-ink-muted)" }} />
                     {lang === "tr" ? "Gönderiliyor..." : "Booking..."}
                   </>
                 ) : (
@@ -550,8 +539,8 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
       <div className="hidden md:block" style={{ paddingTop: "68px" }}>
         {/* Sticky stepper bar */}
         <div
-          className="sticky top-[68px] z-30"
-          style={{ background: "rgba(246,243,238,0.97)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}
+          className="sticky top-[68px] z-30 border-border"
+          style={{ background: "rgba(246,243,238,0.97)", backdropFilter: "blur(16px)", borderBottomWidth: "1px", borderBottomStyle: "solid" }}
         >
           <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(17,17,17,0.12), transparent)" }} />
           <DesktopStepper activeStep={desktopStep} steps={steps} onGoTo={desktopGoToStep} />
@@ -575,18 +564,19 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
                       <button
                         key={i}
                         onClick={() => goToStep(chip.targetStep)}
+                        className="bg-card border-border text-secondary-foreground"
                         style={{
                           display: "flex", alignItems: "center", gap: "4px",
                           padding: "4px 12px",
-                          background: C.card, border: `1px solid ${C.border}`, borderRadius: "20px",
-                          fontSize: "11px", color: C.secondary,
+                          borderWidth: "1px", borderStyle: "solid", borderRadius: "20px",
+                          fontSize: "11px",
                           cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                           transition: "all 0.12s",
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.color = C.primary; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.secondary; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--makas-ink)"; e.currentTarget.style.color = "var(--makas-ink)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--makas-border)"; e.currentTarget.style.color = "var(--makas-ink-secondary)"; }}
                       >
-                        <span style={{ color: C.primary, fontSize: "9px" }}>{chip.icon}</span>
+                        <span className="text-foreground" style={{ fontSize: "9px" }}>{chip.icon}</span>
                         {chip.label}
                       </button>
                     ))}

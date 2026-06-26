@@ -145,7 +145,7 @@ export default async function ShopHome({ params }) {
   const localBusinessLd = buildLocalBusinessLd(shop, googleReviews, hours);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F6F3EE]">
+    <div className="flex flex-col min-h-screen bg-background">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessLd) }}
@@ -156,12 +156,9 @@ export default async function ShopHome({ params }) {
         <CoverBanner shop={shop} googleReviews={googleReviews} />
         <Hero services={services} barbers={barbers} googleReviews={googleReviews} />
         {last24h > 2 && (
-          <div style={{
-            textAlign: "center", padding: "12px 16px", background: "#F7F4EE",
-            fontSize: "12px", color: "#4A4A4A", letterSpacing: "0.02em",
-          }}>
-            <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: 999, background: "#16a34a", marginRight: 8, verticalAlign: "middle" }} />
-            Son 24 saatte <strong style={{ color: "#111" }}>{last24h}</strong> randevu alındı
+          <div className="text-center px-4 py-3 bg-secondary text-xs text-muted-foreground tracking-wide">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600 mr-2 align-middle" />
+            Son 24 saatte <strong className="text-foreground">{last24h}</strong> randevu alındı
           </div>
         )}
         <About about={shop.about} />

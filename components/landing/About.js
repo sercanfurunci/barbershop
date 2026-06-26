@@ -7,7 +7,7 @@ export default function About({ about }) {
   const isShort = about.trim().length < 80; // tighten vertical rhythm for one-liners
   return (
     <section style={{
-      background: "#F7F4EE",
+      background: "var(--makas-bg)",
       padding: isShort
         ? "clamp(40px, 5vw, 64px) clamp(20px, 5vw, 40px)"
         : "clamp(56px, 8vw, 96px) clamp(20px, 5vw, 40px)",
@@ -24,13 +24,13 @@ export default function About({ about }) {
         </div>
         <h2 className="font-display" style={{
           fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 300,
-          letterSpacing: "-0.02em", lineHeight: 1.08, color: "#111", margin: 0,
+          letterSpacing: "-0.02em", lineHeight: 1.08, color: "var(--makas-ink)", margin: 0,
         }}>
           Hakkımızda
         </h2>
         <p style={{
           fontSize: "clamp(15px, 1.6vw, 17px)",
-          lineHeight: 1.75, color: "#3a3633",
+          lineHeight: 1.75, color: "var(--makas-ink-secondary)",
           whiteSpace: "pre-wrap",
           textWrap: "pretty",
           margin: 0,

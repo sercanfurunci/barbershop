@@ -129,9 +129,10 @@ export default function ImageCropModal({ file, onConfirm, onCancel }) {
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <button
               onClick={() => setZoom(z => Math.max(1, z - 0.1))}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "#6B7280", padding: 0, display: "flex", flexShrink: 0 }}
+              aria-label="Uzaklaştır"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#6B7280", width: 36, height: 36, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 8, flexShrink: 0 }}
             >
-              <ZoomOut size={16} />
+              <ZoomOut size={18} />
             </button>
             <input
               type="range"
@@ -142,9 +143,10 @@ export default function ImageCropModal({ file, onConfirm, onCancel }) {
             />
             <button
               onClick={() => setZoom(z => Math.min(3, z + 0.1))}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "#6B7280", padding: 0, display: "flex", flexShrink: 0 }}
+              aria-label="Yakınlaştır"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#6B7280", width: 36, height: 36, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 8, flexShrink: 0 }}
             >
-              <ZoomIn size={16} />
+              <ZoomIn size={18} />
             </button>
           </div>
           <div style={{ textAlign: "center", fontSize: "10px", color: "#9CA3AF", marginTop: "4px" }}>

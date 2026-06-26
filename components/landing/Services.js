@@ -8,14 +8,14 @@ import { useShop } from "@/contexts/ShopContext";
 import { ArrowRight } from "lucide-react";
 
 const C = {
-  bg:       "#F7F4EE",
+  bg:       "var(--makas-bg)",
   bgSoft:   "#FDFBF7",
-  surface:  "#EFEAE2",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
+  surface:  "var(--makas-surface2)",
+  card:     "var(--makas-surface)",
+  border:   "var(--makas-border)",
+  primary:  "var(--makas-ink)",
+  secondary:"var(--makas-ink-secondary)",
+  muted:    "var(--makas-ink-muted)",
   dim:      "#C5BEB5",
 };
 
@@ -28,7 +28,7 @@ export default function Services({ services = [] }) {
 
   return (
     <section id="services" style={{ background: C.bg, position: "relative" }}>
-      <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, #E5DED3 30%, #E5DED3 70%, transparent)" }} />
+      <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--makas-border) 30%, var(--makas-border) 70%, transparent)" }} />
 
       <div style={{
         width: "min(1440px, 100%)",

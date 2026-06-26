@@ -5,533 +5,572 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Calendar,
-  CalendarDays,
   Scissors,
-  DollarSign,
   MessageCircle,
   BarChart2,
   Star,
-  Building2,
   Zap,
-  Layers,
-  ExternalLink,
   CheckCircle,
   ChevronDown,
   ArrowRight,
+  PlayCircle,
+  CreditCard,
+  Users,
+  Megaphone,
+  Settings,
+  ExternalLink,
 } from "lucide-react";
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-
-const C = {
-  bg:       "#F8F6F2",
-  card:     "#FFFFFF",
-  border:   "rgba(17,17,17,0.08)",
-  primary:  "#111111",
-  secondary:"#57514B",
-  muted:    "#6E6760",
-
-  surface:  "#F1EEE8",
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+import Eyebrow from "@/components/shared/Eyebrow";
+import PillButton from "@/components/shared/PillButton";
+import CTAGroup from "@/components/shared/CTAGroup";
+import LandingNavbar from "@/components/landing/LandingNavbar";
+import LandingFooter from "@/components/landing/LandingFooter";
 
 function scrollTo(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 }
 
-const fade = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
+// ─── Section heading (Mangomint pattern: eyebrow + giant H2) ─────────────────
 
-// MAKAS mark. `variant="dark"` = black mark on light bg; "light" = white mark on dark bg.
-function MakasMark({ size, variant = "dark", className }) {
-  const src = variant === "dark" ? "/logo-dark.svg" : "/logo-light.svg";
+function SectionHead({ eyebrow, title, sub, align = "center", maxWidth = 720, light = false }) {
+  const alignCls = align === "left" ? "text-left mx-0" : "text-center mx-auto";
   return (
-    <img
-      src={src}
-      alt="MAKAS"
-      className={className}
-      {...(size ? { width: size, height: size } : {})}
-      style={{ display: "block" }}
-    />
-  );
-}
-
-// ─── Navbar ───────────────────────────────────────────────────────────────────
-
-function Navbar() {
-  return (
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        background: "rgba(248,246,242,0.85)",
-        borderBottom: `1px solid ${C.border}`,
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.5 }}
+      className={alignCls}
+      style={{ maxWidth }}
     >
-      <nav
-        className="h-[68px] md:h-[76px]"
+      {eyebrow && (
+        <div className={align === "left" ? "mb-4" : "mb-4"}>
+          <Eyebrow className={light ? "text-white/60" : ""}>{eyebrow}</Eyebrow>
+        </div>
+      )}
+      <h2
+        className={`font-display font-bold leading-[1.05] ${light ? "text-white" : "text-foreground"}`}
         style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: "0 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          fontSize: "clamp(34px, 5.4vw, 56px)",
+          letterSpacing: "-1.6px",
         }}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3.5 md:gap-4">
-          <MakasMark variant="dark" className="block h-9 w-9 md:h-12 md:w-12" />
-          <span
-            className="font-display text-[22px] md:text-[26px]"
-            style={{
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              color: C.primary,
-              lineHeight: 1,
-            }}
-          >
-            MAKAS
-          </span>
-        </div>
-
-        {/* CTAs — desktop: both, mobile: only primary */}
-        <div className="hidden sm:flex" style={{ gap: 10 }}>
-          <button
-            onClick={() => scrollTo("demo")}
-            style={{
-              padding: "8px 16px",
-              border: `1px solid ${C.border}`,
-              borderRadius: 8,
-              background: "transparent",
-              color: C.secondary,
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            Demo Gör
-          </button>
-          <button
-            onClick={() => scrollTo("contact")}
-            style={{
-              padding: "8px 16px",
-              border: "none",
-              borderRadius: 8,
-              background: C.primary,
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            İletişime Geç
-          </button>
-        </div>
-        <button
-          onClick={() => scrollTo("contact")}
-          className="sm:hidden"
-          style={{
-            padding: "8px 14px",
-            border: "none",
-            borderRadius: 8,
-            background: C.primary,
-            color: "#fff",
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
+        {title}
+      </h2>
+      {sub && (
+        <p
+          className={`mt-5 leading-relaxed ${light ? "text-white/70" : "text-muted-foreground"}`}
+          style={{ fontSize: "clamp(16px, 1.6vw, 19px)" }}
         >
-          İletişim
-        </button>
-      </nav>
-    </header>
+          {sub}
+        </p>
+      )}
+    </motion.div>
   );
 }
 
-// ─── Hero ─────────────────────────────────────────────────────────────────────
+// ─── Hero (asymmetric, Mangomint-style) ───────────────────────────────────────
 
 function Hero() {
   return (
-    <section
-      style={{
-        padding: "96px 24px 80px",
-        maxWidth: 1100,
-        margin: "0 auto",
-        textAlign: "center",
-      }}
-    >
-      <motion.div
-        initial="hidden"
-        animate="show"
-        variants={{ show: { transition: { staggerChildren: 0.12 } } }}
+    <section className="relative overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 55% at 100% 0%, rgba(17,17,17,0.04) 0%, transparent 60%)",
+        }}
+      />
+      <div
+        className="relative mx-auto max-w-[1200px] px-6"
+        style={{ paddingTop: "clamp(56px, 8vw, 96px)", paddingBottom: "clamp(64px, 9vw, 112px)" }}
       >
-        <motion.p
-          variants={fade}
-          style={{
-            display: "inline-block",
-            padding: "4px 14px",
-            borderRadius: 20,
-            background: C.surface,
-            color: C.secondary,
-            fontSize: 13,
-            fontWeight: 500,
-            marginBottom: 24,
-          }}
-        >
-          Premium berber teknolojisi
-        </motion.p>
+        <div className="grid lg:grid-cols-[1.05fr_1fr] gap-12 lg:gap-16 items-center">
+          {/* Left — copy */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <Eyebrow>Berber & Kuaför yazılımı</Eyebrow>
+            </motion.div>
 
-        <motion.h1
-          variants={fade}
-          style={{
-            fontSize: "clamp(36px, 6vw, 72px)",
-            fontWeight: 800,
-            letterSpacing: "-2px",
-            lineHeight: 1.08,
-            color: C.primary,
-            marginBottom: 20,
-            whiteSpace: "pre-line",
-          }}
-        >
-          {"Boş koltukları azaltın.\nRandevularınızı otomatik yönetin."}
-        </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.05 }}
+              className="mt-5 font-display font-bold text-foreground"
+              style={{
+                fontSize: "clamp(40px, 6vw, 72px)",
+                letterSpacing: "-2.2px",
+                lineHeight: 1.02,
+              }}
+            >
+              Salonunuzu büyüten her şey, tek yerde.
+            </motion.h1>
 
-        <motion.p
-          variants={fade}
-          style={{
-            fontSize: "clamp(16px, 2vw, 20px)",
-            color: C.muted,
-            maxWidth: 560,
-            margin: "0 auto 36px",
-            lineHeight: 1.6,
-          }}
-        >
-          Telefon trafiğini azaltın, müşterileriniz online randevu alsın.
-        </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+              className="mt-6 max-w-[520px] text-muted-foreground"
+              style={{ fontSize: "clamp(17px, 1.8vw, 20px)", lineHeight: 1.55 }}
+            >
+              Randevu, müşteri takibi, hatırlatma ve gelir raporları. Hızlı,
+              modern, her cihazda kusursuz çalışan bir platform.
+            </motion.p>
 
-        <motion.div
-          variants={fade}
-          style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}
-        >
-          <button
-            onClick={() => scrollTo("contact")}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+              className="mt-9 flex flex-wrap items-center gap-4"
+            >
+              <PillButton variant="primary" size="lg" onClick={() => scrollTo("contact")}>
+                14 Gün Ücretsiz Dene
+              </PillButton>
+              <button
+                onClick={() => scrollTo("demo")}
+                className="inline-flex items-center gap-2 text-[15px] font-medium text-foreground hover:opacity-70"
+              >
+                <PlayCircle size={20} strokeWidth={1.8} />
+                Canlı demoyu izle
+              </button>
+            </motion.div>
+
+            <motion.ul
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="mt-8 flex flex-wrap gap-x-6 gap-y-2 list-none p-0"
+            >
+              {["1 günde kurulum", "Sözleşme yok", "Türkçe destek"].map((t) => (
+                <li
+                  key={t}
+                  className="inline-flex items-center gap-2 text-[13.5px] font-medium text-secondary-foreground"
+                >
+                  <CheckCircle size={15} strokeWidth={2.2} className="shrink-0 text-foreground" />
+                  {t}
+                </li>
+              ))}
+            </motion.ul>
+          </div>
+
+          {/* Right — layered preview card */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="relative hidden lg:block"
+          >
+            <HeroPreview />
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HeroPreview() {
+  // ponytail: SSR-safe inline preview (not the real product, a representative card).
+  // Skipped: real iframe / live mock. Add when there's a hosted public widget.
+  return (
+    <div className="relative">
+      <div
+        className="rounded-[22px] bg-card border border-border p-6 relative z-10"
+        style={{ boxShadow: "var(--shadow-pop)" }}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <Eyebrow>Bugün</Eyebrow>
+            <p className="font-display text-xl font-bold text-foreground mt-1">
+              Salih Usta — Randevular
+            </p>
+          </div>
+          <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center">
+            <Calendar size={16} className="text-foreground" />
+          </div>
+        </div>
+        <div className="space-y-2.5">
+          {[
+            { t: "09:30", n: "Ahmet Yıldız", s: "Sakal + Saç", c: "bg-emerald-100 text-emerald-700" },
+            { t: "10:15", n: "Mehmet K.",    s: "Tıraş",         c: "bg-amber-100 text-amber-700" },
+            { t: "11:00", n: "Burak Demir",  s: "Saç",            c: "bg-sky-100 text-sky-700" },
+            { t: "12:30", n: "Onur Ş.",      s: "Tıraş + Yıkama", c: "bg-violet-100 text-violet-700" },
+          ].map((r) => (
+            <div
+              key={r.t}
+              className="flex items-center gap-3 rounded-xl border border-border bg-background/60 px-3.5 py-3"
+            >
+              <span className="text-xs font-mono-custom text-muted-foreground w-12 shrink-0">
+                {r.t}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{r.n}</p>
+                <p className="text-xs text-muted-foreground truncate">{r.s}</p>
+              </div>
+              <span className={`text-[10.5px] font-semibold uppercase tracking-wider rounded-full px-2 py-0.5 ${r.c}`}>
+                Onaylı
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">Bugün</span>
+          <span className="font-semibold text-foreground">12 randevu • ₺2.840</span>
+        </div>
+      </div>
+
+      {/* Floating mini-card */}
+      <div
+        className="absolute -bottom-6 -left-6 rounded-2xl bg-foreground text-background px-4 py-3.5 flex items-center gap-3 z-20"
+        style={{ boxShadow: "var(--shadow-elevated)" }}
+      >
+        <div className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
+          <MessageCircle size={16} />
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-wider opacity-60 font-mono-custom">
+            WhatsApp
+          </p>
+          <p className="text-xs font-semibold">Hatırlatma gönderildi</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Social proof strip ───────────────────────────────────────────────────────
+
+function SocialProofStrip() {
+  return (
+    <section className="border-y border-border bg-secondary/40">
+      <div className="mx-auto max-w-[1200px] px-6 py-12 md:py-14">
+        <div className="grid md:grid-cols-[1fr_auto] gap-8 md:gap-12 items-center">
+          <h3
+            className="font-display text-foreground"
             style={{
-              padding: "14px 28px",
-              borderRadius: 10,
-              background: C.primary,
-              color: "#fff",
-              fontSize: 15,
-              fontWeight: 600,
-              border: "none",
-              cursor: "pointer",
+              fontSize: "clamp(22px, 2.6vw, 32px)",
+              lineHeight: 1.15,
+              fontWeight: 700,
+              letterSpacing: "-0.6px",
             }}
           >
-            Demo Talep Et
-          </button>
-          <button
-            onClick={() => scrollTo("contact")}
-            style={{
-              padding: "14px 28px",
-              borderRadius: 10,
-              background: "transparent",
-              color: C.primary,
-              fontSize: 15,
-              fontWeight: 600,
-              border: `1.5px solid ${C.border}`,
-              cursor: "pointer",
-            }}
-          >
-            İletişime Geç
-          </button>
-        </motion.div>
+            Türkiye'nin dört bir yanından berber ve kuaförler MAKAS'ı seçiyor.
+          </h3>
+          <div className="flex flex-wrap items-center gap-6 md:gap-8 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={14} fill="currentColor" className="text-foreground" />
+                ))}
+              </div>
+              <span className="font-semibold text-foreground">4.9/5</span>
+              <span className="text-muted-foreground">salon memnuniyeti</span>
+            </div>
+            <div className="h-5 w-px bg-border hidden sm:block" />
+            <div>
+              <span className="font-semibold text-foreground">%99.9</span>
+              <span className="text-muted-foreground ml-2">çalışma süresi</span>
+            </div>
+            <div className="h-5 w-px bg-border hidden sm:block" />
+            <div>
+              <span className="font-semibold text-foreground">1 gün</span>
+              <span className="text-muted-foreground ml-2">kurulum</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-        <motion.p
-          variants={fade}
-          style={{
-            fontSize: 13,
-            color: C.muted,
-            marginTop: 14,
-          }}
-        >
-          Kurulum ve demo için bizimle iletişime geçin.
-        </motion.p>
+// ─── "Why we're different" plain-text band ───────────────────────────────────
 
-        <motion.ul
-          variants={fade}
-          style={{
-            listStyle: "none",
-            padding: 0,
-            margin: "32px auto 0",
-            maxWidth: 720,
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: "10px 22px",
-          }}
+function WhyDifferent() {
+  return (
+    <section
+      className="bg-background"
+      style={{ padding: "clamp(80px, 11vw, 144px) clamp(20px, 4vw, 32px)" }}
+    >
+      <div className="mx-auto max-w-[820px]">
+        <SectionHead
+          eyebrow="Neden MAKAS"
+          title={<>Berber yazılımı,<br />nihayet doğru yapıldı.</>}
+          sub="Yabancı platformlarda Türkçe çeviri gibi durmayan, telefonda da masaüstünde de doğru çalışan, berberin kendi diliyle konuşan bir sistem. Karmaşa yok, kurulum hediye, sözleşme yok."
+        />
+      </div>
+    </section>
+  );
+}
+
+// ─── Dark testimonial band (full-bleed, breaks the cream) ────────────────────
+
+function TestimonialBand() {
+  return (
+    <section className="bg-foreground text-background relative overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 80% at 20% 30%, rgba(245,241,235,0.06) 0%, transparent 60%)",
+        }}
+      />
+      <div
+        className="relative mx-auto max-w-[1100px] px-6"
+        style={{ paddingTop: "clamp(80px, 11vw, 128px)", paddingBottom: "clamp(80px, 11vw, 128px)" }}
+      >
+        <SectionHead
+          eyebrow="Müşteri hikayeleri"
+          title="Türkiye'nin gerçek salonları MAKAS'ı seviyor."
+          light
+        />
+
+        <div
+          className="mt-14 grid gap-6"
+          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}
         >
           {[
-            "1 günde kurulum",
-            "Size özel salon adresi",
-            "WhatsApp destek hattı",
-            "Mobil uyumlu kullanım",
-          ].map((t) => (
-            <li
-              key={t}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                fontSize: 13.5,
-                color: C.secondary,
-                fontWeight: 500,
-              }}
+            {
+              quote:
+                "Telefonla randevu trafiği yüzde 60 azaldı. Müşteriler kendi randevusunu alıyor, biz de işimize odaklanıyoruz.",
+              name: "Abdurrahman Çelik",
+              role: "Exclusive Salon — Darıca",
+              link: "/abdurrahman",
+            },
+            {
+              quote:
+                "Eski sistemden geçiş 1 günde tamamlandı. Berberlerimin hepsi ilk hafta içinde rahatça kullanmaya başladı.",
+              name: "Makas Demo Salon",
+              role: "Örnek salon — Online inceleyin",
+              link: "/demo",
+            },
+          ].map((t, i) => (
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              className="rounded-2xl bg-white/[0.06] border border-white/10 p-7 flex flex-col"
             >
-              <CheckCircle size={15} strokeWidth={2.2} style={{ color: C.primary, flexShrink: 0 }} />
-              {t}
+              <div className="flex mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={14} fill="currentColor" className="text-amber-300" />
+                ))}
+              </div>
+              <p
+                className="font-display text-background leading-snug flex-1"
+                style={{ fontSize: "clamp(18px, 1.8vw, 22px)", letterSpacing: "-0.3px" }}
+              >
+                "{t.quote}"
+              </p>
+              <div className="mt-6 pt-5 border-t border-white/10 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-background">{t.name}</p>
+                  <p className="text-[12.5px] text-background/60">{t.role}</p>
+                </div>
+                <Link
+                  href={t.link}
+                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-background/80 hover:text-background"
+                >
+                  Ziyaret et <ExternalLink size={12} />
+                </Link>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Bento feature grid (1 hero card + 4 supporting) ─────────────────────────
+// 5 features in a 3-col bento: row 1 = featured spans 2 cols + 1 small.
+// Row 2 = 3 equal. Linear/Stripe pattern — hero card carries a visual to make
+// the asymmetry feel intentional, not lopsided.
+
+const FEATURED = {
+  eyebrow: "Randevu",
+  title: "Akıllı takvim, çakışmasız randevu.",
+  desc:
+    "Berber başına çalışma saatleri, mola yönetimi, çakışma engelleme. Müşteri kendi randevusunu alıyor — sen işine bakıyorsun.",
+  items: [
+    "7/24 online rezervasyon",
+    "Berber bazlı takvim görünümü",
+    "Mola & izin & tatil yönetimi",
+    "Çift rezervasyon engelleme",
+  ],
+};
+
+const SUPPORTING = [
+  {
+    eyebrow: "Ödeme & gelir",
+    title: "Net hesap, net rapor.",
+    desc: "Günlük gelir, berber bazlı performans, basit ve doğru raporlar.",
+    Icon: CreditCard,
+    items: ["Günlük gelir", "Berber prim takibi", "Excel'e aktarma"],
+  },
+  {
+    eyebrow: "Müşteri",
+    title: "Sadakat tarafı sende.",
+    desc: "Notlar, geçmiş randevular, doğum günü — hepsi kendi sisteminde.",
+    Icon: Users,
+    items: ["Müşteri notları", "Randevu geçmişi", "Sık gelen etiketleri"],
+  },
+  {
+    eyebrow: "Pazarlama",
+    title: "WhatsApp & SMS, otomatik.",
+    desc: "Otomatik hatırlatma, kaçırılan randevu mesajı, yorum daveti.",
+    Icon: Megaphone,
+    items: ["Otomatik hatırlatma", "WhatsApp şablonları", "Yorum daveti"],
+  },
+  {
+    eyebrow: "Yönetim",
+    title: "Kontrol senin elinde.",
+    desc: "Çoklu kullanıcı, izin seviyeleri, mobil panel — her şey net.",
+    Icon: Settings,
+    items: ["Admin & berber panelleri", "Rol & izinler", "Hizmet kataloğu"],
+  },
+];
+
+function FeaturedCard() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.5 }}
+      className="md:col-span-2 md:row-span-1 rounded-3xl bg-card border border-border p-8 lg:p-10 flex flex-col lg:flex-row gap-8 lg:gap-10 relative overflow-hidden"
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      {/* Subtle decorative gradient */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 -right-32 h-72 w-72 rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(17,17,17,0.04) 0%, transparent 70%)" }}
+      />
+      {/* Copy */}
+      <div className="relative flex-1 min-w-0 flex flex-col">
+        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-foreground text-background">
+          <Calendar size={22} strokeWidth={1.8} />
+        </div>
+        <Eyebrow className="mb-3 block">{FEATURED.eyebrow}</Eyebrow>
+        <h3
+          className="font-display font-bold text-foreground leading-[1.1] mb-4"
+          style={{ fontSize: "clamp(24px, 2.4vw, 32px)", letterSpacing: "-0.8px" }}
+        >
+          {FEATURED.title}
+        </h3>
+        <p className="text-[15.5px] text-muted-foreground leading-relaxed mb-6 max-w-md">
+          {FEATURED.desc}
+        </p>
+        <ul className="m-0 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 list-none p-0 mt-auto">
+          {FEATURED.items.map((it) => (
+            <li key={it} className="flex items-start gap-2.5 text-[14px] text-secondary-foreground">
+              <CheckCircle size={15} strokeWidth={2.2} className="shrink-0 mt-0.5 text-foreground" />
+              {it}
             </li>
           ))}
-        </motion.ul>
-      </motion.div>
-    </section>
-  );
-}
+        </ul>
+      </div>
 
-// ─── How It Works ─────────────────────────────────────────────────────────────
-
-const STEPS = [
-  { Icon: Zap,       title: "Kurulum",            desc: "Salonunuza özel sisteminizi kuruyoruz." },
-  { Icon: Scissors,  title: "Özelleştirme",       desc: "Hizmetlerinizi, berberlerinizi ve çalışma saatlerinizi ayarlıyoruz." },
-  { Icon: Calendar,  title: "Kullanıma Başlayın", desc: "Müşterileriniz online randevu almaya başlıyor." },
-];
-
-function HowItWorks() {
-  return (
-    <section id="how" style={{ padding: "72px 24px 40px", background: C.bg }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          style={{ textAlign: "center", marginBottom: 40 }}
-        >
-          <h2 style={{ fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 700, letterSpacing: "-1px", color: C.primary, marginBottom: 10 }}>
-            Nasıl Çalışır
-          </h2>
-          <p style={{ fontSize: 15, color: C.muted, maxWidth: 520, margin: "0 auto" }}>
-            Üç adımda salonunuz yayında.
-          </p>
-        </motion.div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: 18,
-          }}
-        >
-          {STEPS.map(({ Icon, title, desc }, i) => (
-            <motion.div
-              key={title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.08 }}
-              whileHover={{ y: -3, boxShadow: "0 10px 28px rgba(17,17,17,0.08)" }}
-              style={{
-                background: C.card,
-                border: `1px solid ${C.border}`,
-                borderRadius: 16,
-                padding: "26px 24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-                position: "relative",
-                transition: "box-shadow 0.2s, transform 0.2s",
-              }}
-            >
-              <span style={{
-                position: "absolute", top: 18, right: 20,
-                fontSize: 12, fontWeight: 700, letterSpacing: "0.18em",
-                color: C.muted,
-              }}>
-                0{i + 1}
-              </span>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12,
-                background: C.surface,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: C.primary,
-              }}>
-                <Icon size={22} strokeWidth={1.8} />
+      {/* Visual — mini schedule preview */}
+      <div className="relative lg:w-[280px] shrink-0">
+        <div className="rounded-2xl bg-background border border-border p-4 h-full">
+          <div className="flex items-center justify-between mb-3">
+            <Eyebrow>Bugün · Salı</Eyebrow>
+            <span className="text-[11px] font-mono-custom text-muted-foreground">9 randevu</span>
+          </div>
+          <div className="space-y-1.5">
+            {[
+              { t: "09:00", n: "Ahmet Y.",  c: "border-emerald-300 bg-emerald-50" },
+              { t: "09:45", n: "—",         c: "border-dashed border-border bg-transparent", empty: true },
+              { t: "10:30", n: "Mehmet K.", c: "border-sky-300 bg-sky-50" },
+              { t: "11:15", n: "Burak D.",  c: "border-amber-300 bg-amber-50" },
+              { t: "12:00", n: "Onur Ş.",   c: "border-violet-300 bg-violet-50" },
+            ].map((r) => (
+              <div
+                key={r.t}
+                className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${r.c}`}
+              >
+                <span className="text-[10.5px] font-mono-custom text-muted-foreground w-9 shrink-0">
+                  {r.t}
+                </span>
+                <span className={`text-[12px] font-medium truncate ${r.empty ? "text-muted-foreground italic" : "text-foreground"}`}>
+                  {r.empty ? "Boş slot" : r.n}
+                </span>
               </div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: C.primary, letterSpacing: "-0.3px" }}>
-                {title}
-              </h3>
-              <p style={{ fontSize: 14.5, color: C.muted, lineHeight: 1.6 }}>
-                {desc}
-              </p>
-            </motion.div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </section>
+    </motion.div>
   );
 }
 
-// ─── Features ─────────────────────────────────────────────────────────────────
+function SupportingCard({ data, delay = 0 }) {
+  const { eyebrow, title, desc, Icon, items } = data;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.4, delay }}
+      className="rounded-3xl bg-card border border-border p-7 flex flex-col h-full transition-shadow hover:shadow-[var(--shadow-card)]"
+    >
+      <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-foreground">
+        <Icon size={20} strokeWidth={1.8} />
+      </div>
+      <Eyebrow className="mb-2 block">{eyebrow}</Eyebrow>
+      <h3 className="font-display text-[20px] font-bold text-foreground tracking-[-0.4px] leading-[1.2] mb-3">
+        {title}
+      </h3>
+      <p className="text-[14px] text-muted-foreground leading-relaxed mb-5">{desc}</p>
+      <ul className="m-0 flex list-none flex-col gap-2 p-0 mt-auto pt-2 border-t border-border">
+        {items.map((it) => (
+          <li
+            key={it}
+            className="flex items-center gap-2.5 text-[13px] text-secondary-foreground pt-2"
+          >
+            <span className="h-1 w-1 rounded-full bg-foreground/40 shrink-0" />
+            {it}
+          </li>
+        ))}
+      </ul>
+    </motion.div>
+  );
+}
 
-const FEATURES = [
-  { Icon: Calendar,      title: "Online Randevu",       desc: "7/24 müşterileriniz randevu alabilir" },
-  { Icon: CalendarDays,  title: "Takvim Yönetimi",      desc: "Tüm ekibinizin programı tek ekranda" },
-  { Icon: Scissors,      title: "Berber Yönetimi",      desc: "Berber profilleri, çalışma saatleri" },
-  { Icon: DollarSign,    title: "Hizmet & Fiyat",       desc: "Hizmetlerinizi ve fiyatlarınızı kolayca yönetin" },
-  { Icon: MessageCircle, title: "SMS/WhatsApp",          desc: "Otomatik randevu hatırlatmaları" },
-  { Icon: BarChart2,     title: "Gelir Takibi",         desc: "Günlük, haftalık gelir raporları" },
-  { Icon: Star,          title: "Otomatik Yorum",       desc: "Randevu sonrası SMS ile yorum daveti" },
-  { Icon: Building2,     title: "Müşteri Yönetimi",     desc: "Notlar, geçmiş randevular, telefon takibi" },
-];
-
-function Features() {
+function ExploreGrid() {
   return (
     <section
-      style={{
-        padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)",
-        background: C.surface,
-      }}
+      id="explore"
+      className="bg-secondary"
+      style={{ padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <motion.h2
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          style={{
-            textAlign: "center",
-            fontSize: "clamp(24px, 4vw, 40px)",
-            fontWeight: 700,
-            letterSpacing: "-1px",
-            color: C.primary,
-            marginBottom: 48,
-          }}
-        >
-          Berberinizi büyüten her şey
-        </motion.h2>
+      <div className="mx-auto max-w-[1200px]">
+        <SectionHead
+          eyebrow="Platform"
+          title="Salon yönetiminin tamamı, tek panelde."
+          sub="Randevu defteri, kasa programı, müşteri yönetimi ve hatırlatma sistemini ayrı ayrı kullanmaya son."
+        />
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-            gap: 16,
-          }}
-        >
-          {FEATURES.map(({ Icon, title, desc }, i) => (
-            <motion.div
-              key={title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.06 }}
-              style={{
-                background: C.card,
-                border: `1px solid ${C.border}`,
-                borderRadius: 12,
-                padding: "24px 20px",
-              }}
-            >
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 10,
-                  background: C.surface,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 14,
-                }}
-              >
-                <Icon size={20} color={C.primary} />
-              </div>
-              <p style={{ fontWeight: 600, fontSize: 15, color: C.primary, marginBottom: 6 }}>
-                {title}
-              </p>
-              <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}>{desc}</p>
-            </motion.div>
+        {/* Bento: 3-col grid, featured spans 2 cols on row 1 */}
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Row 1 */}
+          <FeaturedCard />
+          <SupportingCard data={SUPPORTING[0]} delay={0.08} />
+
+          {/* Row 2 */}
+          {SUPPORTING.slice(1).map((c, i) => (
+            <SupportingCard key={c.eyebrow} data={c} delay={(i + 2) * 0.06} />
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Why us ───────────────────────────────────────────────────────────────────
-
-const WHY = [
-  { Icon: Star,   title: "Premium Tasarım",  desc: "Her salon için özel, şık bir web sitesi" },
-  { Icon: Zap,    title: "Hızlı Randevu",    desc: "Müşteri 3 adımda randevusunu tamamlar" },
-  { Icon: Layers, title: "Kolay Yönetim",    desc: "Teknik bilgi gerektirmez, her şey sezgisel" },
-];
-
-function WhyUs() {
-  return (
-    <section style={{ padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)", maxWidth: 1100, margin: "0 auto" }}>
-      <motion.h2
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        style={{
-          textAlign: "center",
-          fontSize: "clamp(24px, 4vw, 40px)",
-          fontWeight: 700,
-          letterSpacing: "-1px",
-          color: C.primary,
-          marginBottom: 48,
-        }}
-      >
-        Neden MAKAS?
-      </motion.h2>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: 24,
-        }}
-      >
-        {WHY.map(({ Icon, title, desc }, i) => (
-          <motion.div
-            key={title}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: i * 0.1 }}
-            style={{ textAlign: "center", padding: "32px 24px" }}
-          >
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 14,
-                background: C.primary,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 16px",
-              }}
-            >
-              <Icon size={24} color="#fff" />
-            </div>
-            <p style={{ fontWeight: 700, fontSize: 17, color: C.primary, marginBottom: 8 }}>
-              {title}
-            </p>
-            <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6 }}>{desc}</p>
-          </motion.div>
-        ))}
       </div>
     </section>
   );
@@ -541,109 +580,68 @@ function WhyUs() {
 
 function OwnYourBrand() {
   return (
-    <section style={{ padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)", background: C.bg }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          style={{ textAlign: "center", marginBottom: 48 }}
-        >
-          <h2 style={{
-            fontSize: "clamp(26px, 4.2vw, 44px)", fontWeight: 700,
-            letterSpacing: "-1px", color: C.primary, marginBottom: 14, lineHeight: 1.15,
-          }}>
-            Kendi markan. Kendi sistemin.<br />Kendi müşterin.
-          </h2>
-          <p style={{
-            fontSize: 16, color: C.muted, lineHeight: 1.65,
-            maxWidth: 620, margin: "0 auto",
-          }}>
-            Instagram'da paylaşıldığında müşteri başka platformu değil, <strong style={{ color: C.primary, fontWeight: 700 }}>seni</strong> görür.
-          </p>
-        </motion.div>
+    <section
+      className="bg-background"
+      style={{ padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
+    >
+      <div className="mx-auto max-w-[1100px]">
+        <SectionHead
+          eyebrow="Marka sahipliği"
+          title={<>Müşterin senin. Pazaryeri arada yok.</>}
+          sub="Instagram'da paylaşılan link senin salonunu açar — rakip listesi değil."
+        />
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 18,
-        }}>
-          {/* Marketplace */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.45 }}
-            style={{
-              background: C.card,
-              border: `1px solid ${C.border}`,
-              borderRadius: 16,
-              padding: "26px 24px",
-              opacity: 0.78,
-            }}
-          >
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: C.muted, textTransform: "uppercase", marginBottom: 14 }}>
-              Pazaryeri Platformları
-            </div>
-            <div style={{
-              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-              fontSize: 12, color: "#7a7a7a",
-              padding: "10px 12px", background: C.surface, borderRadius: 8,
-              wordBreak: "break-all", marginBottom: 16,
-            }}>
+        <div className="mt-14 grid md:grid-cols-2 gap-5">
+          {/* Pazaryeri */}
+          <div className="rounded-2xl border border-border bg-card p-7 opacity-90">
+            <Eyebrow className="mb-4 block">Pazaryeri platformları</Eyebrow>
+            <div
+              className="mb-5 rounded-lg bg-secondary px-3 py-2.5 text-xs text-muted-foreground break-all"
+              style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+            >
               platform.com/s/DsJTCVXovTS21DUFJ…
             </div>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+            <ul className="m-0 flex list-none flex-col gap-3 p-0">
               {[
                 "Müşteri senin değil, platformun markasını hatırlar",
                 "Aynı sayfada rakip salonlar bir tık ötede",
-                "Müşteriler platformun veritabanında — sen değil",
+                "Müşteri verisi platformun veritabanında",
               ].map((t) => (
-                <li key={t} style={{ display: "flex", gap: 10, fontSize: 14, color: C.secondary, lineHeight: 1.5 }}>
-                  <span style={{ color: "#9a9a9a", fontWeight: 700, flexShrink: 0 }}>—</span>{t}
+                <li key={t} className="flex gap-2.5 text-sm text-secondary-foreground leading-relaxed">
+                  <span className="shrink-0 text-muted-foreground">—</span>
+                  {t}
                 </li>
               ))}
             </ul>
-          </motion.div>
+          </div>
 
           {/* Makas */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.45, delay: 0.1 }}
-            style={{
-              background: C.primary,
-              borderRadius: 16,
-              padding: "26px 24px",
-              color: "#fff",
-              boxShadow: "0 12px 40px rgba(17,17,17,0.18)",
-            }}
+          <div
+            className="rounded-2xl bg-foreground text-background p-7"
+            style={{ boxShadow: "var(--shadow-pop)" }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: "rgba(255,255,255,0.7)", textTransform: "uppercase", marginBottom: 14 }}>
-              Makas ile
+            <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.14em] text-background/70 font-mono-custom">
+              MAKAS ile
             </div>
-            <div style={{
-              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-              fontSize: 13, color: "#fff",
-              padding: "10px 12px", background: "rgba(255,255,255,0.08)", borderRadius: 8,
-              wordBreak: "break-all", marginBottom: 16, fontWeight: 600,
-            }}>
+            <div
+              className="mb-5 rounded-lg bg-white/10 px-3 py-2.5 text-[13px] font-semibold text-background break-all"
+              style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+            >
               senin-salonun.com
             </div>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+            <ul className="m-0 flex list-none flex-col gap-3 p-0">
               {[
-                "Müşteri salonu değil, seni hatırlar",
-                "Rakip yok — sayfanda sadece sen varsın",
-                "Müşteri verisi ve geçmişi tamamen senin",
+                "Müşteri salonu — yani seni hatırlar",
+                "Sayfanda rakip yok, sadece sen varsın",
+                "Tüm müşteri verisi tamamen senin",
               ].map((t) => (
-                <li key={t} style={{ display: "flex", gap: 10, fontSize: 14, color: "rgba(255,255,255,0.92)", lineHeight: 1.5 }}>
-                  <span style={{ color: "#fff", fontWeight: 700, flexShrink: 0 }}>✓</span>{t}
+                <li key={t} className="flex gap-2.5 text-sm text-background/90 leading-relaxed">
+                  <span className="shrink-0 text-background">✓</span>
+                  {t}
                 </li>
               ))}
             </ul>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
@@ -661,42 +659,21 @@ function DemoShowcase() {
   return (
     <section
       id="demo"
-      style={{
-        padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)",
-        background: C.surface,
-      }}
+      className="bg-secondary"
+      style={{ padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          style={{ textAlign: "center", marginBottom: 48 }}
-        >
-          <h2
-            style={{
-              fontSize: "clamp(24px, 4vw, 40px)",
-              fontWeight: 700,
-              letterSpacing: "-1px",
-              color: C.primary,
-              marginBottom: 12,
-            }}
-          >
-            Örnek salonlarımıza göz atın
-          </h2>
-          <p style={{ fontSize: 15, color: C.muted }}>
-            Gerçek salonlar, gerçek randevu deneyimi
-          </p>
-        </motion.div>
+      <div className="mx-auto max-w-[1100px]">
+        <SectionHead
+          eyebrow="Canlı örnekler"
+          title="Gerçek bir randevu deneyimi."
+          sub="MAKAS üzerinde çalışan salonları kendi telefonunuzdan inceleyin."
+        />
 
         <div
+          className="mx-auto mt-12 grid gap-5"
           style={{
-            display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 20,
-            maxWidth: 760,
-            margin: "0 auto",
+            maxWidth: 800,
           }}
         >
           {DEMOS.map(({ name, slug, tag }, i) => (
@@ -709,54 +686,15 @@ function DemoShowcase() {
             >
               <Link
                 href={`/${slug}`}
-                style={{
-                  display: "block",
-                  background: C.card,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 14,
-                  padding: "28px 24px",
-                  textDecoration: "none",
-                  transition: "box-shadow 0.2s, transform 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(17,17,17,0.10)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "none";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
+                className="group block rounded-2xl border border-border bg-card p-7 no-underline transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-elevated)]"
               >
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 10,
-                    background: C.surface,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 16,
-                    fontSize: 22,
-                  }}
-                >
-                  ✂️
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-secondary">
+                  <Scissors size={18} className="text-foreground" />
                 </div>
-                <p style={{ fontWeight: 700, fontSize: 16, color: C.primary, marginBottom: 6 }}>
-                  {name}
-                </p>
-                <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{tag}</p>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 5,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: C.primary,
-                  }}
-                >
-                  Ziyaret Et <ExternalLink size={13} />
+                <p className="mb-1.5 text-base font-bold text-foreground">{name}</p>
+                <p className="mb-5 text-[13px] text-muted-foreground">{tag}</p>
+                <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+                  Ziyaret Et <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
                 </span>
               </Link>
             </motion.div>
@@ -783,94 +721,82 @@ const PLAN = {
 };
 
 const ADDONS = [
-  { name: "WhatsApp hatırlatma", detail: "100 mesaj / ay dahil, sonrası kullanım başına" },
-  { name: "SMS cüzdanı",          detail: "Ön ödemeli paket — kullandıkça düşer" },
+  { name: "WhatsApp hatırlatma",    detail: "100 mesaj / ay dahil, sonrası kullanım başına" },
+  { name: "SMS cüzdanı",            detail: "Ön ödemeli paket — kullandıkça düşer" },
   { name: "Özel alan adı yönetimi", detail: "₺200 / yıl (alan adı ücreti hariç)" },
 ];
 
 function Pricing() {
   return (
-    <section id="pricing" style={{ padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)", background: C.bg }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          style={{ textAlign: "center", marginBottom: 36 }}
-        >
-          <h2 style={{ fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 700, letterSpacing: "-1px", color: C.primary, marginBottom: 12 }}>
-            Tek plan, net fiyat
-          </h2>
-          <p style={{ fontSize: 15, color: C.muted, maxWidth: 560, margin: "0 auto" }}>
-            Karmaşık paket yok, gizli ücret yok. Sınırsız her şey.
-          </p>
-        </motion.div>
+    <section
+      id="pricing"
+      className="bg-background"
+      style={{ padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
+    >
+      <div className="mx-auto max-w-[1100px]">
+        <SectionHead
+          eyebrow="Fiyatlandırma"
+          title="Tek plan, net fiyat."
+          sub="Karmaşık paket yok, gizli ücret yok. Sınırsız her şey."
+        />
 
-        <div style={{ display: "flex", justifyContent: "center" }}>
+        <div className="mt-12 grid lg:grid-cols-[1fr_1.1fr] gap-6 items-stretch">
+          {/* Plan card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
-            style={{
-              background: C.primary, color: "#F8F6F2",
-              borderRadius: 16, padding: "36px 32px",
-              display: "flex", flexDirection: "column", gap: 22,
-              width: "100%", maxWidth: 460,
-              boxShadow: "0 12px 40px rgba(17,17,17,0.18)",
-            }}
+            transition={{ duration: 0.5 }}
+            className="rounded-3xl bg-foreground p-9 text-background flex flex-col"
+            style={{ boxShadow: "var(--shadow-pop)" }}
           >
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-1px" }}>{PLAN.monthly}</span>
-              <span style={{ fontSize: 14, opacity: 0.75 }}>/ ay</span>
+            <Eyebrow className="text-background/60 mb-3 block">Standart Plan</Eyebrow>
+            <div className="flex flex-wrap items-baseline gap-2 mb-6">
+              <span className="text-[56px] font-display font-bold leading-none tracking-[-1.5px]">
+                {PLAN.monthly}
+              </span>
+              <span className="text-base opacity-75">/ ay</span>
             </div>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+            <ul className="m-0 flex list-none flex-col gap-3 p-0 mb-7 flex-1">
               {PLAN.features.map((f) => (
-                <li key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
-                  <CheckCircle size={15} strokeWidth={2.2} style={{ flexShrink: 0, opacity: 0.9 }} />
+                <li key={f} className="flex items-start gap-2.5 text-[14.5px]">
+                  <CheckCircle size={16} strokeWidth={2.2} className="shrink-0 mt-0.5 opacity-90" />
                   {f}
                 </li>
               ))}
             </ul>
-            <button
+            <PillButton
+              variant="secondary"
+              size="lg"
               onClick={() => scrollTo("contact")}
-              style={{
-                marginTop: 4, padding: "14px 18px", borderRadius: 10,
-                background: "#F8F6F2", color: C.primary,
-                fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer",
-                minHeight: 48,
-              }}
+              className="w-full"
             >
               14 Gün Ücretsiz Dene
-            </button>
+            </PillButton>
           </motion.div>
-        </div>
 
-        {/* Add-ons */}
-        <div style={{
-          marginTop: 40,
-          background: C.card,
-          border: `1px solid ${C.border}`,
-          borderRadius: 16,
-          padding: "22px 24px",
-        }}>
-          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", color: C.muted, textTransform: "uppercase", marginBottom: 14 }}>
-            Ek hizmetler
-          </p>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
-            {ADDONS.map((a) => (
-              <li key={a.name} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: C.primary }}>{a.name}</span>
-                <span style={{ fontSize: 13, color: C.muted }}>{a.detail}</span>
-              </li>
-            ))}
-          </ul>
+          {/* Add-ons */}
+          <div className="rounded-3xl border border-border bg-card p-9 flex flex-col">
+            <Eyebrow className="mb-4 block">Ek hizmetler</Eyebrow>
+            <h3 className="font-display text-2xl font-bold text-foreground tracking-[-0.5px] mb-6">
+              İhtiyacın olduğunda ekle.
+            </h3>
+            <ul className="m-0 flex list-none flex-col gap-5 p-0 flex-1">
+              {ADDONS.map((a) => (
+                <li
+                  key={a.name}
+                  className="flex flex-col gap-1 pb-4 border-b border-border last:border-0 last:pb-0"
+                >
+                  <span className="text-[15px] font-semibold text-foreground">{a.name}</span>
+                  <span className="text-[13.5px] text-muted-foreground leading-relaxed">{a.detail}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-[12.5px] text-muted-foreground">
+              Kurulum ücretsiz, istediğin zaman iptal et. KDV hariç.
+            </p>
+          </div>
         </div>
-
-        <p style={{ textAlign: "center", fontSize: 12.5, color: C.muted, marginTop: 18 }}>
-          Fiyata KDV dahil değildir. Kurulum ücretsiz, istediğin zaman iptal et.
-        </p>
       </div>
     </section>
   );
@@ -879,50 +805,28 @@ function Pricing() {
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
 
 const FAQS = [
-  { q: "Kurulum ne kadar sürer?",                  a: "Genellikle 1 gün içinde kurulum tamamlanır." },
-  { q: "Salonumun kendi adresi olacak mı?",        a: "Evet. Her salona özel salonadi.makas.tech adresi verilir. Kendi alan adınızı bağlamak isterseniz ek hizmet olarak sunuyoruz." },
-  { q: "WhatsApp hatırlatma var mı?",              a: "Evet. İsteğe bağlı olarak WhatsApp ve SMS hatırlatma entegrasyonu eklenebilir." },
-  { q: "Birden fazla berber ekleyebilir miyim?",   a: "Evet. Tüm ekip üyelerinizi sisteme ekleyebilir ve yönetebilirsiniz." },
-  { q: "Müşteri bilgilerini takip edebilir miyim?",a: "Evet. Notlar, geçmiş randevular ve müşteri takibi sistemde yer alır." },
-  { q: "Fiyatlandırma nasıl çalışıyor?",           a: "Aylık 500 ₺ sabit ücret. Sınırsız berber, sınırsız randevu. WhatsApp/SMS gibi ek hizmetler kullandığın kadar." },
+  { q: "Kurulum ne kadar sürer?",                   a: "Genellikle 1 gün içinde kurulum tamamlanır." },
+  { q: "Salonumun kendi adresi olacak mı?",         a: "Evet. Her salona özel salonadi.makas.tech adresi verilir. Kendi alan adınızı bağlamak isterseniz ek hizmet olarak sunuyoruz." },
+  { q: "WhatsApp hatırlatma var mı?",               a: "Evet. İsteğe bağlı olarak WhatsApp ve SMS hatırlatma entegrasyonu eklenebilir." },
+  { q: "Birden fazla berber ekleyebilir miyim?",    a: "Evet. Tüm ekip üyelerinizi sisteme ekleyebilir ve yönetebilirsiniz." },
+  { q: "Müşteri bilgilerini takip edebilir miyim?", a: "Evet. Notlar, geçmiş randevular ve müşteri takibi sistemde yer alır." },
+  { q: "Fiyatlandırma nasıl çalışıyor?",            a: "Aylık 500 ₺ sabit ücret. Sınırsız berber, sınırsız randevu. WhatsApp/SMS gibi ek hizmetler kullandığın kadar." },
 ];
 
 function FAQItem({ q, a, isOpen, onToggle }) {
   return (
-    <div
-      style={{
-        background: C.card,
-        border: `1px solid ${C.border}`,
-        borderRadius: 14,
-        overflow: "hidden",
-      }}
-    >
+    <div className="border-b border-border last:border-0">
       <button
         onClick={onToggle}
         aria-expanded={isOpen}
-        style={{
-          width: "100%",
-          padding: "18px 22px",
-          background: "transparent",
-          border: "none",
-          textAlign: "left",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 14,
-          color: C.primary,
-          fontSize: 16,
-          fontWeight: 600,
-          letterSpacing: "-0.2px",
-          minHeight: 56,
-        }}
+        className="flex w-full items-center justify-between gap-4 border-0 bg-transparent py-5 text-left text-[17px] font-semibold text-foreground tracking-[-0.2px]"
+        style={{ cursor: "pointer" }}
       >
         <span>{q}</span>
         <motion.span
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.22, ease: "easeInOut" }}
-          style={{ display: "inline-flex", color: C.secondary, flexShrink: 0 }}
+          className="inline-flex shrink-0 text-muted-foreground"
         >
           <ChevronDown size={20} strokeWidth={2.2} />
         </motion.span>
@@ -931,17 +835,9 @@ function FAQItem({ q, a, isOpen, onToggle }) {
         initial={false}
         animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
-        style={{ overflow: "hidden" }}
+        className="overflow-hidden"
       >
-        <p style={{
-          padding: "0 22px 20px",
-          margin: 0,
-          fontSize: 15,
-          color: C.muted,
-          lineHeight: 1.65,
-        }}>
-          {a}
-        </p>
+        <p className="m-0 pb-6 pr-10 text-[15px] text-muted-foreground leading-relaxed">{a}</p>
       </motion.div>
     </div>
   );
@@ -950,24 +846,14 @@ function FAQItem({ q, a, isOpen, onToggle }) {
 function FAQ() {
   const [open, setOpen] = useState(0);
   return (
-    <section id="faq" style={{ padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)", background: C.bg }}>
-      <div style={{ maxWidth: 760, margin: "0 auto" }}>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          style={{ textAlign: "center", marginBottom: 40 }}
-        >
-          <h2 style={{ fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 700, letterSpacing: "-1px", color: C.primary, marginBottom: 10 }}>
-            Sıkça Sorulan Sorular
-          </h2>
-          <p style={{ fontSize: 15, color: C.muted }}>
-            Aklınızdaki sorulara cevaplar.
-          </p>
-        </motion.div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <section
+      id="faq"
+      className="bg-background"
+      style={{ padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
+    >
+      <div className="mx-auto max-w-[820px]">
+        <SectionHead eyebrow="SSS" title="Aklındaki sorulara cevap." />
+        <div className="mt-12">
           {FAQS.map((f, i) => (
             <FAQItem
               key={f.q}
@@ -983,165 +869,7 @@ function FAQ() {
   );
 }
 
-// ─── Closing CTA ──────────────────────────────────────────────────────────────
-
-function ClosingCTA() {
-  return (
-    <section style={{ padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)", background: C.bg }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        style={{
-          maxWidth: 980,
-          margin: "0 auto",
-          padding: "clamp(40px, 7vw, 72px) clamp(28px, 5vw, 64px)",
-          background: C.primary,
-          color: "#F8F6F2",
-          borderRadius: 22,
-          textAlign: "center",
-          position: "relative",
-          overflow: "hidden",
-          boxShadow: "0 20px 60px rgba(17,17,17,0.18)",
-        }}
-      >
-        <div
-          aria-hidden
-          style={{
-            position: "absolute", inset: 0,
-            background: "radial-gradient(ellipse 60% 80% at 80% 30%, rgba(248,246,242,0.08) 0%, transparent 60%)",
-            pointerEvents: "none",
-          }}
-        />
-        <p style={{
-          position: "relative",
-          fontSize: 13,
-          fontWeight: 600,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          opacity: 0.7,
-          marginBottom: 14,
-        }}>
-          Hazır mısınız?
-        </p>
-        <h2 style={{
-          position: "relative",
-          fontSize: "clamp(28px, 5vw, 48px)",
-          fontWeight: 800,
-          letterSpacing: "-1.2px",
-          lineHeight: 1.15,
-          marginBottom: 16,
-        }}>
-          Salonunuzu dijitale taşıyın.
-        </h2>
-        <p style={{
-          position: "relative",
-          fontSize: "clamp(15px, 1.6vw, 18px)",
-          opacity: 0.78,
-          maxWidth: 560,
-          margin: "0 auto 32px",
-          lineHeight: 1.6,
-        }}>
-          Randevularınızı kolayca yönetin, müşteri kaybını azaltın.
-        </p>
-        <div style={{
-          position: "relative",
-          display: "flex", gap: 12,
-          justifyContent: "center", flexWrap: "wrap",
-        }}>
-          <button
-            onClick={() => scrollTo("contact")}
-            style={{
-              padding: "14px 28px",
-              borderRadius: 10,
-              background: "#F8F6F2",
-              color: C.primary,
-              fontSize: 15,
-              fontWeight: 700,
-              border: "none",
-              cursor: "pointer",
-              display: "inline-flex", alignItems: "center", gap: 8,
-              minHeight: 48,
-            }}
-          >
-            Demo Talep Et <ArrowRight size={16} />
-          </button>
-          <button
-            onClick={() => scrollTo("contact")}
-            style={{
-              padding: "14px 28px",
-              borderRadius: 10,
-              background: "transparent",
-              color: "#F8F6F2",
-              fontSize: 15,
-              fontWeight: 600,
-              border: "1.5px solid rgba(248,246,242,0.32)",
-              cursor: "pointer",
-              minHeight: 48,
-            }}
-          >
-            Bizimle İletişime Geç
-          </button>
-        </div>
-      </motion.div>
-    </section>
-  );
-}
-
-// ─── Sticky Mobile CTA ────────────────────────────────────────────────────────
-
-function StickyMobileCTA() {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        left: 0, right: 0, bottom: 0,
-        padding: "10px 14px calc(10px + env(safe-area-inset-bottom))",
-        background: "rgba(248,246,242,0.92)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-        borderTop: `1px solid ${C.border}`,
-        zIndex: 40,
-      }}
-      className="makas-sticky-cta"
-    >
-      <button
-        onClick={() => scrollTo("contact")}
-        style={{
-          width: "100%",
-          padding: "14px 18px",
-          borderRadius: 10,
-          background: C.primary,
-          color: "#fff",
-          fontSize: 16,
-          fontWeight: 600,
-          border: "none",
-          cursor: "pointer",
-        }}
-      >
-        Demo Talep Et
-      </button>
-      <style>{`
-        @media (min-width: 768px) { .makas-sticky-cta { display: none !important; } }
-      `}</style>
-    </div>
-  );
-}
-
 // ─── Lead Form ────────────────────────────────────────────────────────────────
-
-const inputStyle = {
-  width: "100%",
-  padding: "12px 14px",
-  border: `1px solid ${C.border}`,
-  borderRadius: 10,
-  fontSize: 16,
-  background: C.card,
-  color: C.primary,
-  outline: "none",
-  boxSizing: "border-box",
-};
 
 function LeadForm() {
   const [form, setForm] = useState({
@@ -1151,7 +879,7 @@ function LeadForm() {
     email: "",
     message: "",
   });
-  const [status, setStatus] = useState("idle"); // idle | loading | success | error
+  const [status, setStatus] = useState("idle");
   const [errMsg, setErrMsg] = useState("");
 
   function set(k) {
@@ -1181,162 +909,127 @@ function LeadForm() {
     }
   }
 
+  const inputClass =
+    "w-full rounded-[10px] border border-border bg-card px-3.5 py-3 text-base text-foreground outline-none focus:border-foreground transition-colors";
+
   return (
     <section
       id="contact"
-      style={{
-        padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 32px)",
-        maxWidth: 1100,
-        margin: "0 auto",
-      }}
+      className="bg-secondary"
+      style={{ padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
     >
-      <div style={{ maxWidth: 560, margin: "0 auto" }}>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          style={{ textAlign: "center", marginBottom: 40 }}
-        >
+      <div className="mx-auto max-w-[1100px] grid lg:grid-cols-[1fr_1.1fr] gap-12 items-start">
+        <div>
+          <Eyebrow className="mb-4 block">İletişim</Eyebrow>
           <h2
-            style={{
-              fontSize: "clamp(22px, 4vw, 36px)",
-              fontWeight: 700,
-              letterSpacing: "-0.5px",
-              color: C.primary,
-              marginBottom: 10,
-            }}
+            className="font-display font-bold text-foreground leading-[1.05]"
+            style={{ fontSize: "clamp(32px, 4.6vw, 48px)", letterSpacing: "-1.4px" }}
           >
-            Salonunuz için böyle bir sistem ister misiniz?
+            Salonunuz için<br />sistemi konuşalım.
           </h2>
-          <p style={{ fontSize: 15, color: C.muted }}>
-            Formu doldurun, en kısa sürede size ulaşalım.
+          <p className="mt-5 text-muted-foreground leading-relaxed" style={{ fontSize: "17px" }}>
+            Formu doldurun, en kısa sürede size ulaşıp salonunuza özel kurulumu
+            başlatalım.
           </p>
-        </motion.div>
+          <ul className="mt-8 space-y-3 text-sm text-secondary-foreground">
+            {[
+              "Ücretsiz kurulum + ilk ay rehberlik",
+              "Sözleşme yok, istediğin zaman iptal",
+              "WhatsApp destek hattı",
+            ].map((t) => (
+              <li key={t} className="flex items-center gap-2.5">
+                <CheckCircle size={16} strokeWidth={2.2} className="text-foreground shrink-0" />
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
 
         {status === "success" ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            style={{
-              background: "#F0FDF4",
-              border: "1px solid #BBF7D0",
-              borderRadius: 14,
-              padding: "32px 28px",
-              textAlign: "center",
-            }}
+            className="rounded-2xl border border-emerald-200 bg-emerald-50 px-7 py-12 text-center"
           >
-            <CheckCircle size={40} color="#16A34A" style={{ marginBottom: 12 }} />
-            <p style={{ fontWeight: 600, fontSize: 17, color: "#15803D", marginBottom: 6 }}>
+            <CheckCircle size={40} className="mx-auto mb-3 text-emerald-600" />
+            <p className="mb-1.5 text-[17px] font-semibold text-emerald-800">
               Mesajınızı aldık!
             </p>
-            <p style={{ fontSize: 14, color: "#166534" }}>
-              En kısa sürede döneceğiz.
-            </p>
+            <p className="text-sm text-emerald-900">En kısa sürede döneceğiz.</p>
           </motion.div>
         ) : (
           <motion.form
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: 0.5 }}
             onSubmit={submit}
-            style={{
-              background: C.card,
-              border: `1px solid ${C.border}`,
-              borderRadius: 16,
-              padding: "36px 32px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-            }}
+            className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-8"
           >
-            <div>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: C.secondary, marginBottom: 6 }}>
-                Salon Adı *
-              </label>
+            <Field label="Salon Adı *">
               <input
-                style={inputStyle}
+                className={inputClass}
                 placeholder="Örnek: Ahmet Berber Salonu"
                 value={form.businessName}
                 onChange={set("businessName")}
                 required
               />
-            </div>
+            </Field>
 
-            <div>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: C.secondary, marginBottom: 6 }}>
-                İsim *
-              </label>
+            <Field label="İsim *">
               <input
-                style={inputStyle}
+                className={inputClass}
                 placeholder="Adınız Soyadınız"
                 value={form.name}
                 onChange={set("name")}
                 required
               />
-            </div>
+            </Field>
 
-            <div>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: C.secondary, marginBottom: 6 }}>
-                Telefon *
-              </label>
+            <Field label="Telefon *">
               <input
-                style={inputStyle}
+                className={inputClass}
                 placeholder="0532 000 00 00"
                 type="tel"
                 value={form.phone}
                 onChange={set("phone")}
                 required
               />
-            </div>
+            </Field>
 
-            <div>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: C.secondary, marginBottom: 6 }}>
-                E-posta
-              </label>
+            <Field label="E-posta">
               <input
-                style={inputStyle}
+                className={inputClass}
                 placeholder="ornek@mail.com"
                 type="email"
                 value={form.email}
                 onChange={set("email")}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: C.secondary, marginBottom: 6 }}>
-                Mesaj
-              </label>
+            <Field label="Mesaj">
               <textarea
-                style={{ ...inputStyle, minHeight: 100, resize: "vertical" }}
+                className={inputClass}
+                style={{ minHeight: 100, resize: "vertical" }}
                 placeholder="Salonunuz, ihtiyaçlarınız veya sorularınız..."
                 value={form.message}
                 onChange={set("message")}
               />
-            </div>
+            </Field>
 
             {status === "error" && (
-              <p style={{ fontSize: 13, color: C.primary }}>{errMsg}</p>
+              <p className="text-[13px] text-destructive">{errMsg}</p>
             )}
 
-            <button
+            <PillButton
+              variant="primary"
+              size="lg"
               type="submit"
               disabled={status === "loading"}
-              style={{
-                padding: "14px",
-                borderRadius: 10,
-                background: status === "loading" ? C.secondary : C.primary,
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: 15,
-                border: "none",
-                cursor: status === "loading" ? "not-allowed" : "pointer",
-                transition: "background 0.2s",
-              }}
+              className="w-full"
             >
               {status === "loading" ? "Gönderiliyor…" : "Bana Ulaşın"}
-            </button>
+            </PillButton>
           </motion.form>
         )}
       </div>
@@ -1344,103 +1037,34 @@ function LeadForm() {
   );
 }
 
-// ─── Footer ───────────────────────────────────────────────────────────────────
-
-function Footer() {
+function Field({ label, children }) {
   return (
-    <footer
+    <div>
+      <label className="mb-1.5 block text-[13px] font-medium text-secondary-foreground">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+// ─── Sticky Mobile CTA ────────────────────────────────────────────────────────
+
+function StickyMobileCTA() {
+  return (
+    <div
+      className="makas-sticky-cta fixed inset-x-0 bottom-0 z-40 border-t border-border pb-safe-sm px-3.5 pt-2.5"
       style={{
-        background: C.primary,
-        color: "#F8F6F2",
-        padding: "48px 24px 32px",
+        background: "color-mix(in oklab, var(--makas-bg) 92%, transparent)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
       }}
     >
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: 32,
-          marginBottom: 40,
-        }}
-      >
-        {/* Brand */}
-        <div>
-          <div className="flex items-center gap-3.5" style={{ marginBottom: 10 }}>
-            <MakasMark variant="light" className="block h-10 w-10" />
-            <span className="font-display" style={{ fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", lineHeight: 1 }}>MAKAS</span>
-          </div>
-          <p style={{ fontSize: 13, color: "rgba(248,246,242,0.6)", lineHeight: 1.6 }}>
-            Premium berber çözümleri
-          </p>
-        </div>
-
-        {/* Links */}
-        <div>
-          <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 14, color: "rgba(248,246,242,0.5)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            Gezinti
-          </p>
-          {[
-            { label: "Nasıl Çalışır", id: "how" },
-            { label: "Özellikler", id: "features" },
-            { label: "Demo",       id: "demo" },
-            { label: "Fiyatlandırma", id: "pricing" },
-            { label: "SSS",        id: "faq" },
-            { label: "İletişim",   id: "contact" },
-          ].map(({ label, id }) => (
-            <button
-              key={id}
-              onClick={() => scrollTo(id)}
-              style={{
-                display: "block",
-                background: "none",
-                border: "none",
-                color: "rgba(248,246,242,0.7)",
-                fontSize: 14,
-                cursor: "pointer",
-                padding: "3px 0",
-                marginBottom: 4,
-                textAlign: "left",
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Contact */}
-        <div>
-          <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 14, color: "rgba(248,246,242,0.5)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            İletişim
-          </p>
-          <a
-            href="mailto:sercanfurunci41@gmail.com"
-            style={{ display: "block", color: "rgba(248,246,242,0.7)", fontSize: 14, textDecoration: "none", marginBottom: 6 }}
-          >
-            sercanfurunci41@gmail.com
-          </a>
-        </div>
-      </div>
-
-      <div
-        style={{
-          borderTop: "1px solid rgba(248,246,242,0.1)",
-          paddingTop: 24,
-          textAlign: "center",
-          fontSize: 13,
-          color: "rgba(248,246,242,0.4)",
-        }}
-      >
-        <span>© 2026 MAKAS. Tüm hakları saklıdır.</span>
-        <span style={{ margin: "0 8px", opacity: 0.3 }}>·</span>
-        <a href="/gizlilik" style={{ color: "inherit", textDecoration: "none", opacity: 0.7 }}>Gizlilik</a>
-        <span style={{ margin: "0 8px", opacity: 0.3 }}>·</span>
-        <a href="/kullanim-kosullari" style={{ color: "inherit", textDecoration: "none", opacity: 0.7 }}>Kullanım Koşulları</a>
-        <span style={{ margin: "0 8px", opacity: 0.3 }}>·</span>
-        <a href="/cerez-politikasi" style={{ color: "inherit", textDecoration: "none", opacity: 0.7 }}>Çerezler</a>
-      </div>
-    </footer>
+      <PillButton variant="primary" size="md" onClick={() => scrollTo("contact")} className="w-full">
+        14 Gün Ücretsiz Dene
+      </PillButton>
+      <style>{`@media (min-width: 768px) { .makas-sticky-cta { display: none !important; } }`}</style>
+    </div>
   );
 }
 
@@ -1448,22 +1072,25 @@ function Footer() {
 
 export default function LandingPage() {
   return (
-    <div style={{ background: C.bg, minHeight: "100dvh", fontFamily: "inherit", paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div
+      className="min-h-dvh bg-background"
+      style={{ fontFamily: "inherit", paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
       <style>{`@media (max-width: 767px){ body{ padding-bottom: 76px; } }`}</style>
-      <Navbar />
+      <LandingNavbar />
       <main>
         <Hero />
-        <HowItWorks />
-        <Features />
-        <WhyUs />
+        <SocialProofStrip />
+        <WhyDifferent />
+        <TestimonialBand />
+        <ExploreGrid />
         <OwnYourBrand />
         <DemoShowcase />
         <Pricing />
         <FAQ />
         <LeadForm />
-        <ClosingCTA />
       </main>
-      <Footer />
+      <LandingFooter />
       <StickyMobileCTA />
     </div>
   );

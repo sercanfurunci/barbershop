@@ -3,18 +3,6 @@
 import { motion } from "framer-motion";
 import { Clock, Check } from "lucide-react";
 
-const C = {
-  bg:       "#F7F4EE",
-  bgSoft:   "#FDFBF7",
-  surface:  "#EFEAE2",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
-  dim:      "#C5BEB5",
-};
-
 const CATEGORY_LABELS = {
   tr: { all: "Tümü", cuts: "Kesim", beard: "Sakal", combo: "Kombo", premium: "Premium" },
   en: { all: "All",  cuts: "Cut",   beard: "Beard", combo: "Combo", premium: "Premium" },
@@ -32,12 +20,12 @@ const CAT_ORDER = ["cuts", "beard", "combo", "premium"];
 function SkeletonRow() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "13px 16px" }}>
-      <div style={{ width: "42px", height: "42px", background: C.surface, borderRadius: "10px", flexShrink: 0 }} />
+      <div className="bg-secondary" style={{ width: "42px", height: "42px", borderRadius: "10px", flexShrink: 0 }} />
       <div style={{ flex: 1 }}>
-        <div style={{ height: "14px", width: "55%", background: C.surface, borderRadius: "4px", marginBottom: "6px" }} />
-        <div style={{ height: "10px", width: "35%", background: C.surface, borderRadius: "4px" }} />
+        <div className="bg-secondary" style={{ height: "14px", width: "55%", borderRadius: "4px", marginBottom: "6px" }} />
+        <div className="bg-secondary" style={{ height: "10px", width: "35%", borderRadius: "4px" }} />
       </div>
-      <div style={{ width: "44px", height: "16px", background: C.surface, borderRadius: "4px" }} />
+      <div className="bg-secondary" style={{ width: "44px", height: "16px", borderRadius: "4px" }} />
     </div>
   );
 }
@@ -51,26 +39,26 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
       {!compact && (
         <div style={{ marginBottom: "14px" }}>
           <h1
-            className="font-display font-light"
-            style={{ fontSize: "clamp(26px, 4vw, 40px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "5px" }}
+            className="font-display font-light text-foreground"
+            style={{ fontSize: "clamp(26px, 4vw, 40px)", letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "5px" }}
           >
             {s1.title?.[0]}{" "}
-            <span style={{ fontStyle: "italic", color: C.primary }}>{s1.title?.[1]}</span>
+            <span className="text-foreground" style={{ fontStyle: "italic" }}>{s1.title?.[1]}</span>
           </h1>
-          <p style={{ fontSize: "13px", color: C.muted }}>{s1.subtitle}</p>
+          <p className="text-muted-foreground" style={{ fontSize: "13px" }}>{s1.subtitle}</p>
         </div>
       )}
 
       {/* Service list */}
-      <div style={{ borderRadius: "12px", overflow: "hidden", border: `1px solid ${C.border}` }}>
+      <div className="border-border" style={{ borderRadius: "12px", overflow: "hidden", borderWidth: "1px", borderStyle: "solid" }}>
         {!loaded ? (
           Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} style={{ background: C.card, borderBottom: i < 4 ? `1px solid ${C.border}` : "none" }}>
+            <div key={i} className={`bg-card ${i < 4 ? "border-b border-border" : ""}`}>
               <SkeletonRow />
             </div>
           ))
         ) : services.length === 0 ? (
-          <div style={{ background: C.card, padding: "32px 16px", textAlign: "center", fontSize: "13px", color: C.muted }}>
+          <div className="bg-card text-muted-foreground" style={{ padding: "32px 16px", textAlign: "center", fontSize: "13px" }}>
             {lang === "tr" ? "Henüz hizmet eklenmemiş" : "No services available"}
           </div>
         ) : (
@@ -85,13 +73,13 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.035 }}
                 onClick={() => onSelect(service)}
+                className={`${i < services.length - 1 ? "border-b border-border" : ""}`}
                 style={{
                   display: "flex", alignItems: "center", gap: "12px",
                   width: "100%", textAlign: "left",
                   padding: "13px 16px",
-                  background: isSelected ? "#FEF2F2" : C.card,
-                  borderLeft: `3px solid ${isSelected ? C.primary : "transparent"}`,
-                  borderBottom: i < services.length - 1 ? `1px solid ${C.border}` : "none",
+                  background: isSelected ? "#FEF2F2" : "var(--makas-surface)",
+                  borderLeft: `3px solid ${isSelected ? "var(--makas-ink)" : "transparent"}`,
                   cursor: "pointer",
                   transition: "background 0.15s",
                   minHeight: "68px",
@@ -100,7 +88,7 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
                 {/* Icon */}
                 <div style={{
                   width: "42px", height: "42px", flexShrink: 0,
-                  background: isSelected ? `${C.primary}18` : C.surface,
+                  background: isSelected ? "rgba(17,17,17,0.09)" : "var(--makas-surface2)",
                   borderRadius: "10px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "19px",
@@ -112,17 +100,16 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "3px" }}>
-                    <span style={{
+                    <span className="text-foreground" style={{
                       fontSize: "14px", fontWeight: 500,
-                      color: isSelected ? C.primary : C.primary,
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}>
                       {service.name[lang]}
                     </span>
                     {service.popular && (
-                      <span style={{
+                      <span className="text-foreground" style={{
                         fontSize: "8px", fontWeight: 700, letterSpacing: "0.06em",
-                        color: C.primary, background: `${C.primary}15`,
+                        background: "rgba(17,17,17,0.08)",
                         padding: "1px 5px", borderRadius: "3px", flexShrink: 0,
                         textTransform: "uppercase",
                       }}>
@@ -131,8 +118,8 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
                     )}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <Clock size={10} style={{ color: C.muted, flexShrink: 0 }} />
-                    <span style={{ fontSize: "11px", color: C.muted }}>
+                    <Clock size={10} className="text-muted-foreground" style={{ flexShrink: 0 }} />
+                    <span className="text-muted-foreground" style={{ fontSize: "11px" }}>
                       {service.duration} {lang === "tr" ? "dk" : "min"}
                     </span>
                     <span style={{
@@ -150,16 +137,17 @@ export default function ServiceSelect({ services, loaded, selected, onSelect, la
 
                 {/* Price + check */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
-                  <span style={{ fontSize: "16px", fontWeight: 700, color: isSelected ? C.primary : C.primary, letterSpacing: "-0.01em" }}>
+                  <span className="text-foreground" style={{ fontSize: "16px", fontWeight: 700, letterSpacing: "-0.01em" }}>
                     {service.price == null ? "Sorulur" : `₺${service.price.toLocaleString()}`}
                   </span>
                   {isSelected && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      style={{ width: "18px", height: "18px", background: C.primary, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                      className="bg-foreground"
+                      style={{ width: "18px", height: "18px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}
                     >
-                      <Check size={10} color="#fff" />
+                      <Check size={10} className="text-background" />
                     </motion.div>
                   )}
                 </div>

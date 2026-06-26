@@ -11,10 +11,10 @@ import { track } from "@/lib/track";
 import { telHref, waHref } from "@/lib/validation";
 
 const C = {
-  card:    "#FFFFFF",
-  border:  "#E5DED3",
-  primary: "#111111",
-  muted:   "#8A8480",
+  card:    "var(--makas-surface)",
+  border:  "var(--makas-border)",
+  primary: "var(--makas-ink)",
+  muted:   "var(--makas-ink-muted)",
 };
 
 export default function StickyActionBar({ shop }) {

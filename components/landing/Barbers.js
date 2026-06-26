@@ -10,14 +10,14 @@ import { useShop } from "@/contexts/ShopContext";
 import { Star, Scissors, ArrowRight } from "lucide-react";
 
 const C = {
-  bg:       "#F7F4EE",
+  bg:       "var(--makas-bg)",
   bgSoft:   "#FDFBF7",
-  surface:  "#EFEAE2",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
+  surface:  "var(--makas-surface2)",
+  card:     "var(--makas-surface)",
+  border:   "var(--makas-border)",
+  primary:  "var(--makas-ink)",
+  secondary:"var(--makas-ink-secondary)",
+  muted:    "var(--makas-ink-muted)",
   dimRed:   "rgba(17,17,17,0.08)",
 };
 
@@ -49,7 +49,7 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
 
   return (
     <section id="barbers" style={{ background: C.bg, position: "relative" }}>
-      <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, #E5DFD6 30%, #E5DFD6 70%, transparent)" }} />
+      <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--makas-border) 30%, var(--makas-border) 70%, transparent)" }} />
 
       <div style={{
         width: "min(1280px, 100%)",
@@ -218,21 +218,21 @@ function BarberCard({ barber, lang, tx, index }) {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
+          boxShadow: `0 1px 2px rgba(17,17,17,0.04), 0 0 0 1px ${C.border}`,
           transition: "box-shadow 0.25s, transform 0.25s",
           cursor: "pointer",
         }}
         onMouseEnter={e => {
-          e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)";
+          e.currentTarget.style.boxShadow = `0 12px 36px rgba(17,17,17,0.10), 0 0 0 1px ${C.border}`;
           e.currentTarget.style.transform = "translateY(-4px)";
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)";
+          e.currentTarget.style.boxShadow = `0 1px 2px rgba(17,17,17,0.04), 0 0 0 1px ${C.border}`;
           e.currentTarget.style.transform = "translateY(0)";
         }}
       >
         {/* ── Image ── */}
-        <div style={{ position: "relative", aspectRatio: "4 / 5", flexShrink: 0, background: "#1a1210", overflow: "hidden" }}>
+        <div style={{ position: "relative", aspectRatio: "4 / 5", flexShrink: 0, background: C.surface, overflow: "hidden" }}>
           {barber.profilePhoto ? (
             <Image
               src={barber.profilePhoto}
@@ -245,12 +245,12 @@ function BarberCard({ barber, lang, tx, index }) {
           ) : (
             <div style={{
               width: "100%", height: "100%",
-              background: "linear-gradient(160deg, #2a2420 0%, #1a1210 60%, #0e0b09 100%)",
+              background: `linear-gradient(160deg, ${C.bgSoft} 0%, ${C.surface} 100%)`,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <svg viewBox="0 0 200 240" style={{ width: 72, opacity: 0.15 }} fill="none">
-                <ellipse cx="100" cy="64" rx="42" ry="46" fill="#fff" />
-                <path d="M18 240c0-49 36.6-88.7 82-88.7S182 191 182 240H18z" fill="#fff" />
+              <svg viewBox="0 0 200 240" style={{ width: 72, opacity: 0.18 }} fill="none">
+                <ellipse cx="100" cy="64" rx="42" ry="46" fill="var(--makas-ink)" />
+                <path d="M18 240c0-49 36.6-88.7 82-88.7S182 191 182 240H18z" fill="var(--makas-ink)" />
               </svg>
             </div>
           )}

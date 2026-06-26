@@ -55,7 +55,7 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
     <section
       className="salon-info"
       style={{
-        background: "#0f0f0f",
+        background: "var(--makas-footer)",
         color: "#fff",
         marginBottom: 0,
         position: "relative",
@@ -78,7 +78,7 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
           flex-direction: column;
           justify-content: center;
           gap: 24px;
-          background: #111111;
+          background: var(--makas-footer);
           position: relative;
           z-index: 2;
           min-width: 0;
@@ -256,7 +256,7 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
                 display: "inline-flex", alignItems: "center", gap: "10px",
                 alignSelf: "flex-start",
                 padding: "14px 24px",
-                background: "#fff", color: "#111",
+                background: "#fff", color: "var(--makas-ink)",
                 fontSize: "13px", fontWeight: 700,
                 letterSpacing: "0.04em", textTransform: "uppercase",
                 borderRadius: "100px",

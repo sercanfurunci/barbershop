@@ -80,7 +80,7 @@
 }
 
 :root {
-  --background: #F6F3EE;
+  --background: #F5F1EB;
   --foreground: #111111;
   --card: #FFFFFF;
   --card-foreground: #111111;
@@ -91,11 +91,11 @@
   --secondary: #EFEAE2;
   --secondary-foreground: #44403C;
   --muted: #EFEAE2;
-  --muted-foreground: #6B7280;
+  --muted-foreground: #6B6B6B;
   --accent: #111111;
   --accent-foreground: #FFFFFF;
   --destructive: #B91C1C;
-  --border: #E5DFD6;
+  --border: #E7E0D7;
   --input: #FFFFFF;
   --ring: #111111;
   --chart-1: #111111;
@@ -105,25 +105,40 @@
   --chart-5: #059669;
   --radius: 0.5rem;
   --sidebar: #111111;
-  --sidebar-foreground: #F6F3EE;
+  --sidebar-foreground: #F5F1EB;
   --sidebar-primary: #111111;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #1e1e1e;
-  --sidebar-accent-foreground: #F6F3EE;
+  --sidebar-accent-foreground: #F5F1EB;
   --sidebar-border: #2a2a2a;
   --sidebar-ring: #111111;
 
   /* Brand tokens */
-  --makas-bg: #F6F3EE;
+  --makas-bg: #F5F1EB;
   --makas-surface: #FFFFFF;
   --makas-surface2: #EFEAE2;
   --makas-ink: #111111;
   --makas-ink-secondary: #44403C;
-  --makas-ink-muted: #6B7280;
-  --makas-border: #E5DFD6;
+  --makas-ink-muted: #6B6B6B;
+  --makas-border: #E7E0D7;
   --makas-thumb: #D8D1C7;
   --makas-thumb-hover: #BEB6AA;
   --makas-footer: #111111;
+
+  /* Elevation — public surfaces only. Use sparingly; cream bg + 1px border > shadow */
+  --shadow-card: 0 1px 2px rgba(17,17,17,0.04);
+  --shadow-elevated: 0 8px 24px rgba(17,17,17,0.06);
+  --shadow-pop: 0 12px 36px rgba(17,17,17,0.10);
+
+  /* Section padding scale — landing/tenant/booking */
+  --section-py-sm: 48px;   /* compact bands (CTA, social proof) */
+  --section-py-md: 80px;   /* default */
+  --section-py-lg: 112px;  /* hero, marquee */
+
+  /* Pill button heights — taller than admin shadcn Button (h-8) for marketing CTAs */
+  --pill-h-sm: 40px;
+  --pill-h-md: 48px;
+  --pill-h-lg: 56px;
 }
 
 * {
@@ -226,6 +241,50 @@ button, a, [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Interaction defaults — Tailwind v4 dropped the implicit pointer cursor on
+   buttons. Restore it for every clickable affordance and add a consistent
+   focus-visible ring so keyboard users always see where they are. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+summary,
+[role="tab"],
+[role="menuitem"],
+[role="option"],
+[role="link"],
+[role="checkbox"],
+[role="switch"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"],
+label[for],
+select {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+[disabled],
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Consistent focus-visible ring for interactive controls (text inputs handle
+   their own focus border in components). */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="option"]:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--makas-ink);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
 /* Prevent iOS Safari input zoom — inline styles can't override this */
 @media (max-width: 639px) {
   input, select, textarea {
@@ -245,9 +304,11 @@ button, a, [role="button"] {
   padding-top: env(safe-area-inset-top);
 }
 
-/* Touch targets */
+/* Touch targets — 40px keeps admin density while clearing the realistic
+   finger-tap minimum. Components that need to opt out (chip rows, tightly
+   packed icon clusters) can override with a fixed height. */
 button, [role="button"] {
-  min-height: 36px;
+  min-height: 40px;
 }
 
 /* Superadmin responsive */
@@ -277,6 +338,71 @@ button, [role="button"] {
   .sa-modal-sheet    { border-radius: 16px 16px 0 0; max-height: 92dvh; overflow: hidden; }
   .sa-drag-handle    { display: flex; }
 }
+
+/* Legal / long-form prose — used by /gizlilik, /kullanim-kosullari, /cerez-politikasi.
+   Comfortable reading width is enforced by the layout (max-w 720px); this just
+   handles vertical rhythm and inline element styling. */
+.legal-body {
+  color: var(--makas-ink-secondary);
+  font-size: 16px;
+  line-height: 1.75;
+}
+.legal-body > * + * { margin-top: 14px; }
+.legal-body p {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--makas-ink-secondary);
+}
+.legal-body strong { color: var(--makas-ink); font-weight: 600; }
+.legal-body a {
+  color: var(--makas-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--makas-border);
+  transition: text-decoration-color 0.15s;
+}
+.legal-body a:hover { text-decoration-color: var(--makas-ink); }
+.legal-body ul, .legal-body ol {
+  margin: 12px 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.legal-body ul li { list-style: disc; }
+.legal-body ol li { list-style: decimal; }
+.legal-body code {
+  font-family: var(--font-dm-mono), ui-monospace, monospace;
+  font-size: 13.5px;
+  background: var(--makas-surface2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--makas-ink);
+}
+.legal-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 14px;
+}
+.legal-body th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-family: var(--font-dm-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--makas-ink-muted);
+  border-bottom: 1px solid var(--makas-border);
+  font-weight: 600;
+}
+.legal-body td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--makas-border);
+  color: var(--makas-ink-secondary);
+}
+.legal-body tr:last-child td { border-bottom: 0; }
 
 /* Animate in utilities */
 @keyframes fadeUp {

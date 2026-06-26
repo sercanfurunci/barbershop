@@ -12,8 +12,8 @@ import { track } from "@/lib/track";
 import { telHref, waHref } from "@/lib/validation";
 
 const C = {
-  bg: "#F7F4EE",
-  primary: "#111111",
+  bg: "var(--makas-bg)",
+  primary: "var(--makas-ink)",
   muted: "rgba(255,255,255,0.7)",
 };
 

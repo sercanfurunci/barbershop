@@ -12,18 +12,6 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { formatPhoneTRDisplay, toLocal10 } from "@/lib/validation";
 
-const C = {
-  bg:       "#F7F4EE",
-  bgSoft:   "#FDFBF7",
-  surface:  "#EFEAE2",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
-  dim:      "#C5BEB5",
-};
-
 function validateForm(form) {
   const errors = {};
   if (!form.name.trim() || form.name.trim().length < 2)
@@ -171,10 +159,10 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.15, type: "spring", stiffness: 240, damping: 18 }}
-          className="flex items-center justify-center mb-8"
-          style={{ width: "80px", height: "80px", background: C.primary, borderRadius: "20px" }}
+          className="flex items-center justify-center mb-8 bg-foreground text-background"
+          style={{ width: "80px", height: "80px", borderRadius: "20px" }}
         >
-          <Check size={36} color="#fff" />
+          <Check size={36} />
         </motion.div>
 
         <motion.div
@@ -183,27 +171,27 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
           transition={{ delay: 0.35 }}
           className="w-full"
         >
-          <div style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: C.primary, marginBottom: "16px", fontWeight: 500 }}>
+          <div className="text-foreground" style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "16px", fontWeight: 500 }}>
             {success.badge}
           </div>
           <h2
-            className="font-display font-light"
-            style={{ fontSize: "clamp(36px, 5vw, 52px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.0, marginBottom: "16px" }}
+            className="font-display font-light text-foreground"
+            style={{ fontSize: "clamp(36px, 5vw, 52px)", letterSpacing: "-0.02em", lineHeight: 1.0, marginBottom: "16px" }}
           >
             {titleLine1}<br />
-            <span style={{ fontStyle: "italic", color: C.primary }}>{titleLine2}</span>
+            <span className="text-foreground" style={{ fontStyle: "italic" }}>{titleLine2}</span>
           </h2>
-          <p style={{ fontSize: "14px", color: C.secondary, marginBottom: "4px" }}>{success.confirmed}</p>
-          <p style={{ fontSize: "13px", color: C.muted, marginBottom: "32px" }}>
+          <p className="text-secondary-foreground" style={{ fontSize: "14px", marginBottom: "4px" }}>{success.confirmed}</p>
+          <p className="text-muted-foreground" style={{ fontSize: "13px", marginBottom: "32px" }}>
             {success.emailSent ? success.emailSent(form.email) : form.email}
           </p>
 
           {/* Booking details card */}
           <div
-            className="text-left mb-6 w-full"
-            style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "24px" }}
+            className="text-left mb-6 w-full bg-card border-border"
+            style={{ borderWidth: "1px", borderStyle: "solid", borderRadius: "12px", padding: "24px" }}
           >
-            <div style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.muted, marginBottom: "16px" }}>
+            <div className="text-muted-foreground" style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "16px" }}>
               {success.detailsTitle}
             </div>
             <div className="space-y-3">
@@ -216,10 +204,10 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
 
           {/* Add to Calendar */}
           <div
-            className="w-full mb-6"
-            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px" }}
+            className="w-full mb-6 bg-secondary border-border"
+            style={{ borderWidth: "1px", borderStyle: "solid", borderRadius: "12px", padding: "20px" }}
           >
-            <div style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.muted, marginBottom: "14px", fontWeight: 500 }}>
+            <div className="text-muted-foreground" style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "14px", fontWeight: 500 }}>
               Takvime Ekle
             </div>
             <div className="flex flex-col gap-2.5">
@@ -227,10 +215,10 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
                 href={gcalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 transition-all duration-150"
-                style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "11px 16px", fontSize: "13px", fontWeight: 500, color: C.primary, textDecoration: "none" }}
+                className="flex items-center gap-3 transition-all duration-150 bg-card border-border text-foreground"
+                style={{ borderWidth: "1px", borderStyle: "solid", borderRadius: "8px", padding: "11px 16px", fontSize: "13px", fontWeight: 500, textDecoration: "none" }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(17,17,17,0.25)"}
-                onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+                onMouseLeave={e => e.currentTarget.style.borderColor = "var(--makas-border)"}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <path d="M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" fill="#4285F4"/>
@@ -248,18 +236,18 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
                 <a
                   href={icsUrl}
                   download
-                  className="flex items-center gap-3 transition-all duration-150"
-                  style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "11px 16px", fontSize: "13px", fontWeight: 500, color: C.primary, textDecoration: "none" }}
+                  className="flex items-center gap-3 transition-all duration-150 bg-card border-border text-foreground"
+                  style={{ borderWidth: "1px", borderStyle: "solid", borderRadius: "8px", padding: "11px 16px", fontSize: "13px", fontWeight: 500, textDecoration: "none" }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(17,17,17,0.25)"}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = "var(--makas-border)"}
                 >
-                  <Download size={15} style={{ color: C.muted }} />
+                  <Download size={15} className="text-muted-foreground" />
                   Apple / Outlook Takvimi
-                  <span style={{ marginLeft: "auto", fontSize: "11px", color: C.muted }}>(.ics)</span>
+                  <span className="text-muted-foreground" style={{ marginLeft: "auto", fontSize: "11px" }}>(.ics)</span>
                 </a>
               )}
             </div>
-            <p style={{ fontSize: "11px", color: C.dim, marginTop: "12px", lineHeight: 1.5 }}>
+            <p style={{ fontSize: "11px", color: "#C5BEB5", marginTop: "12px", lineHeight: 1.5 }}>
               48 saat ve 3 saat öncesi için otomatik hatırlatıcı eklenir.
             </p>
           </div>
@@ -267,33 +255,28 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Link
               href={shopSlug ? `/${shopSlug}` : "/"}
-              className="flex-1 flex items-center justify-center transition-all duration-200"
+              className="flex-1 flex items-center justify-center transition-all duration-200 border-border text-secondary-foreground"
               style={{
-                border: `1px solid ${C.border}`,
-                color: C.secondary,
+                borderWidth: "1px", borderStyle: "solid",
                 padding: "13px 20px",
                 borderRadius: "8px",
                 fontSize: "13px",
                 fontWeight: 500,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.color = C.primary; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.secondary; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--makas-ink)"; e.currentTarget.style.color = "var(--makas-ink)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--makas-border)"; e.currentTarget.style.color = "var(--makas-ink-secondary)"; }}
             >
               {success.backHome}
             </Link>
             <Link
               href={shopSlug ? `/${shopSlug}/book` : "/book"}
-              className="flex-1 flex items-center justify-center gap-2 transition-all duration-200"
+              className="flex-1 flex items-center justify-center gap-2 transition-all duration-200 bg-foreground text-background"
               style={{
-                background: C.primary,
-                color: "#fff",
                 padding: "13px 20px",
                 borderRadius: "8px",
                 fontSize: "13px",
                 fontWeight: 600,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#111111"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = C.primary; }}
             >
               {success.bookAgain}
               <ArrowRight size={13} />
@@ -310,38 +293,38 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
       {!compact && (
         <div className="mb-10">
           <div className="flex items-center gap-2.5 mb-4">
-            <div style={{ width: "20px", height: "2px", background: C.primary, borderRadius: "1px" }} />
-            <span style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: C.primary, fontWeight: 500 }}>
+            <div className="bg-foreground" style={{ width: "20px", height: "2px", borderRadius: "1px" }} />
+            <span className="text-foreground" style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 500 }}>
               {s4.eyebrow}
             </span>
           </div>
           <h1
-            className="font-display font-light"
-            style={{ fontSize: "clamp(32px, 4.5vw, 48px)", color: C.primary, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "10px" }}
+            className="font-display font-light text-foreground"
+            style={{ fontSize: "clamp(32px, 4.5vw, 48px)", letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "10px" }}
           >
             {s4.title?.[0]}{" "}
-            <span style={{ fontStyle: "italic", color: C.primary }}>{s4.title?.[1]}</span>
+            <span className="text-foreground" style={{ fontStyle: "italic" }}>{s4.title?.[1]}</span>
           </h1>
-          <p style={{ fontSize: "14px", color: C.secondary, lineHeight: 1.6 }}>{s4.subtitle}</p>
+          <p className="text-secondary-foreground" style={{ fontSize: "14px", lineHeight: 1.6 }}>{s4.subtitle}</p>
         </div>
       )}
 
       {/* Mobile-only compact booking summary */}
       <div
-        className="lg:hidden mb-5 flex items-center justify-between gap-4"
-        style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 20px" }}
+        className="lg:hidden mb-5 flex items-center justify-between gap-4 bg-card border-border"
+        style={{ borderWidth: "1px", borderStyle: "solid", borderRadius: "12px", padding: "16px 20px" }}
       >
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: "14px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div className="text-foreground" style={{ fontSize: "14px", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {serviceName}
           </div>
-          <div style={{ fontSize: "12px", color: C.muted, marginTop: "2px" }}>
+          <div className="text-muted-foreground" style={{ fontSize: "12px", marginTop: "2px" }}>
             {barberName && `${barberName} · `}
             {booking.date ? format(booking.date, "d MMM", { locale }) : ""}
             {booking.time ? ` · ${booking.time}` : ""}
           </div>
         </div>
-        <span className="font-display font-light shrink-0" style={{ fontSize: "24px", color: C.primary, letterSpacing: "-0.02em" }}>
+        <span className="font-display font-light shrink-0 text-foreground" style={{ fontSize: "24px", letterSpacing: "-0.02em" }}>
           {booking.service?.price == null ? "Sorulur" : `₺${booking.service.price.toLocaleString()}`}
         </span>
       </div>
@@ -350,14 +333,14 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
         {/* Booking summary sidebar — desktop only */}
         <div className="hidden lg:block lg:col-span-2">
           <div
-            className="sticky top-24"
-            style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "24px" }}
+            className="sticky top-24 bg-card border-border"
+            style={{ borderWidth: "1px", borderStyle: "solid", borderRadius: "12px", padding: "24px" }}
           >
-            <div style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.muted, marginBottom: "20px" }}>
+            <div className="text-muted-foreground" style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "20px" }}>
               {s4.summaryTitle}
             </div>
 
-            <div className="space-y-4 pb-5 mb-5" style={{ borderBottom: `1px solid ${C.border}` }}>
+            <div className="space-y-4 pb-5 mb-5 border-b border-border">
               <SummaryRow icon={<Scissors size={13} />} label={s4.labels?.service} value={serviceName} />
               <SummaryRow icon={<User size={13} />} label={s4.labels?.barber} value={barberName} />
               <SummaryRow icon={<Clock size={13} />} label={s4.labels?.duration} value={`${booking.service?.duration} ${success.duration ?? "dk"}`} />
@@ -366,13 +349,13 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
             </div>
 
             <div className="flex items-center justify-between">
-              <span style={{ fontSize: "12px", color: C.secondary }}>{s4.labels?.total}</span>
-              <span className="font-display font-light" style={{ fontSize: "28px", color: C.primary, letterSpacing: "-0.02em" }}>
+              <span className="text-secondary-foreground" style={{ fontSize: "12px" }}>{s4.labels?.total}</span>
+              <span className="font-display font-light text-foreground" style={{ fontSize: "28px", letterSpacing: "-0.02em" }}>
                 {booking.service?.price == null ? "Sorulur" : `₺${booking.service.price.toLocaleString()}`}
               </span>
             </div>
 
-            <p style={{ fontSize: "11px", color: C.muted, marginTop: "12px", lineHeight: 1.6 }}>{s4.disclaimer}</p>
+            <p className="text-muted-foreground" style={{ fontSize: "11px", marginTop: "12px", lineHeight: 1.6 }}>{s4.disclaimer}</p>
           </div>
         </div>
 
@@ -415,7 +398,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
           />
 
           <div>
-            <label style={{ display: "block", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: C.muted, marginBottom: "8px", fontWeight: 500 }}>
+            <label className="text-muted-foreground" style={{ display: "block", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "8px", fontWeight: 500 }}>
               {s4.formLabels?.notes}
             </label>
             <textarea
@@ -423,12 +406,12 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={3}
+              className="bg-card border-border text-foreground"
               style={{
                 width: "100%",
-                background: C.card,
-                border: `1px solid ${C.border}`,
+                borderWidth: "1px",
+                borderStyle: "solid",
                 borderRadius: "8px",
-                color: C.primary,
                 fontSize: "16px",
                 padding: "12px 14px",
                 resize: "none",
@@ -437,7 +420,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
                 lineHeight: 1.6,
               }}
               onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(17,17,17,0.5)"; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "var(--makas-border)"; }}
             />
           </div>
 
@@ -446,8 +429,8 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
             disabled={loading}
             className="hidden md:flex w-full items-center justify-center gap-2.5 transition-all duration-200"
             style={{
-              background: loading ? C.surface : C.primary,
-              color: loading ? C.secondary : "#fff",
+              background: loading ? "var(--makas-surface2)" : "var(--makas-ink)",
+              color: loading ? "var(--makas-ink-secondary)" : "var(--makas-bg)",
               padding: "16px 24px",
               borderRadius: "8px",
               fontSize: "14px",
@@ -456,8 +439,6 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
               cursor: loading ? "not-allowed" : "pointer",
               letterSpacing: "0.01em",
             }}
-            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "#111111"; }}
-            onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = C.primary; }}
           >
             {loading ? (
               <>
@@ -472,7 +453,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
             )}
           </button>
 
-          <p className="text-center" style={{ fontSize: "12px", color: C.muted }}>{s4.disclaimer}</p>
+          <p className="text-center text-muted-foreground" style={{ fontSize: "12px" }}>{s4.disclaimer}</p>
         </form>
       </div>
     </div>
@@ -482,9 +463,9 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
 function SummaryRow({ icon, label, value }) {
   return (
     <div className="flex items-center gap-3">
-      <span style={{ color: C.primary, flexShrink: 0 }}>{icon}</span>
-      <span style={{ fontSize: "13px", color: C.secondary, flexShrink: 0 }}>{label}</span>
-      {value && <span style={{ fontSize: "13px", color: C.primary, marginLeft: "auto", textAlign: "right" }}>{value}</span>}
+      <span className="text-foreground" style={{ flexShrink: 0 }}>{icon}</span>
+      <span className="text-secondary-foreground" style={{ fontSize: "13px", flexShrink: 0 }}>{label}</span>
+      {value && <span className="text-foreground" style={{ fontSize: "13px", marginLeft: "auto", textAlign: "right" }}>{value}</span>}
     </div>
   );
 }
@@ -492,12 +473,12 @@ function SummaryRow({ icon, label, value }) {
 function FormField({ label, placeholder, value, onChange, onBlur, type = "text", icon, required, error, inputMode, autoComplete }) {
   return (
     <div>
-      <label style={{ display: "block", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: error ? C.primary : C.muted, marginBottom: "8px", fontWeight: 500 }}>
-        {label}{required && <span style={{ color: C.primary, marginLeft: "2px" }}>*</span>}
+      <label style={{ display: "block", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: error ? "var(--makas-ink)" : "var(--makas-ink-muted)", marginBottom: "8px", fontWeight: 500 }}>
+        {label}{required && <span className="text-foreground" style={{ marginLeft: "2px" }}>*</span>}
       </label>
       <div className="relative">
         {icon && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: error ? C.primary : C.muted }}>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: error ? "var(--makas-ink)" : "var(--makas-ink-muted)" }}>
             {icon}
           </span>
         )}
@@ -509,24 +490,23 @@ function FormField({ label, placeholder, value, onChange, onBlur, type = "text",
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
+          className="bg-card text-foreground"
           style={{
             width: "100%",
-            background: C.card,
-            border: `1px solid ${error ? C.primary : C.border}`,
+            border: `1px solid ${error ? "var(--makas-ink)" : "var(--makas-border)"}`,
             borderRadius: "8px",
-            color: C.primary,
             fontSize: "16px",
             padding: icon ? "11px 14px 11px 36px" : "11px 14px",
             outline: "none",
             transition: "border-color 0.15s",
             height: "44px",
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = error ? C.primary : "rgba(17,17,17,0.5)"; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = error ? C.primary : C.border; onBlur?.(); }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = error ? "var(--makas-ink)" : "rgba(17,17,17,0.5)"; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = error ? "var(--makas-ink)" : "var(--makas-border)"; onBlur?.(); }}
         />
       </div>
       {error && (
-        <p style={{ fontSize: "11px", color: C.primary, marginTop: "5px" }}>{error}</p>
+        <p className="text-foreground" style={{ fontSize: "11px", marginTop: "5px" }}>{error}</p>
       )}
     </div>
   );

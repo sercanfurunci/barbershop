@@ -9,11 +9,6 @@ import {
 } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 
-const C = {
-  bg: "#F6F3EE", card: "#FFFFFF", border: "#E5DFD6", surface: "#EFEAE2",
-  primary: "#111111", secondary: "#44403C", muted: "#6B7280",
-};
-
 export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
   const [currentMonth, setCurrentMonth] = useState(selectedDate ?? new Date());
   const today    = startOfDay(new Date());
@@ -45,16 +40,18 @@ export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexShrink: 0 }}>
         <button
           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          style={{ width: "44px", height: "44px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "9px", color: C.secondary, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          className="bg-secondary border-border text-secondary-foreground"
+          style={{ width: "44px", height: "44px", borderWidth: "1px", borderStyle: "solid", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
         >
           <ChevronLeft size={17} />
         </button>
-        <span className="font-display font-light" style={{ fontSize: "21px", color: C.primary, letterSpacing: "-0.01em" }}>
+        <span className="font-display font-light text-foreground" style={{ fontSize: "21px", letterSpacing: "-0.01em" }}>
           {format(currentMonth, "MMMM yyyy", { locale })}
         </span>
         <button
           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          style={{ width: "44px", height: "44px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "9px", color: C.secondary, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          className="bg-secondary border-border text-secondary-foreground"
+          style={{ width: "44px", height: "44px", borderWidth: "1px", borderStyle: "solid", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
         >
           <ChevronRight size={17} />
         </button>
@@ -63,7 +60,7 @@ export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
       {/* Day labels */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: "4px", flexShrink: 0 }}>
         {DAY_LABELS.map((d) => (
-          <div key={d} style={{ textAlign: "center", fontSize: "10px", color: C.muted, fontWeight: 600, padding: "4px 0", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+          <div key={d} className="text-muted-foreground" style={{ textAlign: "center", fontSize: "10px", fontWeight: 600, padding: "4px 0", letterSpacing: "0.04em", textTransform: "uppercase" }}>
             {d}
           </div>
         ))}
@@ -88,8 +85,8 @@ export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
                 alignItems: "center",
                 justifyContent: "center",
                 borderRadius: "9px",
-                background: isSelected ? C.primary : "transparent",
-                color: isSelected ? "#fff" : available ? C.primary : "#CEC8C0",
+                background: isSelected ? "var(--makas-ink)" : "transparent",
+                color: isSelected ? "var(--makas-bg)" : available ? "var(--makas-ink)" : "#CEC8C0",
                 fontSize: "16px",
                 fontWeight: isToday ? 700 : 400,
                 cursor: available ? "pointer" : "not-allowed",
@@ -100,7 +97,7 @@ export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
             >
               {format(day, "d")}
               {isToday && !isSelected && (
-                <div style={{ position: "absolute", bottom: "5px", left: "50%", transform: "translateX(-50%)", width: "3px", height: "3px", borderRadius: "50%", background: C.primary }} />
+                <div style={{ position: "absolute", bottom: "5px", left: "50%", transform: "translateX(-50%)", width: "3px", height: "3px", borderRadius: "50%", background: "var(--makas-ink)" }} />
               )}
             </button>
           );
