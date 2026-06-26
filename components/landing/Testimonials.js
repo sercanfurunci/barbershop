@@ -1,9 +1,10 @@
 "use client";
 
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { testimonials } from "@/lib/data";
 import { useLang } from "@/contexts/LanguageContext";
-import { Star } from "lucide-react";
+import { Star, X } from "lucide-react";
 
 const C = {
   bg:       "var(--makas-bg)",
@@ -31,24 +32,49 @@ export default function Testimonials({ googleReviews = null }) {
   // ponytail: SSR-provided. No client fetch, no loading skeleton.
   const isGoogle      = !!(googleReviews?.reviews?.length);
   const items         = isGoogle ? googleReviews.reviews : testimonials;
-  if (!items.length) return null;
-  const displayRating = isGoogle ? googleReviews.rating?.toFixed(1) : "4.9";
-  const displayTotal  = isGoogle ? `${googleReviews.totalRatings}+` : "400+";
+  const displayRating = isGoogle ? googleReviews?.rating?.toFixed(1) : "4.9";
+  const displayTotal  = isGoogle ? `${googleReviews?.totalRatings}+` : "400+";
 
   const getText = (item) =>
     isGoogle ? item.text : (typeof item.text === "object" ? item.text[lang] : item.text);
   const getRole = (item) =>
     isGoogle ? item.relativeTime : (typeof item.role === "object" ? item.role[lang] : item.role);
 
+  // Modal state — one shared <dialog> for whichever card was opened.
+  const dialogRef    = useRef(null);
+  const closeBtnRef  = useRef(null);
+  const [active, setActive] = useState(null);
+  const open  = useCallback((item) => setActive(item), []);
+  const close = useCallback(() => setActive(null), []);
+
+  useEffect(() => {
+    const d = dialogRef.current;
+    if (!d) return;
+    if (active && !d.open) {
+      d.showModal();
+      requestAnimationFrame(() => closeBtnRef.current?.focus({ preventScroll: true }));
+    }
+    if (!active && d.open) d.close();
+  }, [active]);
+
+  useEffect(() => {
+    if (!active) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [active]);
+
+  if (!items.length) return null;
+
   return (
     <section id="testimonials" style={{ background: C.bg }}>
       <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--makas-border) 30%, var(--makas-border) 70%, transparent)" }} />
 
       <div style={{
-        width: "min(1440px, 100%)",
+        width: "min(1280px, 100%)",
         marginInline: "auto",
         paddingInline: "clamp(20px, 4vw, 32px)",
-        paddingBlock: "clamp(56px, 7vw, 88px)",
+        paddingBlock: "clamp(40px, 5vw, 64px)",
       }}>
 
         {/* Header */}
@@ -95,15 +121,14 @@ export default function Testimonials({ googleReviews = null }) {
           </motion.div>
         </div>
 
-        {/* Layout:
-            mobile  — horizontal snap slider, cards 78vw
-            tablet  — 2-col grid
-            desktop — up to 4 columns, each capped at ~300px */}
+        {/* mobile = horizontal snap slider; tablet = 2 cols; desktop = 3
+            cols max, wider cards with more breathing room. */}
         {items.length > 0 && (
           <>
             <style>{`
               .testimonials-track {
                 display: flex;
+                align-items: stretch;
                 gap: 16px;
                 overflow-x: auto;
                 scroll-snap-type: x mandatory;
@@ -115,132 +140,293 @@ export default function Testimonials({ googleReviews = null }) {
               .testimonials-track::-webkit-scrollbar { display: none; }
               .testimonials-track { scrollbar-width: none; }
               .testimonials-track > * {
-                flex: 0 0 78vw;
-                max-width: 340px;
+                flex: 0 0 82vw;
+                max-width: 360px;
                 scroll-snap-align: start;
+                display: flex;            /* let inner card fill via flex:1 */
+                flex-direction: column;
               }
               @media (min-width: 768px) {
                 .testimonials-track {
                   display: grid;
                   grid-template-columns: repeat(2, 1fr);
-                  gap: 16px;
+                  gap: 20px;
                   overflow: visible;
                   padding-inline: 0;
                   margin-inline: 0;
+                  align-items: stretch;   /* grid items already stretch by default; explicit for safety */
                 }
                 .testimonials-track > * { flex: initial; max-width: none; }
               }
               @media (min-width: 1024px) {
                 .testimonials-track {
                   grid-template-columns: repeat(${Math.min(items.length, 4)}, minmax(0, 1fr));
-                  gap: 16px;
-                  max-width: ${items.length <= 2 ? `${items.length * 360}px` : "none"};
-                  margin-inline: ${items.length <= 2 ? "auto" : 0};
+                  gap: 18px;
                 }
               }
             `}</style>
             <div className="testimonials-track">
               {items.slice(0, 4).map((item, i) => (
-                <motion.div
+                <TestimonialCard
                   key={i}
-                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                  style={{ height: "100%" }}
-                >
-                  <div
-                    style={{
-                      background: C.card,
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "12px",
-                      padding: "20px",
-                      display: "flex",
-                      flexDirection: "column",
-                      height: "100%",
-                      minHeight: "160px",
-                      transition: "border-color 0.2s, box-shadow 0.2s",
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = "rgba(17,17,17,0.25)";
-                      e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.06)";
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = C.border;
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
-                  >
-                    {/* Stars */}
-                    <div className="flex gap-0.5 mb-3">
-                      {[1,2,3,4,5].map(s => (
-                        <Star key={s} size={11}
-                          fill={s <= (item.rating ?? 5) ? C.primary : "transparent"}
-                          style={{ color: C.primary }}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Quote — clamp 4 lines for denser rows */}
-                    <p className="line-clamp-4" style={{
-                      fontSize: "14px",
-                      color: C.secondary,
-                      lineHeight: 1.55,
-                      flex: 1,
-                      marginBottom: "14px",
-                    }}>
-                      &ldquo;{getText(item)}&rdquo;
-                    </p>
-
-                    {/* Author */}
-                    <div
-                      className="flex items-center gap-3"
-                      style={{ borderTop: `1px solid ${C.border}`, paddingTop: "12px" }}
-                    >
-                      {item.profilePhoto ? (
-                        <img
-                          src={item.profilePhoto}
-                          alt={item.name}
-                          referrerPolicy="no-referrer"
-                          style={{
-                            width: "32px", height: "32px",
-                            borderRadius: "7px", objectFit: "cover", flexShrink: 0,
-                          }}
-                        />
-                      ) : (
-                        <div style={{
-                          width: "32px", height: "32px", borderRadius: "7px",
-                          background: C.primary, flexShrink: 0,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "11px", fontWeight: 700, color: "#fff",
-                        }}>
-                          {item.avatar || item.name?.[0]}
-                        </div>
-                      )}
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{
-                          fontSize: "13px", color: C.primary, fontWeight: 600,
-                          letterSpacing: "-0.005em",
-                          lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                        }}>
-                          {item.name}
-                        </div>
-                        <div style={{ fontSize: "10px", color: C.muted, marginTop: "1px" }}>
-                          {getRole(item)}
-                        </div>
-                      </div>
-                      {isGoogle && (
-                        <div style={{ flexShrink: 0 }}>
-                          <GoogleIcon />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
+                  i={i}
+                  item={item}
+                  lang={lang}
+                  isGoogle={isGoogle}
+                  text={getText(item)}
+                  role={getRole(item)}
+                  onOpen={() => open(item)}
+                />
               ))}
             </div>
           </>
         )}
       </div>
+
+      {/* Full-review modal — opened from any card's "Read more" button. */}
+      <style>{`
+        .testimonial-modal::backdrop {
+          background: rgba(17,17,17,0.55);
+          backdrop-filter: blur(2px);
+        }
+      `}</style>
+      <dialog
+        ref={dialogRef}
+        className="testimonial-modal"
+        onClose={close}
+        onClick={(e) => { if (e.target === dialogRef.current) close(); }}
+        aria-label={lang === "tr" ? "Tam değerlendirme" : "Full review"}
+        style={{
+          background: C.card,
+          border: `1px solid ${C.border}`,
+          padding: 0,
+          width: "min(92vw, 560px)",
+          maxHeight: "82vh",
+          borderRadius: 16,
+          color: C.primary,
+          margin: "auto",
+          boxShadow: "0 24px 60px rgba(17,17,17,0.25)",
+        }}
+      >
+        {active && (
+          <div style={{
+            display: "flex", flexDirection: "column",
+            padding: "22px 22px 20px", gap: 14, maxHeight: "82vh",
+          }}>
+            <div className="flex items-center justify-between">
+              <div className="flex gap-0.5">
+                {[1,2,3,4,5].map(s => (
+                  <Star key={s} size={14}
+                    fill={s <= (active.rating ?? 5) ? C.primary : "transparent"}
+                    style={{ color: C.primary }}
+                  />
+                ))}
+              </div>
+              <button
+                ref={closeBtnRef}
+                type="button"
+                onClick={close}
+                aria-label={lang === "tr" ? "Kapat" : "Close"}
+                style={{
+                  width: 34, height: 34, borderRadius: 999,
+                  background: "transparent", color: C.secondary,
+                  border: `1px solid ${C.border}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p style={{
+              fontSize: "15px", color: C.secondary,
+              lineHeight: 1.7, margin: 0,
+              whiteSpace: "pre-wrap", overflowY: "auto",
+            }}>
+              &ldquo;{getText(active)}&rdquo;
+            </p>
+
+            <div
+              className="flex items-center gap-3"
+              style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14 }}
+            >
+              {active.profilePhoto ? (
+                <img
+                  src={active.profilePhoto}
+                  alt={active.name}
+                  referrerPolicy="no-referrer"
+                  style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                />
+              ) : (
+                <div style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  background: C.primary, flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, fontWeight: 700, color: "#fff",
+                }}>
+                  {active.avatar || active.name?.[0]}
+                </div>
+              )}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 14, color: C.primary, fontWeight: 600 }}>
+                  {active.name}
+                </div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
+                  {getRole(active)}
+                </div>
+              </div>
+              {isGoogle && <GoogleIcon />}
+            </div>
+          </div>
+        )}
+      </dialog>
     </section>
+  );
+}
+
+// ponytail: per-card local state so each card can independently detect
+// overflow with a single ResizeObserver. The shared modal lives at section
+// level — cards just shout up via onOpen.
+function TestimonialCard({ i, item, lang, isGoogle, text, role, onOpen }) {
+  const quoteRef = useRef(null);
+  const [truncated, setTruncated] = useState(false);
+
+  useEffect(() => {
+    const el = quoteRef.current;
+    if (!el) return;
+    const check = () => setTruncated(el.scrollHeight - el.clientHeight > 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [text]);
+
+  const C_ = C;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16, scale: 0.98 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+      style={{ display: "flex", flex: 1 }}
+    >
+      <div
+        style={{
+          background: C_.card,
+          border: `1px solid ${C_.border}`,
+          borderRadius: "12px",
+          padding: "18px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          flex: 1,
+          minHeight: "180px",
+          transition: "border-color 0.2s, box-shadow 0.2s",
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.borderColor = "rgba(17,17,17,0.25)";
+          e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.06)";
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.borderColor = C_.border;
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      >
+        {/* Stars */}
+        <div className="flex gap-0.5 mb-3">
+          {[1,2,3,4,5].map(s => (
+            <Star key={s} size={11}
+              fill={s <= (item.rating ?? 5) ? C_.primary : "transparent"}
+              style={{ color: C_.primary }}
+            />
+          ))}
+        </div>
+
+        {/* Quote + optional "Read more" — wrapped so they share the middle
+            flex region while the author footer stays pinned. */}
+        <div style={{
+          flex: 1, minHeight: 0,
+          display: "flex", flexDirection: "column",
+          marginBottom: "12px",
+        }}>
+          <p ref={quoteRef} className="line-clamp-4" style={{
+            fontSize: "13px",
+            color: C_.secondary,
+            lineHeight: 1.55,
+            margin: 0,
+          }}>
+            &ldquo;{text}&rdquo;
+          </p>
+          {truncated && (
+            <button
+              type="button"
+              onClick={onOpen}
+              style={{
+                alignSelf: "flex-start",
+                marginTop: 8,
+                padding: 0,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                color: C_.primary,
+                letterSpacing: "0.01em",
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+              }}
+            >
+              {lang === "tr" ? "Devamını oku" : "Read more"}
+            </button>
+          )}
+        </div>
+
+        {/* Author */}
+        <div
+          className="flex items-center gap-2"
+          style={{ borderTop: `1px solid ${C_.border}`, paddingTop: "10px" }}
+        >
+          {item.profilePhoto ? (
+            <img
+              src={item.profilePhoto}
+              alt={item.name}
+              referrerPolicy="no-referrer"
+              style={{
+                width: "26px", height: "26px",
+                borderRadius: "50%", objectFit: "cover", flexShrink: 0,
+              }}
+            />
+          ) : (
+            <div style={{
+              width: "26px", height: "26px", borderRadius: "50%",
+              background: C_.primary, flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "10px", fontWeight: 700, color: "#fff",
+            }}>
+              {item.avatar || item.name?.[0]}
+            </div>
+          )}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{
+              fontSize: "12px", color: C_.primary, fontWeight: 600,
+              letterSpacing: "-0.005em",
+              lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {item.name}
+            </div>
+            <div style={{ fontSize: "10px", color: C_.muted, marginTop: "1px" }}>
+              {role}
+            </div>
+          </div>
+          {isGoogle && (
+            <div style={{ flexShrink: 0 }}>
+              <GoogleIcon />
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
   );
 }

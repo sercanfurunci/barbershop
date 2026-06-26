@@ -10,7 +10,7 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const SWIPE_THRESHOLD = 40;
 
-export default function Gallery({ images, shopName }) {
+export default function Gallery({ images, shopName, aside = null }) {
   const [open, setOpen]   = useState(null); // index or null
   const dialogRef = useRef(null);
   const closeBtnRef = useRef(null);
@@ -80,67 +80,54 @@ export default function Gallery({ images, shopName }) {
     touchStartX.current = null;
   };
 
-  return (
-    <section style={{
-      background: "var(--makas-bg)",
-      padding: "clamp(56px, 8vw, 96px) clamp(20px, 5vw, 40px)",
-    }}>
-      <div style={{ maxWidth: 1200, marginInline: "auto" }}>
-        <div style={{
-          textAlign: "center", marginBottom: "clamp(28px, 4vw, 48px)",
-          display: "flex", flexDirection: "column", gap: "12px",
-        }}>
-          <div style={{
-            fontSize: 11, fontWeight: 600, letterSpacing: "0.22em",
-            textTransform: "uppercase", color: "rgba(17,17,17,0.45)",
-          }}>
-            Salondan
-          </div>
-          <h2 className="font-display" style={{
-            fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 300,
-            letterSpacing: "-0.02em", lineHeight: 1.08, color: "var(--makas-ink)", margin: 0,
-          }}>
-            Galeri
-          </h2>
-        </div>
+  // Image grid — first image is featured (4/3) when 3+; rest stay 1/1.
+  // Inside a 2-col gallery that's fine because col-span-2 makes the featured
+  // image fill the gallery panel width.
+  const imageGrid = (
+    <div className="grid grid-cols-2 gap-4">
+      {images.map((url, i) => {
+        const featured = images.length >= 3 && i === 0;
+        return (
+          <button
+            key={url + i}
+            type="button"
+            onClick={() => setOpen(i)}
+            className={`group relative overflow-hidden rounded-xl bg-stone-200 ${
+              featured ? "col-span-2 aspect-[4/3]" : "aspect-[4/3.6]"
+            } ${images.length === 1 ? "col-span-2 aspect-[4/3]" : ""}`}
+            style={{ border: 0, padding: 0, cursor: "pointer" }}
+            aria-label={`Galeri görseli ${i + 1}`}
+          >
+            <Image
+              src={url}
+              alt={shopName ? `${shopName} — Galeri ${i + 1}` : `Galeri ${i + 1}`}
+              fill
+              sizes={featured ? "(max-width: 1024px) 90vw, 720px" : "(max-width: 1024px) 45vw, 240px"}
+              loading={i < 2 ? "eager" : "lazy"}
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
 
-        <div
-          className={
-            images.length === 1
-              ? "grid grid-cols-1 gap-3 md:gap-4 max-w-[820px] mx-auto"
-              : images.length === 2
-                ? "grid grid-cols-2 gap-3 md:gap-4 max-w-[960px] mx-auto"
-                : images.length === 3
-                  ? "grid grid-cols-3 gap-3 md:gap-4"
-                  : "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4"
-          }
-        >
-          {images.map((url, i) => (
-            <button
-              key={url + i}
-              type="button"
-              onClick={() => setOpen(i)}
-              style={{
-                position: "relative",
-                aspectRatio: images.length === 1 ? "16 / 9" : "1 / 1",
-                border: 0, padding: 0, cursor: "pointer",
-                borderRadius: 10, overflow: "hidden",
-                background: "#eee",
-              }}
-              aria-label={`Galeri görseli ${i + 1}`}
-            >
-              <Image
-                src={url}
-                alt={shopName ? `${shopName} — Galeri ${i + 1}` : `Galeri ${i + 1}`}
-                fill
-                sizes="(max-width: 768px) 48vw, (max-width: 1024px) 48vw, 24vw"
-                loading="lazy"
-                style={{ objectFit: "cover", transition: "transform 0.4s ease" }}
-                className="hover:scale-105"
-              />
-            </button>
-          ))}
-        </div>
+  return (
+    <section id="gallery" style={{
+      background: "var(--makas-bg)",
+      padding: "clamp(20px, 3.2vw, 44px) clamp(20px, 5vw, 40px) clamp(40px, 6vw, 72px)",
+    }}>
+      <div style={{ maxWidth: 1280, marginInline: "auto" }}>
+        {aside ? (
+          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8 lg:gap-10 items-start">
+            <div className="min-w-0">{imageGrid}</div>
+            <aside className="w-full lg:max-w-[420px] lg:justify-self-end">
+              {aside}
+            </aside>
+          </div>
+        ) : (
+          imageGrid
+        )}
       </div>
 
       {/* Lightbox */}

@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useShop } from "@/contexts/ShopContext";
-import { Star, Scissors, ArrowRight } from "lucide-react";
+import { Star, ArrowRight } from "lucide-react";
 
 const C = {
   bg:       "var(--makas-bg)",
@@ -18,7 +18,6 @@ const C = {
   primary:  "var(--makas-ink)",
   secondary:"var(--makas-ink-secondary)",
   muted:    "var(--makas-ink-muted)",
-  dimRed:   "rgba(17,17,17,0.08)",
 };
 
 function initials(name = "") {
@@ -33,8 +32,7 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
   const bookHref = shop?.slug ? `/${shop.slug}/book` : "/book";
   if (!barbers.length) return null;
 
-  // Lazily fetch profile photos from the CDN-cached public API.
-  // Not in SSR payload to keep initial HTML small (~150–200 KB per photo).
+  // Lazy-fetch CDN-cached profile photos. Not in SSR payload to keep HTML small.
   useEffect(() => {
     if (!shop?.id) return;
     fetch(`/api/barbers?shopId=${shop.id}`)
@@ -55,12 +53,12 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
         width: "min(1280px, 100%)",
         marginInline: "auto",
         paddingInline: "clamp(20px, 4vw, 32px)",
-        paddingBlock: "clamp(48px, 7vw, 84px)",
+        paddingBlock: "clamp(40px, 5vw, 64px)",
       }}>
 
         {/* Header */}
         <div
-          style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "36px" }}
+          style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "32px" }}
           className="lg:flex-row lg:items-end lg:justify-between"
         >
           <motion.div
@@ -72,10 +70,10 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
             <h2
               className="font-display font-light"
               style={{
-                fontSize: "clamp(36px, 4vw, 56px)",
+                fontSize: "clamp(32px, 3.6vw, 48px)",
                 color: C.primary,
                 letterSpacing: "-0.03em",
-                lineHeight: 0.95,
+                lineHeight: 1,
               }}
             >
               {tx.barbers.title[0]}{" "}
@@ -95,17 +93,13 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
           </motion.p>
         </div>
 
-        {/* Layout — adaptive by count:
-              1   → single 320px card, centered
-              2/3 → fixed col count at 280px each, centered
-              4+  → auto-fit (240–280px), centered
-            Mobile is always a horizontal snap carousel.
-            Centering uses `width: fit-content; margin-inline: auto` so cards
-            never stretch to fill the section width. */}
+        {/* Fresha-style avatar row. Mobile = horizontal snap scroll; desktop
+            = flex row with even spacing, never wraps until count ≥ 6 (then
+            spills to a second row via flex-wrap). */}
         <style>{`
-          .barbers-track {
+          .barbers-row {
             display: flex;
-            gap: 16px;
+            gap: clamp(16px, 2.5vw, 28px);
             overflow-x: auto;
             scroll-snap-type: x mandatory;
             scroll-padding-inline: clamp(20px, 4vw, 32px);
@@ -113,49 +107,32 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
             margin-inline: calc(-1 * clamp(20px, 4vw, 32px));
             -webkit-overflow-scrolling: touch;
           }
-          .barbers-track::-webkit-scrollbar { display: none; }
-          .barbers-track { scrollbar-width: none; }
-          .barbers-track > * {
-            flex: 0 0 82vw;
-            min-width: 82vw;
-            max-width: 320px;
+          .barbers-row::-webkit-scrollbar { display: none; }
+          .barbers-row { scrollbar-width: none; }
+          .barbers-row > * {
+            flex: 0 0 40vw;
+            max-width: 200px;
+            min-width: 140px;
             scroll-snap-align: start;
           }
           @media (min-width: 768px) {
-            .barbers-track {
-              display: grid;
-              grid-template-columns: ${
-                barbers.length === 1
-                  ? "minmax(240px, 320px)"
-                  : "repeat(2, minmax(240px, 280px))"
-              };
-              gap: 20px;
+            .barbers-row {
               overflow: visible;
               padding-inline: 0;
-              margin-inline: auto;
-              width: fit-content;
-              max-width: 100%;
+              margin-inline: 0;
               justify-content: center;
+              flex-wrap: wrap;
             }
-            .barbers-track > * { flex: initial; min-width: 0; max-width: none; }
-          }
-          @media (min-width: 1024px) {
-            .barbers-track {
-              grid-template-columns: ${
-                barbers.length === 1
-                  ? "minmax(240px, 320px)"
-                  : barbers.length === 2
-                    ? "repeat(2, minmax(240px, 280px))"
-                    : barbers.length === 3
-                      ? "repeat(3, minmax(240px, 280px))"
-                      : "repeat(auto-fit, minmax(240px, 280px))"
-              };
+            .barbers-row > * {
+              flex: 1 1 0;
+              max-width: 220px;
+              min-width: 0;
             }
           }
         `}</style>
-        <div className="barbers-track">
+        <div className="barbers-row">
           {barbers.map((barber, i) => (
-            <BarberCard key={barber.id} barber={barber} lang={lang} tx={tx} index={i} />
+            <BarberAvatar key={barber.id} barber={barber} lang={lang} tx={tx} index={i} />
           ))}
         </div>
 
@@ -165,7 +142,7 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          style={{ marginTop: "40px", display: "flex", justifyContent: "center" }}
+          style={{ marginTop: "36px", display: "flex", justifyContent: "center" }}
         >
           <Link
             href={bookHref}
@@ -191,176 +168,117 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
   );
 }
 
-function BarberCard({ barber, lang, tx, index }) {
-  const name        = barber.name;
-  const title       = barber.title?.[lang] ?? barber.title?.tr ?? "";
-  const bio         = barber.bio?.[lang] ?? barber.bio?.tr ?? "";
-  const specialties = Array.isArray(barber.specialties?.[lang])
-    ? barber.specialties[lang]
-    : Array.isArray(barber.specialties)
-    ? barber.specialties
-    : [];
+function BarberAvatar({ barber, lang, tx, index }) {
+  const name  = barber.name;
+  const title = barber.title?.[lang] ?? barber.title?.tr ?? "";
+  const href  = `/barber/${barber.id}`;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.55, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
-      style={{ height: "100%" }}
+      transition={{ duration: 0.5, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div
+      <Link
+        href={href}
         className="group"
         style={{
-          background: C.card,
-          borderRadius: "14px",
-          overflow: "hidden",
-          height: "100%",
           display: "flex",
           flexDirection: "column",
-          boxShadow: `0 1px 2px rgba(17,17,17,0.04), 0 0 0 1px ${C.border}`,
-          transition: "box-shadow 0.25s, transform 0.25s",
-          cursor: "pointer",
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.boxShadow = `0 12px 36px rgba(17,17,17,0.10), 0 0 0 1px ${C.border}`;
-          e.currentTarget.style.transform = "translateY(-4px)";
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.boxShadow = `0 1px 2px rgba(17,17,17,0.04), 0 0 0 1px ${C.border}`;
-          e.currentTarget.style.transform = "translateY(0)";
+          alignItems: "center",
+          textAlign: "center",
+          textDecoration: "none",
+          color: "inherit",
         }}
       >
-        {/* ── Image ── */}
-        <div style={{ position: "relative", aspectRatio: "4 / 5", flexShrink: 0, background: C.surface, overflow: "hidden" }}>
+        {/* Circular avatar with availability dot */}
+        <div style={{
+          position: "relative",
+          width: "clamp(120px, 14vw, 160px)",
+          aspectRatio: "1 / 1",
+          borderRadius: "50%",
+          overflow: "hidden",
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          marginBottom: 14,
+          transition: "transform 0.3s ease, box-shadow 0.3s ease",
+        }}
+        className="group-hover:scale-[1.03] group-hover:shadow-lg"
+        >
           {barber.profilePhoto ? (
             <Image
               src={barber.profilePhoto}
               alt={name}
               fill
-              sizes="(max-width: 767px) 82vw, (max-width: 1023px) 50vw, 280px"
-              style={{ objectFit: "cover", objectPosition: "center center" }}
-              className="group-hover:scale-[1.04] transition-transform duration-500"
+              sizes="(max-width: 767px) 40vw, 160px"
+              style={{ objectFit: "cover" }}
             />
           ) : (
             <div style={{
               width: "100%", height: "100%",
               background: `linear-gradient(160deg, ${C.bgSoft} 0%, ${C.surface} 100%)`,
               display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 28, fontWeight: 500, color: C.muted, letterSpacing: "0.05em",
             }}>
-              <svg viewBox="0 0 200 240" style={{ width: 72, opacity: 0.18 }} fill="none">
-                <ellipse cx="100" cy="64" rx="42" ry="46" fill="var(--makas-ink)" />
-                <path d="M18 240c0-49 36.6-88.7 82-88.7S182 191 182 240H18z" fill="var(--makas-ink)" />
-              </svg>
+              {initials(name)}
             </div>
           )}
 
-          {/* Initials badge — top left */}
-          <div style={{
-            position: "absolute", top: "10px", left: "10px",
-            width: "32px", height: "32px",
-            background: C.primary,
-            borderRadius: "8px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "10px", fontWeight: 700, color: "#fff", letterSpacing: "0.04em",
-          }}>
-            {initials(name)}
-          </div>
-
-          {/* Availability badge — top right */}
-          <div style={{
-            position: "absolute", top: "10px", right: "10px",
-            display: "flex", alignItems: "center", gap: "4px",
-            padding: "3px 8px", borderRadius: "20px",
-            background: barber.available ? "rgba(21,128,61,0.88)" : "rgba(107,114,128,0.82)",
-            backdropFilter: "blur(6px)",
-          }}>
-            <div style={{
-              width: "4px", height: "4px", borderRadius: "50%",
-              background: barber.available ? "#86efac" : "#d1d5db",
-            }} />
-            <span style={{ fontSize: "9px", fontWeight: 500, color: "#fff", letterSpacing: "0.04em" }}>
-              {barber.available ? (lang === "tr" ? "Müsait" : "Available") : (lang === "tr" ? "İzinli" : "Off")}
-            </span>
-          </div>
+          {/* Availability dot — bottom right */}
+          <span
+            aria-label={barber.available ? (lang === "tr" ? "Müsait" : "Available") : (lang === "tr" ? "İzinli" : "Off")}
+            title={barber.available ? (lang === "tr" ? "Müsait" : "Available") : (lang === "tr" ? "İzinli" : "Off")}
+            style={{
+              position: "absolute",
+              bottom: 6, right: 6,
+              width: 16, height: 16,
+              borderRadius: "50%",
+              background: barber.available ? "#16a34a" : "#9ca3af",
+              border: "3px solid var(--makas-bg)",
+            }}
+          />
         </div>
 
-        {/* ── Body ── */}
-        <div style={{ padding: "16px", display: "flex", flexDirection: "column", flex: 1 }}>
+        {/* Name */}
+        <h3 style={{
+          fontSize: 15,
+          color: C.primary,
+          fontWeight: 600,
+          letterSpacing: "-0.005em",
+          lineHeight: 1.25,
+          margin: 0,
+          marginBottom: 3,
+        }}>
+          {name}
+        </h3>
 
-          {/* Name */}
-          <h3
-            style={{ fontSize: "16px", color: C.primary, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.25, marginBottom: "3px" }}
-          >
-            {name}
-          </h3>
-
-          {/* Title */}
-          <p style={{ fontSize: "9px", color: C.primary, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: "10px" }}>
+        {/* Role */}
+        {title && (
+          <p style={{
+            fontSize: 11,
+            color: C.muted,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            fontWeight: 600,
+            margin: 0,
+            marginBottom: 8,
+          }}>
             {title}
           </p>
+        )}
 
-          {/* Bio */}
-          {bio && (
-            <p className="line-clamp-2" style={{ fontSize: "12px", color: C.secondary, lineHeight: 1.6, marginBottom: "12px" }}>
-              {bio}
-            </p>
-          )}
-
-          {/* Specialty tags */}
-          {specialties.length > 0 && (
-            <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "12px" }}>
-              {specialties.slice(0, 3).map(s => (
-                <span key={s} style={{
-                  fontSize: "10px", padding: "2px 8px",
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: "4px",
-                  color: C.secondary,
-                  letterSpacing: "0.02em",
-                  whiteSpace: "nowrap",
-                }}>
-                  {s}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
-
-          {/* Footer */}
-          <div style={{
-            borderTop: `1px solid ${C.border}`,
-            paddingTop: "12px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <Star size={11} fill={C.primary} style={{ color: C.primary, flexShrink: 0 }} />
-              <span style={{ fontSize: "12px", fontWeight: 600, color: C.primary }}>{barber.rating}</span>
-              <span style={{ fontSize: "11px", color: C.muted }}>
-                · {barber.reviews > 0 ? barber.reviews : 0} {tx.barbers.reviews}
-              </span>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              {barber.completedCount > 0 && (
-                <span style={{ fontSize: "11px", color: C.muted, fontWeight: 600 }}>
-                  {barber.completedCount}+ {lang === "tr" ? "tamamlanan" : "completed"}
-                </span>
-              )}
-              {barber.yearsExp > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Scissors size={10} style={{ color: C.muted, flexShrink: 0 }} />
-                  <span style={{ fontSize: "11px", color: C.muted }}>{barber.yearsExp} {tx.barbers.yearsExp}</span>
-                </div>
-              )}
-            </div>
+        {/* Rating + reviews */}
+        {barber.rating > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 12, color: C.secondary }}>
+            <Star size={11} fill={C.primary} style={{ color: C.primary }} />
+            <span style={{ fontWeight: 600, color: C.primary }}>{barber.rating}</span>
+            {barber.reviews > 0 && (
+              <span style={{ color: C.muted }}>· {barber.reviews} {tx.barbers.reviews}</span>
+            )}
           </div>
-        </div>
-      </div>
+        )}
+      </Link>
     </motion.div>
   );
 }

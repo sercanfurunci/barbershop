@@ -53,6 +53,7 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
 
   return (
     <section
+      id="location"
       className="salon-info"
       style={{
         background: "var(--makas-footer)",

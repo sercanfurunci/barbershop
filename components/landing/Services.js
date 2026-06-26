@@ -31,10 +31,10 @@ export default function Services({ services = [] }) {
       <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--makas-border) 30%, var(--makas-border) 70%, transparent)" }} />
 
       <div style={{
-        width: "min(1440px, 100%)",
+        width: "min(1280px, 100%)",
         marginInline: "auto",
         paddingInline: "clamp(20px, 4vw, 32px)",
-        paddingBlock: "clamp(72px, 10vw, 120px)",
+        paddingBlock: "clamp(48px, 6vw, 80px)",
       }}>
 
         {/* Section header */}
@@ -73,79 +73,90 @@ export default function Services({ services = [] }) {
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.5, delay: Math.min(i * 0.05, 0.3), ease: [0.16, 1, 0.3, 1] }}
             >
-              <Link href={bookHref} className="group block" style={{ textDecoration: "none" }}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto",
-                    alignItems: "center",
-                    gap: "32px",
-                    padding: "28px 0",
-                    paddingLeft: "0",
-                    borderBottom: `1px solid ${C.border}`,
-                    transition: "padding-left 0.25s ease",
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.paddingLeft = "12px"; }}
-                  onMouseLeave={e => { e.currentTarget.style.paddingLeft = "0"; }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: "14px", marginBottom: "6px", flexWrap: "wrap" }}>
-                      <h3 className="line-clamp-2" style={{
-                        fontSize: "clamp(18px, 2.2vw, 26px)",
-                        fontWeight: 600,
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto",
+                  alignItems: "center",
+                  gap: "24px",
+                  padding: "24px 0",
+                  borderBottom: `1px solid ${C.border}`,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "14px", marginBottom: "6px", flexWrap: "wrap" }}>
+                    <h3 className="line-clamp-2" style={{
+                      fontSize: "clamp(17px, 2vw, 22px)",
+                      fontWeight: 600,
+                      color: C.primary,
+                      letterSpacing: "-0.015em",
+                      lineHeight: 1.2,
+                      textWrap: "balance",
+                      margin: 0,
+                    }}>
+                      {service.name[lang]}
+                    </h3>
+                    {service.popular && (
+                      <span style={{
+                        fontSize: "10px",
                         color: C.primary,
-                        letterSpacing: "-0.015em",
-                        lineHeight: 1.2,
-                        textWrap: "balance",
+                        letterSpacing: "0.1em",
+                        textTransform: "uppercase",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        background: "rgba(17,17,17,0.06)",
+                        padding: "2px 8px",
+                        borderRadius: "4px",
                       }}>
-                        {service.name[lang]}
-                      </h3>
-                      {service.popular && (
-                        <span style={{
-                          fontSize: "10px",
-                          color: C.primary,
-                          letterSpacing: "0.1em",
-                          textTransform: "uppercase",
-                          fontWeight: 600,
-                          flexShrink: 0,
-                          background: "rgba(17,17,17,0.06)",
-                          padding: "2px 8px",
-                          borderRadius: "4px",
-                        }}>
-                          {tx.services.popular}
-                        </span>
-                      )}
-                    </div>
-                    {(service.description?.[lang] || service.duration) && (
-                      <p className="line-clamp-2" style={{ fontSize: "13px", color: C.muted, lineHeight: 1.6 }}>
-                        {[
-                          service.description?.[lang],
-                          service.duration ? `${service.duration} ${tx.services.min}` : null,
-                        ].filter(Boolean).join(" · ")}
-                      </p>
+                        {tx.services.popular}
+                      </span>
                     )}
                   </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: "16px", flexShrink: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: 13, color: C.muted, flexWrap: "wrap" }}>
+                    {service.duration && (
+                      <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                        {service.duration} {tx.services.min}
+                      </span>
+                    )}
                     {service.price != null && (
                       <span style={{
-                        fontSize: "clamp(18px, 2.2vw, 24px)",
-                        fontWeight: 600,
-                        color: C.primary,
-                        letterSpacing: "-0.015em",
+                        fontWeight: 600, color: C.primary,
                         fontVariantNumeric: "tabular-nums",
                       }}>
                         ₺{service.price.toLocaleString()}
                       </span>
                     )}
-                    <ArrowRight
-                      size={16}
-                      className="opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150"
-                      style={{ color: C.primary, flexShrink: 0 }}
-                    />
                   </div>
+                  {service.description?.[lang] && (
+                    <p className="line-clamp-2" style={{
+                      fontSize: "13px", color: C.muted, lineHeight: 1.55, marginTop: 6,
+                    }}>
+                      {service.description[lang]}
+                    </p>
+                  )}
                 </div>
-              </Link>
+
+                <Link
+                  href={`${bookHref}?service=${service.id}`}
+                  className="makas-cta makas-cta-outline"
+                  aria-label={`${service.name[lang]} — ${tx.services.cta}`}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "10px 18px",
+                    borderRadius: 8,
+                    border: `1px solid ${C.border}`,
+                    background: "transparent",
+                    color: C.primary,
+                    fontSize: 13, fontWeight: 600,
+                    textDecoration: "none",
+                    flexShrink: 0,
+                    minHeight: 40,
+                  }}
+                >
+                  {tx.services.cta}
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
             </motion.div>
           ))}
         </div>

@@ -6,11 +6,11 @@ export default function About({ about }) {
   if (!about || !about.trim()) return null;
   const isShort = about.trim().length < 80; // tighten vertical rhythm for one-liners
   return (
-    <section style={{
+    <section id="about" style={{
       background: "var(--makas-bg)",
       padding: isShort
-        ? "clamp(40px, 5vw, 64px) clamp(20px, 5vw, 40px)"
-        : "clamp(56px, 8vw, 96px) clamp(20px, 5vw, 40px)",
+        ? "clamp(32px, 4vw, 48px) clamp(20px, 5vw, 40px)"
+        : "clamp(40px, 5vw, 64px) clamp(20px, 5vw, 40px)",
     }}>
       <div style={{
         maxWidth: 700, marginInline: "auto", textAlign: "center",

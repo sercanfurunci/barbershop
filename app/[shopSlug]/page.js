@@ -5,9 +5,10 @@ import { notFound } from "next/navigation";
 import dynamic from "next/dynamic";
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
-import CoverBanner from "@/components/landing/CoverBanner";
-import Hero from "@/components/landing/Hero";
+import IdentityBlock from "@/components/landing/IdentityBlock";
+import SectionNav from "@/components/landing/SectionNav";
 import About from "@/components/landing/About";
+import BookingCard from "@/components/landing/BookingCard";
 import StickyActionBar from "@/components/landing/StickyActionBar";
 import TrackPageView from "@/components/landing/TrackPageView";
 
@@ -19,7 +20,6 @@ const Barbers      = dynamic(() => import("@/components/landing/Barbers"));
 const Gallery      = dynamic(() => import("@/components/landing/Gallery"));
 const Testimonials = dynamic(() => import("@/components/landing/Testimonials"));
 const FAQ          = dynamic(() => import("@/components/landing/FAQ"));
-const CTA          = dynamic(() => import("@/components/landing/CTA"));
 const SalonInfo    = dynamic(() => import("@/components/landing/SalonInfo"));
 
 export const revalidate = 300;
@@ -39,6 +39,27 @@ function aggregateHours(rows) {
     }
     return { day: d, start, end };
   });
+}
+
+// ponytail: shop-level "earliest slot" hint for the booking card. Uses
+// aggregated working hours + a 30-min buffer from now; ignores per-barber
+// conflicts because that's what the booking flow itself resolves on next
+// click. Walks up to 7 days ahead.
+function computeNextAvailable(hours) {
+  if (!hours?.length) return null;
+  const SLOT = 30;
+  const now = new Date();
+  const todayIdx = (now.getDay() + 6) % 7; // 0 = Mon
+  const cutoff   = now.getHours() * 60 + now.getMinutes() + 30;
+  for (let off = 0; off < 7; off++) {
+    const h = hours[(todayIdx + off) % 7];
+    if (h?.start == null || h?.end == null) continue;
+    const earliest = off === 0
+      ? Math.max(h.start, Math.ceil(cutoff / SLOT) * SLOT)
+      : h.start;
+    if (earliest + SLOT <= h.end) return { dayOffset: off, minutes: earliest };
+  }
+  return null;
 }
 
 export async function generateMetadata({ params }) {
@@ -145,6 +166,17 @@ export default async function ShopHome({ params }) {
 
   const localBusinessLd = buildLocalBusinessLd(shop, googleReviews, hours);
 
+  // Conditional anchor nav — only sections with content get a link.
+  const sectionLinks = [
+    (shop.gallery?.length      ?? 0) > 0 && { id: "gallery",      label: { tr: "Galeri",        en: "Gallery"   } },
+    !!(shop.about?.trim())                && { id: "about",        label: { tr: "Hakkımızda",    en: "About"     } },
+    services.length                       && { id: "services",     label: { tr: "Hizmetler",     en: "Services"  } },
+    barbers.length                        && { id: "barbers",      label: { tr: "Ekip",          en: "Team"      } },
+    !!googleReviews?.reviews?.length      && { id: "testimonials", label: { tr: "Değerlendirmeler", en: "Reviews" } },
+    true                                  && { id: "faq",          label: { tr: "S.S.S",         en: "FAQ"       } },
+    true                                  && { id: "location",     label: { tr: "Konum",         en: "Location"  } },
+  ].filter(Boolean);
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <script
@@ -154,21 +186,50 @@ export default async function ShopHome({ params }) {
       <TrackPageView shopId={shop.id} />
       <Navbar />
       <main className="flex-1">
-        <CoverBanner shop={shop} googleReviews={googleReviews} />
-        <Hero services={services} barbers={barbers} googleReviews={googleReviews} />
+        {/* Hero: identity only (full width, no cover). Tight bottom padding
+            so the Gallery + Booking row sits right under it. */}
+        <section
+          className="mx-auto w-full"
+          style={{
+            maxWidth: 1280,
+            paddingInline: "clamp(20px, 4vw, 32px)",
+            paddingTop: "calc(88px + clamp(36px, 6vw, 64px))",
+            paddingBottom: "clamp(12px, 1.6vw, 20px)",
+          }}
+        >
+          <IdentityBlock shop={shop} hours={hours} googleReviews={googleReviews} />
+        </section>
+
+        <SectionNav sections={sectionLinks} />
+
         {last24h > 2 && (
           <div className="text-center px-4 py-3 bg-secondary text-xs text-muted-foreground tracking-wide">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600 mr-2 align-middle" />
             Son 24 saatte <strong className="text-foreground">{last24h}</strong> randevu alındı
           </div>
         )}
+
+        {/* Gallery section holds the BookingCard as its right column. Card is
+            static (not sticky) and aligns with the gallery top. Everything
+            below the gallery is full content width. */}
+        <Gallery
+          images={shop.gallery}
+          shopName={shop.name}
+          aside={
+            <BookingCard
+              services={services}
+              barbers={barbers}
+              hours={hours}
+              nextAvailable={computeNextAvailable(hours)}
+              activityCount={last24h}
+            />
+          }
+        />
         <About about={shop.about} />
         <Services services={services} />
         <Barbers barbers={barbers} />
-        <Gallery images={shop.gallery} shopName={shop.name} />
         <Testimonials googleReviews={googleReviews} />
         <FAQ />
-        <CTA />
         <SalonInfo shop={shop} barbers={barbers} hours={hours} googleReviews={googleReviews} />
       </main>
       <StickyActionBar shop={shop} />

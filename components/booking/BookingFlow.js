@@ -327,7 +327,7 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
         className="md:hidden flex flex-col overflow-hidden bg-background"
         style={{
           position: "fixed",
-          top: "68px", left: 0, right: 0, bottom: 0,
+          top: "88px", left: 0, right: 0, bottom: 0,
           zIndex: 10,
         }}
       >
@@ -536,10 +536,10 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
       {/* ═══════════════════════════════════════════════════════════════════════
           DESKTOP: Stepper + scrolling layout
       ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="hidden md:block" style={{ paddingTop: "68px" }}>
+      <div className="hidden md:block" style={{ paddingTop: "88px" }}>
         {/* Sticky stepper bar */}
         <div
-          className="sticky top-[68px] z-30 border-border"
+          className="sticky top-[88px] z-30 border-border"
           style={{ background: "rgba(246,243,238,0.97)", backdropFilter: "blur(16px)", borderBottomWidth: "1px", borderBottomStyle: "solid" }}
         >
           <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(17,17,17,0.12), transparent)" }} />

@@ -48,7 +48,7 @@ export default function Navbar() {
     setMode("hero"); // avoid flash: hero is at top of layout, assume visible on mount
     const io = new IntersectionObserver(
       ([entry]) => setMode(entry.isIntersecting ? "hero" : "default"),
-      { rootMargin: "-68px 0px 0px 0px", threshold: 0 },
+      { rootMargin: "-88px 0px 0px 0px", threshold: 0 },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -98,8 +98,8 @@ export default function Navbar() {
           transition: "background-color 220ms ease, color 220ms ease, border-color 220ms ease, backdrop-filter 220ms ease",
         }}
       >
-        <div style={{ width: "min(1440px, 100%)", marginInline: "auto", paddingInline: "clamp(20px, 4vw, 32px)" }}>
-          <div className="flex items-center justify-between h-[68px]">
+        <div style={{ width: "min(1440px, 100%)", marginInline: "auto", paddingInline: "clamp(24px, 5vw, 44px)" }}>
+          <div className="flex items-center justify-between h-[88px]">
 
             {/* Logo — Link allowed to shrink so long names wrap instead of overflowing */}
             <Link
@@ -109,20 +109,20 @@ export default function Navbar() {
               <div
                 className="flex items-center justify-center transition-all duration-200 group-hover:opacity-90 shrink-0"
                 style={{
-                  width: "32px", height: "32px",
-                  background: logoMarkBg, borderRadius: "6px",
+                  width: "42px", height: "42px",
+                  background: logoMarkBg, borderRadius: "8px",
                   border: logoMarkBorder,
                 }}
               >
-                <span className="font-display font-bold" style={{ fontSize: "14px", color: "#fff" }}>
+                <span className="font-display font-bold" style={{ fontSize: "18px", color: "#fff" }}>
                   {(shop?.name ?? "M")[0].toUpperCase()}
                 </span>
               </div>
               <div className="min-w-0 flex-1" style={{ display: "flex", flexDirection: "column" }}>
                 <span
-                  className="font-display font-light uppercase text-[11.5px] sm:text-[13px] line-clamp-2 md:truncate"
+                  className="font-display font-light uppercase text-[12px] sm:text-[14px] line-clamp-2 md:truncate"
                   style={{
-                    letterSpacing: "0.06em",
+                    letterSpacing: "0.07em",
                     color: navText,
                     lineHeight: 1.2,
                     wordBreak: "break-word",
@@ -134,7 +134,7 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop links */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-8">
               {navLinks.map((link) => (
                 <a
                   key={link.href}
@@ -221,7 +221,7 @@ export default function Navbar() {
               transition={{ duration: 0.18 }}
               onClick={() => setMenuOpen(false)}
               className="fixed inset-0 z-[55] md:hidden"
-              style={{ background: "rgba(17,17,17,0.32)", top: "68px" }}
+              style={{ background: "rgba(17,17,17,0.32)", top: "88px" }}
               aria-hidden="true"
             />
           <motion.div
@@ -230,7 +230,7 @@ export default function Navbar() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.22 }}
             className="fixed left-0 right-0 z-[60] md:hidden"
-            style={{ top: "68px", background: menuBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: `1px solid ${menuBorder}` }}
+            style={{ top: "88px", background: menuBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: `1px solid ${menuBorder}` }}
             role="dialog"
             aria-modal="true"
           >
