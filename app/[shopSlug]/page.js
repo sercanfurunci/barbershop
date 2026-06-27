@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { resolveShopBySlug } from "@/lib/shop";
 import { getGoogleReviews } from "@/lib/googleReviews";
+import { todayStr, nowMinutes, toDateStr } from "@/lib/utils";
 import { notFound } from "next/navigation";
 import dynamic from "next/dynamic";
 import Navbar from "@/components/shared/Navbar";
@@ -46,28 +47,28 @@ function aggregateHours(rows) {
 // Uses a 30-min lead time to match /api/availability (the actual booking step).
 // Slot size is 30 min — matches the booking grid; the chip is a "fits a 30-min
 // service" hint, not a guarantee for longer services.
+// Time math runs in Europe/Istanbul via lib/utils helpers; raw Date methods
+// would read UTC on Vercel and skew the chip by 3 hours.
 const DOW_KEYS = ["sun","mon","tue","wed","thu","fri","sat"];
 const SLOT = 30;
 const DEFAULT_DUR = 30;
-
-function ymd(d) {
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
 
 function hhmmToMin(t) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
 }
 
-function nextBarberAvailable(wh, breaks, appts, holidays, now) {
+function nextBarberAvailable(wh, breaks, appts, holidays) {
   if (!wh) return null;
-  const cutoff = now.getHours() * 60 + now.getMinutes() + 30;
+  const cutoff = nowMinutes() + 30;
+  const today = todayStr();
+  // Anchor at noon UTC so daylight savings / TZ shifts can't roll the
+  // date when we step forward by 1 day.
+  const base = new Date(today + "T12:00:00Z");
   for (let off = 0; off < 7; off++) {
-    const date = new Date(now); date.setDate(date.getDate() + off);
-    const dateStr = ymd(date);
-    const dow = date.getDay();
+    const date = new Date(base); date.setUTCDate(date.getUTCDate() + off);
+    const dateStr = toDateStr(date);
+    const dow = new Date(dateStr + "T12:00:00Z").getUTCDay();
     const key = DOW_KEYS[dow];
     const start = wh[`${key}Start`];
     const end   = wh[`${key}End`];
@@ -150,9 +151,9 @@ export default async function ShopHome({ params }) {
   try {
     const now = new Date();
     const since = new Date(now.getTime() - 86_400_000);
-    const weekAhead = new Date(now); weekAhead.setDate(weekAhead.getDate() + 7);
-    const todayStr = ymd(now);
-    const weekAheadStr = ymd(weekAhead);
+    const weekAhead = new Date(now.getTime() + 7 * 86_400_000);
+    const todayDateStr = todayStr();
+    const weekAheadStr = toDateStr(weekAhead);
 
     const [dbServices, dbBarbers, completedByBarber, count24h, upcomingAppts, holidays, gReviews] = await Promise.all([
       prisma.service.findMany({
@@ -189,13 +190,13 @@ export default async function ShopHome({ params }) {
       prisma.appointment.findMany({
         where: {
           shopId: shop.id,
-          date: { gte: todayStr, lte: weekAheadStr },
+          date: { gte: todayDateStr, lte: weekAheadStr },
           status: { in: ["PENDING", "CONFIRMED", "COMPLETED"] },
         },
         select: { barberId: true, date: true, time: true, duration: true, status: true },
       }),
       prisma.holiday.findMany({
-        where: { shopId: shop.id, date: { gte: todayStr, lte: weekAheadStr } },
+        where: { shopId: shop.id, date: { gte: todayDateStr, lte: weekAheadStr } },
         select: { barberId: true, date: true },
       }),
       getGoogleReviews(shop.id),
@@ -231,7 +232,7 @@ export default async function ShopHome({ params }) {
     barbers = dbBarbers.map((b) => {
       const barberHolidays = [...shopHolidays, ...(holidaysByBarber.get(b.id) ?? [])];
       const nextAvailable = b.available
-        ? nextBarberAvailable(b.workingHours, b.breaks ?? [], apptsByBarber.get(b.id) ?? [], barberHolidays, now)
+        ? nextBarberAvailable(b.workingHours, b.breaks ?? [], apptsByBarber.get(b.id) ?? [], barberHolidays)
         : null;
       return {
         id: b.id, name: b.nameTr,
