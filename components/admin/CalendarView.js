@@ -416,7 +416,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 90, background: "#FFFFFF", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
+                style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 90, background: "#FFFFFF", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
               >
                 {/* Handle */}
                 <div style={{ width: "36px", height: "3px", background: C.border, borderRadius: "2px", margin: "0 auto 16px" }} />

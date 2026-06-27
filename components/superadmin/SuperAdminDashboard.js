@@ -781,7 +781,8 @@ function PlatformAnalytics() {
             {data.topShops.length === 0 ? (
               <div style={{ fontSize: 13, color: C.muted, padding: "16px 0" }}>Henüz veri yok.</div>
             ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 360 }}>
                 <thead>
                   <tr style={{ background: C.surface }}>
                     <Th>Salon</Th><Th>Slug</Th><Th align="right">Olay</Th>
@@ -797,6 +798,7 @@ function PlatformAnalytics() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </>

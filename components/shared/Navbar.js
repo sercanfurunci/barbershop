@@ -90,7 +90,7 @@ export default function Navbar() {
       <nav
         className="fixed top-0 left-0 right-0"
         style={{
-          zIndex: 100,
+          zIndex: 50,
           background: navBg,
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
@@ -200,7 +200,7 @@ export default function Navbar() {
             {/* Mobile trigger */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden w-9 h-9 flex items-center justify-center rounded-md transition-colors"
+              className="md:hidden w-11 h-11 flex items-center justify-center rounded-md transition-colors"
               style={{ color: navText, border: `1px solid ${navButtonBorder}` }}
             >
               {menuOpen ? <X size={18} /> : <Menu size={18} />}

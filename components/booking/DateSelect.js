@@ -67,7 +67,7 @@ export default function DateSelect({ selectedDate, onSelect, lang = "tr" }) {
       </div>
 
       {/* Calendar grid — fills remaining height */}
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: "minmax(40px, 1fr)", gap: "3px" }}>
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: "minmax(44px, 1fr)", gap: "3px" }}>
         {paddedDays.map((day, idx) => {
           if (!day) return <div key={`pad-${idx}`} />;
           const available  = isAvailable(day);

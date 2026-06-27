@@ -129,7 +129,7 @@ function ServiceModal({ service, onClose, onSaved }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.97 }}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "16px", width: "100%", maxWidth: "520px", maxHeight: "90vh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
+          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "16px", width: "100%", maxWidth: "520px", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
         >
           <div style={{ padding: "20px 24px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
@@ -242,7 +242,7 @@ function DeleteModal({ service, onClose, onDeleted }) {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", width: "100%", maxWidth: "360px", maxHeight: "90vh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", padding: "28px 24px", textAlign: "center" }}
+          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", width: "100%", maxWidth: "360px", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", padding: "28px 24px", textAlign: "center" }}
         >
           <div style={{ width: "48px", height: "48px", background: "rgba(17,17,17,0.1)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <AlertTriangle size={22} color={C.primary} />

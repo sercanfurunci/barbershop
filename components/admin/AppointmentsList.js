@@ -331,7 +331,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
               style={{
-                width: 28, height: 28, borderRadius: 6,
+                width: 40, height: 40, borderRadius: 6,
                 border: `1px solid ${C.border}`,
                 background: page === 0 ? C.surface : C.card,
                 color: page === 0 ? C.muted : C.secondary,
@@ -348,7 +348,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
               onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={page === totalPages - 1}
               style={{
-                width: 28, height: 28, borderRadius: 6,
+                width: 40, height: 40, borderRadius: 6,
                 border: `1px solid ${C.border}`,
                 background: page === totalPages - 1 ? C.surface : C.card,
                 color: page === totalPages - 1 ? C.muted : C.secondary,

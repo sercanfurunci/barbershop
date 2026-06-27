@@ -274,7 +274,7 @@ function BarberSelectorBar({ globalBarberId, setGlobalBarberId, realBarbers = []
             onClick={() => setGlobalBarberId(id)}
             style={{
               display: "flex", alignItems: "center", gap: "5px",
-              padding: "5px 10px", borderRadius: "20px",
+              padding: "0 12px", minHeight: "44px", borderRadius: "20px",
               background: active ? C.primary : C.surface,
               border: `1px solid ${active ? C.primary : C.border}`,
               color: active ? "#fff" : C.secondary,
@@ -735,15 +735,15 @@ function BarberScheduleSection({ barberId, date, setDate, appointments, updateSt
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-          <button onClick={() => setDate(d => addDays(d, -1))} style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+          <button onClick={() => setDate(d => addDays(d, -1))} style={{ width: "44px", height: "44px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
             <ChevronLeft size={15} />
           </button>
           {!isViewingToday && (
-            <button onClick={() => setDate(today)} style={{ height: "36px", padding: "0 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>
+            <button onClick={() => setDate(today)} style={{ height: "44px", padding: "0 14px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>
               Bugün
             </button>
           )}
-          <button onClick={() => setDate(d => addDays(d, 1))} style={{ width: "36px", height: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+          <button onClick={() => setDate(d => addDays(d, 1))} style={{ width: "44px", height: "44px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
             <ChevronRight size={15} />
           </button>
         </div>

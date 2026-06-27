@@ -104,19 +104,29 @@ export default function Testimonials({ googleReviews = null }) {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="shrink-0"
+            className="shrink-0 testimonial-rating-block"
           >
-            <div className="flex items-baseline gap-2 mb-1">
-              <span style={{
-                fontSize: "34px", fontWeight: 600, color: C.primary,
-                lineHeight: 1, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums",
-              }}>
-                {displayRating}
-              </span>
-              <span style={{ color: C.primary, fontSize: "18px", lineHeight: 1 }}>★</span>
-            </div>
-            <div style={{ fontSize: "12px", color: C.muted }}>
-              {displayTotal} {lang === "tr" ? "Google değerlendirmesi" : "Google reviews"}
+            {/* App Store-style: big number on the left, stars + count
+                stacked on the right. Desktop falls back to the original
+                compact inline form. */}
+            <span className="testimonial-rating-num" style={{
+              fontWeight: 600, color: C.primary,
+              lineHeight: 1, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums",
+            }}>
+              {displayRating}
+            </span>
+            <div className="testimonial-rating-stack">
+              <div className="testimonial-rating-stars flex gap-0.5">
+                {[1,2,3,4,5].map(s => (
+                  <Star key={s} size={14}
+                    fill={s <= Math.round(Number(displayRating) || 5) ? C.primary : "transparent"}
+                    style={{ color: C.primary }}
+                  />
+                ))}
+              </div>
+              <div className="testimonial-rating-count" style={{ color: C.muted }}>
+                {displayTotal} {lang === "tr" ? "Google değerlendirmesi" : "Google reviews"}
+              </div>
             </div>
           </motion.div>
         </div>
@@ -126,6 +136,20 @@ export default function Testimonials({ googleReviews = null }) {
         {items.length > 0 && (
           <>
             <style>{`
+              /* ── Header rating block ──────────────────────────────────
+                 Desktop default: small inline. Mobile: App Store layout —
+                 large number on left, stars + count stacked on right. */
+              .testimonial-rating-block { display: flex; align-items: baseline; gap: 8px; }
+              .testimonial-rating-num   { font-size: 34px; }
+              .testimonial-rating-stack { display: flex; align-items: baseline; gap: 8px; }
+              .testimonial-rating-stars { display: none; }
+              .testimonial-rating-count { font-size: 12px; }
+
+              /* ── Card meta toggling ────────────────────────────────────
+                 Mobile shows inline meta row, desktop shows avatar footer. */
+              .testimonial-stars-desktop { display: flex; }
+              .testimonial-author-footer { display: flex; }
+
               .testimonials-track {
                 display: flex;
                 align-items: stretch;
@@ -134,18 +158,29 @@ export default function Testimonials({ googleReviews = null }) {
                 scroll-snap-type: x mandatory;
                 scroll-padding-inline: clamp(20px, 4vw, 32px);
                 padding-inline: clamp(20px, 4vw, 32px);
+                padding-block: 4px;
                 margin-inline: calc(-1 * clamp(20px, 4vw, 32px));
                 -webkit-overflow-scrolling: touch;
               }
               .testimonials-track::-webkit-scrollbar { display: none; }
               .testimonials-track { scrollbar-width: none; }
               .testimonials-track > * {
-                flex: 0 0 82vw;
-                max-width: 360px;
-                scroll-snap-align: start;
-                display: flex;            /* let inner card fill via flex:1 */
+                flex: 0 0 min(82vw, 340px);
+                scroll-snap-align: center;
+                display: flex;
                 flex-direction: column;
               }
+
+              /* Mobile keeps the desktop card layout — header rating block
+                 still uses the App Store stack (big number + stars/count). */
+              @media (max-width: 767px) {
+                .testimonial-rating-block { align-items: center; gap: 14px; }
+                .testimonial-rating-num   { font-size: 56px; }
+                .testimonial-rating-stack { flex-direction: column; align-items: flex-start; gap: 4px; }
+                .testimonial-rating-stars { display: flex; }
+                .testimonial-rating-count { font-size: 13px; }
+              }
+
               @media (min-width: 768px) {
                 .testimonials-track {
                   display: grid;
@@ -154,7 +189,7 @@ export default function Testimonials({ googleReviews = null }) {
                   overflow: visible;
                   padding-inline: 0;
                   margin-inline: 0;
-                  align-items: stretch;   /* grid items already stretch by default; explicit for safety */
+                  align-items: stretch;
                 }
                 .testimonials-track > * { flex: initial; max-width: none; }
               }
@@ -201,7 +236,7 @@ export default function Testimonials({ googleReviews = null }) {
           border: `1px solid ${C.border}`,
           padding: 0,
           width: "min(92vw, 560px)",
-          maxHeight: "82vh",
+          maxHeight: "82dvh",
           borderRadius: 16,
           color: C.primary,
           margin: "auto",
@@ -211,7 +246,7 @@ export default function Testimonials({ googleReviews = null }) {
         {active && (
           <div style={{
             display: "flex", flexDirection: "column",
-            padding: "22px 22px 20px", gap: 14, maxHeight: "82vh",
+            padding: "22px 22px 20px", gap: 14, maxHeight: "82dvh",
           }}>
             <div className="flex items-center justify-between">
               <div className="flex gap-0.5">
@@ -313,6 +348,7 @@ function TestimonialCard({ i, item, lang, isGoogle, text, role, onOpen }) {
       style={{ display: "flex", flex: 1 }}
     >
       <div
+        className="testimonial-card"
         style={{
           background: C_.card,
           border: `1px solid ${C_.border}`,
@@ -320,7 +356,6 @@ function TestimonialCard({ i, item, lang, isGoogle, text, role, onOpen }) {
           padding: "18px",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between",
           flex: 1,
           minHeight: "180px",
           transition: "border-color 0.2s, box-shadow 0.2s",
@@ -334,8 +369,7 @@ function TestimonialCard({ i, item, lang, isGoogle, text, role, onOpen }) {
           e.currentTarget.style.boxShadow = "none";
         }}
       >
-        {/* Stars */}
-        <div className="flex gap-0.5 mb-3">
+        <div className="testimonial-stars-desktop flex gap-0.5 mb-3">
           {[1,2,3,4,5].map(s => (
             <Star key={s} size={11}
               fill={s <= (item.rating ?? 5) ? C_.primary : "transparent"}
@@ -344,14 +378,13 @@ function TestimonialCard({ i, item, lang, isGoogle, text, role, onOpen }) {
           ))}
         </div>
 
-        {/* Quote + optional "Read more" — wrapped so they share the middle
-            flex region while the author footer stays pinned. */}
+        {/* Quote + optional "Read more" — sits right above the author row
+            so they read as one block. Empty space (if any) falls below. */}
         <div style={{
-          flex: 1, minHeight: 0,
           display: "flex", flexDirection: "column",
-          marginBottom: "12px",
+          marginBottom: "14px",
         }}>
-          <p ref={quoteRef} className="line-clamp-4" style={{
+          <p ref={quoteRef} className="line-clamp-4 testimonial-quote" style={{
             fontSize: "13px",
             color: C_.secondary,
             lineHeight: 1.55,
@@ -363,6 +396,7 @@ function TestimonialCard({ i, item, lang, isGoogle, text, role, onOpen }) {
             <button
               type="button"
               onClick={onOpen}
+              className="testimonial-readmore"
               style={{
                 alignSelf: "flex-start",
                 marginTop: 8,
@@ -383,40 +417,46 @@ function TestimonialCard({ i, item, lang, isGoogle, text, role, onOpen }) {
           )}
         </div>
 
-        {/* Author */}
+        {/* Desktop author footer with avatar (hidden on mobile — meta-inline
+            carries name + date above). Sits right after the quote so the
+            avatar+name reads as part of the testimonial, not floating. */}
         <div
-          className="flex items-center gap-2"
-          style={{ borderTop: `1px solid ${C_.border}`, paddingTop: "10px" }}
+          className="testimonial-author-footer flex items-center gap-3"
+          style={{ paddingTop: "4px", marginTop: "auto" }}
         >
           {item.profilePhoto ? (
             <img
+              className="testimonial-avatar"
               src={item.profilePhoto}
               alt={item.name}
               referrerPolicy="no-referrer"
               style={{
-                width: "26px", height: "26px",
+                width: "34px", height: "34px",
                 borderRadius: "50%", objectFit: "cover", flexShrink: 0,
               }}
             />
           ) : (
-            <div style={{
-              width: "26px", height: "26px", borderRadius: "50%",
+            <div className="testimonial-avatar" style={{
+              width: "34px", height: "34px", borderRadius: "50%",
               background: C_.primary, flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "10px", fontWeight: 700, color: "#fff",
+              fontSize: "12px", fontWeight: 700, color: "#fff",
             }}>
               {item.avatar || item.name?.[0]}
             </div>
           )}
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{
-              fontSize: "12px", color: C_.primary, fontWeight: 600,
+            <div className="testimonial-author-name" style={{
+              fontSize: "13px", color: C_.primary, fontWeight: 600,
               letterSpacing: "-0.005em",
               lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
             }}>
               {item.name}
             </div>
-            <div style={{ fontSize: "10px", color: C_.muted, marginTop: "1px" }}>
+            <div style={{
+              fontSize: "11px", color: C_.muted, marginTop: "2px",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
               {role}
             </div>
           </div>

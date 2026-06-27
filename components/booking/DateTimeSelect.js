@@ -226,7 +226,7 @@ export default function DateTimeSelect({ shopId, booking, allBarbers = [], selec
                 key={dateStr}
                 onClick={() => handleDateSelect(date)}
                 style={{
-                  width: "52px", flexShrink: 0,
+                  width: "52px", flexShrink: 0, minHeight: "44px",
                   paddingTop: "9px", paddingBottom: "9px",
                   borderRadius: "10px",
                   border: `1px solid ${isSelected ? "var(--makas-ink)" : "var(--makas-border)"}`,
@@ -281,7 +281,7 @@ export default function DateTimeSelect({ shopId, booking, allBarbers = [], selec
             <button
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
               className="bg-secondary border-border text-secondary-foreground"
-              style={{ width: "30px", height: "30px", borderWidth: "1px", borderStyle: "solid", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              style={{ width: "44px", height: "44px", borderWidth: "1px", borderStyle: "solid", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--makas-ink)"; e.currentTarget.style.color = "var(--makas-ink)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--makas-border)"; e.currentTarget.style.color = "var(--makas-ink-secondary)"; }}
             >
@@ -293,7 +293,7 @@ export default function DateTimeSelect({ shopId, booking, allBarbers = [], selec
             <button
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
               className="bg-secondary border-border text-secondary-foreground"
-              style={{ width: "30px", height: "30px", borderWidth: "1px", borderStyle: "solid", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              style={{ width: "44px", height: "44px", borderWidth: "1px", borderStyle: "solid", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--makas-ink)"; e.currentTarget.style.color = "var(--makas-ink)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--makas-border)"; e.currentTarget.style.color = "var(--makas-ink-secondary)"; }}
             >

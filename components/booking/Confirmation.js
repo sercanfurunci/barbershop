@@ -419,7 +419,10 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
                 transition: "border-color 0.15s",
                 lineHeight: 1.6,
               }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(17,17,17,0.5)"; }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "rgba(17,17,17,0.5)";
+                setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
+              }}
               onBlur={(e) => { e.currentTarget.style.borderColor = "var(--makas-border)"; }}
             />
           </div>
@@ -501,7 +504,10 @@ function FormField({ label, placeholder, value, onChange, onBlur, type = "text",
             transition: "border-color 0.15s",
             height: "44px",
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = error ? "var(--makas-ink)" : "rgba(17,17,17,0.5)"; }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = error ? "var(--makas-ink)" : "rgba(17,17,17,0.5)";
+            setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
+          }}
           onBlur={(e) => { e.currentTarget.style.borderColor = error ? "var(--makas-ink)" : "var(--makas-border)"; onBlur?.(); }}
         />
       </div>

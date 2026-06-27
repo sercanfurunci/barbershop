@@ -328,7 +328,7 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
         style={{
           position: "fixed",
           top: "88px", left: 0, right: 0, bottom: 0,
-          zIndex: 10,
+          zIndex: 40,
         }}
       >
         {/* ── Top navigation bar ── */}
@@ -345,7 +345,7 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
                 <button
                   onClick={prevStep}
                   className="text-secondary-foreground"
-                  style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "14px" }}
+                  style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", padding: "0 8px", minHeight: "44px", fontSize: "14px" }}
                 >
                   <ChevronLeft size={16} />
                   {lang === "tr" ? "Geri" : "Back"}

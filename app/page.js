@@ -1074,9 +1074,9 @@ export default function LandingPage() {
   return (
     <div
       className="min-h-dvh bg-background"
-      style={{ fontFamily: "inherit", paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ fontFamily: "inherit" }}
     >
-      <style>{`@media (max-width: 767px){ body{ padding-bottom: 76px; } }`}</style>
+      <style>{`@media (max-width: 767px){ body{ padding-bottom: calc(76px + env(safe-area-inset-bottom)); } }`}</style>
       <LandingNavbar />
       <main>
         <Hero />

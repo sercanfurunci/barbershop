@@ -75,7 +75,7 @@ export default function ImageCropModal({ file, onConfirm, onCancel }) {
       <div style={{
         background: "#fff", borderRadius: "20px",
         width: "100%", maxWidth: "400px",
-        maxHeight: "90vh",
+        maxHeight: "90dvh",
         boxShadow: "0 40px 100px rgba(0,0,0,0.40)",
         overflowY: "auto",
         overscrollBehavior: "contain",

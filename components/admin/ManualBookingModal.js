@@ -136,7 +136,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
             borderRadius: "16px",
             width: "100%",
             maxWidth: "480px",
-            maxHeight: "90vh",
+            maxHeight: "90dvh",
             overflowY: "auto",
             overscrollBehavior: "contain",
             WebkitOverflowScrolling: "touch",

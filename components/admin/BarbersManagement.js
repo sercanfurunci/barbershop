@@ -557,7 +557,7 @@ function Modal({ title, onClose, children, wide }) {
         style={{
           background: C.card,
           border: `1px solid ${C.border}`,
-          maxHeight: "90vh",
+          maxHeight: "90dvh",
           display: "flex",
           flexDirection: "column",
         }}
