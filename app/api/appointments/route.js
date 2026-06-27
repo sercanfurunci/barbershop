@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { rateLimit, getIp } from "@/lib/rateLimit";
 import { queueNotifications } from "@/lib/notifications";
-import { todayStr } from "@/lib/utils";
+import { todayStr, nowMinutes } from "@/lib/utils";
+import { canAcceptPublicBookings } from "@/lib/subscription";
+import { validateBookingWindow } from "@/lib/booking";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,15 @@ function isValidPhone(phone) { return /^5[0-9]{9}$/.test(phone); }
 function isValidName(name)   { return typeof name === "string" && name.trim().length >= 2 && name.trim().length <= 100; }
 function isValidEmail(email) { return !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
 
-const ALLOWED_SOURCES = new Set(["ONLINE", "PHONE", "WALKIN"]);
+const ALLOWED_SOURCES = new Set(["ONLINE", "WALK_IN", "MANUAL"]);
+// Legacy aliases accepted from older clients; normalized to current names.
+const SOURCE_ALIASES = { PHONE: "MANUAL", ADMIN: "MANUAL", WALKIN: "WALK_IN" };
+function normalizeSource(s) {
+  if (!s) return "ONLINE";
+  const up = String(s).toUpperCase();
+  const mapped = SOURCE_ALIASES[up] ?? up;
+  return ALLOWED_SOURCES.has(mapped) ? mapped : "ONLINE";
+}
 
 // GET /api/appointments?date=2026-06-10&barberId=brb-1&status=PENDING
 export async function GET(request) {
@@ -123,11 +133,23 @@ export async function POST(request) {
       return NextResponse.json({ error: "Geçersiz saat formatı." }, { status: 400 });
     }
 
+    // ── Same-day past-time block ──────────────────────────────────────────────
+    if (date === today) {
+      const [hh, mm] = time.split(":").map(Number);
+      if (hh * 60 + mm <= nowMinutes()) {
+        return NextResponse.json({ error: "Geçmiş bir saate randevu oluşturulamaz." }, { status: 400 });
+      }
+    }
+
     // Fetch service, barber, junction, existing client in parallel.
     // ponytail: BarberService is an opt-in restriction list. If the barber has
     // ZERO junction rows, treat it as "offers everything" — no admin UI maintains
     // the junction yet, so every shop would otherwise hit a 409.
-    const [service, barber, barberOffersService, barberServiceCount, existingClient] = await Promise.all([
+    const [shop, service, barber, barberOffersService, barberServiceCount, existingClient] = await Promise.all([
+      prisma.shop.findUnique({
+        where: { id: shopId },
+        select: { id: true, status: true, subscriptionStatus: true, trialEndsAt: true, deletedAt: true, autoConfirmBookings: true },
+      }),
       prisma.service.findFirst({ where: { id: serviceId, shopId } }),
       prisma.barber.findFirst({ where: { id: barberId, shopId } }),
       prisma.barberService.findUnique({ where: { barberId_serviceId: { barberId, serviceId } } }),
@@ -138,6 +160,10 @@ export async function POST(request) {
       }),
     ]);
 
+    if (!shop || shop.deletedAt) return NextResponse.json({ error: "Salon bulunamadı" }, { status: 404 });
+    if (!canAcceptPublicBookings(shop)) {
+      return NextResponse.json({ error: "Bu salon şu an çevrimiçi randevu almıyor." }, { status: 403 });
+    }
     if (!service) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
     if (!barber)  return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
     if (!barber.available) return NextResponse.json({ error: "Bu berber şu an randevu kabul etmiyor." }, { status: 409 });
@@ -169,6 +195,12 @@ export async function POST(request) {
     const [h, m] = time.split(":").map(Number);
     const startMin = h * 60 + m;
     const endMin   = startMin + service.duration;
+
+    // ── Working hours / break / holiday gate (TOCTOU-tolerant: rules change rarely) ──
+    const window = await validateBookingWindow({
+      shopId, barberId, date, startMin, durationMin: service.duration,
+    });
+    if (!window.ok) return NextResponse.json({ error: window.error }, { status: window.status });
 
     // Serializable transaction: re-check slot conflicts and create atomically.
     // ponytail: Serializable retries on conflict — fine for ~5 bookings/sec.
@@ -206,8 +238,8 @@ export async function POST(request) {
             time,
             duration:  service.duration,
             price:     service.price,
-            status:    "CONFIRMED",
-            source:    ALLOWED_SOURCES.has(source) ? source : "ONLINE",
+            status:    shop.autoConfirmBookings ? "CONFIRMED" : "PENDING",
+            source:    normalizeSource(source),
             notes:     notes?.trim().slice(0, 500) ?? null,
           },
           include: { shop: { select: { name: true, address: true, phone: true } } },

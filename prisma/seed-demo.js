@@ -175,7 +175,7 @@ async function main() {
             data: {
               shopId: SHOP_ID, clientId: client, barberId: b.id, serviceId: svc.id,
               date, time, duration: svc.duration, price: svc.price,
-              status, source: rng() < 0.7 ? "ONLINE" : "WALKIN",
+              status, source: rng() < 0.7 ? "ONLINE" : "WALK_IN",
             },
           });
           created++;

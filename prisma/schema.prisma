@@ -55,6 +55,11 @@ model Shop {
   // own record; this is the fallback when admin adds one without specifying.
   defaultCommissionRate Int @default(50)
 
+  // When true (default) public POST /api/appointments creates CONFIRMED rows
+  // and matches the "Anında Onay" landing copy. Set false to require admin
+  // approval — bookings land as PENDING and stay there until status PATCH.
+  autoConfirmBookings Boolean @default(true)
+
   // ─── Subscription / billing ────────────────────────────────────────────────
   // Single source of truth for plan limits + access. Billing helpers in
   // lib/subscription.js read these fields; plan limits in lib/plans.js key off
@@ -400,8 +405,8 @@ enum AppointmentStatus {
 
 enum BookingSource {
   ONLINE
-  PHONE
-  WALKIN
+  WALK_IN
+  MANUAL
 }
 
 enum PaymentType {

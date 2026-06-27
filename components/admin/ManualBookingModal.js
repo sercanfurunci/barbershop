@@ -97,7 +97,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
       duration: selectedService?.duration ?? 45,
       price: selectedService?.price ?? 0,
       notes: form.notes.trim(),
-      source: "phone",
+      source: "MANUAL",
       status: "confirmed",
     });
 

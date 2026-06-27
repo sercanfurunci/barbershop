@@ -92,8 +92,11 @@ export async function GET(request) {
 
   // gross > price fallback: pre-Phase-2 rows don't have grossAmount, so legacy
   // `price` sums kept as the safe default and `grossAmount` adds on top.
-  const grossThis  = (thisMonthRev._sum.grossAmount  ?? 0) || (thisMonthRev._sum.price ?? 0);
-  const grossLast  = (lastMonthRev._sum.grossAmount  ?? 0) || (lastMonthRev._sum.price ?? 0);
+  // Prefer Phase-2 grossAmount; fall back to legacy `price` sum only when the
+  // grossAmount sum is null (no Phase-2 rows in range). `??` not `||` so a real
+  // 0 from a free-of-charge appointment doesn't get clobbered by legacy price.
+  const grossThis  = thisMonthRev._sum.grossAmount  ?? thisMonthRev._sum.price  ?? 0;
+  const grossLast  = lastMonthRev._sum.grossAmount  ?? lastMonthRev._sum.price  ?? 0;
   const shopThis   = thisMonthRev._sum.shopAmount    ?? grossThis;  // pre-Phase-2 fully shop
   const shopLast   = lastMonthRev._sum.shopAmount    ?? grossLast;
   const barberThis = thisMonthRev._sum.barberAmount  ?? 0;
@@ -109,7 +112,7 @@ export async function GET(request) {
 
   return NextResponse.json({
     // legacy aliases kept so KPICards doesn't break before its UI patch
-    totalRevenue:          (totalRev._sum.grossAmount ?? 0) || (totalRev._sum.price ?? 0),
+    totalRevenue:          totalRev._sum.grossAmount ?? totalRev._sum.price ?? 0,
     thisMonthRevenue:      grossThis,
     lastMonthRevenue:      grossLast,
     revenueChange:         pctChange(grossThis, grossLast),

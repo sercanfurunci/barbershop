@@ -1,0 +1,1 @@
+ALTER TABLE "Shop" ADD COLUMN "autoConfirmBookings" BOOLEAN NOT NULL DEFAULT true;

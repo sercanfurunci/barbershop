@@ -66,7 +66,7 @@ export function AppointmentsProvider({ children }) {
       date:      appt.date,
       time:      appt.time,
       notes:     appt.notes ?? "",
-      source:    (appt.source ?? "PHONE").toUpperCase(),
+      source:    (appt.source ?? "MANUAL").toUpperCase(),
     };
 
     const created = await apiFetch("/api/appointments", {

@@ -141,11 +141,13 @@ export default function KPICards() {
   const [sparks, setSparks] = useState({});
 
   useEffect(() => {
-    apiFetch("/api/admin/stats").then(setStats).catch(() => {});
-    apiFetch("/api/admin/revenue?range=30d").then(d => {
-      if (!d?.data) return;
-      setSparks({ revenue: d.data.map(p => p.value) });
-    }).catch(() => {});
+    Promise.all([
+      apiFetch("/api/admin/stats").catch(() => null),
+      apiFetch("/api/admin/revenue?range=30d").catch(() => null),
+    ]).then(([s, r]) => {
+      if (s) setStats(s);
+      if (r?.data) setSparks({ revenue: r.data.map(p => p.value) });
+    });
   }, []);
 
   if (!stats) {

@@ -166,7 +166,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                       <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{appt.client}</div>
-                      {appt.source === "phone" && (
+                      {appt.source === "manual" && (
                         <span style={{ fontSize: "8px", padding: "1px 4px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", letterSpacing: "0.05em", fontWeight: 600 }}>TEL</span>
                       )}
                     </div>
@@ -241,7 +241,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500, lineHeight: 1.3 }}>{appt.client}</div>
-                          {appt.source === "phone" && (
+                          {appt.source === "manual" && (
                             <span style={{ fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", letterSpacing: "0.06em", fontWeight: 600 }}>
                               TEL
                             </span>

@@ -193,7 +193,7 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: "13.5px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.005em" }}>
               {appt.client}
-              {appt.source === "phone" && (
+              {appt.source === "manual" && (
                 <span className="font-mono-custom" style={{ marginLeft: "8px", fontSize: "8.5px", padding: "1.5px 6px", borderRadius: "999px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", fontWeight: 600, letterSpacing: "0.06em", verticalAlign: "middle" }}>TEL</span>
               )}
             </div>

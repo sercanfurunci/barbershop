@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { todayStr, nowMinutes } from "@/lib/utils";
+import { createReviewRequest } from "@/lib/reviews";
+import { validateBookingWindow } from "@/lib/booking";
 
 export const dynamic = "force-dynamic";
 
@@ -67,9 +69,10 @@ export async function POST(request) {
   // ── Resolve shop + barber ─────────────────────────────────────────────────
   const barber = await prisma.barber.findUnique({
     where: { id: barberId },
-    select: { id: true, shopId: true, paymentType: true, commissionRate: true },
+    select: { id: true, shopId: true, available: true, paymentType: true, commissionRate: true },
   });
   if (!barber) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
+  if (!barber.available) return NextResponse.json({ error: "Bu berber şu an randevu kabul etmiyor." }, { status: 409 });
 
   const shopId = payload.role === "SUPER_ADMIN" ? barber.shopId : payload.shopId;
   if (!shopId || barber.shopId !== shopId) return forbidden();
@@ -81,7 +84,7 @@ export async function POST(request) {
   if (serviceId) {
     service = await prisma.service.findFirst({
       where: { id: serviceId, shopId },
-      select: { id: true, duration: true, nameTr: true },
+      select: { id: true, duration: true, nameTr: true, price: true },
     });
     if (!service) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
   } else {
@@ -137,8 +140,28 @@ export async function POST(request) {
 
   const { barberAmount, shopAmount } = splitRevenue(finalPrice, barber);
 
+  const startMin = min;
+  const endMin   = startMin + service.duration;
+
+  const window = await validateBookingWindow({
+    shopId, barberId: barber.id, date, startMin, durationMin: service.duration,
+  });
+  if (!window.ok) return NextResponse.json({ error: window.error }, { status: window.status });
+
   try {
     const appointment = await prisma.$transaction(async (tx) => {
+      // Slot collision check — same logic as public POST. Excludes CANCELLED/NOSHOW.
+      const conflicts = await tx.appointment.findMany({
+        where: { shopId, barberId: barber.id, date, status: { notIn: ["CANCELLED","NOSHOW"] } },
+        select: { time: true, duration: true },
+      });
+      const overlap = conflicts.some(a => {
+        const aStart = parseInt(a.time.split(":")[0]) * 60 + parseInt(a.time.split(":")[1]);
+        const aEnd   = aStart + a.duration;
+        return startMin < aEnd && endMin > aStart;
+      });
+      if (overlap) throw new Error("SLOT_TAKEN");
+
       const existing = await tx.client.findUnique({
         where: { shopId_phone: { shopId, phone: phoneKey } },
         select: { id: true, blocked: true },
@@ -175,7 +198,7 @@ export async function POST(request) {
           duration:    service.duration,
           price:       finalPrice,
           status:      "COMPLETED",
-          source:      "WALKIN",
+          source:      "WALK_IN",
           isWalkIn:    true,
           customServiceName: customLabel,
           grossAmount: finalPrice,
@@ -193,10 +216,36 @@ export async function POST(request) {
       });
     });
 
+    // Review funnel parity with normal completion path. Skip for anonymous
+    // walk-ins whose phone is a `wi-…` placeholder — Netgsm would reject it.
+    if (!phoneKey.startsWith("wi-")) {
+      createReviewRequest(appointment.id).catch(() => {});
+    }
+
+    // Audit price tampering: catalog services only. Custom services have no
+    // reference price so the check is meaningless there.
+    if (serviceId && service.price != null && finalPrice !== service.price) {
+      prisma.auditLog.create({
+        data: {
+          shopId,
+          entity:        "appointment",
+          entityId:      appointment.id,
+          appointmentId: appointment.id,
+          action:        "walkin_price_mismatch",
+          userId:        payload.userId ?? null,
+          before:        { catalogPrice: service.price },
+          after:         { finalPrice, tipAmount, paymentMethod, barberId: barber.id },
+        },
+      }).catch(() => {}); // never block response on audit write
+    }
+
     return NextResponse.json(appointment, { status: 201 });
   } catch (e) {
     if (e.message === "CLIENT_BLOCKED") {
       return NextResponse.json({ error: "Bu müşteri engellenmiş" }, { status: 403 });
+    }
+    if (e.message === "SLOT_TAKEN") {
+      return NextResponse.json({ error: "Bu saatte bu berbere ait başka bir randevu var." }, { status: 409 });
     }
     console.error("[POST /api/appointments/walkin]", e);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
