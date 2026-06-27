@@ -597,7 +597,6 @@ function ShopProfileTab() {
   const [form, setForm]     = useState(empty);
   const [slug, setSlug]     = useState(null);
   const [logo, setLogo]     = useState(null);
-  const [cover, setCover]   = useState(null);
   const [gallery, setGallery] = useState([]);
   const [saving, setSaving] = useState(false);
   const [toast, setToast]   = useState(null);
@@ -608,7 +607,6 @@ function ShopProfileTab() {
       .then(shop => {
         setSlug(shop.slug ?? null);
         setLogo(shop.logo ?? null);
-        setCover(shop.coverImage ?? null);
         setGallery(shop.gallery ?? []);
         setForm({
           name:            shop.name            ?? "",
@@ -667,7 +665,6 @@ function ShopProfileTab() {
   // Content completeness — % of meaningful profile fields filled. Drives empty-state nudging.
   const checks = [
     { label: "Logo",     done: !!logo },
-    { label: "Kapak",    done: !!cover },
     { label: "Hakkımızda", done: !!form.about?.trim() },
     { label: "Galeri",   done: gallery.length > 0 },
     { label: "Telefon",  done: !!form.phone?.trim() },
@@ -716,26 +713,15 @@ function ShopProfileTab() {
         </div>
 
         {/* Brand assets */}
-        <Section title="Logo & Kapak">
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(160px, 200px) 1fr", gap: "16px" }}
-               className="!grid-cols-1 sm:!grid-cols-[minmax(160px,200px)_1fr]">
-            <UploadField
-              label="Logo"
-              endpoint="/api/admin/shop/logo"
-              current={logo}
-              aspect="1 / 1"
-              onChange={setLogo}
-              hint="512×512 önerilir"
-            />
-            <UploadField
-              label="Kapak görseli"
-              endpoint="/api/admin/shop/cover"
-              current={cover}
-              aspect="16 / 9"
-              onChange={setCover}
-              hint="Hero alanında gözükür (1920×1080)"
-            />
-          </div>
+        <Section title="Logo">
+          <UploadField
+            label="Logo"
+            endpoint="/api/admin/shop/logo"
+            current={logo}
+            aspect="1 / 1"
+            onChange={setLogo}
+            hint="512×512 önerilir · paylaşım kartlarında ve kimlik bloğunda kullanılır"
+          />
         </Section>
 
         {/* Basic info */}
@@ -858,7 +844,7 @@ function ShopProfileTab() {
   );
 }
 
-/* ─── Reusable: UploadField (cover, logo) ─────────────────────────────────── */
+/* ─── Reusable: UploadField (logo) ────────────────────────────────────────── */
 
 function UploadField({ label, endpoint, current, aspect = "1 / 1", onChange, hint }) {
   const [busy, setBusy] = useState(false);
@@ -1106,7 +1092,7 @@ function GalleryGrid({ items, onChange }) {
       </DndContext>
       {items.length > 1 && (
         <div style={{ fontSize: 11, color: C.muted }}>
-          İpucu: tutamacı sürükleyerek fotoğraf sırasını değiştirebilirsin. İlk fotoğraf kapak yedeği olarak kullanılır.
+          İpucu: tutamacı sürükleyerek fotoğraf sırasını değiştirebilirsin.
         </div>
       )}
       {err && <div style={{ fontSize: 11, color: "#b91c1c" }}>{err}</div>}
