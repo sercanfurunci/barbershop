@@ -41,7 +41,8 @@ export async function POST(request) {
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
 
   const body = await request.json();
-  const { slug, nameTr, nameEn, titleTr, titleEn, bioTr, bioEn, avatar, yearsExp, specialties, color, password, email } = body;
+  const { slug, nameTr, nameEn, titleTr, titleEn, bioTr, bioEn, avatar, yearsExp, specialties, color, password, email,
+          paymentType, commissionRate, fixedSalary } = body;
 
   if (!slug || !nameTr || !titleTr || !avatar) {
     return NextResponse.json({ error: "slug, nameTr, titleTr ve avatar zorunlu" }, { status: 400 });
@@ -73,6 +74,31 @@ export async function POST(request) {
   const userDupe = await prisma.user.findFirst({ where: { email: normalizedEmail } });
   if (userDupe) return NextResponse.json({ error: "Bu e-posta adresi zaten kullanılıyor" }, { status: 409 });
 
+  // Commission settings — default to shop's defaultCommissionRate when admin
+  // leaves the field blank, so a freshly-created barber inherits the house split.
+  const pt = paymentType === "FIXED" ? "FIXED" : "PERCENTAGE";
+  let cr;
+  if (pt === "PERCENTAGE") {
+    if (commissionRate == null || commissionRate === "") {
+      const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { defaultCommissionRate: true } });
+      cr = shop?.defaultCommissionRate ?? 50;
+    } else {
+      cr = Number(commissionRate);
+      if (!Number.isFinite(cr) || cr < 0 || cr > 100) {
+        return NextResponse.json({ error: "Komisyon oranı 0-100 arasında olmalı" }, { status: 400 });
+      }
+    }
+  } else {
+    cr = 0;
+  }
+  let fs = null;
+  if (pt === "FIXED") {
+    fs = fixedSalary == null || fixedSalary === "" ? null : Number(fixedSalary);
+    if (fs != null && (!Number.isFinite(fs) || fs < 0 || fs > 10_000_000)) {
+      return NextResponse.json({ error: "Maaş 0-10.000.000 arasında olmalı" }, { status: 400 });
+    }
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
 
   // Create barber + user account in one transaction
@@ -91,6 +117,9 @@ export async function POST(request) {
         yearsExp:    yearsExp    ?? 1,
         specialties: specialties ?? [],
         color:       color       || "#111111",
+        paymentType: pt,
+        commissionRate: cr,
+        fixedSalary: fs,
       },
       include: { workingHours: true },
     });

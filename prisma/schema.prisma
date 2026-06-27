@@ -51,6 +51,10 @@ model Shop {
   timezone        String     @default("Europe/Istanbul")
   currency        String     @default("TRY")
 
+  // Default commission % for new barbers. Each barber can override on their
+  // own record; this is the fallback when admin adds one without specifying.
+  defaultCommissionRate Int @default(50)
+
   // ─── Subscription / billing ────────────────────────────────────────────────
   // Single source of truth for plan limits + access. Billing helpers in
   // lib/subscription.js read these fields; plan limits in lib/plans.js key off
@@ -194,6 +198,15 @@ model Barber {
   yearsExp       Int             @default(1)
   available      Boolean         @default(true)
   specialties    String[]
+
+  // Earnings model. PERCENTAGE → commissionRate is the cut (e.g. 60 = barber
+  // keeps 60% of finalPrice). FIXED → barber paid fixedSalary regardless; the
+  // shop keeps 100% of appointment gross. Defaults match the shop's
+  // defaultCommissionRate at insert time (handled in /api/admin/barbers).
+  paymentType    PaymentType     @default(PERCENTAGE)
+  commissionRate Int             @default(50)
+  fixedSalary    Int?
+
   user           User?
   appointments   Appointment[]
   workingHours   WorkingHours?
@@ -299,6 +312,12 @@ model Client {
   photos        String[] // URLs or storage keys for client reference photos
   noShowCount   Int            @default(0)
   blocked       Boolean        @default(false)
+
+  // Lifetime metrics — updated on appointment completion in a transaction.
+  // Cheap to read; recomputing from Appointment scans is O(n) per client.
+  totalSpent    Int            @default(0)
+  visitCount    Int            @default(0)
+  lastVisitAt   DateTime?
   appointments  Appointment[]
   notifications Notification[]
   user          User? // set if client has a CUSTOMER account
@@ -328,6 +347,31 @@ model Appointment {
   status           AppointmentStatus @default(PENDING)
   source           BookingSource     @default(ONLINE)
   notes            String?           @db.Text
+
+  // Revenue + completion bookkeeping. grossAmount is the final charged price
+  // (set on COMPLETED transition). barberAmount/shopAmount are pre-split per
+  // the barber's paymentType + commissionRate; both must equal grossAmount.
+  // tipAmount is on top, paid 100% to the barber (never split).
+  grossAmount        Int?
+  barberAmount       Int?
+  shopAmount         Int?
+  tipAmount          Int            @default(0)
+  paymentMethod      PaymentMethod?
+  completedAt        DateTime?
+
+  // Cancellation audit — who cancelled and why. Reason is free text for now;
+  // promote to enum once we see real patterns. cancelledBy: "client" | "shop"
+  // | "barber" — distinct from the human's user id (kept simple).
+  cancelledAt        DateTime?
+  cancellationReason String?        @db.Text
+  cancelledBy        String?
+
+  // Walk-in marker — set true via the dedicated POST path (Phase 3) when a
+  // barber/admin captures a customer who showed up without booking online.
+  // customServiceName lets walk-ins skip the service catalog ("Sakal düzeltme").
+  isWalkIn           Boolean        @default(false)
+  customServiceName  String?
+
   notifications    Notification[]
   auditLogs        AuditLog[]
   notificationJobs NotificationJob[]
@@ -358,6 +402,17 @@ enum BookingSource {
   ONLINE
   PHONE
   WALKIN
+}
+
+enum PaymentType {
+  PERCENTAGE
+  FIXED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
 }
 
 // ─── Holidays ─────────────────────────────────────────────────────────────────

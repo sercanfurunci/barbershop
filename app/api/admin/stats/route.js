@@ -9,11 +9,18 @@ export async function GET(request) {
   if (!payload) return unauthorized();
   if (!["ADMIN", "SUPER_ADMIN", "RECEPTIONIST", "BARBER"].includes(payload.role)) return forbidden();
 
+  const url = new URL(request.url);
   const shopId = payload.role === "SUPER_ADMIN"
-    ? new URL(request.url).searchParams.get("shopId")
+    ? url.searchParams.get("shopId")
     : payload.shopId;
 
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+
+  // BARBER role is forced to their own barberId; admins can scope to one or
+  // omit for shop-wide stats. Used by the barber dashboard earnings widget.
+  const requestedBarberId = url.searchParams.get("barberId") || undefined;
+  const barberId = payload.role === "BARBER" ? payload.barberId : requestedBarberId;
+  const barberFilter = barberId ? { barberId } : {};
 
   const shopData = await prisma.shop.findUnique({ where: { id: shopId }, select: { timezone: true } });
   const TZ = shopData?.timezone ?? "Europe/Istanbul";
@@ -29,6 +36,11 @@ export async function GET(request) {
   const lastMonthEndDate = new Date(Date.UTC(yr, mo - 1, 0)); // Day 0 of current month = last day of previous month
   const lastMonthEndStr = fmt(lastMonthEndDate);
 
+  // ponytail: revenue aggregations sum the new gross/barber/shop fields when
+  // present, fall back to legacy `price` so pre-Phase-2 appointments still count.
+  const completedThis = { shopId, status: "COMPLETED", date: { gte: thisMonthStart }, ...barberFilter };
+  const completedLast = { shopId, status: "COMPLETED", date: { gte: lastMonthStart, lte: lastMonthEndStr }, ...barberFilter };
+
   const [
     totalRev,
     thisMonthRev,
@@ -40,42 +52,90 @@ export async function GET(request) {
     thisMonthClients,
     lastMonthClients,
     barbers,
+    thisMonthWalkIns,
+    topServiceRows,
   ] = await Promise.all([
-    prisma.appointment.aggregate({ where: { shopId, status: "COMPLETED" }, _sum: { price: true } }),
-    prisma.appointment.aggregate({ where: { shopId, status: "COMPLETED", date: { gte: thisMonthStart } }, _sum: { price: true } }),
-    prisma.appointment.aggregate({ where: { shopId, status: "COMPLETED", date: { gte: lastMonthStart, lte: lastMonthEndStr } }, _sum: { price: true } }),
-    prisma.appointment.count({ where: { shopId, status: { notIn: ["CANCELLED"] } } }),
-    prisma.appointment.count({ where: { shopId, status: { notIn: ["CANCELLED"] }, date: { gte: thisMonthStart } } }),
-    prisma.appointment.count({ where: { shopId, status: { notIn: ["CANCELLED"] }, date: { gte: lastMonthStart, lte: lastMonthEndStr } } }),
+    prisma.appointment.aggregate({ where: { shopId, status: "COMPLETED", ...barberFilter }, _sum: { price: true, grossAmount: true, barberAmount: true, shopAmount: true } }),
+    prisma.appointment.aggregate({ where: completedThis, _sum: { price: true, grossAmount: true, barberAmount: true, shopAmount: true } }),
+    prisma.appointment.aggregate({ where: completedLast, _sum: { price: true, grossAmount: true, barberAmount: true, shopAmount: true } }),
+    prisma.appointment.count({ where: { shopId, status: { notIn: ["CANCELLED"] }, ...barberFilter } }),
+    prisma.appointment.count({ where: { shopId, status: { notIn: ["CANCELLED"] }, date: { gte: thisMonthStart }, ...barberFilter } }),
+    prisma.appointment.count({ where: { shopId, status: { notIn: ["CANCELLED"] }, date: { gte: lastMonthStart, lte: lastMonthEndStr }, ...barberFilter } }),
     prisma.client.count({ where: { shopId } }),
     prisma.client.count({ where: { shopId, createdAt: { gte: new Date(thisMonthStart + "T00:00:00.000Z") } } }),
     prisma.client.count({ where: { shopId, createdAt: { gte: new Date(lastMonthStart + "T00:00:00.000Z"), lte: new Date(lastMonthEndStr + "T23:59:59.999Z") } } }),
     prisma.barber.findMany({ where: { shopId, available: true }, select: { rating: true } }),
+    prisma.appointment.count({ where: { ...completedThis, isWalkIn: true } }),
+    prisma.appointment.groupBy({
+      by: ["serviceId"],
+      where: completedThis,
+      _count: { _all: true },
+      orderBy: { _count: { serviceId: "desc" } },
+      take: 1,
+    }),
   ]);
+
+  // Hydrate top service name (groupBy returns id only). Skip lookup if empty.
+  let topService = null;
+  if (topServiceRows.length > 0) {
+    const svc = await prisma.service.findUnique({
+      where: { id: topServiceRows[0].serviceId },
+      select: { nameTr: true },
+    });
+    if (svc) topService = { name: svc.nameTr, count: topServiceRows[0]._count._all };
+  }
 
   function pctChange(current, prev) {
     if (!prev) return 0;
     return Math.round(((current - prev) / prev) * 100 * 10) / 10;
   }
 
-  const revThis = thisMonthRev._sum.price ?? 0;
-  const revLast = lastMonthRev._sum.price ?? 0;
+  // gross > price fallback: pre-Phase-2 rows don't have grossAmount, so legacy
+  // `price` sums kept as the safe default and `grossAmount` adds on top.
+  const grossThis  = (thisMonthRev._sum.grossAmount  ?? 0) || (thisMonthRev._sum.price ?? 0);
+  const grossLast  = (lastMonthRev._sum.grossAmount  ?? 0) || (lastMonthRev._sum.price ?? 0);
+  const shopThis   = thisMonthRev._sum.shopAmount    ?? grossThis;  // pre-Phase-2 fully shop
+  const shopLast   = lastMonthRev._sum.shopAmount    ?? grossLast;
+  const barberThis = thisMonthRev._sum.barberAmount  ?? 0;
+  const barberLast = lastMonthRev._sum.barberAmount  ?? 0;
+
+  const walkInRate = thisMonthAppts > 0
+    ? Math.round((thisMonthWalkIns / thisMonthAppts) * 100)
+    : 0;
+
   const avgRating = barbers.length > 0
     ? Math.round((barbers.reduce((s, b) => s + (b.rating ?? 5), 0) / barbers.length) * 100) / 100
     : 5.0;
 
   return NextResponse.json({
-    totalRevenue:         totalRev._sum.price ?? 0,
-    thisMonthRevenue:     revThis,
-    lastMonthRevenue:     revLast,
-    totalAppointments:    totalAppts,
+    // legacy aliases kept so KPICards doesn't break before its UI patch
+    totalRevenue:          (totalRev._sum.grossAmount ?? 0) || (totalRev._sum.price ?? 0),
+    thisMonthRevenue:      grossThis,
+    lastMonthRevenue:      grossLast,
+    revenueChange:         pctChange(grossThis, grossLast),
+
+    // new revenue split
+    thisMonthGross:        grossThis,
+    lastMonthGross:        grossLast,
+    thisMonthShopNet:      shopThis,
+    lastMonthShopNet:      shopLast,
+    thisMonthBarberPaid:   barberThis,
+    lastMonthBarberPaid:   barberLast,
+    shopNetChange:         pctChange(shopThis, shopLast),
+
+    totalAppointments:     totalAppts,
     thisMonthAppointments: thisMonthAppts,
+    appointmentsChange:    pctChange(thisMonthAppts, lastMonthAppts),
+
     totalClients,
     thisMonthClients,
+    clientsChange:         pctChange(thisMonthClients, lastMonthClients),
+
+    thisMonthWalkIns,
+    walkInRate,
+    topService,
+
     avgRating,
-    revenueChange:        pctChange(revThis, revLast),
-    appointmentsChange:   pctChange(thisMonthAppts, lastMonthAppts),
-    clientsChange:        pctChange(thisMonthClients, lastMonthClients),
-    ratingChange:         0,
+    ratingChange:          0,
   });
 }

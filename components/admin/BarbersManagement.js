@@ -314,6 +314,9 @@ function EditBarberModal({ barber, onClose, onSaved }) {
     yearsExp:   barber.yearsExp ?? 1,
     specialties: (barber.specialties || []).join(", "),
     color:      barber.color || "#CC1A1A",
+    paymentType:    barber.paymentType    || "PERCENTAGE",
+    commissionRate: barber.commissionRate ?? 50,
+    fixedSalary:    barber.fixedSalary    ?? "",
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr]   = useState("");
@@ -331,6 +334,8 @@ function EditBarberModal({ barber, onClose, onSaved }) {
           ...form,
           yearsExp: Number(form.yearsExp),
           specialties: form.specialties.split(",").map((s) => s.trim()).filter(Boolean),
+          commissionRate: form.paymentType === "PERCENTAGE" ? Number(form.commissionRate) : 0,
+          fixedSalary: form.paymentType === "FIXED" && form.fixedSalary !== "" ? Number(form.fixedSalary) : null,
         }),
       });
       onSaved(updated);
@@ -359,6 +364,7 @@ function EditBarberModal({ barber, onClose, onSaved }) {
           <Field label="Deneyim (yıl)"><input type="number" min={0} value={form.yearsExp} onChange={set("yearsExp")} className={inp} /></Field>
         </Row2>
         <Field label="Uzmanlıklar (virgülle ayır)"><input value={form.specialties} onChange={set("specialties")} placeholder="Fade, Sakal, Klasik Kesim" className={inp} /></Field>
+        <CommissionFields form={form} setForm={setForm} />
         {err && <ErrMsg>{err}</ErrMsg>}
         <FormActions onClose={onClose} busy={busy} label="Kaydet" />
       </form>
@@ -479,6 +485,7 @@ function TimeInput({ value, onChange }) {
 function CreateBarberModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
     slug: "", nameTr: "", titleTr: "", avatar: "", yearsExp: 1, specialties: "", email: "", password: "",
+    paymentType: "PERCENTAGE", commissionRate: 50, fixedSalary: "",
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr]   = useState("");
@@ -496,6 +503,8 @@ function CreateBarberModal({ onClose, onCreated }) {
           ...form,
           yearsExp: Number(form.yearsExp),
           specialties: form.specialties.split(",").map((s) => s.trim()).filter(Boolean),
+          commissionRate: form.paymentType === "PERCENTAGE" ? Number(form.commissionRate) : 0,
+          fixedSalary: form.paymentType === "FIXED" && form.fixedSalary !== "" ? Number(form.fixedSalary) : null,
         }),
       });
       onCreated(barber);
@@ -525,10 +534,49 @@ function CreateBarberModal({ onClose, onCreated }) {
         <Field label="Giriş Şifresi *" hint="Berber bu şifreyle giriş yapacak (sonradan değiştirilebilir)">
           <input required type="password" value={form.password} onChange={set("password")} placeholder="Min. 6 karakter" className={inp} />
         </Field>
+        <CommissionFields form={form} setForm={setForm} />
         {err && <ErrMsg>{err}</ErrMsg>}
         <FormActions onClose={onClose} busy={busy} label="Ekle" />
       </form>
     </Modal>
+  );
+}
+
+/* ── Commission fields (shared between Edit + Create) ─────────────────────── */
+function CommissionFields({ form, setForm }) {
+  const isPct = form.paymentType === "PERCENTAGE";
+  return (
+    <Row2>
+      <Field label="Ödeme Tipi" hint={isPct ? "Komisyon: ciroya göre pay" : "Sabit maaş: cironun tamamı dükkana"}>
+        <select
+          value={form.paymentType}
+          onChange={(e) => setForm({ ...form, paymentType: e.target.value })}
+          className={inp}
+        >
+          <option value="PERCENTAGE">Komisyon (%)</option>
+          <option value="FIXED">Sabit Maaş</option>
+        </select>
+      </Field>
+      {isPct ? (
+        <Field label="Komisyon Oranı (%)" hint="Berber payı; 50 = yarı yarıya">
+          <input
+            type="number" min={0} max={100} step={1}
+            value={form.commissionRate}
+            onChange={(e) => setForm({ ...form, commissionRate: e.target.value })}
+            className={inp}
+          />
+        </Field>
+      ) : (
+        <Field label="Aylık Maaş (TL)" hint="Bilgi amaçlı; rapor sayfasında gösterilir">
+          <input
+            type="number" min={0} step={100}
+            value={form.fixedSalary}
+            onChange={(e) => setForm({ ...form, fixedSalary: e.target.value })}
+            placeholder="Örn. 25000" className={inp}
+          />
+        </Field>
+      )}
+    </Row2>
   );
 }
 

@@ -42,7 +42,8 @@ export async function PATCH(request, { params }) {
 
   const body = await request.json();
   const allowed = ["nameTr","nameEn","titleTr","titleEn","bioTr","bioEn",
-                   "avatar","color","yearsExp","specialties","available","slug"];
+                   "avatar","color","yearsExp","specialties","available","slug",
+                   "paymentType","commissionRate","fixedSalary"];
   const data = {};
   for (const key of allowed) {
     if (body[key] !== undefined) data[key] = body[key];
@@ -50,6 +51,30 @@ export async function PATCH(request, { params }) {
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "Güncellenecek alan yok" }, { status: 400 });
+  }
+
+  // Commission validation. We coerce empty strings to a sensible value rather
+  // than null so the NOT NULL columns stay valid.
+  if (data.paymentType !== undefined && data.paymentType !== "PERCENTAGE" && data.paymentType !== "FIXED") {
+    return NextResponse.json({ error: "Geçersiz ödeme tipi" }, { status: 400 });
+  }
+  if (data.commissionRate !== undefined) {
+    const cr = Number(data.commissionRate);
+    if (!Number.isFinite(cr) || cr < 0 || cr > 100) {
+      return NextResponse.json({ error: "Komisyon oranı 0-100 arasında olmalı" }, { status: 400 });
+    }
+    data.commissionRate = cr;
+  }
+  if (data.fixedSalary !== undefined) {
+    if (data.fixedSalary === null || data.fixedSalary === "") {
+      data.fixedSalary = null;
+    } else {
+      const fs = Number(data.fixedSalary);
+      if (!Number.isFinite(fs) || fs < 0 || fs > 10_000_000) {
+        return NextResponse.json({ error: "Maaş 0-10.000.000 arasında olmalı" }, { status: 400 });
+      }
+      data.fixedSalary = fs;
+    }
   }
 
   // slug uniqueness check within shop if slug is changing

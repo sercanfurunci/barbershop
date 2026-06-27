@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { apiFetch, normalizeAppointment } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import CompleteAppointmentModal from "@/components/admin/CompleteAppointmentModal";
+import CancelAppointmentModal   from "@/components/admin/CancelAppointmentModal";
 
 const AppointmentsContext = createContext(null);
 
@@ -10,6 +12,11 @@ export function AppointmentsProvider({ children }) {
   const { user, loaded: authLoaded } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [loaded, setLoaded]             = useState(false);
+  // ponytail: completion modal lives at the provider so every callsite
+  // (AppointmentsList / CalendarView / AdminDashboard / BarberDashboard)
+  // keeps its existing updateStatus(id,"completed") call — no UI churn.
+  const [completing, setCompleting] = useState(null);
+  const [cancelling, setCancelling] = useState(null);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -72,45 +79,46 @@ export function AppointmentsProvider({ children }) {
     return normalized;
   }, []);
 
-  const updateStatus = useCallback(async (id, status) => {
-    let priceToSet;
-    if (status === "completed") {
+  const updateStatus = useCallback(async (id, status, extra) => {
+    // Completion needs finalPrice + paymentMethod; cancellation captures reason
+    // + actor. If extras are missing, open the matching modal and let it call
+    // back with the user-entered values. This keeps existing callsites simple:
+    // they still call updateStatus(id, "cancelled") with no extras.
+    if (status === "completed" && !extra) {
       const current = appointments.find((a) => a.id === id);
-      if (current && current.price == null) {
-        const input = typeof window !== "undefined"
-          ? window.prompt("Bu randevu için ücret (₺):", "")
-          : "";
-        if (input === null) return; // cancelled
-        const trimmed = String(input).trim();
-        if (trimmed === "") {
-          priceToSet = null;
-        } else {
-          const n = Number(trimmed);
-          if (!Number.isFinite(n) || n < 0 || n > 100000) {
-            window.alert("Fiyat 0–100000 ₺ arasında olmalı.");
-            return;
-          }
-          priceToSet = n;
-        }
-      }
+      if (current) { setCompleting(current); return; }
     }
-
-    if (priceToSet !== undefined) {
-      await apiFetch(`/api/appointments/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ price: priceToSet }),
-      });
+    if (status === "cancelled" && !extra) {
+      const current = appointments.find((a) => a.id === id);
+      if (current) { setCancelling(current); return; }
     }
 
     const apiStatus = status.toUpperCase().replace("-", "_");
-    await apiFetch(`/api/appointments/${id}/status`, {
+    const body = { status: apiStatus, ...(extra ?? {}) };
+    const updated = await apiFetch(`/api/appointments/${id}/status`, {
       method: "PATCH",
-      body: JSON.stringify({ status: apiStatus }),
+      body: JSON.stringify(body),
     });
+
     setAppointments((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status, ...(priceToSet !== undefined && { price: priceToSet }) } : a))
+      prev.map((a) => a.id === id
+        ? { ...a, ...normalizeAppointment(updated), status }
+        : a
+      )
     );
   }, [appointments]);
+
+  const handleCompleteSubmit = useCallback(async (values) => {
+    if (!completing) return;
+    await updateStatus(completing.id, "completed", values);
+    setCompleting(null);
+  }, [completing, updateStatus]);
+
+  const handleCancelSubmit = useCallback(async (values) => {
+    if (!cancelling) return;
+    await updateStatus(cancelling.id, "cancelled", values);
+    setCancelling(null);
+  }, [cancelling, updateStatus]);
 
   const updateAppointment = useCallback(async (id, patch) => {
     await apiFetch(`/api/appointments/${id}`, {
@@ -145,6 +153,21 @@ export function AppointmentsProvider({ children }) {
       refresh: fetchAll,
     }}>
       {children}
+      {completing && (
+        <CompleteAppointmentModal
+          appointment={completing}
+          onClose={() => setCompleting(null)}
+          onSubmit={handleCompleteSubmit}
+        />
+      )}
+      {cancelling && (
+        <CancelAppointmentModal
+          appointment={cancelling}
+          defaultCancelledBy={user?.role === "BARBER" ? "barber" : "shop"}
+          onClose={() => setCancelling(null)}
+          onSubmit={handleCancelSubmit}
+        />
+      )}
     </AppointmentsContext.Provider>
   );
 }

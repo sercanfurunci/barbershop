@@ -18,6 +18,7 @@ import BarbersManagement from "./BarbersManagement";
 import AreaChart from "./AreaChart";
 import CalendarView from "./CalendarView";
 import ManualBookingModal from "./ManualBookingModal";
+import WalkInModal from "./WalkInModal";
 import SettingsPage from "./SettingsPage";
 import ServicesManagement from "./ServicesManagement";
 import NotificationsPage from "@/components/admin/NotificationsPage";
@@ -72,6 +73,7 @@ export default function AdminDashboard() {
   const [tab, setTab]               = useState("overview");
   const [moreOpen, setMoreOpen]     = useState(false);
   const [showBooking, setShowBooking] = useState(false);
+  const [showWalkIn, setShowWalkIn]   = useState(false);
   const [globalBarberId, setGlobalBarberId] = useState(null);
   const { lang, setLang }           = useLang();
   const tx = useT(lang);
@@ -221,7 +223,7 @@ export default function AdminDashboard() {
                 transition={{ duration: 0.22, ease: "easeOut" }}
                 className="w-full"
               >
-                {tab === "overview"      && <OverviewPage setTab={setTab} tx={tx} lang={lang} onNewBooking={() => setShowBooking(true)} barberId={globalBarberId} realBarbers={realBarbers} />}
+                {tab === "overview"      && <OverviewPage setTab={setTab} tx={tx} lang={lang} onNewBooking={() => setShowBooking(true)} onWalkIn={() => setShowWalkIn(true)} barberId={globalBarberId} realBarbers={realBarbers} />}
                 {tab === "appointments"  && <AppointmentsPage tx={tx} barberId={globalBarberId} realBarbers={realBarbers} />}
                 {tab === "barbers"       && <BarbersPage tx={tx} />}
                 {tab === "customers"     && <CustomersPage barberId={globalBarberId} />}
@@ -242,6 +244,9 @@ export default function AdminDashboard() {
 
       {showBooking && (
         <ManualBookingModal onClose={() => setShowBooking(false)} />
+      )}
+      {showWalkIn && (
+        <WalkInModal onClose={() => setShowWalkIn(false)} />
       )}
     </div>
   );
@@ -563,6 +568,7 @@ function BarberOpsPage({ barberId }) {
   }, [barberId]);
   const [date, setDate]               = useState(todayStr());
   const [showBooking, setShowBooking] = useState(false);
+  const [showWalkIn, setShowWalkIn]   = useState(false);
   const { appointments, updateStatus } = useAppointments();
   const today = todayStr();
 
@@ -646,12 +652,21 @@ function BarberOpsPage({ barberId }) {
                 <div style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.06em", textTransform: "uppercase" }}>{selectedBarber.titleTr}</div>
               </div>
             </div>
-            <button
-              onClick={() => setShowBooking(true)}
-              style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "7px", padding: "0 14px", height: "36px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
-            >
-              <Plus size={13} /> Randevu Ekle
-            </button>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={() => setShowWalkIn(true)}
+                style={{ display: "flex", alignItems: "center", gap: 6, background: C.surface, color: C.primary, border: `1px solid ${C.border}`, borderRadius: 7, padding: "0 12px", height: 36, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                title="Şimdi gelen müşteriyi kaydet"
+              >
+                <Plus size={13} /> Walk-in
+              </button>
+              <button
+                onClick={() => setShowBooking(true)}
+                style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "7px", padding: "0 14px", height: "36px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+              >
+                <Plus size={13} /> Randevu Ekle
+              </button>
+            </div>
           </div>
 
           {/* Ops sub-tabs */}
@@ -707,6 +722,9 @@ function BarberOpsPage({ barberId }) {
 
       {showBooking && (
         <ManualBookingModal defaultBarberId={selectedId} onClose={() => setShowBooking(false)} />
+      )}
+      {showWalkIn && (
+        <WalkInModal defaultBarberId={selectedId} onClose={() => setShowWalkIn(false)} />
       )}
     </div>
   );
@@ -1029,7 +1047,11 @@ function BusinessKPIs({ barberId, activeBarberCount = 0 }) {
   const completed   = todayAppts.filter(a => a.status === "completed");
   const noshows     = todayAppts.filter(a => a.status === "noshow");
   const pending     = todayAppts.filter(a => a.status === "pending");
-  const todayRevenue = completed.reduce((s, a) => s + (a.price || 0), 0);
+  const walkIns     = todayAppts.filter(a => a.isWalkIn);
+  // Today's cash = sum of gross (price) on completed visits. Tips are tracked
+  // separately under tipAmount but excluded from the till so they go straight
+  // to the barber and not into "shop revenue today".
+  const todayRevenue = completed.reduce((s, a) => s + ((a.grossAmount ?? a.price) || 0), 0);
   const noShowRate   = todayAppts.length > 0 ? Math.round((noshows.length / todayAppts.length) * 100) : 0;
   const TOTAL_SLOTS  = 24;
   const effectiveBarbers = activeBarberCount || Math.max(new Set(todayAppts.map(a => a.barberId)).size, 1);
@@ -1039,7 +1061,7 @@ function BusinessKPIs({ barberId, activeBarberCount = 0 }) {
 
   const cards = [
     { label: "Bugün Kasa",     value: `₺${todayRevenue.toLocaleString()}`, sub: `${completed.length} işlem tamamlandı`, hero: true },
-    { label: "Toplam Randevu", value: todayAppts.length,                    sub: `${effectiveBarbers} berber aktif` },
+    { label: "Toplam Randevu", value: todayAppts.length,                    sub: walkIns.length > 0 ? `${walkIns.length} walk-in · ${effectiveBarbers} berber` : `${effectiveBarbers} berber aktif` },
     { label: "Koltuk Doluluk", value: `${chairOcc}%`,                       sub: `${usedSlots}/${totalCap} slot`, valueColor: chairOcc > 70 ? "#15803D" : chairOcc > 40 ? "#B45309" : C.primary },
     { label: "No-Show Oranı",  value: `${noShowRate}%`,                     sub: `${noshows.length} gelmedi`,     valueColor: noShowRate > 15 ? "#111111" : C.primary },
     { label: "Onay Bekliyor",  value: pending.length,                       sub: pending.length > 0 ? "hemen işlem yap" : "tümü onaylandı", alert: pending.length > 0 },
@@ -1081,7 +1103,9 @@ function StaffPerformance({ barberId, realBarbers = [] }) {
       <div style={{ padding: "12px", display: "grid", gridTemplateColumns: barberId ? "1fr" : "1fr 1fr", gap: "8px" }}>
         {visibleBarbers.map(b => {
           const bAppts   = todayAppts.filter(a => a.barberId === b.id);
-          const bRevenue = bAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
+          const bCompleted = bAppts.filter(a => a.status === "completed");
+          const bRevenue = bCompleted.reduce((s, a) => s + ((a.grossAmount ?? a.price) || 0), 0);
+          const bBarberShare = bCompleted.reduce((s, a) => s + ((a.barberAmount ?? a.price) || 0) + (a.tipAmount || 0), 0);
           const bSlots   = bAppts.reduce((s, a) => s + Math.ceil((a.duration || 30) / 30), 0);
           const util     = Math.round((bSlots / TOTAL_SLOTS) * 100);
           const pendingCt = bAppts.filter(a => a.status === "pending").length;
@@ -1110,7 +1134,7 @@ function StaffPerformance({ barberId, realBarbers = [] }) {
                 </div>
                 <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
                   <div style={{ fontSize: "16px", color: bRevenue > 0 ? C.primary : C.muted, fontWeight: 300, lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>₺{bRevenue.toLocaleString()}</div>
-                  <div style={{ fontSize: "9px", color: C.muted }}>gelir</div>
+                  <div style={{ fontSize: "9px", color: C.muted }}>brüt · berbere ₺{bBarberShare.toLocaleString()}</div>
                 </div>
               </div>
               <div>
@@ -1364,7 +1388,7 @@ function RecentActivityFeed() {
 }
 
 /* ─── Overview Page ───────────────────────────────────────────────────────── */
-function OverviewPage({ setTab, tx, lang, onNewBooking, barberId, realBarbers = [] }) {
+function OverviewPage({ setTab, tx, lang, onNewBooking, onWalkIn, barberId, realBarbers = [] }) {
   const now     = new Date();
   const dateStr = now.toLocaleDateString(lang === "tr" ? "tr-TR" : "en-US", { weekday: "long", day: "numeric", month: "long" });
   const activeBarber = barberId ? realBarbers.find(b => b.id === barberId) : null;
@@ -1381,13 +1405,25 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, barberId, realBarbers = 
             {activeBarber ? (activeBarber.titleTr ?? activeBarber.title?.tr) : dateStr}
           </p>
         </div>
-        <button
-          onClick={onNewBooking}
-          style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 14px", background: C.primary, border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "#fff", flexShrink: 0 }}
-        >
-          <Plus size={14} />
-          <span className="hidden sm:inline">Yeni Randevu</span>
-        </button>
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          {onWalkIn && (
+            <button
+              onClick={onWalkIn}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 12px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.primary }}
+              title="Şimdi gelen müşteriyi kaydet"
+            >
+              <Plus size={13} />
+              <span className="hidden sm:inline">Walk-in</span>
+            </button>
+          )}
+          <button
+            onClick={onNewBooking}
+            style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 14px", background: C.primary, border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "#fff" }}
+          >
+            <Plus size={14} />
+            <span className="hidden sm:inline">Yeni Randevu</span>
+          </button>
+        </div>
       </div>
 
       {/* Business KPIs */}

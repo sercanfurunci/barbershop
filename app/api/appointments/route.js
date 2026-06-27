@@ -21,7 +21,7 @@ function isValidPhone(phone) { return /^5[0-9]{9}$/.test(phone); }
 function isValidName(name)   { return typeof name === "string" && name.trim().length >= 2 && name.trim().length <= 100; }
 function isValidEmail(email) { return !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
 
-const ALLOWED_SOURCES = new Set(["ONLINE", "ADMIN", "WALK_IN", "PHONE"]);
+const ALLOWED_SOURCES = new Set(["ONLINE", "PHONE", "WALKIN"]);
 
 // GET /api/appointments?date=2026-06-10&barberId=brb-1&status=PENDING
 export async function GET(request) {
@@ -206,7 +206,7 @@ export async function POST(request) {
             time,
             duration:  service.duration,
             price:     service.price,
-            status:    "PENDING",
+            status:    "CONFIRMED",
             source:    ALLOWED_SOURCES.has(source) ? source : "ONLINE",
             notes:     notes?.trim().slice(0, 500) ?? null,
           },

@@ -11,6 +11,7 @@ import { todayStr, toDateStr } from "@/lib/utils";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { toTelHref } from "@/lib/validation";
 import ManualBookingModal from "@/components/admin/ManualBookingModal";
+import WalkInModal from "@/components/admin/WalkInModal";
 import ImageCropModal from "@/components/shared/ImageCropModal";
 import SubscriptionBanner from "@/components/admin/SubscriptionBanner";
 import DashboardTopbar from "@/components/admin/DashboardTopbar";
@@ -260,7 +261,11 @@ export function BarberDayView({ barberId, date, appointments, updateStatus }) {
   const pending    = dayAppts.filter(a => a.status === "pending").length;
   const confirmed  = dayAppts.filter(a => a.status === "confirmed").length;
   const completed  = dayAppts.filter(a => a.status === "completed").length;
-  const revenue    = dayAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
+  // Barber's own earnings (their commission share). Legacy rows without
+  // barberAmount fall back to the gross price so historic totals don't go to 0.
+  const revenue    = dayAppts
+    .filter(a => a.status === "completed")
+    .reduce((s, a) => s + ((a.barberAmount ?? a.price) || 0) + (a.tipAmount || 0), 0);
   const nextAppt   = isToday_ ? dayAppts.find(a => a.time >= now && ["pending", "confirmed"].includes(a.status)) : null;
   const displayNext = nextAppt;
 
@@ -334,7 +339,12 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
   const [breakModal, setBreakModal] = useState(false);
   useBodyScrollLock(moreSheet || breakModal);
   const [showModal, setShowModal] = useState(false);
+  const [showWalkIn, setShowWalkIn] = useState(false);
   const [barberData, setBarberData] = useState(null);
+  // Monthly earnings come from /api/admin/stats which auto-scopes to the
+  // logged-in barber. Local appointments context only fetches 200 most recent
+  // rows so a full-month sum can't be derived client-side reliably.
+  const [monthStats, setMonthStats] = useState(null);
   const [tick, setTick]     = useState(0);
   const [mounted, setMounted] = useState(false);
   const loggingOut = useRef(false);
@@ -360,6 +370,14 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
     const id = setInterval(fetchBarberData, 30_000);
     return () => clearInterval(id);
   }, [fetchBarberData]);
+
+  useEffect(() => {
+    if (!authLoaded || !user?.barberId) return;
+    const load = () => apiFetch("/api/admin/stats").then(setMonthStats).catch(() => {});
+    load();
+    const id = setInterval(load, 5 * 60_000);
+    return () => clearInterval(id);
+  }, [authLoaded, user?.barberId]);
 
   useEffect(() => {
     const onVisible = () => { if (document.visibilityState === "visible") { fetchBarberData(); refresh(); } };
@@ -456,7 +474,11 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
   const confirmed = dayAppts.filter(a => a.status === "confirmed").length;
   const completed = dayAppts.filter(a => a.status === "completed").length;
   const noshow    = dayAppts.filter(a => a.status === "noshow").length;
-  const revenue   = dayAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
+  // Barber-take = commission share + 100% of tips. Falls back to legacy price
+  // for pre-Phase-2 rows so historic totals stay non-zero.
+  const revenue   = dayAppts
+    .filter(a => a.status === "completed")
+    .reduce((s, a) => s + ((a.barberAmount ?? a.price) || 0) + (a.tipAmount || 0), 0);
   // WorkingHours are in minutes (540 = 09:00); derive today's dow for accurate hours
   const todayDow = ["sun","mon","tue","wed","thu","fri","sat"][new Date().getDay()];
   const whRaw    = barberData?.workingHours;
@@ -473,7 +495,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
   });
   const weekData = weekDays.map(d => {
     const appts = appointments.filter(a => (realBarberId ? a.barberId === realBarberId : true) && a.date === d && a.status === "completed");
-    return { date: d, count: appts.length, revenue: appts.reduce((s, a) => s + (a.price || 0), 0) };
+    return { date: d, count: appts.length, revenue: appts.reduce((s, a) => s + ((a.barberAmount ?? a.price) || 0) + (a.tipAmount || 0), 0) };
   });
   const weekRevenue = weekData.reduce((s, d) => s + d.revenue, 0);
   const weekAppts   = weekData.reduce((s, d) => s + d.count, 0);
@@ -759,16 +781,27 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
               </>
             )}
             {(view === "dashboard" || view === "schedule" || view === "appointments") && (
-              <button
-                onClick={() => setShowModal(true)}
-                className="transition-transform"
-                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", background: C.primary, border: "none", borderRadius: "9px", cursor: "pointer", fontSize: "12.5px", fontWeight: 600, letterSpacing: "-0.005em", color: "#fff", flexShrink: 0, boxShadow: SHADOW.elevated }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
-              >
-                <Plus size={14} strokeWidth={2.2} />
-                <span className="hidden sm:inline">Yeni Randevu</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowWalkIn(true)}
+                  className="transition-colors"
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 9, cursor: "pointer", fontSize: 12.5, fontWeight: 600, color: C.primary, flexShrink: 0, boxShadow: SHADOW.card }}
+                  title="Şimdi gelen müşteriyi kaydet"
+                >
+                  <Plus size={13} strokeWidth={2.2} />
+                  <span className="hidden sm:inline">Walk-in</span>
+                </button>
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="transition-transform"
+                  style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", background: C.primary, border: "none", borderRadius: "9px", cursor: "pointer", fontSize: "12.5px", fontWeight: 600, letterSpacing: "-0.005em", color: "#fff", flexShrink: 0, boxShadow: SHADOW.elevated }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
+                >
+                  <Plus size={14} strokeWidth={2.2} />
+                  <span className="hidden sm:inline">Yeni Randevu</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -862,17 +895,23 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
 
                 {view === "dashboard" && (
                   <>
-                    {/* Weekly KPIs */}
+                    {/* Weekly / Monthly KPIs */}
                     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "20px", boxShadow: SHADOW.card }}>
-                      <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "16px" }}>Bu Hafta</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "18px" }}>
+                      <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "16px" }}>Kazançlarım</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "18px" }}>
                         <div>
-                          <div className="font-display" style={{ fontSize: "24px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>₺{weekRevenue.toLocaleString()}</div>
-                          <div style={{ fontSize: "11px", color: C.muted, marginTop: "6px" }}>Toplam kazanç</div>
+                          <div className="font-display" style={{ fontSize: "20px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>₺{weekRevenue.toLocaleString()}</div>
+                          <div style={{ fontSize: "10px", color: C.muted, marginTop: "6px", letterSpacing: "0.06em", textTransform: "uppercase" }}>Bu Hafta</div>
                         </div>
                         <div>
-                          <div className="font-display" style={{ fontSize: "24px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>{weekAppts}</div>
-                          <div style={{ fontSize: "11px", color: C.muted, marginTop: "6px" }}>Tamamlanan</div>
+                          <div className="font-display" style={{ fontSize: "20px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                            ₺{(monthStats?.thisMonthBarberPaid ?? 0).toLocaleString()}
+                          </div>
+                          <div style={{ fontSize: "10px", color: C.muted, marginTop: "6px", letterSpacing: "0.06em", textTransform: "uppercase" }}>Bu Ay</div>
+                        </div>
+                        <div>
+                          <div className="font-display" style={{ fontSize: "20px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>{weekAppts}</div>
+                          <div style={{ fontSize: "10px", color: C.muted, marginTop: "6px", letterSpacing: "0.06em", textTransform: "uppercase" }}>Hafta Tamam.</div>
                         </div>
                       </div>
 
@@ -941,6 +980,12 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
           defaultBarberId={barberSlug}
           initialDate={date}
           onClose={() => setShowModal(false)}
+        />
+      )}
+      {showWalkIn && (
+        <WalkInModal
+          defaultBarberId={realBarberId ?? barberSlug}
+          onClose={() => setShowWalkIn(false)}
         />
       )}
         </div>

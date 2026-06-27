@@ -169,15 +169,22 @@ export default function KPICards() {
 
   const flatSpark = sparks.revenue ?? [];
 
+  const fmtTL = (v) => `₺${Math.round(v).toLocaleString()}`;
+  const grossSub = `Brüt ${fmtTL(stats.thisMonthGross ?? stats.thisMonthRevenue ?? 0)} · Berber ${fmtTL(stats.thisMonthBarberPaid ?? 0)}`;
+  const walkInSub = stats.walkInRate != null
+    ? `Walk-in %${stats.walkInRate}`
+    : kpi.vsLastMonth;
+
   const CARDS = [
     {
       key:    "revenue",
       label:  kpi.revenue,
-      value:  stats.thisMonthRevenue,
-      change: stats.revenueChange,
-      format: (v) => `₺${Math.round(v).toLocaleString()}`,
+      value:  stats.thisMonthShopNet ?? stats.thisMonthRevenue ?? 0,
+      change: stats.shopNetChange ?? stats.revenueChange,
+      format: fmtTL,
       spark:  flatSpark,
       accent: "#111111",
+      vs:     grossSub,
     },
     {
       key:    "appointments",
@@ -187,6 +194,7 @@ export default function KPICards() {
       format: (v) => Math.round(v).toString(),
       spark:  flatSpark.map((_, i) => i),
       accent: "#6D28D9",
+      vs:     walkInSub,
     },
     {
       key:    "clients",
@@ -205,13 +213,14 @@ export default function KPICards() {
       format: (v) => v.toFixed(2),
       spark:  [5, 4.9, 5, 5.0, 4.95, 5, stats.avgRating],
       accent: "#B45309",
+      vs:     stats.topService ? `En çok: ${stats.topService.name}` : null,
     },
   ];
 
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
       {CARDS.map((card, i) => (
-        <KPICard key={card.key} card={card} delay={i * 0.07} vsLabel={kpi.vsLastMonth} />
+        <KPICard key={card.key} card={card} delay={i * 0.07} vsLabel={card.vs ?? kpi.vsLastMonth} />
       ))}
     </div>
   );
