@@ -61,17 +61,23 @@ export default function BookingCard({
   const barbersTotal   = barbers.length;
   const barbersAvail   = availableList.length;
 
-  // "Earliest" label — relative day word + tabular time.
+  // ponytail: trust SSR. Both shop-wide (min across barbers) and per-barber
+  // values come from the server with real bookings + breaks + holidays. Page
+  // revalidates every 300s (see app/[shopSlug]/page.js), which is good enough
+  // — a client-side recompute can't see new bookings made elsewhere anyway.
+  const pickedBarber = selectedBarber ? barbers.find(x => x.id === selectedBarber) : null;
+  const effectiveNext = pickedBarber ? pickedBarber.nextAvailable ?? null : nextAvailable;
+
   const nextSlotLabel = useMemo(() => {
-    if (!nextAvailable) return null;
-    const { dayOffset, minutes } = nextAvailable;
+    if (!effectiveNext) return null;
+    const { dayOffset, minutes } = effectiveNext;
     const time = fmtMin(minutes);
     if (dayOffset === 0) return lang === "tr" ? `bugün ${time}` : `today ${time}`;
     if (dayOffset === 1) return lang === "tr" ? `yarın ${time}` : `tomorrow ${time}`;
     const d = new Date(); d.setDate(d.getDate() + dayOffset);
     const wk = d.toLocaleDateString(lang === "tr" ? "tr-TR" : "en-US", { weekday: "short" });
     return `${wk} ${time}`;
-  }, [nextAvailable, lang]);
+  }, [effectiveNext, lang]);
 
   // open/closed line for header (only if we have today's hours)
   const todayHours = hours?.find((h) => h.day === todayKey());
@@ -141,7 +147,11 @@ export default function BookingCard({
                   suppressHydrationWarning>
               <Zap size={12} style={{ color: "#15803d" }} fill="#15803d" />
               <span style={{ color: C.primary, fontWeight: 600 }}>
-                {lang === "tr" ? "En erken" : "Earliest"}
+                {pickedBarber
+                  ? (lang === "tr"
+                      ? `${(pickedBarber.name || "").split(" ")[0]} ile`
+                      : `With ${(pickedBarber.name || "").split(" ")[0]}`)
+                  : (lang === "tr" ? "En erken" : "Earliest")}
               </span>
               <span style={{ fontVariantNumeric: "tabular-nums" }}>{nextSlotLabel}</span>
             </span>

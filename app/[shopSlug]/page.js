@@ -41,25 +41,72 @@ function aggregateHours(rows) {
   });
 }
 
-// ponytail: shop-level "earliest slot" hint for the booking card. Uses
-// aggregated working hours + a 30-min buffer from now; ignores per-barber
-// conflicts because that's what the booking flow itself resolves on next
-// click. Walks up to 7 days ahead.
-function computeNextAvailable(hours) {
-  if (!hours?.length) return null;
-  const SLOT = 30;
-  const now = new Date();
-  const todayIdx = (now.getDay() + 6) % 7; // 0 = Mon
-  const cutoff   = now.getHours() * 60 + now.getMinutes() + 30;
+// ponytail: per-barber earliest slot — walks up to 7 days ahead, considering
+// the barber's working hours, breaks, holidays, and already-booked appointments.
+// Uses a 30-min lead time to match /api/availability (the actual booking step).
+// Slot size is 30 min — matches the booking grid; the chip is a "fits a 30-min
+// service" hint, not a guarantee for longer services.
+const DOW_KEYS = ["sun","mon","tue","wed","thu","fri","sat"];
+const SLOT = 30;
+const DEFAULT_DUR = 30;
+
+function ymd(d) {
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function hhmmToMin(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function nextBarberAvailable(wh, breaks, appts, holidays, now) {
+  if (!wh) return null;
+  const cutoff = now.getHours() * 60 + now.getMinutes() + 30;
   for (let off = 0; off < 7; off++) {
-    const h = hours[(todayIdx + off) % 7];
-    if (h?.start == null || h?.end == null) continue;
-    const earliest = off === 0
-      ? Math.max(h.start, Math.ceil(cutoff / SLOT) * SLOT)
-      : h.start;
-    if (earliest + SLOT <= h.end) return { dayOffset: off, minutes: earliest };
+    const date = new Date(now); date.setDate(date.getDate() + off);
+    const dateStr = ymd(date);
+    const dow = date.getDay();
+    const key = DOW_KEYS[dow];
+    const start = wh[`${key}Start`];
+    const end   = wh[`${key}End`];
+    if (start == null || end == null) continue;
+
+    if (holidays.some(h => h.date === dateStr)) continue;
+
+    const blocked = [];
+    for (const b of breaks) {
+      const matches = b.date ? b.date === dateStr : (b.dayOfWeek == null || b.dayOfWeek === dow);
+      if (!matches) continue;
+      blocked.push({ start: hhmmToMin(b.start), end: hhmmToMin(b.end) });
+    }
+    for (const a of appts) {
+      if (a.date !== dateStr) continue;
+      if (a.status === "CANCELLED" || a.status === "NOSHOW") continue;
+      const s = hhmmToMin(a.time);
+      blocked.push({ start: s, end: s + a.duration });
+    }
+
+    const floor = off === 0 ? Math.max(start, Math.ceil(cutoff / SLOT) * SLOT) : start;
+    for (let t = floor; t + DEFAULT_DUR <= end; t += SLOT) {
+      const slotEnd = t + DEFAULT_DUR;
+      const overlaps = blocked.some(b => t < b.end && slotEnd > b.start);
+      if (!overlaps) return { dayOffset: off, minutes: t };
+    }
   }
   return null;
+}
+
+function minNextAvailable(items) {
+  let best = null;
+  for (const n of items) {
+    if (!n) continue;
+    if (!best || n.dayOffset < best.dayOffset || (n.dayOffset === best.dayOffset && n.minutes < best.minutes)) {
+      best = n;
+    }
+  }
+  return best;
 }
 
 export async function generateMetadata({ params }) {
@@ -101,8 +148,13 @@ export default async function ShopHome({ params }) {
 
   let services = [], barbers = [], last24h = 0, hours = null, googleReviews = null;
   try {
-    const since = new Date(Date.now() - 86_400_000);
-    const [dbServices, dbBarbers, completedByBarber, count24h, hoursRows, gReviews] = await Promise.all([
+    const now = new Date();
+    const since = new Date(now.getTime() - 86_400_000);
+    const weekAhead = new Date(now); weekAhead.setDate(weekAhead.getDate() + 7);
+    const todayStr = ymd(now);
+    const weekAheadStr = ymd(weekAhead);
+
+    const [dbServices, dbBarbers, completedByBarber, count24h, upcomingAppts, holidays, gReviews] = await Promise.all([
       prisma.service.findMany({
         where: { shopId: shop.id, active: true },
         select: {
@@ -117,6 +169,8 @@ export default async function ShopHome({ params }) {
           id: true, nameTr: true, titleTr: true, titleEn: true,
           bioTr: true, bioEn: true, rating: true, reviewCount: true,
           specialties: true, avatar: true, color: true, available: true, yearsExp: true,
+          workingHours: true,
+          breaks: true,
         },
         orderBy: [{ available: "desc" }, { createdAt: "asc" }],
       }),
@@ -132,15 +186,38 @@ export default async function ShopHome({ params }) {
           createdAt: { gte: since },
         },
       }),
-      prisma.workingHours.findMany({
-        where: { barber: { shopId: shop.id, available: true } },
+      prisma.appointment.findMany({
+        where: {
+          shopId: shop.id,
+          date: { gte: todayStr, lte: weekAheadStr },
+          status: { in: ["PENDING", "CONFIRMED", "COMPLETED"] },
+        },
+        select: { barberId: true, date: true, time: true, duration: true, status: true },
+      }),
+      prisma.holiday.findMany({
+        where: { shopId: shop.id, date: { gte: todayStr, lte: weekAheadStr } },
+        select: { barberId: true, date: true },
       }),
       getGoogleReviews(shop.id),
     ]);
 
     const completedMap = new Map(completedByBarber.map(r => [r.barberId, r._count._all]));
+    const apptsByBarber = new Map();
+    for (const a of upcomingAppts) {
+      const list = apptsByBarber.get(a.barberId) ?? [];
+      list.push(a);
+      apptsByBarber.set(a.barberId, list);
+    }
+    const shopHolidays = holidays.filter(h => h.barberId == null);
+    const holidaysByBarber = new Map();
+    for (const h of holidays.filter(h => h.barberId != null)) {
+      const list = holidaysByBarber.get(h.barberId) ?? [];
+      list.push(h);
+      holidaysByBarber.set(h.barberId, list);
+    }
+
     last24h = count24h;
-    hours = aggregateHours(hoursRows);
+    hours = aggregateHours(dbBarbers.filter(b => b.available && b.workingHours).map(b => b.workingHours));
     googleReviews = gReviews;
 
     services = dbServices.map((s) => ({
@@ -151,15 +228,22 @@ export default async function ShopHome({ params }) {
       icon: s.icon, category: s.category.toLowerCase(), popular: s.popular,
     }));
 
-    barbers = dbBarbers.map((b) => ({
-      id: b.id, name: b.nameTr,
-      title: { tr: b.titleTr, en: b.titleEn },
-      bio: { tr: b.bioTr, en: b.bioEn },
-      rating: b.rating, reviews: b.reviewCount,
-      specialties: { tr: b.specialties, en: b.specialties },
-      avatar: b.avatar, color: b.color, available: b.available, yearsExp: b.yearsExp,
-      completedCount: completedMap.get(b.id) ?? 0,
-    }));
+    barbers = dbBarbers.map((b) => {
+      const barberHolidays = [...shopHolidays, ...(holidaysByBarber.get(b.id) ?? [])];
+      const nextAvailable = b.available
+        ? nextBarberAvailable(b.workingHours, b.breaks ?? [], apptsByBarber.get(b.id) ?? [], barberHolidays, now)
+        : null;
+      return {
+        id: b.id, name: b.nameTr,
+        title: { tr: b.titleTr, en: b.titleEn },
+        bio: { tr: b.bioTr, en: b.bioEn },
+        rating: b.rating, reviews: b.reviewCount,
+        specialties: { tr: b.specialties, en: b.specialties },
+        avatar: b.avatar, color: b.color, available: b.available, yearsExp: b.yearsExp,
+        completedCount: completedMap.get(b.id) ?? 0,
+        nextAvailable,
+      };
+    });
   } catch (err) {
     console.error(`[ShopHome:${shopSlug}] DB error:`, err.message);
   }
@@ -220,7 +304,7 @@ export default async function ShopHome({ params }) {
               services={services}
               barbers={barbers}
               hours={hours}
-              nextAvailable={computeNextAvailable(hours)}
+              nextAvailable={minNextAvailable(barbers.map(b => b.nextAvailable))}
               activityCount={last24h}
             />
           }

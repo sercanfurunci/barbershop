@@ -41,7 +41,7 @@ function computeSlots(workingHours, breaks, bookedAppointments, date, serviceDur
   }
 
   const isToday = date === todayStr();
-  const nowMin  = isToday ? nowMinutes() + 60 : 0;
+  const nowMin  = isToday ? nowMinutes() + 30 : 0;
 
   const slots = [];
   for (let t = dayStart; t + serviceDuration <= dayEnd; t += SLOT_INTERVAL) {
