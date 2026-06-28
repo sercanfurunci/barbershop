@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { queueNotifications, cancelPendingJobs } from "@/lib/notifications";
 import { createReviewRequest } from "@/lib/reviews";
+import { splitRevenue } from "@/lib/revenue";
 
 export const dynamic = "force-dynamic";
 
@@ -22,15 +23,6 @@ const TRANSITIONS = {
   CANCELLED:   new Set(["PENDING","CONFIRMED"]),
   NOSHOW:      new Set(["PENDING","CONFIRMED"]),
 };
-
-function splitRevenue(finalPrice, barber) {
-  if (barber.paymentType === "FIXED") {
-    return { barberAmount: 0, shopAmount: finalPrice };
-  }
-  const rate = Math.min(100, Math.max(0, barber.commissionRate ?? 50));
-  const barberAmount = Math.round(finalPrice * rate / 100);
-  return { barberAmount, shopAmount: finalPrice - barberAmount };
-}
 
 export async function PATCH(request, { params }) {
   const payload = await requireAuth(request);
@@ -62,6 +54,20 @@ export async function PATCH(request, { params }) {
       { status: 409 }
     );
   }
+
+  const writeAudit = (after) =>
+    prisma.auditLog.create({
+      data: {
+        shopId: appt.shopId,
+        entity: "appointment",
+        entityId: id,
+        appointmentId: id,
+        action: "status_change",
+        userId: payload.userId ?? null,
+        before: { status: appt.status },
+        after,
+      },
+    }).catch((err) => console.error("[audit status_change]", id, err.message));
 
   // ── COMPLETED: requires finalPrice, computes split, updates client metrics ──
   if (status === "COMPLETED") {
@@ -117,7 +123,10 @@ export async function PATCH(request, { params }) {
     });
 
     const updated = await prisma.appointment.findUnique({ where: { id } });
-    if (!result.raced) createReviewRequest(id).catch(() => {});
+    if (!result.raced) {
+      createReviewRequest(id).catch(() => {});
+      writeAudit({ status: "COMPLETED", finalPrice, tipAmount, paymentMethod, barberAmount, shopAmount });
+    }
     return NextResponse.json(updated);
   }
 
@@ -160,6 +169,7 @@ export async function PATCH(request, { params }) {
 
     await cancelPendingJobs(id);
     queueNotifications(id, "CANCELLED").catch(() => {});
+    writeAudit({ status: "CANCELLED", cancellationReason, cancelledBy });
     return NextResponse.json(updated);
   }
 
@@ -173,6 +183,7 @@ export async function PATCH(request, { params }) {
       });
       return u;
     });
+    writeAudit({ status: "NOSHOW" });
     return NextResponse.json(updated);
   }
 
@@ -187,11 +198,13 @@ export async function PATCH(request, { params }) {
       return u;
     });
     if (status === "CONFIRMED") queueNotifications(id, "CONFIRMED").catch(() => {});
+    writeAudit({ status });
     return NextResponse.json(updated);
   }
 
   // ── Plain transition (no metric side-effects) ───────────────────────────────
   const updated = await prisma.appointment.update({ where: { id }, data: { status } });
   if (status === "CONFIRMED") queueNotifications(id, "CONFIRMED").catch(() => {});
+  writeAudit({ status });
   return NextResponse.json(updated);
 }

@@ -4,20 +4,11 @@ import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { todayStr, nowMinutes } from "@/lib/utils";
 import { createReviewRequest } from "@/lib/reviews";
 import { validateBookingWindow } from "@/lib/booking";
+import { splitRevenue } from "@/lib/revenue";
 
 export const dynamic = "force-dynamic";
 
 const PAYMENT_METHODS = new Set(["CASH", "CARD", "TRANSFER"]);
-
-// Mirrors splitRevenue() in /api/appointments/[id]/status. Duplicated rather
-// than imported because the route module isn't a library — pulling shared
-// helpers out can wait until a third caller appears.
-function splitRevenue(finalPrice, barber) {
-  if (barber.paymentType === "FIXED") return { barberAmount: 0, shopAmount: finalPrice };
-  const rate = Math.min(100, Math.max(0, barber.commissionRate ?? 50));
-  const barberAmount = Math.round(finalPrice * rate / 100);
-  return { barberAmount, shopAmount: finalPrice - barberAmount };
-}
 
 // POST /api/appointments/walkin
 // Captures a customer who showed up without booking online. Creates the
