@@ -593,6 +593,8 @@ function ShopProfileTab() {
     description: "", about: "",
     instagramUrl: "", facebookUrl: "", tiktokUrl: "",
     googlePlaceId: "", googlePlacesKey: "", mapsEmbed: "",
+    googleReviewUrl: "",
+    reviewReminderEnabled: true,
   };
   const [form, setForm]     = useState(empty);
   const [slug, setSlug]     = useState(null);
@@ -628,6 +630,8 @@ function ShopProfileTab() {
           googlePlaceId:   shop.googlePlaceId   ?? "",
           googlePlacesKey: shop.googlePlacesKey ?? "",
           mapsEmbed:       shop.mapsEmbed       ?? "",
+          googleReviewUrl: shop.googleReviewUrl ?? "",
+          reviewReminderEnabled: shop.reviewReminderEnabled ?? true,
         });
         setLoaded(true);
       })
@@ -818,6 +822,52 @@ function ShopProfileTab() {
           </Field>
         </Section>
 
+        {/* Google Review CTA */}
+        <Section title="Google Değerlendirme">
+          <Field
+            label="Google yorum bağlantısı"
+            hint="Google Maps → işletmenizi açın → 'Yorum yaz' bağlantısını kopyalayın. 4★+ değerlendirme sonrasında müşteriye gösterilir."
+          >
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                value={form.googleReviewUrl}
+                onChange={set("googleReviewUrl")}
+                placeholder="https://g.page/r/…/review"
+                style={{ ...fi, flex: 1 }}
+                type="url"
+              />
+              <a
+                href={form.googleReviewUrl || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => { if (!form.googleReviewUrl) e.preventDefault(); }}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "8px 14px", fontSize: 13, fontWeight: 500,
+                  border: `1px solid ${C.border}`, borderRadius: 7,
+                  background: form.googleReviewUrl ? C.surface : C.dim,
+                  color: form.googleReviewUrl ? C.primary : C.muted,
+                  textDecoration: "none",
+                  pointerEvents: form.googleReviewUrl ? "auto" : "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Bağlantıyı test et
+              </a>
+            </div>
+          </Field>
+          <Field label="Otomatik yorum hatırlatıcısı" hint="Randevu bitiminden 2 saat sonra müşteriye WhatsApp/SMS gönderilir.">
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: C.primary, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={form.reviewReminderEnabled}
+                onChange={(e) => setForm(f => ({ ...f, reviewReminderEnabled: e.target.checked }))}
+              />
+              {form.reviewReminderEnabled ? "Açık — hatırlatma gönderilecek" : "Kapalı — hatırlatma gönderilmeyecek"}
+            </label>
+          </Field>
+        </Section>
+
         {/* QR & public link */}
         {slug && <QRSection slug={slug} />}
 
@@ -887,9 +937,9 @@ function UploadField({ label, endpoint, current, aspect = "1 / 1", onChange, hin
   }
 
   return (
-    <Field label={label} hint={hint}>
+    <div>
       <div style={{
-        position: "relative", aspectRatio: aspect, width: "100%",
+        position: "relative", aspectRatio: aspect, width: "100%", maxWidth: 180,
         background: C.surface, border: `1px dashed ${C.border}`, borderRadius: "10px",
         overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
       }}>
@@ -922,8 +972,9 @@ function UploadField({ label, endpoint, current, aspect = "1 / 1", onChange, hin
           <input type="file" accept="image/*" onChange={pick} disabled={busy} style={{ display: "none" }} />
         </label>
       </div>
+      {hint && <div style={{ fontSize: "10px", color: C.dim, marginTop: 6 }}>{hint}</div>}
       {err && <div style={{ fontSize: 11, color: "#b91c1c", marginTop: 4 }}>{err}</div>}
-    </Field>
+    </div>
   );
 }
 
@@ -939,7 +990,7 @@ function SocialLinkField({ label, value, onChange, placeholder, fi }) {
 
 /* ─── Reusable: GalleryGrid ───────────────────────────────────────────────── */
 
-function SortableTile({ url, busy, onRemove }) {
+function SortableTile({ url, busy, onRemove, isCover }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: url });
   return (
     <div
@@ -952,13 +1003,24 @@ function SortableTile({ url, busy, onRemove }) {
         borderRadius: 8,
         overflow: "hidden",
         background: C.surface,
-        border: `1px solid ${C.border}`,
+        border: isCover ? `2px solid ${C.primary}` : `1px solid ${C.border}`,
         opacity: isDragging ? 0.4 : 1,
         zIndex: isDragging ? 5 : 1,
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} loading="lazy" />
+
+      {isCover && (
+        <span style={{
+          position: "absolute", bottom: 4, left: 4,
+          padding: "2px 8px", borderRadius: 999,
+          background: C.primary, color: "#fff",
+          fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
+        }}>
+          KAPAK
+        </span>
+      )}
 
       {/* Drag handle — top-left */}
       <button
@@ -1074,7 +1136,7 @@ function GalleryGrid({ items, onChange }) {
             gap: 10,
           }}>
             {items.map((url, i) => (
-              <SortableTile key={url} url={url} busy={busy} onRemove={() => remove(i)} />
+              <SortableTile key={url} url={url} busy={busy} isCover={i === 0} onRemove={() => remove(i)} />
             ))}
             {items.length < 12 && (
               <label style={{
@@ -1092,7 +1154,7 @@ function GalleryGrid({ items, onChange }) {
       </DndContext>
       {items.length > 1 && (
         <div style={{ fontSize: 11, color: C.muted }}>
-          İpucu: tutamacı sürükleyerek fotoğraf sırasını değiştirebilirsin.
+          İpucu: sürükle-bırak ile sırala. İlk fotoğraf otomatik olarak kapak görseliniz olur.
         </div>
       )}
       {err && <div style={{ fontSize: 11, color: "#b91c1c" }}>{err}</div>}

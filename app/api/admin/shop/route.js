@@ -26,9 +26,17 @@ const PROFILE_SELECT = {
   ownerName: true, foundedYear: true, shopType: true,
   instagramUrl: true, facebookUrl: true, tiktokUrl: true,
   social: true,
-  googlePlaceId: true, googlePlacesKey: true, mapsEmbed: true,
+  googlePlaceId: true, googlePlacesKey: true, googleReviewUrl: true, mapsEmbed: true,
+  reviewReminderEnabled: true,
   timezone: true, currency: true, status: true,
 };
+
+// google.com (and any *.google.com subdomain). Reject look-alikes like
+// "evilgoogle.com" by checking exact match or strict subdomain suffix.
+function isGoogleHost(host) {
+  const h = host.toLowerCase();
+  return h === "google.com" || h.endsWith(".google.com");
+}
 
 // GET /api/admin/shop — full shop profile
 export async function GET(request) {
@@ -155,6 +163,23 @@ export async function PATCH(request) {
   if (body.mapsEmbed       !== undefined) data.mapsEmbed       = sanitizeString(body.mapsEmbed, { max: 1000 });
   if (body.googlePlaceId   !== undefined) data.googlePlaceId   = sanitizeString(body.googlePlaceId,   { max: 200 });
   if (body.googlePlacesKey !== undefined) data.googlePlacesKey = sanitizeString(body.googlePlacesKey, { max: 200 });
+  if (body.googleReviewUrl !== undefined) {
+    const r = validateHttpUrl(body.googleReviewUrl);
+    if (!r.ok) return NextResponse.json({ error: `googleReviewUrl: ${r.error}` }, { status: 400 });
+    if (r.value) {
+      let parsed;
+      try { parsed = new URL(r.value); } catch { parsed = null; }
+      if (!parsed || !isGoogleHost(parsed.hostname)) {
+        return NextResponse.json({ error: "googleReviewUrl: Sadece google.com adresleri kabul edilir" }, { status: 400 });
+      }
+    }
+    data.googleReviewUrl = r.value;
+  }
+
+  // ── Review reminder toggle ──
+  if (body.reviewReminderEnabled !== undefined) {
+    data.reviewReminderEnabled = Boolean(body.reviewReminderEnabled);
+  }
 
   const shop = await prisma.shop.update({
     where: { id: shopId },

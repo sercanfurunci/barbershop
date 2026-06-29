@@ -80,36 +80,111 @@ export default function Gallery({ images, shopName, aside = null }) {
     touchStartX.current = null;
   };
 
-  // Image grid — first image is featured (4/3) when 3+; rest stay 1/1.
-  // Inside a 2-col gallery that's fine because col-span-2 makes the featured
-  // image fill the gallery panel width.
+  // Show at most 3 preview tiles; the remainder lives in the lightbox so the
+  // landing page stays short. Last visible tile carries a "+X" overlay when
+  // there's overflow. Mobile uses a snap-scroll row, desktop a featured-+-stack
+  // grid (Airbnb-style).
+  const visible    = images.slice(0, 3);
+  const overflow   = Math.max(0, images.length - visible.length);
+  const lastIdx    = visible.length - 1;
+  const onlyOne    = visible.length === 1;
+
+  const tileButton = (url, i, { className, sizes }) => (
+    <button
+      key={url + i}
+      type="button"
+      onClick={() => setOpen(i)}
+      className={`group relative overflow-hidden rounded-xl bg-stone-200 ${className}`}
+      style={{ border: 0, padding: 0, cursor: "pointer" }}
+      aria-label={i === lastIdx && overflow > 0
+        ? `Tüm galeriyi aç — ${images.length} fotoğraf`
+        : `Galeri görseli ${i + 1}`}
+    >
+      <Image
+        src={url}
+        alt={shopName ? `${shopName} — Galeri ${i + 1}` : `Galeri ${i + 1}`}
+        fill
+        sizes={sizes}
+        loading={i === 0 ? "eager" : "lazy"}
+        className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+      />
+      {i === lastIdx && overflow > 0 && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute", inset: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(10,10,10,0.55)",
+            color: "#fff",
+            fontSize: "clamp(20px, 3vw, 30px)",
+            fontWeight: 500,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          +{overflow}
+        </span>
+      )}
+    </button>
+  );
+
   const imageGrid = (
-    <div className="grid grid-cols-2 gap-4">
-      {images.map((url, i) => {
-        const featured = images.length >= 3 && i === 0;
-        return (
-          <button
-            key={url + i}
-            type="button"
-            onClick={() => setOpen(i)}
-            className={`group relative overflow-hidden rounded-xl bg-stone-200 ${
-              featured ? "col-span-2 aspect-[4/3]" : "aspect-[4/3.6]"
-            } ${images.length === 1 ? "col-span-2 aspect-[4/3]" : ""}`}
-            style={{ border: 0, padding: 0, cursor: "pointer" }}
-            aria-label={`Galeri görseli ${i + 1}`}
-          >
-            <Image
-              src={url}
-              alt={shopName ? `${shopName} — Galeri ${i + 1}` : `Galeri ${i + 1}`}
-              fill
-              sizes={featured ? "(max-width: 1024px) 90vw, 720px" : "(max-width: 1024px) 45vw, 240px"}
-              loading={i < 2 ? "eager" : "lazy"}
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-            />
-          </button>
-        );
-      })}
-    </div>
+    <>
+      {/* Mobile: horizontal snap scroller. Media query lives in this <style>
+          so it beats Tailwind's md:hidden specificity — without it, both rows
+          render on desktop. */}
+      <style>{`
+        .gallery-row {
+          display: flex;
+          gap: 10px;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          margin-inline: calc(-1 * clamp(20px, 5vw, 40px));
+          padding-inline: clamp(20px, 5vw, 40px);
+        }
+        .gallery-row::-webkit-scrollbar { display: none; }
+        .gallery-row > * {
+          flex: 0 0 78%;
+          max-width: 320px;
+          scroll-snap-align: start;
+          aspect-ratio: 4 / 3;
+          position: relative;
+        }
+        @media (min-width: 768px) {
+          .gallery-row { display: none; }
+        }
+      `}</style>
+      <div className="gallery-row">
+        {visible.map((url, i) => tileButton(url, i, {
+          className: "",
+          sizes: "78vw",
+        }))}
+      </div>
+
+      {/* Desktop: featured tall + two stacked */}
+      <div
+        className="hidden md:grid gap-3"
+        style={{
+          gridTemplateColumns: onlyOne ? "1fr" : "2fr 1fr",
+          gridAutoRows: "minmax(0, 1fr)",
+          aspectRatio: onlyOne ? "16 / 9" : "16 / 10",
+        }}
+      >
+        {tileButton(visible[0], 0, {
+          className: `${visible.length >= 2 ? "row-span-2" : ""} h-full`,
+          sizes: "(max-width: 1024px) 60vw, 720px",
+        })}
+        {visible[1] && tileButton(visible[1], 1, {
+          className: "h-full",
+          sizes: "(max-width: 1024px) 30vw, 360px",
+        })}
+        {visible[2] && tileButton(visible[2], 2, {
+          className: "h-full",
+          sizes: "(max-width: 1024px) 30vw, 360px",
+        })}
+      </div>
+    </>
   );
 
   return (
@@ -117,11 +192,11 @@ export default function Gallery({ images, shopName, aside = null }) {
       background: "var(--makas-bg)",
       padding: "clamp(20px, 3.2vw, 44px) clamp(20px, 5vw, 40px) clamp(40px, 6vw, 72px)",
     }}>
-      <div style={{ maxWidth: 1280, marginInline: "auto" }}>
+      <div style={{ maxWidth: 1400, marginInline: "auto" }}>
         {aside ? (
-          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8 lg:gap-10 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 lg:gap-6 items-start">
             <div className="min-w-0">{imageGrid}</div>
-            <aside className="w-full lg:max-w-[420px] lg:justify-self-end">
+            <aside className="w-full lg:max-w-[420px] lg:justify-self-end lg:sticky" style={{ top: 24 }}>
               {aside}
             </aside>
           </div>

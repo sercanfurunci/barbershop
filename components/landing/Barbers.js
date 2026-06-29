@@ -132,7 +132,7 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
         `}</style>
         <div className="barbers-row">
           {barbers.map((barber, i) => (
-            <BarberAvatar key={barber.id} barber={barber} lang={lang} tx={tx} index={i} />
+            <BarberAvatar key={barber.id} barber={barber} shopSlug={shop?.slug} lang={lang} tx={tx} index={i} />
           ))}
         </div>
 
@@ -168,10 +168,12 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
   );
 }
 
-function BarberAvatar({ barber, lang, tx, index }) {
+function BarberAvatar({ barber, shopSlug, lang, tx, index }) {
   const name  = barber.name;
   const title = barber.title?.[lang] ?? barber.title?.tr ?? "";
-  const href  = `/barber/${barber.id}`;
+  const href  = (shopSlug && barber.slug) ? `/${shopSlug}/berber/${barber.slug}` : null;
+  const Tag   = href ? Link : "div";
+  const linkProps = href ? { href } : {};
 
   return (
     <motion.div
@@ -180,8 +182,8 @@ function BarberAvatar({ barber, lang, tx, index }) {
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.5, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
     >
-      <Link
-        href={href}
+      <Tag
+        {...linkProps}
         className="group"
         style={{
           display: "flex",
@@ -190,6 +192,7 @@ function BarberAvatar({ barber, lang, tx, index }) {
           textAlign: "center",
           textDecoration: "none",
           color: "inherit",
+          cursor: href ? "pointer" : "default",
         }}
       >
         {/* Circular avatar with availability dot */}
@@ -278,7 +281,7 @@ function BarberAvatar({ barber, lang, tx, index }) {
             )}
           </div>
         )}
-      </Link>
+      </Tag>
     </motion.div>
   );
 }

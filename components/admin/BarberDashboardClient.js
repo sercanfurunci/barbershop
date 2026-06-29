@@ -155,6 +155,12 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
   const [expanded, setExpanded] = useState(false);
   const sc    = ALL_STATUS[appt.status] ?? ALL_STATUS.pending;
   const isDone = ["completed", "noshow", "cancelled"].includes(appt.status);
+  // Primary next-action: one-tap shortcut so phones don't need to expand the row.
+  const primary = appt.status === "pending"
+    ? FLOW.find(f => f.key === "confirmed")
+    : appt.status === "confirmed"
+      ? FLOW.find(f => f.key === "completed")
+      : null;
 
   return (
     <motion.div
@@ -212,6 +218,30 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
           <div style={{ display: "inline-flex", alignItems: "center", padding: "4px 9px", borderRadius: "999px", background: sc.bg, fontSize: "10.5px", color: sc.color, fontWeight: 600, flexShrink: 0, minWidth: "66px", justifyContent: "center" }}>
             {sc.label}
           </div>
+
+          {/* Inline primary action — one-tap shortcut, avoids the expand step on mobile */}
+          {primary && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onAction(appt.id, primary.key); }}
+              style={{
+                minHeight: "36px",
+                padding: "0 12px",
+                borderRadius: "8px",
+                background: primary.bg,
+                border: `1px solid ${primary.color}40`,
+                fontSize: "12px",
+                color: primary.color,
+                fontWeight: 600,
+                cursor: "pointer",
+                flexShrink: 0,
+                transition: "background 0.15s, border-color 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = primary.color; e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = primary.color; }}
+              onMouseLeave={e => { e.currentTarget.style.background = primary.bg; e.currentTarget.style.color = primary.color; e.currentTarget.style.borderColor = primary.color + "40"; }}
+            >
+              {primary.shortLabel}
+            </button>
+          )}
         </div>
 
         {/* Quick actions (expanded) */}
@@ -1373,11 +1403,11 @@ function BarberReviewsTab() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                 <div style={{ display: "flex", gap: 2 }}>
                   {[1,2,3,4,5].map(n => (
-                    <Star key={n} size={11} fill={n <= (r.rating ?? 0) ? C.primary : "none"} style={{ color: n <= (r.rating ?? 0) ? C.primary : C.dim }} />
+                    <Star key={n} size={11} fill={n <= (r.barberRating ?? 0) ? C.primary : "none"} style={{ color: n <= (r.barberRating ?? 0) ? C.primary : C.dim }} />
                   ))}
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 500, color: C.primary }}>{r.customerName}</span>
-                <span style={{ fontSize: 10, color: C.muted, marginLeft: "auto" }}>{formatRelBd(r.reviewedAt)}</span>
+                <span style={{ fontSize: 10, color: C.muted, marginLeft: "auto" }}>{formatRelBd(r.createdAt)}</span>
               </div>
               {r.comment && (
                 <p style={{ fontSize: 12, color: C.secondary, lineHeight: 1.55 }}>{r.comment}</p>

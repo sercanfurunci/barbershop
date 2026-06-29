@@ -4,7 +4,8 @@ import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/barber/reviews — barber's own review history
+// GET /api/barber/reviews — barber's own review history (Review model).
+// Uses barberRating, not shopRating, since the barber owns this dashboard.
 export async function GET(request) {
   const payload = await requireAuth(request);
   if (!payload) return unauthorized();
@@ -13,38 +14,47 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
 
-  const reviews = await prisma.reviewRequest.findMany({
-    where: {
-      barberId: payload.barberId,
-      status: "REVIEWED",
-    },
-    orderBy: { reviewedAt: "desc" },
-    take: limit,
-    include: {
-      appointment: {
-        select: {
-          date: true,
-          service: { select: { nameTr: true, nameEn: true } },
+  const [reviews, distribution, barber] = await Promise.all([
+    prisma.review.findMany({
+      where:   { barberId: payload.barberId },
+      orderBy: { createdAt: "desc" },
+      take:    limit,
+      include: {
+        customer:    { select: { name: true } },
+        appointment: {
+          select: { date: true, service: { select: { nameTr: true, nameEn: true } } },
         },
       },
+    }),
+    prisma.review.groupBy({
+      by: ["barberRating"],
+      where: { barberId: payload.barberId },
+      _count: { _all: true },
+    }),
+    prisma.barber.findUnique({
+      where: { id: payload.barberId },
+      select: { rating: true, reviewCount: true },
+    }),
+  ]);
+
+  const distMap = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  for (const row of distribution) distMap[row.barberRating] = row._count._all;
+  const distArr = [5,4,3,2,1].map((n) => ({ stars: n, count: distMap[n] }));
+
+  return NextResponse.json({
+    reviews: reviews.map((r) => ({
+      id:           r.id,
+      shopRating:   r.shopRating,
+      barberRating: r.barberRating,
+      comment:      r.comment,
+      createdAt:    r.createdAt,
+      customerName: r.customer?.name ?? "Misafir",
+      appointment:  r.appointment,
+    })),
+    stats: {
+      totalCount:   barber?.reviewCount ?? 0,
+      avgRating:    barber?.rating ?? 0,
+      distribution: distArr,
     },
   });
-
-  // Aggregate stats
-  const all = await prisma.reviewRequest.findMany({
-    where: { barberId: payload.barberId, status: "REVIEWED" },
-    select: { rating: true, reviewedAt: true },
-  });
-
-  const totalCount = all.length;
-  const avgRating = totalCount > 0
-    ? all.reduce((s, r) => s + (r.rating ?? 0), 0) / totalCount
-    : 0;
-
-  const distribution = [5, 4, 3, 2, 1].map(n => ({
-    stars: n,
-    count: all.filter(r => r.rating === n).length,
-  }));
-
-  return NextResponse.json({ reviews, stats: { totalCount, avgRating, distribution } });
 }

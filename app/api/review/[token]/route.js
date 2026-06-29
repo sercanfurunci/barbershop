@@ -12,23 +12,35 @@ export async function GET(request, { params }) {
     where: { token },
     include: {
       barber: { select: { nameTr: true, nameEn: true, profilePhoto: true, avatar: true, titleTr: true, titleEn: true } },
-      appointment: { select: { date: true, service: { select: { nameTr: true, nameEn: true } } } },
-      shop: { select: { name: true } },
+      appointment: {
+        select: {
+          date: true,
+          status: true,
+          reviewed: true,
+          service: { select: { nameTr: true, nameEn: true } },
+        },
+      },
+      shop: { select: { name: true, googleReviewUrl: true } },
     },
   });
 
   if (!rr) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
-  if (rr.status === "REVIEWED") return NextResponse.json({ alreadyReviewed: true, rating: rr.rating });
+  if (rr.appointment?.reviewed || rr.status === "REVIEWED") {
+    return NextResponse.json({ alreadyReviewed: true });
+  }
+  if (rr.appointment?.status !== "COMPLETED") {
+    return NextResponse.json({ error: "Randevu henüz tamamlanmadı" }, { status: 409 });
+  }
 
   return NextResponse.json({
     customerName: rr.customerName,
-    barber: rr.barber,
-    appointment: rr.appointment,
-    shop: rr.shop,
+    barber:       rr.barber,
+    appointment:  rr.appointment,
+    shop:         rr.shop,
   });
 }
 
-// POST /api/review/:token — submit review
+// POST /api/review/:token — submit review (shopRating + barberRating)
 export async function POST(request, { params }) {
   // 3 attempts per IP per 5 minutes
   const ip = getIp(request);
@@ -39,49 +51,100 @@ export async function POST(request, { params }) {
 
   const { token } = await params;
   const body = await request.json().catch(() => ({}));
-  const { rating, comment } = body;
+  const { shopRating, barberRating, comment } = body;
 
-  const ratingInt = Math.floor(Number(rating));
-  if (!ratingInt || ratingInt < 1 || ratingInt > 5) {
-    return NextResponse.json({ error: "Geçersiz puan" }, { status: 400 });
+  const shopR   = Math.floor(Number(shopRating));
+  const barberR = Math.floor(Number(barberRating));
+  if (!shopR   || shopR   < 1 || shopR   > 5) return NextResponse.json({ error: "Geçersiz salon puanı" }, { status: 400 });
+  if (!barberR || barberR < 1 || barberR > 5) return NextResponse.json({ error: "Geçersiz berber puanı" }, { status: 400 });
+
+  const rr = await prisma.reviewRequest.findUnique({
+    where: { token },
+    include: {
+      appointment: { select: { id: true, status: true, reviewed: true, clientId: true } },
+      shop:        { select: { googleReviewUrl: true } },
+    },
+  });
+  if (!rr) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
+  if (rr.appointment.reviewed || rr.status === "REVIEWED") {
+    return NextResponse.json({ error: "Zaten değerlendirildi" }, { status: 409 });
+  }
+  if (rr.appointment.status !== "COMPLETED") {
+    return NextResponse.json({ error: "Randevu henüz tamamlanmadı" }, { status: 409 });
   }
 
-  const rr = await prisma.reviewRequest.findUnique({ where: { token } });
-  if (!rr) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
-  if (rr.status === "REVIEWED") return NextResponse.json({ error: "Zaten değerlendirildi" }, { status: 409 });
+  const cleanComment = comment?.trim().slice(0, 1000) || null;
 
-  await prisma.$transaction([
-    prisma.reviewRequest.update({
-      where: { token },
-      data: {
-        rating: ratingInt,
-        comment: comment?.trim().slice(0, 1000) || null,
-        status: "REVIEWED",
-        reviewedAt: new Date(),
-      },
-    }),
-    // Update barber aggregate
-    prisma.barber.update({
-      where: { id: rr.barberId },
-      data: { reviewCount: { increment: 1 } },
-    }),
-  ]);
+  // Single transaction: insert Review, mark appointment reviewed, bump dispatch
+  // tracker, recompute Shop + Barber aggregates via running average.
+  try {
+    await prisma.$transaction(async (tx) => {
+      const shop   = await tx.shop.findUnique({   where: { id: rr.shopId },   select: { avgRating: true, totalReviews: true } });
+      const barber = await tx.barber.findUnique({ where: { id: rr.barberId }, select: { rating: true, reviewCount: true } });
 
-  // Recalculate barber average rating
-  const allRatings = await prisma.reviewRequest.findMany({
-    where: { barberId: rr.barberId, status: "REVIEWED" },
-    select: { rating: true },
-  });
-  const avg = allRatings.reduce((s, r) => s + (r.rating ?? 0), 0) / allRatings.length;
-  await prisma.barber.update({
-    where: { id: rr.barberId },
-    data: { rating: Math.round(avg * 10) / 10 },
-  });
+      await tx.review.create({
+        data: {
+          shopId:        rr.shopId,
+          appointmentId: rr.appointmentId,
+          barberId:      rr.barberId,
+          customerId:    rr.appointment.clientId,
+          shopRating:    shopR,
+          barberRating:  barberR,
+          comment:       cleanComment,
+        },
+      });
 
-  const googleMapsUrl = process.env.GOOGLE_REVIEW_URL || null;
+      await tx.appointment.update({
+        where: { id: rr.appointmentId },
+        data:  { reviewed: true },
+      });
+
+      await tx.reviewRequest.update({
+        where: { id: rr.id },
+        data:  {
+          rating:     shopR, // legacy column — keep summary copy
+          comment:    cleanComment,
+          status:     "REVIEWED",
+          reviewedAt: new Date(),
+        },
+      });
+
+      const shopTotal   = shop.totalReviews + 1;
+      const shopAvgNew  = ((shop.avgRating * shop.totalReviews) + shopR) / shopTotal;
+      await tx.shop.update({
+        where: { id: rr.shopId },
+        data:  {
+          totalReviews: shopTotal,
+          avgRating:    Math.round(shopAvgNew * 100) / 100,
+        },
+      });
+
+      const barberTotal  = barber.reviewCount + 1;
+      const barberAvgNew = ((barber.rating * barber.reviewCount) + barberR) / barberTotal;
+      await tx.barber.update({
+        where: { id: rr.barberId },
+        data:  {
+          reviewCount: barberTotal,
+          rating:      Math.round(barberAvgNew * 10) / 10,
+        },
+      });
+    });
+  } catch (err) {
+    if (err.code === "P2002") {
+      return NextResponse.json({ error: "Zaten değerlendirildi" }, { status: 409 });
+    }
+    console.error("[review submit]", err);
+    return NextResponse.json({ error: "Kaydedilemedi" }, { status: 500 });
+  }
+
+  // Google CTA only when shop saved a direct review URL AND rating >= 4.
+  const googleUrl = shopR >= 4 ? (rr.shop?.googleReviewUrl || null) : null;
+
   return NextResponse.json({
     ok: true,
-    redirectToGoogle: ratingInt >= 5 && !!googleMapsUrl,
-    googleUrl: ratingInt >= 5 ? googleMapsUrl : null,
+    shopRating:      shopR,
+    barberRating:    barberR,
+    redirectToGoogle: !!googleUrl,
+    googleUrl,
   });
 }

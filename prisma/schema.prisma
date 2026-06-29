@@ -42,10 +42,11 @@ model Shop {
   instagramUrl    String?
   facebookUrl     String?
   tiktokUrl       String?
-  gallery         String[] @default([]) // ordered Cloudinary URLs, max 12
+  gallery         String[]   @default([]) // ordered Cloudinary URLs, max 12
   social          Json? // legacy { instagram, facebook, tiktok, twitter, website }
   googlePlaceId   String? // per-shop Google Place ID for reviews widget
   googlePlacesKey String? // per-shop Google Places API key (overrides global env)
+  googleReviewUrl String? // direct Google review link shown after 4★+ internal reviews
   mapsEmbed       String?    @db.Text // custom Google Maps embed URL
   status          ShopStatus @default(ACTIVE)
   timezone        String     @default("Europe/Istanbul")
@@ -75,6 +76,14 @@ model Shop {
   // resolveShopBySlug filters deletedAt = null. Restore by setting back to null.
   deletedAt DateTime?
 
+  // Aggregate cache — recomputed in the same tx that inserts a Review row.
+  // Reading these on the public tenant page is O(1) vs scanning every Review.
+  avgRating    Float @default(0)
+  totalReviews Int   @default(0)
+
+  // Per-shop toggle for the 2h post-completion review reminder cron.
+  reviewReminderEnabled Boolean @default(true)
+
   users                User[]
   barbers              Barber[]
   services             Service[]
@@ -86,6 +95,7 @@ model Shop {
   notificationSettings NotificationSettings?
   notificationJobs     NotificationJob[]
   reviewRequests       ReviewRequest[]
+  reviews              Review[]
   invoices             Invoice[]
   analyticsEvents      AnalyticsEvent[]
 
@@ -100,8 +110,8 @@ model AnalyticsEvent {
   id        String   @id @default(cuid())
   shopId    String
   shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  eventType String   // see lib/analytics.js EVENT_TYPES allowlist
-  metadata  Json?    // tiny payload — serviceId, barberId, source, etc.
+  eventType String // see lib/analytics.js EVENT_TYPES allowlist
+  metadata  Json? // tiny payload — serviceId, barberId, source, etc.
   createdAt DateTime @default(now())
 
   @@index([shopId, createdAt])
@@ -185,31 +195,31 @@ enum Role {
 // ─── Barbers ──────────────────────────────────────────────────────────────────
 
 model Barber {
-  id             String          @id @default(cuid())
-  shopId         String
-  shop           Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  slug           String
-  nameTr         String
-  nameEn         String
-  titleTr        String
-  titleEn        String
-  bioTr          String          @db.Text
-  bioEn          String          @db.Text
-  avatar         String
-  profilePhoto   String? // base64 data URL or external URL
-  color          String          @default("#CC1A1A")
-  rating         Float           @default(5.0)
-  reviewCount    Int             @default(0)
-  yearsExp       Int             @default(1)
-  available      Boolean         @default(true)
-  specialties    String[]
+  id           String   @id @default(cuid())
+  shopId       String
+  shop         Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  slug         String
+  nameTr       String
+  nameEn       String
+  titleTr      String
+  titleEn      String
+  bioTr        String   @db.Text
+  bioEn        String   @db.Text
+  avatar       String
+  profilePhoto String? // base64 data URL or external URL
+  color        String   @default("#CC1A1A")
+  rating       Float    @default(5.0)
+  reviewCount  Int      @default(0)
+  yearsExp     Int      @default(1)
+  available    Boolean  @default(true)
+  specialties  String[]
 
   // Earnings model. PERCENTAGE → commissionRate is the cut (e.g. 60 = barber
   // keeps 60% of finalPrice). FIXED → barber paid fixedSalary regardless; the
   // shop keeps 100% of appointment gross. Defaults match the shop's
   // defaultCommissionRate at insert time (handled in /api/admin/barbers).
-  paymentType    PaymentType     @default(PERCENTAGE)
-  commissionRate Int             @default(50)
+  paymentType    PaymentType @default(PERCENTAGE)
+  commissionRate Int         @default(50)
   fixedSalary    Int?
 
   user           User?
@@ -219,6 +229,7 @@ model Barber {
   holidays       Holiday[]
   services       BarberService[]
   reviewRequests ReviewRequest[]
+  reviews        Review[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -248,12 +259,12 @@ model WorkingHours {
 }
 
 model BarberBreak {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   barberId  String
-  barber    Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  barber    Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
   start     String // "HH:MM"
   end       String // "HH:MM"
-  label     String @default("Mola")
+  label     String  @default("Mola")
   dayOfWeek Int? // 0=Sun … 6=Sat, null = recurring every day
   date      String? // "YYYY-MM-DD" — set for one-off breaks (e.g. instant "Mola"). null = recurring.
 
@@ -307,16 +318,16 @@ model BarberService {
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
 model Client {
-  id            String         @id @default(cuid())
-  shopId        String
-  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  name          String
-  phone         String
-  email         String?
-  notes         String?        @db.Text
-  photos        String[] // URLs or storage keys for client reference photos
-  noShowCount   Int            @default(0)
-  blocked       Boolean        @default(false)
+  id          String   @id @default(cuid())
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name        String
+  phone       String
+  email       String?
+  notes       String?  @db.Text
+  photos      String[] // URLs or storage keys for client reference photos
+  noShowCount Int      @default(0)
+  blocked     Boolean  @default(false)
 
   // Lifetime metrics — updated on appointment completion in a transaction.
   // Cheap to read; recomputing from Appointment scans is O(n) per client.
@@ -325,6 +336,7 @@ model Client {
   lastVisitAt   DateTime?
   appointments  Appointment[]
   notifications Notification[]
+  reviews       Review[]
   user          User? // set if client has a CUSTOMER account
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -336,51 +348,57 @@ model Client {
 // ─── Appointments ─────────────────────────────────────────────────────────────
 
 model Appointment {
-  id               String            @id @default(cuid())
-  shopId           String
-  shop             Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  clientId         String
-  client           Client            @relation(fields: [clientId], references: [id])
-  barberId         String
-  barber           Barber            @relation(fields: [barberId], references: [id])
-  serviceId        String
-  service          Service           @relation(fields: [serviceId], references: [id])
-  date             String // "YYYY-MM-DD"
-  time             String // "HH:MM"
-  duration         Int
-  price            Int? // null = "Sorulur" — final price set on completion
-  status           AppointmentStatus @default(PENDING)
-  source           BookingSource     @default(ONLINE)
-  notes            String?           @db.Text
+  id        String            @id @default(cuid())
+  shopId    String
+  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    Client            @relation(fields: [clientId], references: [id])
+  barberId  String
+  barber    Barber            @relation(fields: [barberId], references: [id])
+  serviceId String
+  service   Service           @relation(fields: [serviceId], references: [id])
+  date      String // "YYYY-MM-DD"
+  time      String // "HH:MM"
+  duration  Int
+  price     Int? // null = "Sorulur" — final price set on completion
+  status    AppointmentStatus @default(PENDING)
+  source    BookingSource     @default(ONLINE)
+  notes     String?           @db.Text
 
   // Revenue + completion bookkeeping. grossAmount is the final charged price
   // (set on COMPLETED transition). barberAmount/shopAmount are pre-split per
   // the barber's paymentType + commissionRate; both must equal grossAmount.
   // tipAmount is on top, paid 100% to the barber (never split).
-  grossAmount        Int?
-  barberAmount       Int?
-  shopAmount         Int?
-  tipAmount          Int            @default(0)
-  paymentMethod      PaymentMethod?
-  completedAt        DateTime?
+  grossAmount   Int?
+  barberAmount  Int?
+  shopAmount    Int?
+  tipAmount     Int            @default(0)
+  paymentMethod PaymentMethod?
+  completedAt   DateTime?
 
   // Cancellation audit — who cancelled and why. Reason is free text for now;
   // promote to enum once we see real patterns. cancelledBy: "client" | "shop"
   // | "barber" — distinct from the human's user id (kept simple).
   cancelledAt        DateTime?
-  cancellationReason String?        @db.Text
+  cancellationReason String?   @db.Text
   cancelledBy        String?
 
   // Walk-in marker — set true via the dedicated POST path (Phase 3) when a
   // barber/admin captures a customer who showed up without booking online.
   // customServiceName lets walk-ins skip the service catalog ("Sakal düzeltme").
-  isWalkIn           Boolean        @default(false)
-  customServiceName  String?
+  isWalkIn          Boolean @default(false)
+  customServiceName String?
+
+  // Set true the moment a customer submits a Review. Belt-and-suspenders
+  // against double-submission; the unique constraint on Review.appointmentId
+  // is the actual guard.
+  reviewed Boolean @default(false)
 
   notifications    Notification[]
   auditLogs        AuditLog[]
   notificationJobs NotificationJob[]
   reviewRequest    ReviewRequest?
+  review           Review?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -518,7 +536,9 @@ model NotificationJob {
   appointment   Appointment?   @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   channel       NotifChannel
   event         NotifEvent
-  phone         String
+  // Nullable: IN_APP/PUSH channels don't need a phone number. SMS/WHATSAPP
+  // still require it — enforced in lib that enqueues the job, not the schema.
+  phone         String?
   message       String         @db.Text
   scheduledFor  DateTime
   status        NotifJobStatus @default(PENDING)
@@ -537,6 +557,10 @@ model NotificationJob {
 enum NotifChannel {
   SMS
   WHATSAPP
+  // ponytail: IN_APP + PUSH reserved for the future mobile app — no delivery
+  // handler yet. Enqueue freely; a worker will pick them up when it exists.
+  IN_APP
+  PUSH
 }
 
 enum NotifEvent {
@@ -590,6 +614,35 @@ enum ReviewRequestStatus {
   SENT // SMS sent, awaiting review
   REVIEWED // customer submitted rating
   SKIPPED // could not send (no phone, etc.)
+}
+
+// ─── Reviews (internal) ──────────────────────────────────────────────────────
+// Customer-submitted ratings for one appointment. Separate from ReviewRequest
+// (which tracks SMS/WA dispatch lifecycle) so the content lives in one place
+// and the dispatch tracker stays a pure state machine.
+//
+// One Review per Appointment (unique). Insert is gated on:
+//   appointment.status === COMPLETED && appointment.reviewed === false.
+// Shop and Barber aggregates are recomputed in the same transaction.
+model Review {
+  id            String      @id @default(cuid())
+  shopId        String
+  shop          Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  barberId      String
+  barber        Barber      @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  customerId    String? // null for walk-ins or pre-account submissions
+  customer      Client?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  shopRating    Int // 1-5; salon as a whole
+  barberRating  Int // 1-5; the assigned barber
+  comment       String?     @db.Text
+  createdAt     DateTime    @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([barberId, createdAt])
+  @@index([shopId, shopRating])
+  @@index([barberId, barberRating])
 }
 
 // ─── Platform Leads ───────────────────────────────────────────────────────────
