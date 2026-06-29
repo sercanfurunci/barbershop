@@ -314,8 +314,8 @@ export default async function ShopHome({ params }) {
         <section
           className="mx-auto w-full"
           style={{
-            maxWidth: 1280,
-            paddingInline: "clamp(20px, 4vw, 32px)",
+            maxWidth: 1560,
+            paddingInline: "clamp(16px, 3vw, 32px)",
             paddingTop: "calc(88px + clamp(36px, 6vw, 64px))",
             paddingBottom: "clamp(12px, 1.6vw, 20px)",
           }}

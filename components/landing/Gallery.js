@@ -190,13 +190,13 @@ export default function Gallery({ images, shopName, aside = null }) {
   return (
     <section id="gallery" style={{
       background: "var(--makas-bg)",
-      padding: "clamp(20px, 3.2vw, 44px) clamp(20px, 5vw, 40px) clamp(40px, 6vw, 72px)",
+      padding: "clamp(20px, 3.2vw, 44px) clamp(16px, 3vw, 32px) clamp(40px, 6vw, 72px)",
     }}>
-      <div style={{ maxWidth: 1400, marginInline: "auto" }}>
+      <div style={{ maxWidth: 1560, marginInline: "auto" }}>
         {aside ? (
-          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 lg:gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4 lg:gap-6 items-start">
             <div className="min-w-0">{imageGrid}</div>
-            <aside className="w-full lg:max-w-[420px] lg:justify-self-end lg:sticky" style={{ top: 24 }}>
+            <aside className="w-full lg:max-w-[480px] lg:justify-self-end lg:sticky" style={{ top: 24 }}>
               {aside}
             </aside>
           </div>
