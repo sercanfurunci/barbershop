@@ -28,6 +28,10 @@ export default function StickyActionBar({ shop }) {
       : null;
   const bookHref = shop.slug ? `/${shop.slug}/book` : "/book";
 
+  // ponytail: each cell paints its own background AND owns the safe-area
+  // bottom padding. The outer container has no background — that way the
+  // black "Randevu" cell extends fully through the iOS home-indicator inset
+  // without a white surface band bleeding through underneath it.
   return (
     <div
       className="md:hidden"
@@ -35,16 +39,13 @@ export default function StickyActionBar({ shop }) {
         position: "fixed",
         left: 0, right: 0, bottom: 0,
         zIndex: 40,
-        background: C.card,
         borderTop: `1px solid ${C.border}`,
-        paddingBottom: "env(safe-area-inset-bottom)",
         boxShadow: "0 -2px 12px rgba(0,0,0,0.06)",
       }}
     >
       <div style={{
         display: "grid",
         gridTemplateColumns: `repeat(${[wa, tel, map, true].filter(Boolean).length}, 1fr)`,
-        height: "62px",
       }}>
         {wa && (
           <BarBtn href={wa} Icon={MessageCircle} label="WhatsApp" external
@@ -66,12 +67,16 @@ export default function StickyActionBar({ shop }) {
 }
 
 function BarBtn({ href, Icon, label, external, primary, onClick }) {
-  const cls = `makas-bar-btn${primary ? " is-primary" : ""}`;
+  const wrapperStyle = {
+    background: primary ? C.primary : C.card,
+    paddingBottom: "env(safe-area-inset-bottom)",
+    display: "block",
+    textDecoration: "none",
+  };
   const inner = (
-    <div className={cls} style={{
+    <div style={{
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      gap: "2px", height: "100%",
-      background: primary ? C.primary : "transparent",
+      gap: "2px", height: "62px",
       color: primary ? "#fff" : C.primary,
       fontSize: "10px", fontWeight: 700, letterSpacing: "0.02em",
     }}>
@@ -79,6 +84,6 @@ function BarBtn({ href, Icon, label, external, primary, onClick }) {
       <span>{label}</span>
     </div>
   );
-  if (external) return <a href={href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "block", height: "100%" }} onClick={onClick}>{inner}</a>;
-  return <Link href={href} style={{ textDecoration: "none", display: "block", height: "100%" }} onClick={onClick}>{inner}</Link>;
+  if (external) return <a href={href} target="_blank" rel="noopener noreferrer" style={wrapperStyle} onClick={onClick}>{inner}</a>;
+  return <Link href={href} style={wrapperStyle} onClick={onClick}>{inner}</Link>;
 }

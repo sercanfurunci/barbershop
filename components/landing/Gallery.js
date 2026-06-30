@@ -94,7 +94,7 @@ export default function Gallery({ images, shopName, aside = null }) {
       key={url + i}
       type="button"
       onClick={() => setOpen(i)}
-      className={`group relative overflow-hidden rounded-xl bg-stone-200 ${className}`}
+      className={`group relative overflow-hidden rounded-2xl bg-stone-200 ${className}`}
       style={{ border: 0, padding: 0, cursor: "pointer" }}
       aria-label={i === lastIdx && overflow > 0
         ? `Tüm galeriyi aç — ${images.length} fotoğraf`
@@ -129,37 +129,47 @@ export default function Gallery({ images, shopName, aside = null }) {
 
   const imageGrid = (
     <>
-      {/* Mobile: horizontal snap scroller. Media query lives in this <style>
-          so it beats Tailwind's md:hidden specificity — without it, both rows
-          render on desktop. */}
+      {/* Mobile: featured full-width tile + smaller horizontal scroll row of
+          secondary thumbs below. Media query lives in this <style> so it beats
+          Tailwind's md:hidden specificity. */}
       <style>{`
-        .gallery-row {
-          display: flex;
-          gap: 10px;
-          overflow-x: auto;
-          scroll-snap-type: x mandatory;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-          margin-inline: calc(-1 * clamp(20px, 5vw, 40px));
-          padding-inline: clamp(20px, 5vw, 40px);
+        .gallery-mobile { display: flex; flex-direction: column; gap: 8px; }
+        .gallery-mobile-featured {
+          position: relative; aspect-ratio: 4 / 3;
+          border-radius: 16px; overflow: hidden;
+          background: rgb(231, 229, 228);
         }
-        .gallery-row::-webkit-scrollbar { display: none; }
-        .gallery-row > * {
-          flex: 0 0 78%;
-          max-width: 320px;
-          scroll-snap-align: start;
-          aspect-ratio: 4 / 3;
+        /* Two-up grid so the secondaries edge-align with the featured.
+           No horizontal scroll: with only 2 thumbs visible there's nothing
+           to scroll to — the overflow lives in the lightbox via the "+X" tile. */
+        .gallery-mobile-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+        .gallery-mobile-row > * {
+          aspect-ratio: 1 / 1;
           position: relative;
         }
         @media (min-width: 768px) {
-          .gallery-row { display: none; }
+          .gallery-mobile { display: none; }
         }
       `}</style>
-      <div className="gallery-row">
-        {visible.map((url, i) => tileButton(url, i, {
-          className: "",
-          sizes: "78vw",
-        }))}
+      <div className="gallery-mobile">
+        {tileButton(visible[0], 0, {
+          className: "w-full aspect-[4/3]",
+          sizes: "92vw",
+        })}
+        {visible.length > 1 && (
+          <div className="gallery-mobile-row">
+            {visible.slice(1).map((url, i) =>
+              tileButton(url, i + 1, {
+                className: "w-full",
+                sizes: "46vw",
+              })
+            )}
+          </div>
+        )}
       </div>
 
       {/* Desktop: featured tall + two stacked */}
@@ -190,16 +200,41 @@ export default function Gallery({ images, shopName, aside = null }) {
   return (
     <section id="gallery" style={{
       background: "var(--makas-bg)",
-      padding: "clamp(20px, 3.2vw, 44px) clamp(16px, 3vw, 32px) clamp(40px, 6vw, 72px)",
+      padding: "clamp(12px, 3.2vw, 44px) clamp(16px, 3vw, 32px) clamp(24px, 6vw, 72px)",
     }}>
       <div style={{ maxWidth: 1560, marginInline: "auto" }}>
         {aside ? (
-          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4 lg:gap-6 items-start">
-            <div className="min-w-0">{imageGrid}</div>
-            <aside className="w-full lg:max-w-[480px] lg:justify-self-end lg:sticky" style={{ top: 24 }}>
-              {aside}
-            </aside>
-          </div>
+          <>
+            {/* On mobile the booking aside sits ABOVE the image grid; on
+                desktop the grid swaps them to a 2-col with images on the left.
+                Uses grid-template-areas so DOM order can be aside-first. */}
+            <style>{`
+              .makas-gallery-grid {
+                display: grid;
+                gap: 24px;
+                grid-template-areas: "images" "aside";
+              }
+              .makas-gallery-aside  { grid-area: aside;  width: 100%; }
+              .makas-gallery-images { grid-area: images; min-width: 0; }
+              @media (min-width: 1024px) {
+                .makas-gallery-grid {
+                  grid-template-columns: 1.6fr 1fr;
+                  grid-template-areas: "images aside";
+                  align-items: start;
+                }
+                .makas-gallery-aside {
+                  position: sticky;
+                  top: 24px;
+                  max-width: 480px;
+                  justify-self: end;
+                }
+              }
+            `}</style>
+            <div className="makas-gallery-grid">
+              <aside className="makas-gallery-aside">{aside}</aside>
+              <div className="makas-gallery-images">{imageGrid}</div>
+            </div>
+          </>
         ) : (
           imageGrid
         )}

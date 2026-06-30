@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { rateLimit, getIp } from "@/lib/rateLimit";
@@ -20,6 +21,14 @@ async function resolveShopId(request, g) {
   return g.shopId ?? new URL(request.url).searchParams.get("shopId");
 }
 
+// The public shop page is ISR-cached (`revalidate = 300`). Without this call,
+// gallery edits stay invisible to visitors for up to 5 minutes. Custom-domain
+// hosts route to the same underlying `/${slug}` so one revalidate covers both.
+function revalidateShopPage(slug) {
+  if (!slug) return;
+  try { revalidatePath(`/${slug}`); } catch {}
+}
+
 // POST { dataUrl } — appends one image to gallery (max 12)
 export async function POST(request) {
   const payload = await requireAuth(request);
@@ -38,7 +47,7 @@ export async function POST(request) {
   const err = validateImageDataUrl(dataUrl);
   if (err) return NextResponse.json({ error: err }, { status: 400 });
 
-  const current = await prisma.shop.findUnique({ where: { id: shopId }, select: { gallery: true } });
+  const current = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true, gallery: true } });
   const existing = current?.gallery ?? [];
   if (existing.length >= GALLERY_MAX) {
     return NextResponse.json({ error: `Galeri en fazla ${GALLERY_MAX} fotoğraf alır` }, { status: 400 });
@@ -52,6 +61,7 @@ export async function POST(request) {
     data: { gallery: [...existing, url] },
     select: { gallery: true },
   });
+  revalidateShopPage(current?.slug);
   return NextResponse.json(updated);
 }
 
@@ -70,7 +80,7 @@ export async function PUT(request) {
     return NextResponse.json({ error: "order: string[] bekleniyor" }, { status: 400 });
   }
 
-  const current = await prisma.shop.findUnique({ where: { id: shopId }, select: { gallery: true } });
+  const current = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true, gallery: true } });
   const existing = current?.gallery ?? [];
   if (order.length !== existing.length || new Set(order).size !== new Set(existing).size
       || order.some((u) => !existing.includes(u))) {
@@ -82,6 +92,7 @@ export async function PUT(request) {
     data: { gallery: order },
     select: { gallery: true },
   });
+  revalidateShopPage(current?.slug);
   return NextResponse.json(updated);
 }
 
@@ -100,7 +111,7 @@ export async function DELETE(request) {
     return NextResponse.json({ error: "Geçersiz index" }, { status: 400 });
   }
 
-  const current = await prisma.shop.findUnique({ where: { id: shopId }, select: { gallery: true } });
+  const current = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true, gallery: true } });
   const list = current?.gallery ?? [];
   if (idx >= list.length) return NextResponse.json({ error: "Index dışı" }, { status: 400 });
 
@@ -112,5 +123,6 @@ export async function DELETE(request) {
     data: { gallery: list },
     select: { gallery: true },
   });
+  revalidateShopPage(current?.slug);
   return NextResponse.json(updated);
 }

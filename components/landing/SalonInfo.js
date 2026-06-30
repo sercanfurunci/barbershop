@@ -74,11 +74,11 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
           align-items: stretch;
         }
         .salon-info-left {
-          padding: 32px clamp(20px, 4vw, 32px);
+          padding: 24px clamp(16px, 4vw, 32px);
           display: flex;
           flex-direction: column;
           justify-content: center;
-          gap: 24px;
+          gap: 20px;
           background: var(--makas-footer);
           position: relative;
           z-index: 2;

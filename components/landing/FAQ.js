@@ -34,8 +34,8 @@ export default function FAQ() {
       <div style={{
         width: "min(900px, 100%)",
         marginInline: "auto",
-        paddingInline: "clamp(20px, 4vw, 32px)",
-        paddingBlock: "clamp(40px, 5vw, 64px)",
+        paddingInline: "clamp(16px, 4vw, 32px)",
+        paddingBlock: "clamp(24px, 5vw, 64px)",
       }}>
         <motion.div
           initial={{ opacity: 0, y: 16 }}

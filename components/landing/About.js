@@ -9,8 +9,8 @@ export default function About({ about }) {
     <section id="about" style={{
       background: "var(--makas-bg)",
       padding: isShort
-        ? "clamp(32px, 4vw, 48px) clamp(20px, 5vw, 40px)"
-        : "clamp(40px, 5vw, 64px) clamp(20px, 5vw, 40px)",
+        ? "clamp(20px, 4vw, 48px) clamp(16px, 5vw, 40px)"
+        : "clamp(24px, 5vw, 64px) clamp(16px, 5vw, 40px)",
     }}>
       <div style={{
         maxWidth: 700, marginInline: "auto", textAlign: "center",

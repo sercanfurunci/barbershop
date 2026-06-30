@@ -52,8 +52,8 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
       <div style={{
         width: "min(1280px, 100%)",
         marginInline: "auto",
-        paddingInline: "clamp(20px, 4vw, 32px)",
-        paddingBlock: "clamp(40px, 5vw, 64px)",
+        paddingInline: "clamp(16px, 4vw, 32px)",
+        paddingBlock: "clamp(24px, 5vw, 64px)",
       }}>
 
         {/* Header */}

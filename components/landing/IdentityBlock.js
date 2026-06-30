@@ -11,6 +11,9 @@ import { track } from "@/lib/track";
 import { telHref, waHref } from "@/lib/validation";
 import { useLang } from "@/contexts/LanguageContext";
 
+// Note: no hero/cover image, no avatar overlay. Identity is text-first.
+// Mobile reorders to: title → meta → address → CTA. Desktop is unchanged.
+
 const C = {
   bg:        "var(--makas-bg)",
   surface:   "var(--makas-surface)",
@@ -64,8 +67,9 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
   })();
 
   // ── meta chips ─────────────────────────────────────────────────────────────
+  // ponytail: owner name dropped — keep only rating, status, hours, address,
+  // founded, category. Same field set on mobile + desktop, no duplication.
   const metaBits = [];
-  if (shop.ownerName)   metaBits.push(shop.ownerName);
   if (shop.foundedYear) metaBits.push(lang === "tr" ? `Kuruluş ${shop.foundedYear}` : `Est. ${shop.foundedYear}`);
   if (shop.shopType && SHOP_TYPE_LABEL[lang]?.[shop.shopType]) {
     metaBits.push(SHOP_TYPE_LABEL[lang][shop.shopType]);
@@ -75,22 +79,62 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
 
   // ponytail: no width/padding container here — parent owns layout so the
   // BookingCard column can sit beside this on desktop.
+
   return (
-    <section data-identity style={{
+    <section data-identity className="makas-identity" style={{
       display: "flex",
       flexDirection: "column",
-      gap: "clamp(20px, 2.5vw, 28px)",
+      gap: "clamp(14px, 2.5vw, 28px)",
     }}>
+      {/* Mobile reflow only. Desktop (≥768px) layout matches the original tree. */}
+      <style>{`
+        @media (max-width: 767px) {
+          /* Hide the desktop logo box + restack identity as a left-aligned column. */
+          .makas-id-logo                  { display: none; }
+          .makas-identity .makas-id-row   { flex-direction: column; align-items: flex-start; text-align: left; gap: 6px; }
+          .makas-identity .makas-id-title { font-size: 28px; }
+
+          /* Single consolidated meta row — rating · open/closed · hours · address ·
+             founded · category. All chips wrap inline; no duplicated address line. */
+          .makas-identity .makas-id-meta {
+            margin-top: 10px;
+            justify-content: flex-start;
+            gap: 6px 10px;
+            font-size: 12.5px;
+          }
+
+          /* CTAs: primary full-width, secondaries as 3 equal icon buttons */
+          .makas-identity .makas-id-ctas    { gap: 10px; flex-direction: column; align-items: stretch; }
+          .makas-identity .makas-id-primary { width: 100%; justify-content: center; min-height: 48px; }
+          .makas-identity .makas-id-ghosts  { display: flex; gap: 10px; width: 100%; justify-content: center; }
+          .makas-identity .makas-id-ghosts > a {
+            flex: 1;
+            min-height: 48px;
+            padding: 0;
+            justify-content: center;
+            background: var(--makas-surface);
+            border-radius: 12px;
+            border: 1px solid var(--makas-border);
+            color: var(--makas-ink);
+          }
+          .makas-identity .makas-id-ghosts > a > .makas-cta-label { display: none; }
+        }
+
+        @media (min-width: 768px) {
+          .makas-identity .makas-id-ghosts { display: contents; }
+        }
+      `}</style>
+
       <div style={{ display: "contents" }}>
         {/* ── Identity row: logo + name + meta ── */}
-        <div style={{
+        <div className="makas-id-row" style={{
           display: "flex",
           alignItems: "center",
           gap: "clamp(14px, 2vw, 20px)",
           minWidth: 0,
         }}>
-          {/* Logo / monogram */}
-          <div style={{
+          {/* Logo / monogram — desktop only; mobile uses overlapping avatar above */}
+          <div className="makas-id-logo" style={{
             position: "relative",
             width: "clamp(64px, 8vw, 88px)",
             height: "clamp(64px, 8vw, 88px)",
@@ -115,7 +159,7 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
           {/* Name + meta */}
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1
-              className="font-display font-light"
+              className="font-display font-light makas-id-title"
               style={{
                 fontSize: "clamp(28px, 4.4vw, 52px)",
                 letterSpacing: "-0.025em",
@@ -128,8 +172,8 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
               {displayName}
             </h1>
 
-            {/* meta row */}
-            <div style={{
+            {/* meta row — rating · status · hours (address + extras split out on mobile) */}
+            <div className="makas-id-meta" style={{
               marginTop: "10px",
               display: "flex",
               flexWrap: "wrap",
@@ -171,80 +215,87 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
                 </>
               )}
 
-              {/* address (city or short address) */}
+              {/* address (city or short address) — hidden on mobile, separate row instead */}
               {(shop.city || shop.addressLine) && (
-                <>
+                <span className="makas-id-meta-address" style={{ display: "inline-flex", alignItems: "center", gap: "10px 12px" }}>
                   {(googleReviews?.rating != null || hasHoursToday) && <Dot />}
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", color: C.muted }}>
                     <MapPin size={12} />
                     {shop.addressLine || shop.city}
                   </span>
-                </>
+                </span>
               )}
 
-              {/* type / founded / owner — secondary meta */}
+              {/* founded year + category — secondary meta chips */}
               {metaBits.length > 0 && (
-                <>
+                <span className="makas-id-meta-extras" style={{ display: "inline-flex", alignItems: "center", gap: "10px 12px" }}>
                   <Dot />
                   <span style={{ color: C.muted }}>
                     {metaBits.join(" · ")}
                   </span>
-                </>
+                </span>
               )}
             </div>
           </div>
         </div>
 
         {/* ── CTA row ── */}
-        <div style={{
+        <div className="makas-id-ctas" style={{
           display: "flex",
           flexWrap: "wrap",
           gap: "10px",
         }}>
           <Link
             href={bookHref}
-            className="makas-cta makas-cta-dark"
+            className="makas-cta makas-cta-dark makas-id-primary"
             onClick={() => track(shop.id, "book_click", { source: "identity" })}
             style={primaryBtn}
           >
             <Calendar size={16} />
             {lang === "tr" ? "Randevu Al" : "Book Now"}
           </Link>
-          {phoneHref && (
-            <a
-              href={phoneHref}
-              className="makas-cta makas-cta-outline"
-              onClick={() => track(shop.id, "call_click", { source: "identity" })}
-              style={ghostBtn}
-            >
-              <Phone size={14} />
-              {lang === "tr" ? "Ara" : "Call"}
-            </a>
-          )}
-          {whatsappHref && (
-            <a
-              href={whatsappHref}
-              target="_blank" rel="noopener noreferrer"
-              className="makas-cta makas-cta-outline"
-              onClick={() => track(shop.id, "whatsapp_click", { source: "identity" })}
-              style={ghostBtn}
-            >
-              <MessageCircle size={14} />
-              WhatsApp
-            </a>
-          )}
-          {mapHref && (
-            <a
-              href={mapHref}
-              target="_blank" rel="noopener noreferrer"
-              className="makas-cta makas-cta-outline"
-              onClick={() => track(shop.id, "directions_click", { source: "identity" })}
-              style={ghostBtn}
-            >
-              <MapPin size={14} />
-              {lang === "tr" ? "Yol Tarifi" : "Directions"}
-            </a>
-          )}
+          {/* On mobile this wrapper renders as a horizontal row beneath the primary.
+              On desktop the wrapper is `display: contents` so siblings flow inline. */}
+          <div className="makas-id-ghosts">
+            {phoneHref && (
+              <a
+                href={phoneHref}
+                aria-label={lang === "tr" ? "Ara" : "Call"}
+                className="makas-cta makas-cta-outline"
+                onClick={() => track(shop.id, "call_click", { source: "identity" })}
+                style={ghostBtn}
+              >
+                <Phone size={16} />
+                <span className="makas-cta-label">{lang === "tr" ? "Ara" : "Call"}</span>
+              </a>
+            )}
+            {whatsappHref && (
+              <a
+                href={whatsappHref}
+                target="_blank" rel="noopener noreferrer"
+                aria-label="WhatsApp"
+                className="makas-cta makas-cta-outline"
+                onClick={() => track(shop.id, "whatsapp_click", { source: "identity" })}
+                style={ghostBtn}
+              >
+                <MessageCircle size={16} />
+                <span className="makas-cta-label">WhatsApp</span>
+              </a>
+            )}
+            {mapHref && (
+              <a
+                href={mapHref}
+                target="_blank" rel="noopener noreferrer"
+                aria-label={lang === "tr" ? "Yol Tarifi" : "Directions"}
+                className="makas-cta makas-cta-outline"
+                onClick={() => track(shop.id, "directions_click", { source: "identity" })}
+                style={ghostBtn}
+              >
+                <MapPin size={16} />
+                <span className="makas-cta-label">{lang === "tr" ? "Yol Tarifi" : "Directions"}</span>
+              </a>
+            )}
+          </div>
         </div>
 
         {/* ── Social row ── */}

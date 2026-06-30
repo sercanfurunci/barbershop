@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { rateLimit, getIp } from "@/lib/rateLimit";
@@ -186,6 +187,13 @@ export async function PATCH(request) {
     data,
     select: PROFILE_SELECT,
   });
+
+  // The public shop page is ISR-cached (`revalidate = 300`). Without this call,
+  // profile edits (logo, cover, hours, social, about, …) stay invisible to
+  // visitors for up to 5 minutes.
+  if (shop?.slug) {
+    try { revalidatePath(`/${shop.slug}`); } catch {}
+  }
 
   return NextResponse.json(shop);
 }

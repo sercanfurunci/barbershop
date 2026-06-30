@@ -33,8 +33,8 @@ export default function Services({ services = [] }) {
       <div style={{
         width: "min(1280px, 100%)",
         marginInline: "auto",
-        paddingInline: "clamp(20px, 4vw, 32px)",
-        paddingBlock: "clamp(48px, 6vw, 80px)",
+        paddingInline: "clamp(16px, 4vw, 32px)",
+        paddingBlock: "clamp(28px, 6vw, 80px)",
       }}>
 
         {/* Section header */}

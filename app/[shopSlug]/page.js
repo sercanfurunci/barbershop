@@ -308,16 +308,16 @@ export default async function ShopHome({ params }) {
       />
       <TrackPageView shopId={shop.id} />
       <Navbar />
-      <main className="flex-1">
-        {/* Hero: identity only (full width, no cover). Tight bottom padding
-            so the Gallery + Booking row sits right under it. */}
+      <main className="flex-1 pb-[88px] md:pb-0">
+        {/* Hero: identity only (full width, no cover). Respects iOS safe-area
+            top inset and adds breathing room under the floating navbar. */}
         <section
           className="mx-auto w-full"
           style={{
             maxWidth: 1560,
             paddingInline: "clamp(16px, 3vw, 32px)",
-            paddingTop: "calc(88px + clamp(36px, 6vw, 64px))",
-            paddingBottom: "clamp(12px, 1.6vw, 20px)",
+            paddingTop: "calc(72px + clamp(32px, 5vw, 64px) + env(safe-area-inset-top))",
+            paddingBottom: "clamp(24px, 3vw, 36px)",
           }}
         >
           <IdentityBlock shop={shop} hours={hours} googleReviews={googleReviews} />
