@@ -89,6 +89,22 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
           padding: 0;
           min-height: 320px;
         }
+        /* Mobile: edge-to-edge map with explicit height so height:100% resolves.
+           No padding on section or map container — footer follows immediately. */
+        @media (max-width: 767px) {
+          .salon-info-map {
+            height: 280px;
+            min-height: 0;
+            padding: 0;
+          }
+          .salon-map-card {
+            height: 100% !important;
+            min-height: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+        }
         .salon-info-hours {
           display: flex; flex-direction: column; gap: 4px;
         }

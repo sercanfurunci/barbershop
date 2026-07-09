@@ -28,10 +28,12 @@ export default function StickyActionBar({ shop }) {
       : null;
   const bookHref = shop.slug ? `/${shop.slug}/book` : "/book";
 
-  // ponytail: each cell paints its own background AND owns the safe-area
-  // bottom padding. The outer container has no background — that way the
-  // black "Randevu" cell extends fully through the iOS home-indicator inset
-  // without a white surface band bleeding through underneath it.
+  const secondaryActions = [
+    wa  && { href: wa,  Icon: MessageCircle, label: "WhatsApp", external: true,  onClick: () => track(shop.id, "whatsapp_click",   { source: "sticky" }) },
+    tel && { href: tel, Icon: Phone,         label: "Ara",      external: false, onClick: () => track(shop.id, "call_click",       { source: "sticky" }) },
+    map && { href: map, Icon: MapPin,        label: "Tarifi",   external: true,  onClick: () => track(shop.id, "directions_click", { source: "sticky" }) },
+  ].filter(Boolean);
+
   return (
     <div
       className="md:hidden"
@@ -39,51 +41,51 @@ export default function StickyActionBar({ shop }) {
         position: "fixed",
         left: 0, right: 0, bottom: 0,
         zIndex: 40,
-        borderTop: `1px solid ${C.border}`,
-        boxShadow: "0 -2px 12px rgba(0,0,0,0.06)",
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderTop: "1px solid rgba(0,0,0,0.08)",
+        paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
       <div style={{
-        display: "grid",
-        gridTemplateColumns: `repeat(${[wa, tel, map, true].filter(Boolean).length}, 1fr)`,
+        display: "flex", alignItems: "center",
+        gap: "8px", padding: "10px 16px",
+        height: "64px", boxSizing: "border-box",
       }}>
-        {wa && (
-          <BarBtn href={wa} Icon={MessageCircle} label="WhatsApp" external
-            onClick={() => track(shop.id, "whatsapp_click", { source: "sticky" })} />
-        )}
-        {tel && (
-          <BarBtn href={tel} Icon={Phone} label="Ara"
-            onClick={() => track(shop.id, "call_click", { source: "sticky" })} />
-        )}
-        {map && (
-          <BarBtn href={map} Icon={MapPin} label="Yol Tarifi" external
-            onClick={() => track(shop.id, "directions_click", { source: "sticky" })} />
-        )}
-        <BarBtn href={bookHref} Icon={Calendar} label="Randevu" primary
-          onClick={() => track(shop.id, "book_click", { source: "sticky" })} />
+        {secondaryActions.map(({ href, Icon, label, external, onClick }) => {
+          const inner = (
+            <div style={{
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              gap: "3px", color: C.primary,
+              fontSize: "10px", fontWeight: 600, letterSpacing: "0.02em",
+              minWidth: "44px",
+            }}>
+              <Icon size={21} strokeWidth={1.75} />
+              <span>{label}</span>
+            </div>
+          );
+          return external
+            ? <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }} onClick={onClick}>{inner}</a>
+            : <Link key={label} href={href} style={{ textDecoration: "none" }} onClick={onClick}>{inner}</Link>;
+        })}
+
+        <Link
+          href={bookHref}
+          onClick={() => track(shop.id, "book_click", { source: "sticky" })}
+          style={{
+            flex: 1, marginLeft: secondaryActions.length ? "4px" : "0",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+            height: "44px", borderRadius: "100px",
+            background: C.primary, color: "#fff",
+            fontSize: "14px", fontWeight: 700, letterSpacing: "0.01em",
+            textDecoration: "none",
+          }}
+        >
+          <Calendar size={17} strokeWidth={2} />
+          Randevu Al
+        </Link>
       </div>
     </div>
   );
-}
-
-function BarBtn({ href, Icon, label, external, primary, onClick }) {
-  const wrapperStyle = {
-    background: primary ? C.primary : C.card,
-    paddingBottom: "env(safe-area-inset-bottom)",
-    display: "block",
-    textDecoration: "none",
-  };
-  const inner = (
-    <div style={{
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      gap: "2px", height: "62px",
-      color: primary ? "#fff" : C.primary,
-      fontSize: "10px", fontWeight: 700, letterSpacing: "0.02em",
-    }}>
-      <Icon size={18} />
-      <span>{label}</span>
-    </div>
-  );
-  if (external) return <a href={href} target="_blank" rel="noopener noreferrer" style={wrapperStyle} onClick={onClick}>{inner}</a>;
-  return <Link href={href} style={wrapperStyle} onClick={onClick}>{inner}</Link>;
 }

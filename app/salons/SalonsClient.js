@@ -514,8 +514,8 @@ export default function SalonsClient({
             )}
           </div>
 
-          {/* List / Map toggle */}
-          <div className="flex rounded-full border border-border bg-card overflow-hidden shrink-0">
+          {/* List / Map toggle — desktop only; mobile has its own row below */}
+          <div className="hidden md:flex rounded-full border border-border bg-card overflow-hidden shrink-0">
             {[{ mode: "list", Icon: List, label: "Liste" }, { mode: "map", Icon: Map, label: "Harita" }].map(({ mode, Icon, label }) => (
               <button key={mode} onClick={() => setViewMode(mode)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors cursor-pointer ${
@@ -583,8 +583,8 @@ export default function SalonsClient({
           )}
         </div>
 
-        {/* City chips + Open Now | Sort */}
-        <div className="mt-4 flex items-center gap-2">
+        {/* ── Desktop filter rows (hidden on mobile) ── */}
+        <div className="hidden md:flex mt-4 items-center gap-2">
           <div
             className="flex items-center gap-2 flex-1 overflow-x-auto"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -599,7 +599,6 @@ export default function SalonsClient({
                 {c || "Tümü"}
               </button>
             ))}
-
             <button
               onClick={() => setOpenNow((v) => !v)}
               className={`shrink-0 h-8 rounded-full border px-3.5 text-[13px] font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
@@ -609,7 +608,6 @@ export default function SalonsClient({
               <span className={`inline-block w-1.5 h-1.5 rounded-full ${openNow ? "bg-white" : "bg-emerald-500"}`} />
               Şimdi Açık
             </button>
-
             <button
               onClick={toggleNearby}
               className={`shrink-0 h-8 rounded-full border px-3.5 text-[13px] font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
@@ -620,7 +618,6 @@ export default function SalonsClient({
               Yakınımda
             </button>
           </div>
-
           <div className="shrink-0 relative">
             <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sıralama"
               className="appearance-none h-8 max-w-[150px] rounded-full border border-border bg-card pl-3.5 pr-7 text-[13px] font-medium text-foreground cursor-pointer outline-none focus:border-foreground/40 truncate">
@@ -630,8 +627,7 @@ export default function SalonsClient({
           </div>
         </div>
 
-        {/* Shop type + rating | More filters toggle */}
-        <div className="mt-2 flex items-center gap-2">
+        <div className="hidden md:flex mt-2 items-center gap-2">
           <div
             className="flex items-center gap-2 flex-1 overflow-x-auto"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -648,7 +644,6 @@ export default function SalonsClient({
                 {t.label}
               </button>
             ))}
-
             <div className="flex items-center gap-2">
               {RATINGS.map((r) => (
                 <button key={r.value}
@@ -665,7 +660,6 @@ export default function SalonsClient({
               ))}
             </div>
           </div>
-
           <button
             onClick={() => setShowMoreFilters((v) => !v)}
             className={`shrink-0 flex items-center h-8 gap-1.5 rounded-full border px-3.5 text-[12px] font-medium cursor-pointer transition-colors ${
@@ -677,6 +671,110 @@ export default function SalonsClient({
             <SlidersHorizontal size={12} />
             Filtreler
           </button>
+        </div>
+
+        {/* ── Mobile filter rows (hidden on desktop) ── */}
+
+        {/* Row 1: View Controls */}
+        <div className="md:hidden mt-5 flex rounded-full border border-border bg-card overflow-hidden">
+          {[{ mode: "list", Icon: List, label: "Liste" }, { mode: "map", Icon: Map, label: "Harita" }].map(({ mode, Icon, label }) => (
+            <button key={mode} onClick={() => setViewMode(mode)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-semibold transition-colors cursor-pointer ${
+                viewMode === mode ? "bg-foreground text-background" : "text-foreground/70 hover:text-foreground"
+              }`}
+            >
+              <Icon size={14} />{label}
+            </button>
+          ))}
+        </div>
+
+        {/* Row 2: Discover Controls — sort + filter button */}
+        <div className="md:hidden mt-4 flex gap-2">
+          <div className="relative flex-1">
+            <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sıralama"
+              className="appearance-none w-full h-11 rounded-[14px] border border-border bg-card pl-4 pr-8 text-[14px] font-semibold text-foreground cursor-pointer outline-none focus:border-foreground/40">
+              {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          </div>
+          <button
+            onClick={() => setShowMoreFilters((v) => !v)}
+            className={`shrink-0 flex items-center h-11 gap-2 rounded-[14px] border px-4 text-[14px] font-semibold cursor-pointer transition-colors ${
+              showMoreFilters || district || service
+                ? "border-foreground bg-foreground text-background"
+                : "border-border bg-card text-foreground"
+            }`}
+          >
+            <SlidersHorizontal size={15} />
+            Filtreler
+          </button>
+        </div>
+
+        {/* Row 3: Location chips */}
+        <div
+          className="md:hidden mt-4 flex items-center gap-2 overflow-x-auto"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {["", ...CITIES].map((c) => (
+            <button key={c || "__all"}
+              onClick={() => setCity(c === city ? "" : c)}
+              className={`shrink-0 inline-flex items-center h-9 min-w-[52px] justify-center rounded-full border px-4 text-[13px] font-medium cursor-pointer transition-colors ${
+                city === c ? "border-foreground bg-foreground text-background" : "border-border bg-card text-foreground/80"
+              }`}
+            >
+              {c || "Tümü"}
+            </button>
+          ))}
+          <button
+            onClick={() => setOpenNow((v) => !v)}
+            className={`shrink-0 h-9 rounded-full border px-4 text-[13px] font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
+              openNow ? "border-emerald-600 bg-emerald-600 text-white" : "border-border bg-card text-foreground/80"
+            }`}
+          >
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${openNow ? "bg-white" : "bg-emerald-500"}`} />
+            Şimdi Açık
+          </button>
+          <button
+            onClick={toggleNearby}
+            className={`shrink-0 h-9 rounded-full border px-4 text-[13px] font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
+              nearbyOnly ? "border-blue-600 bg-blue-600 text-white" : "border-border bg-card text-foreground/80"
+            }`}
+          >
+            <MapPin size={12} />
+            Yakınımda
+          </button>
+        </div>
+
+        {/* Row 4: Service / gender chips */}
+        <div
+          className="md:hidden mt-3 flex items-center gap-2 overflow-x-auto"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {SHOP_TYPES.map((t) => (
+            <button key={t.value}
+              onClick={() => setShopType(t.value === shopType ? "" : t.value)}
+              className={`shrink-0 inline-flex items-center h-9 min-w-[52px] justify-center rounded-full border px-4 text-[13px] font-medium cursor-pointer transition-colors ${
+                (t.value === "" && !shopType) || shopType === t.value
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-card text-foreground/80"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+          {RATINGS.map((r) => (
+            <button key={r.value}
+              onClick={() => setMinRating(minRating === r.value ? 0 : r.value)}
+              className={`shrink-0 h-9 rounded-full border px-4 text-[13px] font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
+                minRating === r.value
+                  ? "border-amber-500 bg-amber-50 text-amber-700"
+                  : "border-border bg-card text-foreground/80"
+              }`}
+            >
+              <Star size={11} className={minRating === r.value ? "text-amber-500" : "text-muted-foreground"} />
+              {r.label}
+            </button>
+          ))}
         </div>
 
         {/* Expanded: district + service inputs + amenity chips.

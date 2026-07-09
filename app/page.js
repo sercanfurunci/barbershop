@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { sortByDistance } from "@/lib/geo";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   Scissors,
@@ -28,6 +28,7 @@ import {
   TrendingUp,
   Shield,
   Zap,
+  Loader2,
 } from "lucide-react";
 
 import Eyebrow from "@/components/shared/Eyebrow";
@@ -55,6 +56,46 @@ function FadeUp({ children, delay = 0, className, style, as: Tag = "div" }) {
     >
       {children}
     </motion.div>
+  );
+}
+
+// ─── Skeleton cards (shown while data is in-flight) ──────────────────────────
+
+function SalonCardSkeleton() {
+  return (
+    <div className="flex flex-col rounded-[20px] border border-border bg-card overflow-hidden animate-pulse" style={{ minHeight: 280 }}>
+      <div className="h-48 bg-secondary shrink-0" />
+      <div className="flex flex-col flex-1 p-4 gap-2">
+        <div className="h-4 bg-secondary rounded-full w-3/4" />
+        <div className="h-3 bg-secondary rounded-full w-1/3 mt-0.5" />
+        <div className="flex-1" />
+        <div className="h-px bg-border mt-2" />
+        <div className="h-3 bg-secondary rounded-full w-1/2 mt-1" />
+      </div>
+    </div>
+  );
+}
+
+function SalonSectionSkeleton({ eyebrow, title, bg = "var(--makas-bg)" }) {
+  return (
+    <section style={{ background: bg, paddingTop: "clamp(56px, 8vw, 96px)", paddingBottom: "clamp(56px, 8vw, 96px)" }}>
+      <div className="mx-auto max-w-[1200px] px-6">
+        <div className="mb-8">
+          {eyebrow && <div className="h-3 bg-secondary rounded-full w-20 animate-pulse mb-2" />}
+          <div className="h-8 bg-secondary rounded-full w-52 animate-pulse" />
+        </div>
+        <div
+          className="flex md:grid gap-3 md:gap-5 overflow-x-auto md:overflow-visible snap-x snap-mandatory -mx-6 px-6 scroll-px-6 md:mx-0 md:px-0 pb-2 md:pb-0"
+          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", scrollbarWidth: "none" }}
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="snap-start shrink-0 w-[85vw] sm:w-[46%] md:w-auto md:shrink">
+              <SalonCardSkeleton />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -315,7 +356,7 @@ function HeroPreview() {
 
 // ─── Salon Cards ──────────────────────────────────────────────────────────────
 
-function SalonCard({ shop, index = 0 }) {
+function SalonCard({ shop, index = 0, distanceKm }) {
   const img = shop.coverImage || (Array.isArray(shop.gallery) && shop.gallery[0]) || null;
   const rating = shop.avgRating ? Number(shop.avgRating) : null;
 
@@ -360,6 +401,14 @@ function SalonCard({ shop, index = 0 }) {
               {shop.shopType === "BARBER" ? "Berber" : shop.shopType === "SALON" ? "Kuaför" : shop.shopType}
             </div>
           ) : null}
+
+          {/* Distance badge — shown only for nearby section */}
+          {distanceKm != null && (
+            <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-background/95 px-2.5 py-1 text-[12px] font-semibold text-foreground backdrop-blur-sm">
+              <MapPin size={11} className="text-blue-500" />
+              {distanceKm < 1 ? `${Math.round(distanceKm * 1000)} m` : `${distanceKm.toFixed(1)} km`}
+            </div>
+          )}
         </div>
 
         {/* Info */}
@@ -390,7 +439,7 @@ function SalonCard({ shop, index = 0 }) {
 
 // ─── Salon section row ────────────────────────────────────────────────────────
 
-function SalonSection({ title, eyebrow, href, shops, bg = "var(--makas-bg)" }) {
+function SalonSection({ title, eyebrow, href, shops, bg = "var(--makas-bg)", showDistance = false }) {
   if (!shops.length) return null;
   return (
     <section style={{ background: bg, paddingTop: "clamp(56px, 8vw, 96px)", paddingBottom: "clamp(56px, 8vw, 96px)" }}>
@@ -426,7 +475,7 @@ function SalonSection({ title, eyebrow, href, shops, bg = "var(--makas-bg)" }) {
         >
           {shops.slice(0, 6).map((s, i) => (
             <div key={s.id} className="snap-start shrink-0 w-[85vw] sm:w-[46%] md:w-auto md:shrink">
-              <SalonCard shop={s} index={i} />
+              <SalonCard shop={s} index={i} distanceKm={showDistance && s.distance != null ? s.distance : undefined} />
             </div>
           ))}
         </div>
@@ -435,81 +484,10 @@ function SalonSection({ title, eyebrow, href, shops, bg = "var(--makas-bg)" }) {
   );
 }
 
-// ─── Nearby (permission-gated: never auto-prompts for location) ───────────────
-
-function NearbySection() {
-  const [shops, setShops] = useState([]);
-  const [state, setState] = useState("idle"); // idle | located | denied
-
-  const locate = useCallback(() => {
-    if (!navigator.geolocation) return setState("denied");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        fetch("/api/shops?take=20")
-          .then((r) => r.json())
-          .then((d) => {
-            const rows = sortByDistance(d?.shops ?? [], pos.coords.latitude, pos.coords.longitude)
-              .filter((s) => s.latitude != null && s.longitude != null)
-              .slice(0, 6);
-            if (rows.length) { setShops(rows); setState("located"); }
-            else setState("denied");
-          })
-          .catch(() => setState("denied"));
-      },
-      () => setState("denied")
-    );
-  }, []);
-
-  // Auto-load only if the user already granted location — no surprise prompt
-  useEffect(() => {
-    navigator.permissions?.query({ name: "geolocation" })
-      .then((p) => { if (p.state === "granted") locate(); })
-      .catch(() => {});
-  }, [locate]);
-
-  if (state === "denied") return null;
-
-  if (state === "located") {
-    return (
-      <SalonSection
-        eyebrow="Yakınındakiler"
-        title="Sana en yakın salonlar"
-        href="/salons?sort=nearby"
-        shops={shops}
-        bg="var(--makas-bg)"
-      />
-    );
-  }
-
-  // idle: compact CTA — geolocation fires on tap
-  return (
-    <section style={{ background: "var(--makas-bg)", paddingBlock: "clamp(48px, 7vw, 80px)" }}>
-      <div className="mx-auto max-w-[1200px] px-6">
-        <FadeUp>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-[20px] border border-border bg-card px-6 py-6 sm:px-8">
-            <div className="flex items-center gap-4">
-              <span className="w-11 h-11 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                <MapPin size={20} className="text-foreground" />
-              </span>
-              <div>
-                <p className="text-[15px] font-semibold text-foreground">Yakınındaki salonları gör</p>
-                <p className="text-[13px] text-muted-foreground mt-0.5">Konumunu paylaş, sana en yakın salonları listeleyelim.</p>
-              </div>
-            </div>
-            <button
-              onClick={locate}
-              className="shrink-0 rounded-full bg-foreground text-background px-5 h-10 text-[14px] font-semibold cursor-pointer hover:opacity-90 transition-opacity"
-            >
-              Konumumu Kullan
-            </button>
-          </div>
-        </FadeUp>
-      </div>
-    </section>
-  );
-}
-
-// ─── Discovery (fetches 3 rows) ───────────────────────────────────────────────
+// ─── Discovery ────────────────────────────────────────────────────────────────
+// Renders immediately with skeletons, never waits for geolocation before showing
+// content. If permission is already granted, silently fetches nearby and swaps
+// the top section in with a fade once the data arrives.
 
 function featuredScore(s) {
   const r = parseFloat(s.avgRating) || 0;
@@ -518,43 +496,207 @@ function featuredScore(s) {
 }
 
 function Discovery() {
-  const [recommended, setRecommended] = useState([]);
-  const [recent,      setRecent]      = useState([]);
+  const [popular,  setPopular]  = useState(null); // null=loading, []=empty, [...]loaded
+  const [recent,   setRecent]   = useState(null);
+  const [nearby,   setNearby]   = useState(null); // null=unknown, []=none, [...]found
+  // "checking"=silent perm query | "idle"=CTA visible | "locating"=button spinner |
+  // "located"=nearby shown | "denied"=CTA hidden
+  const [geoState, setGeoState] = useState("checking");
+
+  const nearbyRef   = useRef(null);  // DOM ref for scroll-into-view
+  const locatingRef = useRef(false); // guard against duplicate requests
+
+  const doFetchNearby = useCallback((lat, lng) => {
+    fetch(`/api/shops?take=12&sort=nearest&userLat=${lat}&userLng=${lng}`)
+      .then((r) => r.json())
+      .then((d) => {
+        locatingRef.current = false;
+        const rows = (d?.shops ?? [])
+          .filter((s) => s.distance != null && s.distance <= 25)
+          .slice(0, 6);
+        setNearby(rows);
+        if (rows.length > 0) {
+          setGeoState("located");
+          // Scroll nearby section into view only if it sits below the viewport
+          setTimeout(() => {
+            const el = nearbyRef.current;
+            if (el && el.getBoundingClientRect().top > window.innerHeight) {
+              el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }, 450); // let the fade-in start first
+        } else {
+          setGeoState("idle");
+          toast("Yakınında kayıtlı salon bulunamadı.");
+        }
+      })
+      .catch(() => {
+        locatingRef.current = false;
+        setNearby([]);
+        setGeoState("idle");
+        toast.error("Salonlar yüklenemedi, lütfen tekrar deneyin.");
+      });
+  }, []);
+
+  const requestLocation = useCallback(() => {
+    // Prevent duplicate in-flight requests
+    if (locatingRef.current) return;
+
+    if (!navigator.geolocation) {
+      toast.error("Tarayıcınız konum özelliğini desteklemiyor.");
+      setGeoState("denied");
+      return;
+    }
+
+    locatingRef.current = true;
+    setGeoState("locating"); // keeps CTA visible with spinner
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => doFetchNearby(pos.coords.latitude, pos.coords.longitude),
+      (err) => {
+        locatingRef.current = false;
+        if (err.code === 1 /* PERMISSION_DENIED */) {
+          toast.error("Konum izni verilmedi.");
+          setGeoState("denied");
+        } else {
+          // POSITION_UNAVAILABLE or TIMEOUT — restore button so user can retry
+          toast.error("Konum alınamadı, lütfen tekrar deneyin.");
+          setGeoState("idle");
+        }
+      },
+      { timeout: 10_000, maximumAge: 60_000 }
+    );
+  }, [doFetchNearby]);
 
   useEffect(() => {
+    // Popular and recent fire immediately — no dependency on geolocation
     fetch("/api/shops?take=20")
       .then((r) => r.json())
       .then((d) => {
-        const shops = Array.isArray(d) ? d : (d?.shops ?? []);
-        setRecommended([...shops].sort((a, b) => featuredScore(b) - featuredScore(a)).slice(0, 6));
+        const shops = d?.shops ?? [];
+        setPopular([...shops].sort((a, b) => featuredScore(b) - featuredScore(a)).slice(0, 6));
       })
-      .catch(() => {});
+      .catch(() => setPopular([]));
+
     fetch("/api/shops?take=6&sort=newest")
       .then((r) => r.json())
-      .then((d) => setRecent(Array.isArray(d) ? d : (d?.shops ?? [])))
-      .catch(() => {});
-  }, []);
+      .then((d) => setRecent(d?.shops ?? []))
+      .catch(() => setRecent([]));
 
-  // ponytail: if no shops in DB yet, render nothing — no skeleton needed for landing page
-  if (!recommended.length && !recent.length) return null;
+    // Silent permission check — never prompts the browser dialog
+    navigator.permissions?.query({ name: "geolocation" })
+      .then((p) => {
+        if (p.state === "granted") {
+          locatingRef.current = true;
+          setGeoState("locating");
+          navigator.geolocation.getCurrentPosition(
+            (pos) => doFetchNearby(pos.coords.latitude, pos.coords.longitude),
+            () => { locatingRef.current = false; setNearby([]); setGeoState("idle"); },
+            { timeout: 10_000, maximumAge: 60_000 }
+          );
+        } else if (p.state === "denied") {
+          setNearby([]);
+          setGeoState("denied");
+        } else {
+          setNearby([]);
+          setGeoState("idle");
+        }
+      })
+      .catch(() => { setNearby([]); setGeoState("idle"); });
+  }, [doFetchNearby]);
+
+  const showNearby  = geoState === "located" && (nearby?.length ?? 0) > 0;
+  const isLocating  = geoState === "locating";
+  const showCTA     = geoState === "idle" || geoState === "locating";
+
+  const bg1 = "var(--makas-bg)";
+  const bg2 = "white";
+  const bg3 = "var(--makas-bg)";
 
   return (
     <>
-      <SalonSection
-        eyebrow="Önerilen"
-        title="Müşterilerin tercihi"
-        href="/salons"
-        shops={recommended}
-        bg="var(--makas-bg)"
-      />
-      <SalonSection
-        eyebrow="Yeni Katılanlar"
-        title="Platformumuzdaki yeni salonlar"
-        href="/salons?sort=newest"
-        shops={recent}
-        bg="white"
-      />
-      <NearbySection />
+      {/* ── Top slot: skeleton → popular → nearby (crossfade) ──────────────── */}
+      <div ref={nearbyRef}>
+        <AnimatePresence mode="wait">
+          {showNearby ? (
+            <motion.div key="nearby" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+              <SalonSection
+                eyebrow="Yakınındakiler"
+                title="Sana en yakın salonlar"
+                href="/salons?sort=nearby"
+                shops={nearby}
+                bg={bg1}
+                showDistance
+              />
+            </motion.div>
+          ) : popular === null ? (
+            <motion.div key="skel-pop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <SalonSectionSkeleton eyebrow="Önerilen" title="Müşterilerin tercihi" bg={bg1} />
+            </motion.div>
+          ) : popular.length > 0 ? (
+            <motion.div key="popular" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+              <SalonSection eyebrow="Önerilen" title="Müşterilerin tercihi" href="/salons" shops={popular} bg={bg1} />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
+
+      {/* ── Slot 2: Popular (only when Nearby is at slot 1) ──────────────────── */}
+      <AnimatePresence>
+        {showNearby && popular?.length > 0 && (
+          <motion.div key="popular-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.15 }}>
+            <SalonSection eyebrow="Önerilen" title="Müşterilerin tercihi" href="/salons" shops={popular} bg={bg2} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Recent ───────────────────────────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        {recent === null ? (
+          <motion.div key="skel-rec" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+            <SalonSectionSkeleton eyebrow="Yeni Katılanlar" title="Platformumuzdaki yeni salonlar" bg={showNearby ? bg3 : bg2} />
+          </motion.div>
+        ) : recent.length > 0 ? (
+          <motion.div key="recent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+            <SalonSection
+              eyebrow="Yeni Katılanlar"
+              title="Platformumuzdaki yeni salonlar"
+              href="/salons?sort=newest"
+              shops={recent}
+              bg={showNearby ? bg3 : bg2}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      {/* ── Location CTA ─────────────────────────────────────────────────────── */}
+      {showCTA && (
+        <section style={{ background: "var(--makas-bg)", paddingBlock: "clamp(48px, 7vw, 80px)" }}>
+          <div className="mx-auto max-w-[1200px] px-6">
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-[20px] border border-border bg-card px-6 py-6 sm:px-8">
+                <div className="flex items-center gap-4">
+                  <span className="w-11 h-11 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                    <MapPin size={20} className="text-foreground" />
+                  </span>
+                  <div>
+                    <p className="text-[15px] font-semibold text-foreground">Yakınındaki salonları gör</p>
+                    <p className="text-[13px] text-muted-foreground mt-0.5">Konumunu paylaş, sana en yakın salonları listeleyelim.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={requestLocation}
+                  disabled={isLocating}
+                  className="shrink-0 inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 h-10 text-[14px] font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLocating ? (
+                    <><Loader2 size={14} className="animate-spin" />Konum alınıyor…</>
+                  ) : "Konumumu Kullan"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
     </>
   );
 }

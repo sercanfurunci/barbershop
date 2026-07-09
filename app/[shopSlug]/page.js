@@ -311,11 +311,11 @@ export default async function ShopHome({ params }) {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessLd).replace(/</g, "\\u003c").replace(/>/g, "\\u003e") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, "\\u003c").replace(/>/g, "\\u003e") }} />
       <TrackPageView shopId={shop.id} />
       <Navbar />
-      <main className="flex-1 pb-[88px] md:pb-0">
+      <main className="flex-1">
         {/* Hero: identity only (full width, no cover). Respects iOS safe-area
             top inset and adds breathing room under the floating navbar. */}
         <section
@@ -363,6 +363,7 @@ export default async function ShopHome({ params }) {
         <FAQ />
         {shop.latitude && shop.longitude && (
           <section
+            className="hidden md:block"
             style={{
               maxWidth: 1560,
               margin: "0 auto",
