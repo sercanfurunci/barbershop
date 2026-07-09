@@ -23,6 +23,22 @@ function fmtFirstAvail(date, time) {
   return `${prefix} ${time}`;
 }
 
+function StarRating({ rating, count, fs = 11 }) {
+  if (!rating) return <span style={{ fontSize: fs, color: "#9ca3af" }}>Henüz değerlendirme yok</span>;
+  const filled = Math.min(5, Math.round(Number(rating)));
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+      {[1,2,3,4,5].map(i => (
+        <Star key={i} size={10} strokeWidth={1.5}
+          fill={i <= filled ? "#f59e0b" : "none"}
+          color={i <= filled ? "#f59e0b" : "#d1d5db"} />
+      ))}
+      <span style={{ fontSize: 12, fontWeight: 600, color: "#111", marginLeft: 2 }}>{Number(rating).toFixed(1)}</span>
+      {count ? <span style={{ fontSize: fs, color: "#6b7280", marginLeft: 1 }}>({count})</span> : null}
+    </div>
+  );
+}
+
 export default function SalonPopup({ salon, userLoc = null }) {
   const [fa, setFa] = useState(undefined);
   const [isMobile, setIsMobile] = useState(false);
@@ -41,7 +57,6 @@ export default function SalonPopup({ salon, userLoc = null }) {
   }, [salon.id]);
 
   const img = salon.coverImage || (Array.isArray(salon.gallery) && salon.gallery[0]) || salon.logo;
-  const rating = salon.avgRating ? Number(salon.avgRating).toFixed(1) : null;
   const address = salon.formattedAddress || [salon.addressLine, salon.city].filter(Boolean).join(", ");
   const dist = (userLoc && salon.latitude != null && salon.longitude != null)
     ? fmtDistance(haversine(userLoc.lat, userLoc.lng, salon.latitude, salon.longitude))
@@ -49,16 +64,16 @@ export default function SalonPopup({ salon, userLoc = null }) {
   const prices = salon.services?.map(s => s.price).filter(p => p > 0) ?? [];
   const minPrice = prices.length > 0 ? Math.min(...prices) : null;
 
-  // Mobile: tighter values to reveal more map underneath
-  const W   = isMobile ? 230 : 260;
-  const IMG = isMobile ? 85  : 110;
-  const GAP = isMobile ? 5   : 8;   // marginBottom under image
-  const ROW = isMobile ? 3   : 4;   // marginTop between rows
+  // Mobile: 10–15% smaller than desktop to reveal more map
+  const W   = isMobile ? 205 : 260;
+  const IMG = isMobile ? 72  : 110;
+  const GAP = isMobile ? 4   : 8;
+  const ROW = isMobile ? 2   : 4;
   const BTN_PRIMARY   = isMobile ? "7px 0" : "9px 0";
   const BTN_SECONDARY = isMobile ? "5px 0" : "7px 0";
   const BTN_RADIUS    = isMobile ? 8 : 10;
   const BTN_FS        = isMobile ? 12 : 13;
-  const SECONDARY_FS  = isMobile ? 11 : 11;
+  const SECONDARY_FS  = 11;
 
   return (
     <div style={{ width: W }}>
@@ -75,7 +90,7 @@ export default function SalonPopup({ salon, userLoc = null }) {
         {typeof salon.openNow === "boolean" && (
           <span style={{
             position: "absolute", top: 6, left: 6,
-            padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700,
+            padding: "2px 7px", borderRadius: 999, fontSize: 10, fontWeight: 700,
             background: salon.openNow ? "rgba(16,163,74,0.92)" : "rgba(255,255,255,0.9)",
             color: salon.openNow ? "#fff" : "#6b7280",
           }}>
@@ -84,36 +99,28 @@ export default function SalonPopup({ salon, userLoc = null }) {
         )}
       </div>
 
-      {/* Name */}
-      <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#111", lineHeight: 1.3 }}>{salon.name}</p>
+      {/* 1. Name */}
+      <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: "#111", lineHeight: 1.3 }}>{salon.name}</p>
 
-      {/* Rating */}
-      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: ROW, minHeight: 16 }}>
-        {rating ? (
-          <>
-            <Star size={12} fill="#f59e0b" color="#f59e0b" />
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#111" }}>{rating}</span>
-            {salon.totalReviews ? <span style={{ fontSize: SECONDARY_FS, color: "#6b7280" }}>({salon.totalReviews} yorum)</span> : null}
-          </>
-        ) : (
-          <span style={{ fontSize: SECONDARY_FS, color: "#9ca3af" }}>Henüz değerlendirme yok</span>
-        )}
+      {/* 2. Rating */}
+      <div style={{ marginTop: ROW }}>
+        <StarRating rating={salon.googleRating ?? salon.avgRating} count={salon.googleTotalRatings ?? salon.totalReviews} fs={SECONDARY_FS} />
       </div>
 
-      {/* Hours */}
+      {/* 3. Hours */}
       {(salon.todayHours != null || typeof salon.openNow === "boolean") && (
-        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: ROW }}>
-          <Clock size={11} color="#6b7280" style={{ flexShrink: 0 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: ROW }}>
+          <Clock size={10} color="#6b7280" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: SECONDARY_FS, color: "#374151" }}>
             {salon.todayHours ? `Bugün ${salon.todayHours}` : "Bugün kapalı"}
           </span>
         </div>
       )}
 
-      {/* Address */}
+      {/* 4. Address */}
       {address && (
-        <div style={{ display: "flex", gap: 5, marginTop: ROW }}>
-          <MapPin size={11} color="#6b7280" style={{ flexShrink: 0, marginTop: 2 }} />
+        <div style={{ display: "flex", gap: 4, marginTop: ROW }}>
+          <MapPin size={10} color="#6b7280" style={{ flexShrink: 0, marginTop: 2 }} />
           <span style={{
             fontSize: SECONDARY_FS, color: "#6b7280", lineHeight: 1.35,
             display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
@@ -123,21 +130,28 @@ export default function SalonPopup({ salon, userLoc = null }) {
         </div>
       )}
 
-      {/* Distance */}
+      {/* 5. Distance */}
       {dist && (
-        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: ROW }}>
-          <Navigation size={10} color="#6b7280" style={{ flexShrink: 0 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: ROW }}>
+          <Navigation size={9} color="#6b7280" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: SECONDARY_FS, color: "#374151", fontWeight: 500 }}>{dist} uzaklıkta</span>
         </div>
       )}
 
-      {/* First available */}
-      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: ROW + 1, minHeight: 15 }}>
+      {/* 6. Price */}
+      {minPrice && (
+        <p style={{ margin: `${ROW}px 0 0`, fontSize: 11.5, color: "#111", fontWeight: 600 }}>
+          {minPrice.toLocaleString("tr-TR")} ₺ <span style={{ color: "#6b7280", fontWeight: 400 }}>başlayan</span>
+        </p>
+      )}
+
+      {/* 7. First available */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: ROW, minHeight: 14 }}>
         {fa === undefined ? (
           <span style={{ fontSize: SECONDARY_FS, color: "#9ca3af" }}>Kontrol ediliyor…</span>
         ) : fa ? (
           <>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", flexShrink: 0 }} />
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#16a34a", flexShrink: 0 }} />
             <span style={{ fontSize: SECONDARY_FS, fontWeight: 600, color: "#16a34a" }}>İlk müsait: {fmtFirstAvail(fa.date, fa.time)}</span>
           </>
         ) : (
@@ -145,19 +159,12 @@ export default function SalonPopup({ salon, userLoc = null }) {
         )}
       </div>
 
-      {/* Price */}
-      {minPrice && (
-        <p style={{ margin: `${ROW}px 0 0`, fontSize: 12, color: "#111", fontWeight: 600 }}>
-          {minPrice.toLocaleString("tr-TR")} ₺ <span style={{ color: "#6b7280", fontWeight: 400 }}>başlayan</span>
-        </p>
-      )}
-
       {/* Primary CTA */}
       <Link
         href={`/${salon.slug}`}
         style={{
           display: "flex", alignItems: "center", justifyContent: "center",
-          marginTop: isMobile ? 8 : 10, padding: BTN_PRIMARY,
+          marginTop: isMobile ? 7 : 10, padding: BTN_PRIMARY,
           background: "#111", color: "#fff",
           borderRadius: BTN_RADIUS, fontSize: BTN_FS, fontWeight: 600, textDecoration: "none",
         }}
@@ -166,18 +173,18 @@ export default function SalonPopup({ salon, userLoc = null }) {
       </Link>
 
       {/* Secondary: Directions + Share */}
-      <div style={{ display: "flex", gap: 6, marginTop: 5 }}>
+      <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
         {salon.latitude != null && salon.longitude != null && (
           <a
             href={directionsUrl(salon.latitude, salon.longitude)}
             target="_blank" rel="noopener noreferrer"
             style={{
-              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
               padding: BTN_SECONDARY, borderRadius: BTN_RADIUS, border: "1px solid #e5e7eb",
-              fontSize: 12, fontWeight: 600, color: "#111", textDecoration: "none", background: "#fff",
+              fontSize: 11, fontWeight: 600, color: "#111", textDecoration: "none", background: "#fff",
             }}
           >
-            <Navigation size={11} /> Yol Tarifi
+            <Navigation size={10} /> Yol Tarifi
           </a>
         )}
         <button
@@ -190,12 +197,12 @@ export default function SalonPopup({ salon, userLoc = null }) {
             } catch { /* cancelled */ }
           }}
           style={{
-            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
             padding: BTN_SECONDARY, borderRadius: BTN_RADIUS, border: "1px solid #e5e7eb",
-            fontSize: 12, fontWeight: 600, color: "#111", cursor: "pointer", background: "#fff",
+            fontSize: 11, fontWeight: 600, color: "#111", cursor: "pointer", background: "#fff",
           }}
         >
-          <Share2 size={11} /> Paylaş
+          <Share2 size={10} /> Paylaş
         </button>
       </div>
     </div>

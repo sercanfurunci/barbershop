@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useDragControls } from "framer-motion";
 import { OVERLAY_TRANSITION, OVERLAY_SHADOW } from "@/lib/overlay";
 
-export const SNAPS = [0.1, 0.45, 0.9];
+export const SNAPS = [0.1, 0.40, 0.9];
 const MAX_SNAP = SNAPS[SNAPS.length - 1];
 
 export default function MapBottomSheet({ snap, onSnapChange, header, children }) {
@@ -64,7 +64,7 @@ export default function MapBottomSheet({ snap, onSnapChange, header, children })
       </div>
 
       {/* Scrollable content */}
-      <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain px-4 pb-8 space-y-3">
+      <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4 space-y-3">
         {children}
       </div>
     </motion.div>

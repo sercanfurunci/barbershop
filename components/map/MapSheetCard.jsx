@@ -6,9 +6,25 @@
 
 import { memo, useState } from "react";
 import Link from "next/link";
-import { Scissors, Star, MapPin, Navigation, Heart, Share2, Phone } from "lucide-react";
+import { Scissors, Star, MapPin, Navigation, Heart, Share2, Phone, Clock } from "lucide-react";
 import { haversine, fmtDistance } from "@/lib/geo";
 import { useFirstAvailable, fmtFirstAvail } from "./useFirstAvailable";
+
+function StarRating({ rating, count }) {
+  if (!rating) return <span className="text-[11px] text-muted-foreground/60">Henüz değerlendirme yok</span>;
+  const filled = Math.min(5, Math.round(Number(rating)));
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1,2,3,4,5].map(i => (
+        <Star key={i} size={10} strokeWidth={1.5}
+          fill={i <= filled ? "#f59e0b" : "none"}
+          color={i <= filled ? "#f59e0b" : "#d1d5db"} />
+      ))}
+      <span className="text-[12px] font-semibold text-foreground ml-1">{Number(rating).toFixed(1)}</span>
+      {count ? <span className="text-[11px] text-muted-foreground ml-0.5">({count})</span> : null}
+    </div>
+  );
+}
 
 function ActionBtn({ children, onClick, href, label, active }) {
   const cls = `w-8 h-8 rounded-full border flex items-center justify-center transition-colors shrink-0 ${
@@ -75,10 +91,10 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
       className={`flex flex-col rounded-[14px] border bg-card overflow-hidden cursor-pointer transition-all ${
         isSelected ? "border-foreground ring-2 ring-foreground makas-card-glow" : "border-border"
       }`}
-      style={{ scrollMarginTop: 12, height: 240 }}
+      style={{ scrollMarginTop: 12, height: 272 }}
     >
-      {/* Cover — 120px tall */}
-      <div className="relative shrink-0 bg-secondary" style={{ height: 120 }}>
+      {/* Cover — 140px tall */}
+      <div className="relative shrink-0 bg-secondary" style={{ height: 140 }}>
         {img ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={img} alt={shop.name} className="w-full h-full object-cover" loading="lazy" />
@@ -94,11 +110,11 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
             {shop.openNow ? "Açık" : "Kapalı"}
           </span>
         )}
-        {shop.avgRating ? (
+        {(shop.googleRating ?? shop.avgRating) ? (
           <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-semibold text-foreground backdrop-blur-sm">
             <Star size={10} strokeWidth={2.5} className="text-amber-500" />
-            {Number(shop.avgRating).toFixed(1)}
-            {shop.totalReviews ? <span className="text-muted-foreground font-normal">({shop.totalReviews})</span> : null}
+            {Number(shop.googleRating ?? shop.avgRating).toFixed(1)}
+            {(shop.googleTotalRatings ?? shop.totalReviews) ? <span className="text-muted-foreground font-normal">({shop.googleTotalRatings ?? shop.totalReviews})</span> : null}
           </span>
         ) : null}
         {shop.logo && (
@@ -108,45 +124,66 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
       </div>
 
       {/* Body */}
-      <div className="flex flex-col flex-1 px-3 pb-2 min-h-0" style={{ paddingTop: shop.logo ? 16 : 10 }}>
+      <div className="flex flex-col flex-1 px-3 pb-3 min-h-0" style={{ paddingTop: shop.logo ? 18 : 12 }}>
+        {/* 1. Name */}
         <p className="shrink-0 font-semibold text-foreground text-[15px] leading-snug line-clamp-1">{shop.name}</p>
 
-        {/* Address + distance */}
-        <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted-foreground shrink-0">
+        {/* 2. Rating */}
+        <div className="mt-0.5 shrink-0">
+          <StarRating rating={shop.googleRating ?? shop.avgRating} count={shop.googleTotalRatings ?? shop.totalReviews} />
+        </div>
+
+        {/* 3. Open status + hours */}
+        {(shop.todayHours || typeof shop.openNow === "boolean") && (
+          <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground shrink-0">
+            <Clock size={9} className="shrink-0" />
+            <span className={shop.openNow ? "text-emerald-600 font-medium" : ""}>
+              {shop.openNow ? "Açık" : "Kapalı"}
+              {shop.todayHours ? ` · ${shop.todayHours}` : ""}
+            </span>
+          </div>
+        )}
+
+        {/* 4. Address + distance */}
+        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground shrink-0">
           {locationStr && (
             <>
-              <MapPin size={10} className="shrink-0" />
+              <MapPin size={9} className="shrink-0" />
               <span className="truncate">{locationStr}</span>
             </>
           )}
           {dist && (
             <span className="flex items-center gap-0.5 shrink-0 ml-auto">
-              <Navigation size={9} />{dist}
+              <Navigation size={8} />{dist}
             </span>
           )}
         </div>
 
-        {/* Price + availability on one line */}
-        <div className="mt-0.5 flex items-center gap-2 text-[12px] shrink-0 flex-wrap">
+        {/* 5. Price */}
+        <div className="mt-0.5 text-[11.5px] shrink-0">
           {minPrice ? (
             <span className="text-foreground font-medium">
               {minPrice.toLocaleString("tr-TR")} ₺ <span className="text-muted-foreground font-normal">başlayan</span>
             </span>
           ) : (
-            <span className="text-muted-foreground/50">Fiyat bilgisi yok</span>
+            <span className="text-muted-foreground/40">Fiyat bilgisi yok</span>
           )}
+        </div>
+
+        {/* 6. First available */}
+        <div className="mt-0.5 flex items-center gap-1 text-[11px] shrink-0">
           {fa === undefined ? null : fa ? (
-            <span className="flex items-center gap-1 text-emerald-600 font-medium ml-auto shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              {fmtFirstAvail(fa.date, fa.time)}
-            </span>
+            <>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+              <span className="text-emerald-600 font-medium">{fmtFirstAvail(fa.date, fa.time)}</span>
+            </>
           ) : (
-            <span className="text-muted-foreground/50 ml-auto shrink-0">Müsait yok</span>
+            <span className="text-muted-foreground/40">Müsait randevu yok</span>
           )}
         </div>
 
         {/* Actions */}
-        <div className="mt-auto pt-2 flex items-center gap-1.5">
+        <div className="mt-auto pt-1.5 flex items-center gap-1.5">
           <ActionBtn onClick={toggleFavorite} label="Favorilere ekle" active={favored}>
             <Heart size={14} fill={favored ? "currentColor" : "none"} />
           </ActionBtn>

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Scissors, Star, Search, X, ChevronDown, MapPin, SlidersHorizontal, Map, List, Navigation, Wifi, ParkingCircle, CreditCard, Wind, Accessibility, Baby, Tag } from "lucide-react";
+import { Scissors, Star, Search, X, ChevronDown, MapPin, SlidersHorizontal, Map, List, Navigation, Wifi, ParkingCircle, CreditCard, Wind, Accessibility, Baby, Tag, Clock } from "lucide-react";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { haversine, fmtDistance, sortByDistance } from "@/lib/geo";
@@ -122,11 +122,11 @@ const SalonCard = memo(function SalonCard({ shop, userLoc }) {
               : <Scissors size={28} className="text-muted-foreground/30" />}
           </div>
         )}
-        {shop.avgRating ? (
+        {(shop.googleRating ?? shop.avgRating) ? (
           <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-semibold text-foreground backdrop-blur-sm">
             <Star size={11} strokeWidth={2.5} className="text-amber-500" />
-            {Number(shop.avgRating).toFixed(1)}
-            {shop.totalReviews ? <span className="text-muted-foreground font-normal">({shop.totalReviews})</span> : null}
+            {Number(shop.googleRating ?? shop.avgRating).toFixed(1)}
+            {(shop.googleTotalRatings ?? shop.totalReviews) ? <span className="text-muted-foreground font-normal">({shop.googleTotalRatings ?? shop.totalReviews})</span> : null}
           </div>
         ) : null}
         {shopTypeLabel ? (
@@ -139,20 +139,56 @@ const SalonCard = memo(function SalonCard({ shop, userLoc }) {
       {/* ── Body ── */}
       <div className="flex flex-col flex-1 p-4 min-h-0">
 
-        {/* Title (max 2 lines) + status */}
+        {/* 1. Name + status pill */}
         <div className="flex items-start justify-between gap-2">
-          <p className="font-semibold text-foreground text-[15px] leading-snug line-clamp-2 flex-1" style={{ minHeight: "2.5rem" }}>
+          <p className="font-semibold text-foreground text-[15px] leading-snug line-clamp-1 flex-1">
             {shop.name}
           </p>
           <StatusPill shop={shop} />
         </div>
 
-        {/* Address (max 1 line) */}
-        <div className="flex items-center gap-1.5 mt-1.5" style={{ minHeight: "1.25rem" }}>
+        {/* 2. Rating (Google preferred, internal fallback) */}
+        <div className="flex items-center gap-0.5 mt-1" style={{ minHeight: "1.1rem" }}>
+          {(shop.googleRating ?? shop.avgRating) ? (
+            <>
+              {[1,2,3,4,5].map(i => {
+                const r = shop.googleRating ?? shop.avgRating;
+                return (
+                  <Star key={i} size={10} strokeWidth={1.5}
+                    fill={i <= Math.min(5, Math.round(Number(r))) ? "#f59e0b" : "none"}
+                    color={i <= Math.min(5, Math.round(Number(r))) ? "#f59e0b" : "#d1d5db"} />
+                );
+              })}
+              <span className="text-[12px] font-semibold text-foreground ml-1">{Number(shop.googleRating ?? shop.avgRating).toFixed(1)}</span>
+              {(shop.googleTotalRatings ?? shop.totalReviews) ? <span className="text-[11px] text-muted-foreground ml-0.5">({shop.googleTotalRatings ?? shop.totalReviews})</span> : null}
+            </>
+          ) : (
+            <span className="text-[11px] text-muted-foreground/50">Henüz değerlendirme yok</span>
+          )}
+        </div>
+
+        {/* 3. Open status + hours */}
+        <div className="flex items-center gap-1.5 mt-1" style={{ minHeight: "1.1rem" }}>
+          {shop.todayHours ? (
+            <>
+              <Clock size={10} className="shrink-0 text-muted-foreground" />
+              <span className={`text-[11.5px] ${shop.openNow ? "text-emerald-600 font-medium" : "text-muted-foreground"}`}>
+                {shop.openNow ? "Açık" : "Kapalı"} · {shop.todayHours}
+              </span>
+            </>
+          ) : typeof shop.openNow === "boolean" ? (
+            <span className={`text-[11.5px] ${shop.openNow ? "text-emerald-600 font-medium" : "text-muted-foreground"}`}>
+              {shop.openNow ? "Açık" : "Kapalı"}
+            </span>
+          ) : <span className="text-[11px] text-transparent select-none">—</span>}
+        </div>
+
+        {/* 4. Address + distance */}
+        <div className="flex items-center gap-1.5 mt-1" style={{ minHeight: "1.1rem" }}>
           {locationStr ? (
             <>
               <MapPin size={10} className="shrink-0 text-muted-foreground" />
-              <p className="text-[12px] text-muted-foreground truncate flex-1">{locationStr}</p>
+              <p className="text-[11.5px] text-muted-foreground truncate flex-1">{locationStr}</p>
             </>
           ) : <span className="text-[12px] text-transparent select-none">—</span>}
           {dist && (
@@ -162,15 +198,15 @@ const SalonCard = memo(function SalonCard({ shop, userLoc }) {
           )}
         </div>
 
-        {/* Services (max 3 chips) */}
-        <div className="mt-2 flex items-center gap-1 overflow-hidden" style={{ minHeight: "1.5rem" }}>
+        {/* 5. Services (max 2 chips) */}
+        <div className="mt-1.5 flex items-center gap-1 overflow-hidden" style={{ minHeight: "1.4rem" }}>
           {shop.services?.length > 0 ? (
             <>
-              {shop.services.slice(0, 3).map((s) => (
-                <span key={s.id} className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">{s.nameTr}</span>
+              {shop.services.slice(0, 2).map((s) => (
+                <span key={s.id} className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10.5px] text-muted-foreground">{s.nameTr}</span>
               ))}
-              {shop.services.length > 3 && (
-                <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">+{shop.services.length - 3}</span>
+              {shop.services.length > 2 && (
+                <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10.5px] text-muted-foreground">+{shop.services.length - 2}</span>
               )}
             </>
           ) : (
@@ -178,24 +214,11 @@ const SalonCard = memo(function SalonCard({ shop, userLoc }) {
           )}
         </div>
 
-        {/* Spacer pushes footer items to the bottom */}
+        {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Rating */}
-        <div className="flex items-center gap-1" style={{ minHeight: "1.25rem" }}>
-          {shop.avgRating ? (
-            <>
-              <Star size={11} strokeWidth={2.5} className="text-amber-500" />
-              <span className="text-[12px] font-semibold text-foreground">{Number(shop.avgRating).toFixed(1)}</span>
-              {shop.totalReviews ? <span className="text-[11px] text-muted-foreground">({shop.totalReviews} yorum)</span> : null}
-            </>
-          ) : (
-            <span className="text-[11px] text-muted-foreground/50">Henüz değerlendirme yok</span>
-          )}
-        </div>
-
-        {/* Price */}
-        <div className="mt-1" style={{ minHeight: "1.25rem" }}>
+        {/* 6. Price */}
+        <div style={{ minHeight: "1.1rem" }}>
           {minPrice ? (
             <span className="text-[12px] text-foreground font-medium">
               {minPrice.toLocaleString("tr-TR")} ₺ <span className="text-muted-foreground font-normal">başlayan</span>
@@ -205,8 +228,8 @@ const SalonCard = memo(function SalonCard({ shop, userLoc }) {
           )}
         </div>
 
-        {/* Availability */}
-        <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium" style={{ minHeight: "1.25rem" }}>
+        {/* 7. First available */}
+        <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium" style={{ minHeight: "1.1rem" }}>
           {fa === undefined ? (
             <span className="text-muted-foreground/40">Kontrol ediliyor…</span>
           ) : fa ? (
@@ -274,7 +297,7 @@ export default function SalonsClient({
   const [selectedShopId, setSelectedShopId] = useState(null);
   const [hoveredShopId, setHoveredShopId] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileSnap, setMobileSnap] = useState(0.45);
+  const [mobileSnap, setMobileSnap] = useState(0.40);
   const [showMapFilters, setShowMapFilters] = useState(false);
 
   const [recentSearches, setRecentSearches] = useState([]);
@@ -344,7 +367,7 @@ export default function SalonsClient({
   const handleSalonSelect = useCallback((salon) => {
     setSelectedShopId(salon.id);
     // Collapsed sheet hides the cards — pop to half so the selected card shows
-    setMobileSnap((s) => (s <= 0.1 ? 0.45 : s));
+    setMobileSnap((s) => (s <= 0.1 ? 0.40 : s));
   }, []);
 
   const handleUserLocate = useCallback((loc) => setUserLoc(loc), []);
@@ -912,7 +935,7 @@ export default function SalonsClient({
                     onUserLocate={handleUserLocate}
                     onSearchArea={handleSearchArea}
                     fitToken={fitToken}
-                    padBottomFraction={0.45}
+                    padBottomFraction={0.40}
                   />
                   <button
                     onClick={() => setViewMode("list")}

@@ -182,6 +182,8 @@ export async function GET(request) {
         mobileSettings: true,
         avgRating: true,
         totalReviews: true,
+        googleRating: true,
+        googleTotalRatings: true,
         description: true,
         shopType: true,
         wifi: true,
