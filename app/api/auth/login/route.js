@@ -41,15 +41,16 @@ export async function POST(request) {
       return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
     }
 
+    // Block logins to suspended shops before revealing whether the password is
+    // correct — prevents confirming valid credentials for suspended accounts.
+    if (user.shop && user.shop.status === "SUSPENDED") {
+      return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
+    }
+
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       log.warn("login failed — wrong password", { userId: user.id });
       return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
-    }
-
-    // Block logins to suspended shops (except SUPER_ADMIN, who has no shop)
-    if (user.shop && user.shop.status === "SUSPENDED") {
-      return NextResponse.json({ error: "Bu salon askıya alındı. Yöneticinizle iletişime geçin." }, { status: 403 });
     }
 
     const token = await signToken({

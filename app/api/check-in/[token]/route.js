@@ -7,6 +7,9 @@ export const dynamic = "force-dynamic";
 // Returns appointment summary so the scanner screen can confirm identity.
 export async function GET(request, { params }) {
   const { token } = await params;
+  if (!token || !/^[a-zA-Z0-9_-]{8,128}$/.test(token)) {
+    return NextResponse.json({ error: "QR kodu geçersiz" }, { status: 404 });
+  }
 
   const appt = await prisma.appointment.findFirst({
     where: { checkInToken: token },

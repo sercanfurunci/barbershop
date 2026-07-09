@@ -21,8 +21,8 @@ export async function POST(request) {
   if (!email || !password) {
     return NextResponse.json({ error: "Email ve şifre gerekli" }, { status: 400 });
   }
-  if (password.length < 6) {
-    return NextResponse.json({ error: "Şifre en az 6 karakter olmalı" }, { status: 400 });
+  if (password.length < 8) {
+    return NextResponse.json({ error: "Şifre en az 8 karakter olmalı" }, { status: 400 });
   }
 
   const normalizedEmail = email.toLowerCase().trim();
@@ -32,7 +32,8 @@ export async function POST(request) {
     return NextResponse.json({ error: "Bu email adresi zaten kullanılıyor" }, { status: 409 });
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+
+  const passwordHash = await bcrypt.hash(password, 12);
 
   // Link to existing Client records by phone (across all shops) so guest bookings
   // become visible in the authenticated appointment history.
@@ -50,31 +51,40 @@ export async function POST(request) {
     }
   }
 
-  const user = await prisma.user.create({
-    data: {
-      email: normalizedEmail,
-      displayName: displayName?.trim() || null,
-      passwordHash,
-      phone: phone || null,
-      role: "CUSTOMER",
-      shopId: null,
-      clientId,
-    },
-    select: {
-      id: true,
-      email: true,
-      displayName: true,
-      role: true,
-      phone: true,
-    },
-  });
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        displayName: displayName?.trim() || null,
+        passwordHash,
+        phone: phone || null,
+        role: "CUSTOMER",
+        shopId: null,
+        clientId,
+      },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        phone: true,
+        tokenVersion: true,
+      },
+    });
+  } catch (err) {
+    if (err.code === "P2002") {
+      return NextResponse.json({ error: "Bu email adresi zaten kullanılıyor" }, { status: 409 });
+    }
+    throw err;
+  }
 
   const token = await signToken({
     userId: user.id,
     role: user.role,
     shopId: null,
     barberId: null,
-    tokenVersion: 0,
+    tokenVersion: user.tokenVersion,
   });
 
   const response = NextResponse.json({ token, user }, { status: 201 });

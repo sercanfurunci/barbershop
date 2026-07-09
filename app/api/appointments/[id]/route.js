@@ -91,32 +91,52 @@ export async function PATCH(request, { params }) {
       if (!window.ok) return NextResponse.json({ error: window.error }, { status: window.status });
     }
 
-    const existing = await prisma.appointment.findMany({
-      where: {
-        shopId:   appt.shopId,
-        barberId: appt.barberId,
-        date:     newDate,
-        status:   { notIn: ["CANCELLED", "NOSHOW"] },
-        id:       { not: appt.id },
-      },
-      select: { time: true, duration: true },
-    });
+    // ponytail: Serializable tx so the conflict check and update are atomic —
+    // prevents two concurrent reschedules from both passing the same slot check.
+    try {
+      const updated = await prisma.$transaction(async (tx) => {
+        const existing = await tx.appointment.findMany({
+          where: {
+            shopId:   appt.shopId,
+            barberId: appt.barberId,
+            date:     newDate,
+            status:   { notIn: ["CANCELLED", "NOSHOW"] },
+            id:       { not: appt.id },
+          },
+          select: { time: true, duration: true },
+        });
 
-    const conflict = existing.some(a => {
-      const aStart = parseInt(a.time.split(":")[0]) * 60 + parseInt(a.time.split(":")[1]);
-      const aEnd   = aStart + a.duration;
-      return startMin < aEnd && endMin > aStart;
-    });
+        const conflict = existing.some(a => {
+          const aStart = parseInt(a.time.split(":")[0]) * 60 + parseInt(a.time.split(":")[1]);
+          const aEnd   = aStart + a.duration;
+          return startMin < aEnd && endMin > aStart;
+        });
+        if (conflict) throw Object.assign(new Error("SLOT_TAKEN"), { status: 409 });
 
-    if (conflict) return NextResponse.json({ error: "Bu saat dilimi dolu" }, { status: 409 });
+        return tx.appointment.update({
+          where: { id: appt.id },
+          data: {
+            ...(notes !== undefined && { notes }),
+            ...(date  && { date }),
+            ...(time  && { time }),
+            ...(price !== undefined && { price: priceVal }),
+          },
+        });
+      }, { isolationLevel: "Serializable" });
+
+      return NextResponse.json(updated);
+    } catch (err) {
+      if (err.message === "SLOT_TAKEN") {
+        return NextResponse.json({ error: "Bu saat dilimi dolu" }, { status: 409 });
+      }
+      throw err;
+    }
   }
 
   const updated = await prisma.appointment.update({
     where: { id: appt.id },
     data: {
       ...(notes !== undefined && { notes }),
-      ...(date  && { date }),
-      ...(time  && { time }),
       ...(price !== undefined && { price: priceVal }),
     },
   });

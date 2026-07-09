@@ -30,28 +30,20 @@ export async function POST(request) {
   const { event, shopId, invoiceData, eventId } = verified;
   const provider = getProvider().name;
 
-  // ponytail: idempotency via PK conflict. Replays from the provider become no-ops.
-  // Verified payloads should include eventId; if missing, fall back to
-  // providerInvoiceId so payment.succeeded still dedupes.
+  // ponytail: dedup INSERT lives inside each event's transaction so it's atomic
+  // with the state change — a failed apply can't leave the event "already processed".
   const dedupeId = eventId || invoiceData?.providerInvoiceId;
-  if (dedupeId) {
-    try {
-      await prisma.processedWebhookEvent.create({
-        data: { provider, eventId: dedupeId },
-      });
-    } catch (err) {
-      // Prisma P2002 = unique constraint violation = already processed.
-      if (err.code === "P2002") {
-        return NextResponse.json({ ok: true, duplicate: true });
-      }
-      throw err;
-    }
+
+  async function insertDedup(tx) {
+    if (!dedupeId) return;
+    await tx.processedWebhookEvent.create({ data: { provider, eventId: dedupeId } });
   }
 
   try {
     if (event === "payment.succeeded") {
       const periodEnd = invoiceData?.periodEnd ? new Date(invoiceData.periodEnd) : null;
       await prisma.$transaction(async (tx) => {
+        await insertDedup(tx);
         await tx.shop.update({
           where: { id: shopId },
           data: {
@@ -81,19 +73,22 @@ export async function POST(request) {
         }
       });
     } else if (event === "payment.failed") {
-      await prisma.shop.update({
-        where: { id: shopId },
-        data: { subscriptionStatus: "PAST_DUE" },
+      await prisma.$transaction(async (tx) => {
+        await insertDedup(tx);
+        await tx.shop.update({ where: { id: shopId }, data: { subscriptionStatus: "PAST_DUE" } });
       });
     } else if (event === "subscription.cancelled") {
-      await prisma.shop.update({
-        where: { id: shopId },
-        data: { subscriptionStatus: "CANCELLED" },
+      await prisma.$transaction(async (tx) => {
+        await insertDedup(tx);
+        await tx.shop.update({ where: { id: shopId }, data: { subscriptionStatus: "CANCELLED" } });
       });
     } else {
       console.warn("[payments/webhook] unknown event:", event);
     }
   } catch (err) {
+    if (err.code === "P2002") {
+      return NextResponse.json({ ok: true, duplicate: true });
+    }
     console.error("[payments/webhook] apply failed:", err.message);
     return NextResponse.json({ error: "apply failed" }, { status: 500 });
   }

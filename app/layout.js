@@ -96,7 +96,7 @@ export default function RootLayout({ children }) {
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd).replace(/</g, "\\u003c").replace(/>/g, "\\u003e") }}
         />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

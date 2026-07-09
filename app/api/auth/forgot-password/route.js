@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SignJWT } from "jose";
+import { secret } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { rateLimit, getIp } from "@/lib/rateLimit";
-
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "makas-jwt-secret-change-in-production"
-);
 
 // POST /api/auth/forgot-password — { email }
 // Always returns 200 so callers can't probe whether an email exists.
@@ -38,7 +35,7 @@ export async function POST(request) {
 
     const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const link = `${base}/reset-password?token=${token}`;
-    const name = user.displayName || "Merhaba";
+    const name = (user.displayName || "Merhaba").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
     await sendEmail({
       to: user.email,

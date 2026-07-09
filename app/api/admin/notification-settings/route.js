@@ -21,7 +21,10 @@ export async function GET(request) {
   if (!shopId) return NextResponse.json({}, { status: 400 });
 
   const settings = await prisma.notificationSettings.findUnique({ where: { shopId } });
-  return NextResponse.json(settings ?? {});
+  if (!settings) return NextResponse.json({});
+  // Redact stored credential — client only needs to know "is it set?"
+  const { netgsmPassword, ...rest } = settings;
+  return NextResponse.json({ ...rest, netgsmPasswordSet: !!netgsmPassword });
 }
 
 export async function PATCH(request) {

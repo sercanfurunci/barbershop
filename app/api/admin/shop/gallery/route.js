@@ -57,9 +57,11 @@ export async function POST(request) {
   const slot = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const { url } = await uploadShopAsset(dataUrl, shopId, "gallery", slot);
 
+  // ponytail: atomic push avoids race where two concurrent appends both read the
+  // same `existing` array and clobber each other — array_append is one statement.
   const updated = await prisma.shop.update({
     where: { id: shopId },
-    data: { gallery: [...existing, url] },
+    data: { gallery: { push: url } },
     select: { gallery: true },
   });
   revalidateShopPage(current?.slug);
@@ -117,13 +119,14 @@ export async function DELETE(request) {
   if (idx >= list.length) return NextResponse.json({ error: "Index dışı" }, { status: 400 });
 
   const [removed] = list.splice(idx, 1);
-  if (removed) await deleteShopAsset(removed);
 
+  // Update DB first — if Cloudinary fails we have an orphan asset (harmless) not a broken URL.
   const updated = await prisma.shop.update({
     where: { id: shopId },
     data: { gallery: list },
     select: { gallery: true },
   });
+  if (removed) await deleteShopAsset(removed).catch(() => {});
   revalidateShopPage(current?.slug);
   return NextResponse.json(updated);
 }

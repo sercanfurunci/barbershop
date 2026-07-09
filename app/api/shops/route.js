@@ -23,7 +23,7 @@ export async function GET(request) {
   const openNow   = url.searchParams.get("openNow") === "true";
   const sort      = url.searchParams.get("sort") || "popular";
   const take      = Math.min(50, Math.max(1, Number(url.searchParams.get("take")) || 12));
-  const skip      = Math.max(0, Number(url.searchParams.get("skip")) || 0);
+  const skip      = Math.min(10_000, Math.max(0, Number(url.searchParams.get("skip")) || 0));
   const userLat   = parseFloat(url.searchParams.get("userLat") || "");
   const userLng   = parseFloat(url.searchParams.get("userLng") || "");
   const hasUserLoc = !isNaN(userLat) && !isNaN(userLng);

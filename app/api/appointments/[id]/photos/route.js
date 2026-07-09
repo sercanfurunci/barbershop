@@ -1,16 +1,27 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 const MAX_PHOTOS = 4;
 const MAX_BYTES  = 8 * 1024 * 1024; // 8 MB per image
 
+function canAccess(payload, appt) {
+  if (payload.role === "SUPER_ADMIN") return true;
+  if (payload.role === "ADMIN" && payload.shopId === appt.shopId) return true;
+  if (payload.role === "BARBER" && payload.shopId === appt.shopId) return true;
+  return false;
+}
+
 // POST /api/appointments/[id]/photos
 // Accepts multipart/form-data with field "photo" (image file).
 // Uploads to Cloudinary if configured, otherwise stores data URL (dev only).
 // Returns updated photoUrls array.
 export async function POST(request, { params }) {
+  const payload = await requireAuth(request);
+  if (!payload) return unauthorized();
+
   const { id } = await params;
 
   const appt = await prisma.appointment.findFirst({
@@ -18,6 +29,8 @@ export async function POST(request, { params }) {
     select: { id: true, shopId: true, photoUrls: true },
   });
   if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
+  if (!canAccess(payload, appt)) return forbidden();
+
   if (appt.photoUrls.length >= MAX_PHOTOS)
     return NextResponse.json({ error: `En fazla ${MAX_PHOTOS} fotoğraf yüklenebilir` }, { status: 400 });
 
@@ -78,12 +91,16 @@ export async function POST(request, { params }) {
 
 // DELETE /api/appointments/[id]/photos?url=...
 export async function DELETE(request, { params }) {
+  const payload = await requireAuth(request);
+  if (!payload) return unauthorized();
+
   const { id } = await params;
   const photoUrl = new URL(request.url).searchParams.get("url");
   if (!photoUrl) return NextResponse.json({ error: "url gerekli" }, { status: 400 });
 
-  const appt = await prisma.appointment.findFirst({ where: { id }, select: { photoUrls: true } });
+  const appt = await prisma.appointment.findFirst({ where: { id }, select: { shopId: true, photoUrls: true } });
   if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
+  if (!canAccess(payload, appt)) return forbidden();
 
   await prisma.appointment.update({
     where: { id },

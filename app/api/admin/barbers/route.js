@@ -99,10 +99,12 @@ export async function POST(request) {
     }
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcrypt.hash(password, 12);
 
   // Create barber + user account in one transaction
-  const [barber] = await prisma.$transaction(async (tx) => {
+  let barber;
+  try {
+  [barber] = await prisma.$transaction(async (tx) => {
     const b = await tx.barber.create({
       data: {
         shopId,
@@ -137,6 +139,12 @@ export async function POST(request) {
 
     return [b];
   });
+  } catch (err) {
+    if (err.code === "P2002") {
+      return NextResponse.json({ error: "Bu slug veya e-posta zaten kullanılıyor" }, { status: 409 });
+    }
+    throw err;
+  }
 
   return NextResponse.json(barber, { status: 201 });
 }

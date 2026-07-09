@@ -11,7 +11,8 @@ export default function CustomerLoginPage() {
   const { user, loaded, login, refreshUser } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
-  const redirectTo = params.get("redirect") || "/account";
+  const _rd = params.get("redirect");
+  const redirectTo = _rd && _rd.startsWith("/") && !_rd.startsWith("//") ? _rd : "/account";
 
   const [tab,      setTab]      = useState(params.get("tab") === "register" ? "register" : "login"); // "login" | "register"
   const [email,    setEmail]    = useState("");

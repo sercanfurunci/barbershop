@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
-import { signToken, clearAuthCache } from "@/lib/auth";
+import { signToken, clearAuthCache, secret } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { rateLimit, getIp } from "@/lib/rateLimit";
-
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "makas-jwt-secret-change-in-production"
-);
 
 // POST /api/auth/reset-password — { token, password }
 // Verifies the signed reset token, checks tokenVersion (single-use), updates

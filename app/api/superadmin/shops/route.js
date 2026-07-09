@@ -53,8 +53,8 @@ export async function POST(request) {
       { status: 400 },
     );
   }
-  if (adminPassword.length < 6) {
-    return NextResponse.json({ error: "Admin şifresi en az 6 karakter" }, { status: 400 });
+  if (adminPassword.length < 8) {
+    return NextResponse.json({ error: "Admin şifresi en az 8 karakter" }, { status: 400 });
   }
 
   const existing = await prisma.shop.findUnique({ where: { slug } });

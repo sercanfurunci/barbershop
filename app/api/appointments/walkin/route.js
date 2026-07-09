@@ -205,7 +205,7 @@ export async function POST(request) {
           service: { select: { id: true, nameTr: true } },
         },
       });
-    });
+    }, { isolationLevel: "Serializable" });
 
     // Review funnel parity with normal completion path. Skip for anonymous
     // walk-ins whose phone is a `wi-…` placeholder — Netgsm would reject it.

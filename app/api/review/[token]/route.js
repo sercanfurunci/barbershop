@@ -7,6 +7,9 @@ export const dynamic = "force-dynamic";
 // GET /api/review/:token — fetch review request info (public)
 export async function GET(request, { params }) {
   const { token } = await params;
+  if (!token || !/^[a-zA-Z0-9_-]{8,128}$/.test(token)) {
+    return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
+  }
 
   const rr = await prisma.reviewRequest.findUnique({
     where: { token },
@@ -50,6 +53,9 @@ export async function POST(request, { params }) {
   }
 
   const { token } = await params;
+  if (!token || !/^[a-zA-Z0-9_-]{8,128}$/.test(token)) {
+    return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
+  }
   const body = await request.json().catch(() => ({}));
   const { shopRating, barberRating, comment } = body;
 
