@@ -23,7 +23,6 @@ const Testimonials   = dynamic(() => import("@/components/landing/Testimonials")
 const ReviewsSection = dynamic(() => import("@/components/landing/ReviewsSection"));
 const FAQ            = dynamic(() => import("@/components/landing/FAQ"));
 const SalonInfo      = dynamic(() => import("@/components/landing/SalonInfo"));
-const MiniMap        = dynamic(() => import("@/components/landing/MiniMap"));
 
 export const revalidate = 300;
 
@@ -361,19 +360,6 @@ export default async function ShopHome({ params }) {
         <ReviewsSection slug={shop.slug} initial={internalReviews} />
         <Testimonials googleReviews={googleReviews} />
         <FAQ />
-        {shop.latitude && shop.longitude && (
-          <section
-            className="hidden md:block"
-            style={{
-              maxWidth: 1560,
-              margin: "0 auto",
-              paddingInline: "clamp(16px, 3vw, 32px)",
-              paddingBlock: "clamp(20px, 3vw, 36px)",
-            }}
-          >
-            <MiniMap shop={shop} />
-          </section>
-        )}
         <SalonInfo shop={shop} barbers={barbers} hours={hours} googleReviews={googleReviews} />
       </main>
       <StickyActionBar shop={shop} />

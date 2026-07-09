@@ -88,10 +88,10 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
     <div
       ref={cardRef}
       onClick={() => onSelect?.(shop)}
-      className={`flex flex-col rounded-[14px] border bg-card overflow-hidden cursor-pointer transition-all ${
+      className={`flex flex-col rounded-[14px] border bg-card overflow-hidden cursor-pointer transition-all flex-1 ${
         isSelected ? "border-foreground ring-2 ring-foreground makas-card-glow" : "border-border"
       }`}
-      style={{ scrollMarginTop: 12, height: 272 }}
+      style={{ scrollMarginTop: 12, minHeight: 280 }}
     >
       {/* Cover — 140px tall */}
       <div className="relative shrink-0 bg-secondary" style={{ height: 140 }}>
@@ -125,65 +125,63 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
 
       {/* Body */}
       <div className="flex flex-col flex-1 px-3 pb-3 min-h-0" style={{ paddingTop: shop.logo ? 18 : 12 }}>
-        {/* 1. Name */}
+        {/* Name — always visible, never pushed off */}
         <p className="shrink-0 font-semibold text-foreground text-[15px] leading-snug line-clamp-1">{shop.name}</p>
 
-        {/* 2. Rating */}
-        <div className="mt-0.5 shrink-0">
-          <StarRating rating={shop.googleRating ?? shop.avgRating} count={shop.googleTotalRatings ?? shop.totalReviews} />
-        </div>
-
-        {/* 3. Open status + hours */}
-        {(shop.todayHours || typeof shop.openNow === "boolean") && (
-          <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground shrink-0">
-            <Clock size={9} className="shrink-0" />
-            <span className={shop.openNow ? "text-emerald-600 font-medium" : ""}>
-              {shop.openNow ? "Açık" : "Kapalı"}
-              {shop.todayHours ? ` · ${shop.todayHours}` : ""}
-            </span>
+        {/* Info rows — flex-1 + overflow-hidden so they never push actions off */}
+        <div className="flex-1 overflow-hidden min-h-0 flex flex-col mt-0.5">
+          <div className="shrink-0">
+            <StarRating rating={shop.googleRating ?? shop.avgRating} count={shop.googleTotalRatings ?? shop.totalReviews} />
           </div>
-        )}
 
-        {/* 4. Address + distance */}
-        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground shrink-0">
-          {locationStr && (
-            <>
-              <MapPin size={9} className="shrink-0" />
-              <span className="truncate">{locationStr}</span>
-            </>
+          {(shop.todayHours || typeof shop.openNow === "boolean") && (
+            <div className="mt-0.5 shrink-0 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <Clock size={9} className="shrink-0" />
+              <span className={shop.openNow ? "text-emerald-600 font-medium" : ""}>
+                {shop.openNow ? "Açık" : "Kapalı"}
+                {shop.todayHours ? ` · ${shop.todayHours}` : ""}
+              </span>
+            </div>
           )}
-          {dist && (
-            <span className="flex items-center gap-0.5 shrink-0 ml-auto">
-              <Navigation size={8} />{dist}
-            </span>
-          )}
+
+          <div className="mt-0.5 shrink-0 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            {locationStr && (
+              <>
+                <MapPin size={9} className="shrink-0" />
+                <span className="truncate">{locationStr}</span>
+              </>
+            )}
+            {dist && (
+              <span className="flex items-center gap-0.5 shrink-0 ml-auto">
+                <Navigation size={8} />{dist}
+              </span>
+            )}
+          </div>
+
+          <div className="mt-0.5 shrink-0 text-[11.5px]">
+            {minPrice ? (
+              <span className="text-foreground font-medium">
+                {minPrice.toLocaleString("tr-TR")} ₺ <span className="text-muted-foreground font-normal">başlayan</span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground/40">Fiyat bilgisi yok</span>
+            )}
+          </div>
+
+          <div className="mt-0.5 shrink-0 flex items-center gap-1 text-[11px]">
+            {fa === undefined ? null : fa ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-emerald-600 font-medium">{fmtFirstAvail(fa.date, fa.time)}</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground/40">Müsait randevu yok</span>
+            )}
+          </div>
         </div>
 
-        {/* 5. Price */}
-        <div className="mt-0.5 text-[11.5px] shrink-0">
-          {minPrice ? (
-            <span className="text-foreground font-medium">
-              {minPrice.toLocaleString("tr-TR")} ₺ <span className="text-muted-foreground font-normal">başlayan</span>
-            </span>
-          ) : (
-            <span className="text-muted-foreground/40">Fiyat bilgisi yok</span>
-          )}
-        </div>
-
-        {/* 6. First available */}
-        <div className="mt-0.5 flex items-center gap-1 text-[11px] shrink-0">
-          {fa === undefined ? null : fa ? (
-            <>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-emerald-600 font-medium">{fmtFirstAvail(fa.date, fa.time)}</span>
-            </>
-          ) : (
-            <span className="text-muted-foreground/40">Müsait randevu yok</span>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="mt-auto pt-1.5 flex items-center gap-1.5">
+        {/* Actions — shrink-0 so always visible regardless of content above */}
+        <div className="shrink-0 pt-2 flex items-center gap-1.5">
           <ActionBtn onClick={toggleFavorite} label="Favorilere ekle" active={favored}>
             <Heart size={14} fill={favored ? "currentColor" : "none"} />
           </ActionBtn>
@@ -197,7 +195,7 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
           <Link
             href={`/${shop.slug}`}
             onClick={(e) => e.stopPropagation()}
-            className="ml-auto whitespace-nowrap rounded-full bg-foreground text-background px-4 h-[38px] flex items-center text-[13px] font-semibold no-underline hover:opacity-90 transition-opacity shrink-0"
+            className="ml-auto whitespace-nowrap rounded-full bg-foreground text-background px-4 h-[34px] flex items-center text-[13px] font-semibold no-underline hover:opacity-90 transition-opacity shrink-0"
           >
             Randevu Al
           </Link>

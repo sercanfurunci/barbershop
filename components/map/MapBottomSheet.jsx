@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useDragControls } from "framer-motion";
 import { OVERLAY_TRANSITION, OVERLAY_SHADOW } from "@/lib/overlay";
 
-export const SNAPS = [0.1, 0.40, 0.9];
+export const SNAPS = [0.1, 0.45, 0.9];
 const MAX_SNAP = SNAPS[SNAPS.length - 1];
 
 export default function MapBottomSheet({ snap, onSnapChange, header, children }) {
@@ -54,17 +54,17 @@ export default function MapBottomSheet({ snap, onSnapChange, header, children })
       dragElastic={0.06}
       onDragEnd={handleDragEnd}
     >
-      {/* Grab handle */}
+      {/* Grab handle — tight padding so first card feels connected */}
       <div
-        className="shrink-0 pt-2.5 pb-2 px-4 cursor-grab active:cursor-grabbing touch-none"
+        className="shrink-0 pt-2 pb-1 px-4 cursor-grab active:cursor-grabbing touch-none"
         onPointerDown={(e) => dragControls.start(e)}
       >
         <div className="mx-auto w-10 h-1.5 rounded-full bg-border" />
         {header}
       </div>
 
-      {/* Scrollable content */}
-      <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4 space-y-3">
+      {/* Content — no overflow here so children own scrolling and cards never clip */}
+      <div ref={listRef} className="flex-1 min-h-0 flex flex-col">
         {children}
       </div>
     </motion.div>

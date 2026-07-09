@@ -297,7 +297,7 @@ export default function SalonsClient({
   const [selectedShopId, setSelectedShopId] = useState(null);
   const [hoveredShopId, setHoveredShopId] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileSnap, setMobileSnap] = useState(0.40);
+  const [mobileSnap, setMobileSnap] = useState(0.45);
   const [showMapFilters, setShowMapFilters] = useState(false);
 
   const [recentSearches, setRecentSearches] = useState([]);
@@ -367,7 +367,7 @@ export default function SalonsClient({
   const handleSalonSelect = useCallback((salon) => {
     setSelectedShopId(salon.id);
     // Collapsed sheet hides the cards — pop to half so the selected card shows
-    setMobileSnap((s) => (s <= 0.1 ? 0.40 : s));
+    setMobileSnap((s) => (s <= 0.1 ? 0.45 : s));
   }, []);
 
   const handleUserLocate = useCallback((loc) => setUserLoc(loc), []);
@@ -935,7 +935,7 @@ export default function SalonsClient({
                     onUserLocate={handleUserLocate}
                     onSearchArea={handleSearchArea}
                     fitToken={fitToken}
-                    padBottomFraction={0.40}
+                    padBottomFraction={0.45}
                   />
                   <button
                     onClick={() => setViewMode("list")}
@@ -1051,13 +1051,13 @@ export default function SalonsClient({
                   snap={mobileSnap}
                   onSnapChange={setMobileSnap}
                   header={
-                    <p className="mt-1.5 text-center text-[12px] font-medium text-muted-foreground">
+                    <p className="mt-1 text-center text-[12px] font-medium text-muted-foreground">
                       {total === 0 ? "Sonuç bulunamadı" : `${total} salon`}
                     </p>
                   }
                 >
                   {mobileSnap <= 0.1 ? null : displayShops.length === 0 ? (
-                    <div className="pt-10 flex flex-col items-center text-center px-4">
+                    <div className="flex-1 overflow-y-auto overscroll-contain pt-10 pb-4 px-4 flex flex-col items-center text-center">
                       <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
                         <Scissors size={26} className="text-muted-foreground/40" />
                       </div>
@@ -1073,13 +1073,13 @@ export default function SalonsClient({
                   ) : mobileSnap < 0.9 ? (
                     /* Collapsed: horizontal snap carousel (Google Maps style) */
                     <div
-                      className="flex gap-3 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 scroll-px-4 pb-2"
+                      className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4 scroll-px-4 pb-3 pt-1"
                       style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
                     >
                       {displayShops.map((shop, i) => (
                         <motion.div
                           key={shop.id}
-                          className="snap-center shrink-0"
+                          className="snap-center shrink-0 flex flex-col"
                           style={{ width: "85%" }}
                           initial={{ opacity: 0, y: 14 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -1104,8 +1104,8 @@ export default function SalonsClient({
                       )}
                     </div>
                   ) : (
-                    /* Expanded: vertical list */
-                    <>
+                    /* Expanded: vertical list — owns its own scroll so it doesn't clip horizontally */
+                    <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-1 pb-4 space-y-3">
                       {displayShops.map((shop, i) => (
                         <motion.div
                           key={shop.id}
@@ -1130,7 +1130,7 @@ export default function SalonsClient({
                           </button>
                         </div>
                       )}
-                    </>
+                    </div>
                   )}
                 </MapBottomSheet>
               </>

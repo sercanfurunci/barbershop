@@ -184,6 +184,8 @@ export async function GET(request) {
         totalReviews: true,
         googleRating: true,
         googleTotalRatings: true,
+        googlePlaceId: true,
+        googlePlacesKey: true,
         description: true,
         shopType: true,
         wifi: true,
@@ -225,9 +227,31 @@ export async function GET(request) {
     prisma.shop.count({ where }),
   ]);
 
+  // Background-refresh Google rating for shops that have a Place ID but no cached rating yet.
+  // Fire-and-forget: first request returns null, subsequent ones return the cached value.
+  const globalApiKey = process.env.GOOGLE_PLACES_API_KEY;
+  for (const s of shops) {
+    if (s.googlePlaceId && s.googleRating === null) {
+      const apiKey = s.googlePlacesKey || globalApiKey;
+      if (apiKey) {
+        fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${s.googlePlaceId}&fields=rating,user_ratings_total&key=${apiKey}`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.result?.rating != null) {
+              return prisma.shop.update({
+                where: { id: s.id },
+                data: { googleRating: d.result.rating, googleTotalRatings: d.result.user_ratings_total ?? 0 },
+              });
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }
+
   // Annotate shops with distance and openNow
   const annotated = shops.map((s) => {
-    const { barbers, holidays, ...rest } = s;
+    const { barbers, holidays, googlePlaceId, googlePlacesKey, ...rest } = s;
     const shopHolidayToday = (holidays?.length ?? 0) > 0;
 
     // Distance from user (km, 2 decimal places)
