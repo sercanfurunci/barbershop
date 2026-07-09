@@ -44,7 +44,7 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   // 3 attempts per IP per 5 minutes
   const ip = getIp(request);
-  const rl = rateLimit(`review:${ip}`, { limit: 3, windowMs: 5 * 60 * 1000 });
+  const rl = await rateLimit(`review:${ip}`, { limit: 3, windowMs: 5 * 60 * 1000 });
   if (!rl.ok) {
     return NextResponse.json({ error: "Çok fazla istek. Lütfen bekleyin." }, { status: 429 });
   }

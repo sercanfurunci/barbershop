@@ -25,7 +25,8 @@ export async function POST(request) {
   if (g.error) return g.error;
 
   const ip = getIp(request);
-  if (!rateLimit(`shop-logo:${ip}`, { limit: 10, windowMs: 5 * 60_000 })) {
+  const rl = await rateLimit(`shop-logo:${ip}`, { limit: 10, windowMs: 5 * 60_000 });
+  if (!rl.ok) {
     return NextResponse.json({ error: "Çok fazla istek" }, { status: 429 });
   }
 

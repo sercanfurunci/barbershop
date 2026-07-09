@@ -32,6 +32,14 @@
 [style*="translate3d"] {
   animation: motion-safety-fade 0.4s ease-out 0.8s forwards;
 }
+/* Leaflet (tiles/markers/panes) and the map bottom sheet position via inline
+   transforms — the safety net above would zero them out. Exempt them. */
+.leaflet-container [style*="translate3d"],
+.leaflet-container [style*="translateX"],
+.leaflet-container [style*="translateY"],
+.motion-safety-exempt {
+  animation: none;
+}
 
 @custom-variant dark (&:is(.dark *));
 

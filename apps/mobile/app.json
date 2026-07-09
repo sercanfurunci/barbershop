@@ -1,0 +1,81 @@
+{
+  "expo": {
+    "name": "Makas",
+    "slug": "makas",
+    "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F5F1EB"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.makas.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Berber fotoğraflarını ve salon görsellerini çekmek için kamera gereklidir.",
+        "NSPhotoLibraryUsageDescription": "Berber ve salon fotoğraflarını yüklemek için galeri erişimi gereklidir.",
+        "NSPhotoLibraryAddOnlyUsageDescription": "Fotoğrafları galeriye kaydetmek için izin gereklidir.",
+        "NSCalendarsUsageDescription": "Randevuları takvime eklemek için izin gereklidir.",
+        "NSFaceIDUsageDescription": "Hızlı ve güvenli giriş için Face ID kullanılır."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F5F1EB"
+      },
+      "package": "com.makas.app",
+      "targetSdkVersion": 35,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#111111",
+          "sounds": []
+        }
+      ],
+      "expo-font",
+      "expo-calendar",
+      "expo-local-authentication",
+      "expo-image-picker"
+    ],
+    "scheme": "makas",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    }
+  }
+}

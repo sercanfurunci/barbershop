@@ -23,7 +23,7 @@ export async function GET(request) {
   const where = { shopId };
   const barbers = await prisma.barber.findMany({
     where,
-    include: { workingHours: true },
+    include: { workingHours: true, breaks: true },
     orderBy: { createdAt: "asc" },
   });
 

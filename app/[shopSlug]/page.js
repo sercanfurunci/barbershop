@@ -23,6 +23,7 @@ const Testimonials   = dynamic(() => import("@/components/landing/Testimonials")
 const ReviewsSection = dynamic(() => import("@/components/landing/ReviewsSection"));
 const FAQ            = dynamic(() => import("@/components/landing/FAQ"));
 const SalonInfo      = dynamic(() => import("@/components/landing/SalonInfo"));
+const MiniMap        = dynamic(() => import("@/components/landing/MiniMap"));
 
 export const revalidate = 300;
 
@@ -286,7 +287,15 @@ export default async function ShopHome({ params }) {
     console.error(`[ShopHome:${shopSlug}] DB error:`, err.message);
   }
 
-  const localBusinessLd = buildLocalBusinessLd(shop, googleReviews, hours);
+  const localBusinessLd = buildLocalBusinessLd(shop, googleReviews, internalReviews, hours);
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Salonlar", item: "https://makas.furunci.tech/salons" },
+      { "@type": "ListItem", position: 2, name: shop.name, item: shop.customDomain ? `https://${shop.customDomain}` : `https://makas.furunci.tech/${shop.slug}` },
+    ],
+  };
 
   // Conditional anchor nav — only sections with content get a link.
   const sectionLinks = [
@@ -302,10 +311,8 @@ export default async function ShopHome({ params }) {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <TrackPageView shopId={shop.id} />
       <Navbar />
       <main className="flex-1 pb-[88px] md:pb-0">
@@ -354,6 +361,18 @@ export default async function ShopHome({ params }) {
         <ReviewsSection slug={shop.slug} initial={internalReviews} />
         <Testimonials googleReviews={googleReviews} />
         <FAQ />
+        {shop.latitude && shop.longitude && (
+          <section
+            style={{
+              maxWidth: 1560,
+              margin: "0 auto",
+              paddingInline: "clamp(16px, 3vw, 32px)",
+              paddingBlock: "clamp(20px, 3vw, 36px)",
+            }}
+          >
+            <MiniMap shop={shop} />
+          </section>
+        )}
         <SalonInfo shop={shop} barbers={barbers} hours={hours} googleReviews={googleReviews} />
       </main>
       <StickyActionBar shop={shop} />
@@ -365,7 +384,7 @@ export default async function ShopHome({ params }) {
 const LD_DAY = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
 function minToHM(m) { return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; }
 
-function buildLocalBusinessLd(shop, googleReviews, hours) {
+function buildLocalBusinessLd(shop, googleReviews, internalReviews, hours) {
   const sameAs = [shop.instagramUrl, shop.facebookUrl, shop.tiktokUrl].filter(Boolean);
   const openingHours = (hours ?? [])
     .filter((h) => h.start != null && h.end != null)
@@ -398,10 +417,10 @@ function buildLocalBusinessLd(shop, googleReviews, hours) {
     openingHoursSpecification: openingHours.length ? openingHours : undefined,
     foundingDate: shop.foundedYear ? String(shop.foundedYear) : undefined,
     sameAs: sameAs.length ? sameAs : undefined,
-    aggregateRating: googleReviews?.rating != null ? {
-      "@type":      "AggregateRating",
-      ratingValue:  googleReviews.rating,
-      reviewCount:  googleReviews.totalRatings,
-    } : undefined,
+    aggregateRating: googleReviews?.rating != null
+      ? { "@type": "AggregateRating", ratingValue: googleReviews.rating, reviewCount: googleReviews.totalRatings }
+      : (internalReviews?.summary?.totalReviews > 0
+        ? { "@type": "AggregateRating", ratingValue: Number(internalReviews.summary.avgRating.toFixed(1)), reviewCount: internalReviews.summary.totalReviews }
+        : undefined),
   };
 }

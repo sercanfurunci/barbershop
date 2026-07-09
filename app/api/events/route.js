@@ -9,7 +9,7 @@ export async function POST(req) {
   try {
     const ip = getIp(req);
     // 120 events/min per IP. Generous: covers SPA route changes + CTAs.
-    const { ok } = rateLimit(`events:${ip}`, { limit: 120, windowMs: 60_000 });
+    const { ok } = await rateLimit(`events:${ip}`, { limit: 120, windowMs: 60_000 });
     if (!ok) return new NextResponse(null, { status: 204 });
 
     const body = await req.json().catch(() => null);

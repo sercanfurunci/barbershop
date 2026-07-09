@@ -4,11 +4,13 @@
 // Compact (~320px tall on desktop): logo + name + meta + CTAs + socials.
 // Every field is conditional — empty fields collapse, no empty gaps.
 
+import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Star, Phone, MessageCircle, MapPin, Calendar } from "lucide-react";
+import { Star, Phone, MessageCircle, MapPin, Calendar, Share2, Heart, Check } from "lucide-react";
 import { track } from "@/lib/track";
 import { telHref, waHref } from "@/lib/validation";
+import { haversine, fmtDistance } from "@/lib/geo";
 import { useLang } from "@/contexts/LanguageContext";
 
 // Note: no hero/cover image, no avatar overlay. Identity is text-first.
@@ -44,7 +46,53 @@ function prettifySlug(slug) {
 
 export default function IdentityBlock({ shop, hours, googleReviews }) {
   const { lang } = useLang();
+  const [copied,  setCopied]  = useState(false);
+  const [favored, setFavored] = useState(false);
+  const [favLoad, setFavLoad] = useState(false);
+  const [toast,   setToast]   = useState("");
+  const [dist,    setDist]    = useState(null);
+
+  // Distance from the visitor — only when geolocation is already granted, never prompt here
+  useEffect(() => {
+    if (shop?.latitude == null || shop?.longitude == null) return;
+    navigator.permissions?.query({ name: "geolocation" })
+      .then((p) => {
+        if (p.state !== "granted") return;
+        navigator.geolocation.getCurrentPosition(
+          (pos) => setDist(fmtDistance(haversine(pos.coords.latitude, pos.coords.longitude, shop.latitude, shop.longitude))),
+          () => {}
+        );
+      })
+      .catch(() => {});
+  }, [shop?.latitude, shop?.longitude]);
+
   if (!shop) return null;
+
+  const flash = (text) => { setToast(text); setTimeout(() => setToast(""), 2200); };
+
+  const share = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try { await navigator.share({ title: `${shop.name} — Online Randevu`, url }); } catch { /* cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+      flash("Bağlantı kopyalandı");
+    }
+  };
+
+  const toggleFav = useCallback(async () => {
+    if (favLoad) return;
+    setFavLoad(true);
+    try {
+      const res = favored
+        ? await fetch(`/api/customer/favorites/${shop.id}`, { method: "DELETE" })
+        : await fetch("/api/customer/favorites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shopId: shop.id }) });
+      if (res.status === 401) { flash(lang === "tr" ? "Favori için giriş yapın" : "Sign in to save"); return; }
+      if (res.ok) { setFavored(!favored); flash(favored ? "Favorilerden çıkarıldı" : "Favorilere eklendi ♥"); }
+    } catch { flash("Bir hata oluştu"); }
+    finally { setFavLoad(false); }
+  }, [favLoad, favored, shop.id, lang]);
 
   const displayName = shop.name?.trim() || prettifySlug(shop.slug);
   const phoneHref   = telHref(shop.phone);
@@ -59,11 +107,35 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
   // ── open/closed (today) ────────────────────────────────────────────────────
   const todayHours = hours?.find((h) => h.day === todayKey());
   const hasHoursToday = todayHours?.start != null && todayHours?.end != null;
-  const isOpen = (() => {
-    if (!hasHoursToday) return false;
-    const now = new Date();
-    const cur = now.getHours() * 60 + now.getMinutes();
-    return cur >= todayHours.start && cur < todayHours.end;
+  const _now = new Date();
+  const curMin = _now.getHours() * 60 + _now.getMinutes();
+  const isOpen = hasHoursToday && curMin >= todayHours.start && curMin < todayHours.end;
+
+  // "Closes in 2h 30m" | "Opens today at 09:00" | "Opens tomorrow at 09:00"
+  const countdown = (() => {
+    if (!hours?.length) return null;
+    if (isOpen) {
+      const rem = todayHours.end - curMin;
+      if (rem <= 0) return null;
+      const h = Math.floor(rem / 60), m = rem % 60;
+      const str = h > 0 && m > 0 ? `${h}s ${m}dk` : h > 0 ? `${h} saat` : `${m} dk`;
+      return lang === "tr" ? `${str} içinde kapanıyor` : `Closes in ${str}`;
+    }
+    // Find next open slot — same day if we haven't reached open time yet, else walk forward
+    const keys = DAY_KEYS;
+    const todayIdx = keys.indexOf(todayKey());
+    for (let i = 0; i <= 7; i++) {
+      const idx = (todayIdx + i) % 7;
+      const h = hours.find((x) => x.day === keys[idx]);
+      if (!h || h.start == null) continue;
+      if (i === 0 && curMin >= (todayHours?.end ?? 0)) continue; // already past today's close
+      if (i === 0 && curMin >= h.start) continue; // already past today's open (shouldn't happen if isOpen is false & we're in range)
+      const opensAt = fmtMin(h.start);
+      if (i === 0) return lang === "tr" ? `Bugün ${opensAt}'de açılıyor` : `Opens today at ${opensAt}`;
+      if (i === 1) return lang === "tr" ? `Yarın ${opensAt}'de açılıyor` : `Opens tomorrow at ${opensAt}`;
+      return lang === "tr" ? `${i} gün sonra ${opensAt}'de açılıyor` : `Opens in ${i} days at ${opensAt}`;
+    }
+    return null;
   })();
 
   // ── meta chips ─────────────────────────────────────────────────────────────
@@ -107,7 +179,8 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
           .makas-identity .makas-id-ctas    { gap: 10px; flex-direction: column; align-items: stretch; }
           .makas-identity .makas-id-primary { width: 100%; justify-content: center; min-height: 48px; }
           .makas-identity .makas-id-ghosts  { display: flex; gap: 10px; width: 100%; justify-content: center; }
-          .makas-identity .makas-id-ghosts > a {
+          .makas-identity .makas-id-ghosts > a,
+          .makas-identity .makas-id-ghosts > button {
             flex: 1;
             min-height: 48px;
             padding: 0;
@@ -117,7 +190,8 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
             border: 1px solid var(--makas-border);
             color: var(--makas-ink);
           }
-          .makas-identity .makas-id-ghosts > a > .makas-cta-label { display: none; }
+          .makas-identity .makas-id-ghosts > a > .makas-cta-label,
+          .makas-identity .makas-id-ghosts > button > .makas-cta-label { display: none; }
         }
 
         @media (min-width: 768px) {
@@ -212,16 +286,28 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
                   <span style={{ color: C.muted, fontVariantNumeric: "tabular-nums" }}>
                     {fmtMin(todayHours.start)} – {fmtMin(todayHours.end)}
                   </span>
+                  {countdown && (
+                    <>
+                      <Dot />
+                      <span style={{
+                        color: isOpen ? "#b45309" : "#15803d",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                      }}>
+                        {countdown}
+                      </span>
+                    </>
+                  )}
                 </>
               )}
 
               {/* address (city or short address) — hidden on mobile, separate row instead */}
-              {(shop.city || shop.addressLine) && (
+              {(shop.city || shop.addressLine || dist) && (
                 <span className="makas-id-meta-address" style={{ display: "inline-flex", alignItems: "center", gap: "10px 12px" }}>
                   {(googleReviews?.rating != null || hasHoursToday) && <Dot />}
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", color: C.muted }}>
                     <MapPin size={12} />
-                    {shop.addressLine || shop.city}
+                    {[shop.addressLine || shop.city, dist && `${dist} uzaklıkta`].filter(Boolean).join(" · ")}
                   </span>
                 </span>
               )}
@@ -256,7 +342,7 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
           </Link>
           {/* On mobile this wrapper renders as a horizontal row beneath the primary.
               On desktop the wrapper is `display: contents` so siblings flow inline. */}
-          <div className="makas-id-ghosts">
+          <div className="makas-id-ghosts" style={{ position: "relative" }}>
             {phoneHref && (
               <a
                 href={phoneHref}
@@ -294,6 +380,34 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
                 <MapPin size={16} />
                 <span className="makas-cta-label">{lang === "tr" ? "Yol Tarifi" : "Directions"}</span>
               </a>
+            )}
+            <button onClick={share} aria-label={lang === "tr" ? "Paylaş" : "Share"} style={{ ...ghostBtn, cursor: "pointer" }}>
+              {copied ? <Check size={16} /> : <Share2 size={16} />}
+              <span className="makas-cta-label">{lang === "tr" ? "Paylaş" : "Share"}</span>
+            </button>
+            <button
+              onClick={toggleFav}
+              aria-label={favored ? "Favorilerden çıkar" : "Favorilere ekle"}
+              disabled={favLoad}
+              style={{
+                ...ghostBtn,
+                cursor: favLoad ? "wait" : "pointer",
+                background: favored ? "#fef2f2" : "transparent",
+                borderColor: favored ? "#fca5a5" : "var(--makas-border)",
+                color: favored ? "#ef4444" : "var(--makas-ink-secondary)",
+              }}
+            >
+              <Heart size={16} fill={favored ? "currentColor" : "none"} />
+            </button>
+            {toast && (
+              <span style={{
+                position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
+                transform: "translateX(-50%)",
+                background: "var(--makas-ink)", color: "#fff",
+                padding: "6px 12px", borderRadius: 8,
+                fontSize: 12, fontWeight: 500, whiteSpace: "nowrap",
+                pointerEvents: "none", zIndex: 100,
+              }}>{toast}</span>
             )}
           </div>
         </div>

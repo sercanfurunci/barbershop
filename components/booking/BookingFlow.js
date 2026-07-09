@@ -411,6 +411,8 @@ export default function BookingFlow({ shopId, initialServices = [], initialBarbe
               )}
               {step === 3 && (
                 <DateSelect
+                  shopId={shopId}
+                  booking={booking}
                   selectedDate={booking.date}
                   onSelect={onDateSelect}
                   lang={lang}

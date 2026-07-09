@@ -361,7 +361,7 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 32, stiffness: 380, mass: 0.9 }}
+            transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
             className="fixed left-0 right-0 z-50 lg:hidden"
             style={{
               bottom: "calc(64px + env(safe-area-inset-bottom))",

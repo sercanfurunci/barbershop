@@ -200,6 +200,8 @@ export default function ReviewsSection({ slug, initial }) {
           >
             <option value="newest">{lang === "tr" ? "En yeni" : "Newest"}</option>
             <option value="oldest">{lang === "tr" ? "En eski" : "Oldest"}</option>
+            <option value="highest">{lang === "tr" ? "En yüksek puan" : "Highest rating"}</option>
+            <option value="lowest">{lang === "tr" ? "En düşük puan" : "Lowest rating"}</option>
           </select>
         </div>
 
@@ -334,8 +336,22 @@ function ReviewCard({ r, lang }) {
           fontSize: 12, fontWeight: 700,
         }}>{initial}</div>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontSize: 13, color: C.primary, fontWeight: 600, lineHeight: 1.25 }}>
-            {r.customerName}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 13, color: C.primary, fontWeight: 600, lineHeight: 1.25 }}>
+              {r.customerName}
+            </span>
+            {/* Verified badge — all reviews in this system come from post-appointment tokens */}
+            <span title={lang === "tr" ? "Onaylanmış randevu" : "Verified visit"} style={{
+              display: "inline-flex", alignItems: "center", gap: 3,
+              fontSize: 10, fontWeight: 600, color: "#15803d",
+              background: "#dcfce7", borderRadius: 99,
+              paddingInline: 5, paddingBlock: 2,
+            }}>
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M2 6l3 3 5-5" stroke="#15803d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              {lang === "tr" ? "Onaylı" : "Verified"}
+            </span>
           </div>
           <div style={{ fontSize: 11, color: C.muted, marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
             <span>{r.barber?.nameTr || (lang === "tr" ? "Berber" : "Barber")}</span>

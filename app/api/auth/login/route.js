@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signToken } from "@/lib/auth";
 import { rateLimit, getIp } from "@/lib/rateLimit";
+import { logger } from "@/lib/logger";
 import bcrypt from "bcryptjs";
 
 export async function POST(request) {
+  const log = logger(request);
   try {
     // 10 attempts per 15 minutes per IP — brute-force protection
     const ip  = getIp(request);
-    const rl  = rateLimit(`login:${ip}`, { limit: 10, windowMs: 15 * 60 * 1000 });
+    const rl  = await rateLimit(`login:${ip}`, { limit: 10, windowMs: 15 * 60 * 1000 });
     if (!rl.ok) {
       return NextResponse.json(
         { error: "Çok fazla giriş denemesi. Lütfen bekleyin." },
@@ -29,17 +31,19 @@ export async function POST(request) {
         OR: [{ email: identifier }, { username: identifier }],
       },
       include: {
-        barber: { select: { id: true, slug: true, nameTr: true, avatar: true } },
+        barber: { select: { id: true, slug: true, nameTr: true, avatar: true, profilePhoto: true } },
         shop:   { select: { id: true, slug: true, name: true, status: true } },
       },
     });
 
     if (!user) {
+      log.warn("login failed — user not found", { identifier });
       return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
+      log.warn("login failed — wrong password", { userId: user.id });
       return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
     }
 
@@ -56,6 +60,7 @@ export async function POST(request) {
       tokenVersion: user.tokenVersion,
     });
 
+    log.info("login ok", { userId: user.id, role: user.role, shopId: user.shopId });
     const response = NextResponse.json({
       token,
       user: {
@@ -79,7 +84,7 @@ export async function POST(request) {
 
     return response;
   } catch (err) {
-    console.error("[POST /api/auth/login]", err);
+    log.error("login error", {}, err);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

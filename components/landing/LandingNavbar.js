@@ -1,5 +1,8 @@
 import Link from "next/link";
 import PillButton from "@/components/shared/PillButton";
+import AuthNav from "@/components/landing/AuthNav";
+import DemoButton from "@/components/landing/DemoButton";
+import MobileNav from "@/components/landing/MobileNav";
 
 function MakasMark({ variant = "dark", className }) {
   const src = variant === "dark" ? "/logo-dark.svg" : "/logo-light.svg";
@@ -25,6 +28,12 @@ export default function LandingNavbar() {
         </Link>
         <div className="hidden md:flex items-center gap-1">
           <Link
+            href="/salons"
+            className="px-4 py-2 text-[15px] font-medium text-foreground/80 hover:text-foreground no-underline"
+          >
+            Salonları Keşfet
+          </Link>
+          <Link
             href="/#explore"
             className="px-4 py-2 text-[15px] font-medium text-foreground/80 hover:text-foreground no-underline"
           >
@@ -44,12 +53,20 @@ export default function LandingNavbar() {
           </Link>
         </div>
         <div className="flex items-center gap-2.5">
-          <PillButton variant="ghost" size="sm" href="/#demo" className="hidden sm:inline-flex">
+          {/* Auth-aware dropdown: Giriş Yap / Hesabım / Dashboard */}
+          <AuthNav />
+
+          {/* Demo auto-login button */}
+          <DemoButton className="hidden sm:inline-flex items-center justify-center gap-2 rounded-full border border-transparent bg-transparent text-foreground/80 hover:text-foreground hover:bg-secondary font-medium text-sm h-[var(--pill-h-sm)] px-5 transition-colors duration-200 disabled:opacity-50">
             Demo Gör
-          </PillButton>
-          <PillButton variant="primary" size="sm" href="/#contact">
+          </DemoButton>
+
+          <PillButton variant="primary" size="sm" href="/#contact" className="hidden sm:inline-flex">
             Hemen Başla
           </PillButton>
+
+          {/* Mobile-only: profile + hamburger (bottom sheets) */}
+          <MobileNav />
         </div>
       </nav>
     </header>

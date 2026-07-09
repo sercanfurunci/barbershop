@@ -10,7 +10,8 @@ export async function GET(request) {
     where: { id: payload.userId },
     select: {
       id: true, email: true, username: true, displayName: true, role: true,
-      shopId: true,
+      shopId: true, phone: true, avatarUrl: true,
+      notifAppt: true, notifReminder: true, notifPromo: true,
       barber: { select: { id: true, slug: true, nameTr: true, avatar: true, profilePhoto: true } },
       shop:   { select: { id: true, slug: true, name: true, status: true, subscriptionStatus: true, planTier: true, trialEndsAt: true } },
     },

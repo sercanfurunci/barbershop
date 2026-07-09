@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/lib/api";
 import { todayStr } from "@/lib/utils";
@@ -590,6 +591,7 @@ function ShopProfileTab() {
     name: "", ownerName: "", foundedYear: "", shopType: "",
     phone: "", whatsappNumber: "", email: "",
     addressLine: "", city: "", latitude: "", longitude: "",
+    placeId: "", formattedAddress: "",
     description: "", about: "",
     instagramUrl: "", facebookUrl: "", tiktokUrl: "",
     googlePlaceId: "", googlePlacesKey: "", mapsEmbed: "",
@@ -620,9 +622,11 @@ function ShopProfileTab() {
           email:           shop.email           ?? "",
           addressLine:     shop.addressLine     ?? shop.address ?? "",
           city:            shop.city            ?? "",
-          latitude:        shop.latitude        ?? "",
-          longitude:       shop.longitude       ?? "",
-          description:     shop.description     ?? "",
+          latitude:         shop.latitude         ?? "",
+          longitude:        shop.longitude        ?? "",
+          placeId:          shop.googlePlaceId    ?? "",
+          formattedAddress: shop.formattedAddress ?? "",
+          description:      shop.description      ?? "",
           about:           shop.about           ?? "",
           instagramUrl:    shop.instagramUrl    ?? shop.social?.instagram ?? "",
           facebookUrl:     shop.facebookUrl     ?? shop.social?.facebook  ?? "",
@@ -793,13 +797,15 @@ function ShopProfileTab() {
             <Field label="Şehir">
               <input value={form.city} onChange={set("city")} placeholder="İstanbul" style={fi} />
             </Field>
-            <Field label="Enlem (lat)" hint="Mini harita için">
-              <input value={form.latitude} onChange={set("latitude")} placeholder="41.0082" inputMode="decimal" style={fi} />
-            </Field>
-            <Field label="Boylam (lng)">
-              <input value={form.longitude} onChange={set("longitude")} placeholder="28.9784" inputMode="decimal" style={fi} />
-            </Field>
           </div>
+          <LocationPicker
+            latitude={form.latitude}
+            longitude={form.longitude}
+            formattedAddress={form.formattedAddress}
+            placeId={form.placeId}
+            fi={fi}
+            onChange={(patch) => setForm(f => ({ ...f, ...patch }))}
+          />
         </Section>
 
         {/* Gallery */}
@@ -1158,6 +1164,215 @@ function GalleryGrid({ items, onChange }) {
         </div>
       )}
       {err && <div style={{ fontSize: 11, color: "#b91c1c" }}>{err}</div>}
+    </div>
+  );
+}
+
+/* ─── Location Picker ─────────────────────────────────────────────────────── */
+
+// Leaflet/OSM location picker with Nominatim geocoding. Supports:
+//   • Debounced address search dropdown (Nominatim /search, TR-only)
+//   • Draggable marker / map click → reverse-geocodes (Nominatim /reverse)
+//   • "Use my location" via browser geolocation
+// All updates bubble up via onChange({ latitude, longitude, formattedAddress, placeId, city? }).
+
+const LocationPickerMap = dynamic(() => import("@/components/map/LocationPickerMap"), {
+  ssr: false,
+  loading: () => (
+    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: C.muted }}>
+      Harita yükleniyor…
+    </div>
+  ),
+});
+
+function nominatimCity(address) {
+  return address?.province || address?.state || address?.city || "";
+}
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=tr&addressdetails=1`
+    );
+    const json = await res.json();
+    if (!json?.display_name) return { formattedAddress: "", placeId: "" };
+    const city = nominatimCity(json.address);
+    return {
+      formattedAddress: json.display_name,
+      placeId: String(json.place_id ?? ""),
+      ...(city ? { city } : {}),
+    };
+  } catch {
+    return { formattedAddress: "", placeId: "" };
+  }
+}
+
+function LocationPicker({ latitude, longitude, formattedAddress, placeId, fi, onChange }) {
+  const [geocoding, setGeocoding] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [query, setQuery] = useState(formattedAddress || "");
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef(null);
+  const skipSearch = useRef(false);
+
+  const lat = latitude  !== "" ? Number(latitude)  : null;
+  const lng = longitude !== "" ? Number(longitude) : null;
+  const hasCoords = lat != null && lng != null && !isNaN(lat) && !isNaN(lng);
+
+  // Debounced Nominatim search
+  useEffect(() => {
+    if (skipSearch.current) { skipSearch.current = false; return; }
+    clearTimeout(searchTimer.current);
+    if (!query || query.trim().length < 3) { setResults([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=tr&limit=5&addressdetails=1&accept-language=tr`
+        );
+        setResults(await res.json());
+      } catch {
+        setResults([]);
+      }
+      setSearching(false);
+    }, 400);
+    return () => clearTimeout(searchTimer.current);
+  }, [query]);
+
+  const handlePick = useCallback(async (newLat, newLng) => {
+    setGeocoding(true);
+    const geo = await reverseGeocode(newLat, newLng);
+    setGeocoding(false);
+    onChange({ latitude: newLat, longitude: newLng, ...geo });
+  }, [onChange]);
+
+  function selectResult(r) {
+    skipSearch.current = true;
+    setQuery(r.display_name);
+    setResults([]);
+    const city = nominatimCity(r.address);
+    onChange({
+      latitude: Number(r.lat),
+      longitude: Number(r.lon),
+      formattedAddress: r.display_name,
+      placeId: String(r.place_id ?? ""),
+      ...(city ? { city } : {}),
+    });
+  }
+
+  function useMyLocation() {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        await handlePick(pos.coords.latitude, pos.coords.longitude);
+        setLocating(false);
+      },
+      () => { setLocating(false); }
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Address search */}
+      <div style={{ position: "relative" }}>
+        <Field label="Konum Ara">
+          <input
+            type="text"
+            placeholder="Adres ara veya haritada işaretle…"
+            style={fi}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </Field>
+        {(results.length > 0 || searching) && (
+          <div style={{
+            position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20,
+            background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8,
+            boxShadow: SHADOW, overflow: "hidden", marginTop: 4,
+          }}>
+            {searching && (
+              <div style={{ padding: "8px 12px", fontSize: 12, color: C.muted }}>Aranıyor…</div>
+            )}
+            {results.map((r) => (
+              <button
+                key={r.place_id}
+                type="button"
+                onClick={() => selectResult(r)}
+                style={{
+                  display: "block", width: "100%", textAlign: "left",
+                  padding: "8px 12px", fontSize: 12, color: C.primary,
+                  background: "none", border: "none", cursor: "pointer",
+                  borderTop: `1px solid ${C.border}`,
+                }}
+              >
+                {r.display_name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Use my location button */}
+      <button
+        type="button"
+        onClick={useMyLocation}
+        disabled={locating}
+        style={{
+          alignSelf: "flex-start",
+          display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.border}`,
+          background: C.surface, color: C.primary,
+          fontSize: 12, fontWeight: 500, cursor: locating ? "not-allowed" : "pointer",
+          opacity: locating ? 0.6 : 1,
+        }}
+      >
+        {locating ? "Konum alınıyor…" : "📍 Konumumu Kullan"}
+      </button>
+
+      {/* Interactive map */}
+      <div
+        style={{
+          height: 300, borderRadius: 8, border: `1px solid ${C.border}`,
+          background: C.surface, overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        <LocationPickerMap
+          lat={hasCoords ? lat : null}
+          lng={hasCoords ? lng : null}
+          onPick={handlePick}
+        />
+        {geocoding && (
+          <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", zIndex: 500, background: "rgba(0,0,0,0.7)", color: "#fff", fontSize: 11, padding: "4px 10px", borderRadius: 99 }}>
+            Adres alınıyor…
+          </div>
+        )}
+      </div>
+
+      {/* Read-only coord display + formattedAddress */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <Field label="Enlem (lat)">
+          <div style={{ ...fi, color: hasCoords ? C.primary : C.muted, fontFamily: "'DM Mono', monospace", fontSize: 12 }}>
+            {hasCoords ? lat.toFixed(6) : "—"}
+          </div>
+        </Field>
+        <Field label="Boylam (lng)">
+          <div style={{ ...fi, color: hasCoords ? C.primary : C.muted, fontFamily: "'DM Mono', monospace", fontSize: 12 }}>
+            {hasCoords ? lng.toFixed(6) : "—"}
+          </div>
+        </Field>
+      </div>
+      {formattedAddress && (
+        <div style={{ fontSize: 11, color: C.secondary, display: "flex", alignItems: "center", gap: 5 }}>
+          <MapPin size={11} />
+          {formattedAddress}
+        </div>
+      )}
+      <div style={{ fontSize: 10, color: C.muted }}>
+        Haritaya tıklayın veya işareti sürükleyerek konumu güncelleyin.
+      </div>
     </div>
   );
 }

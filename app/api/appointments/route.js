@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, unauthorized } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { rateLimit, getIp } from "@/lib/rateLimit";
 import { queueNotifications } from "@/lib/notifications";
 import { todayStr, nowMinutes } from "@/lib/utils";
@@ -36,7 +37,7 @@ function normalizeSource(s) {
 // GET /api/appointments?date=2026-06-10&barberId=brb-1&status=PENDING
 export async function GET(request) {
   const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json([]);
+  if (!payload) return unauthorized();
 
   const { searchParams } = new URL(request.url);
   const date     = searchParams.get("date");
@@ -81,10 +82,11 @@ export async function GET(request) {
 
 // POST /api/appointments — public booking endpoint
 export async function POST(request) {
+  const log = logger(request);
   try {
     // ── IP rate limit: 5 bookings per IP per 10 min ──────────────────────────
     const ip = getIp(request);
-    const rl = rateLimit(`booking:${ip}`, { limit: 5, windowMs: 10 * 60 * 1000 });
+    const rl = await rateLimit(`booking:${ip}`, { limit: 5, windowMs: 10 * 60 * 1000 });
     if (!rl.ok) {
       return NextResponse.json(
         { error: "Çok fazla istek gönderdiniz. Lütfen 10 dakika bekleyin." },
@@ -252,14 +254,16 @@ export async function POST(request) {
       throw e;
     }
 
+    log.info("booking created", { appointmentId: appointment.id, shopId, barberId, date, time });
+
     // Queue notifications (non-blocking — don't let this fail the response)
     queueNotifications(appointment.id, "CREATED").catch(err =>
-      console.error("[POST /api/appointments] queue error:", err.message)
+      log.error("notification queue error", { appointmentId: appointment.id }, err)
     );
 
     return NextResponse.json(appointment, { status: 201 });
   } catch (err) {
-    console.error("[POST /api/appointments]", err);
+    log.error("booking error", {}, err);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

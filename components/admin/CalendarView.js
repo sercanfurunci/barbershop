@@ -46,6 +46,12 @@ function isToday(dateStr) {
   return dateStr === todayStr();
 }
 
+function fmtHour(h) {
+  const hh = Math.floor(h);
+  const mm = Math.round((h - hh) * 60);
+  return mm ? `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}` : `${String(hh).padStart(2, "0")}:00`;
+}
+
 function fmtCurrency(v) {
   if (v == null) return "Sorulur";
   return `₺${v.toLocaleString("tr-TR")}`;
@@ -410,12 +416,12 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
           const sc = SC[appt.status] ?? SC.pending;
           return (
             <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAppt(null)} style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.35)", zIndex: 80 }} />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAppt(null)} style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 80 }} />
               <motion.div
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
                 style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 90, background: "#FFFFFF", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
               >
                 {/* Handle */}
@@ -463,22 +469,28 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-// Derive working hours { start, end } for a barber on a specific date
+// WorkingHours is a single 1-1 row with {mon,tue,…}{Start,End} in minutes from
+// midnight. `null` on either side of a day means "closed that day". Returns
+// null when the barber isn't scheduled that day so the caller can skip.
+const DOW_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 function getBarberWH(barber, dateStr) {
-  if (!barber?.workingHours?.length) return { start: 9, end: 18 };
-  const dow = (new Date(dateStr + "T12:00:00").getDay() + 6) % 7; // 0=Mon
-  const wh = barber.workingHours.find(h => h.dayOfWeek === dow);
-  if (!wh || !wh.isOpen) return null;
-  return { start: parseInt(wh.startTime), end: parseInt(wh.endTime) };
+  const wh = barber?.workingHours;
+  if (!wh) return null;
+  const dowKey = DOW_KEYS[new Date(dateStr + "T12:00:00").getDay()];
+  const s = wh[`${dowKey}Start`];
+  const e = wh[`${dowKey}End`];
+  if (s == null || e == null) return null;
+  return { start: s / 60, end: e / 60 }; // grid uses hours as unit
 }
 
-// Convert barber.breaks to { start: "HH:MM", end: "HH:MM", label: string }[]
+// BarberBreak stores start/end as "HH:MM" strings. A dated break wins over
+// recurring; otherwise dayOfWeek match or every-day (null) applies.
 function getBarberBreaks(barber, dateStr) {
   if (!barber?.breaks?.length) return [];
-  const dow = (new Date(dateStr + "T12:00:00").getDay() + 6) % 7;
+  const dow = new Date(dateStr + "T12:00:00").getDay();
   return barber.breaks
-    .filter(b => b.dayOfWeek == null || b.dayOfWeek === dow)
-    .map(b => ({ start: b.startTime, end: b.endTime, label: "Mola" }));
+    .filter(b => (b.date ? b.date === dateStr : (b.dayOfWeek == null || b.dayOfWeek === dow)))
+    .map(b => ({ start: b.start, end: b.end, label: b.label || "Mola" }));
 }
 
 export default function CalendarView() {
@@ -717,7 +729,7 @@ export default function CalendarView() {
           <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card }}>
             <div style={{ width: `${TIME_COL_W}px`, flexShrink: 0, borderRight: `1px solid ${C.border}` }} />
             {normalizedBarbers.map((barber) => {
-              const wh        = getBarberWH(barber, date) ?? { start: 9, end: 18 };
+              const wh        = getBarberWH(barber, date);
               const bAppts    = displayAppts.filter(a => a.barberId === barber.id);
               const bRevenue  = bAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
               const bPending  = bAppts.filter(a => a.status === "pending").length;
@@ -743,7 +755,9 @@ export default function CalendarView() {
                         <span style={{ fontSize: "10px", color: C.secondary, fontWeight: 400 }}> {barber.name.split(" ")[1]}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
-                        <span style={{ fontSize: "9px", color: C.muted }}>{wh.start}:00–{wh.end}:00</span>
+                        <span style={{ fontSize: "9px", color: wh ? C.muted : "#B45309" }}>
+                          {wh ? `${fmtHour(wh.start)}–${fmtHour(wh.end)}` : "Kapalı"}
+                        </span>
                         {bAppts.length > 0 && (
                           <>
                             <span style={{ fontSize: "9px", color: C.muted }}>·</span>
@@ -781,11 +795,12 @@ export default function CalendarView() {
 
               {/* Barber columns */}
               {normalizedBarbers.map((barber) => {
-                const wh          = getBarberWH(barber, date) ?? { start: 9, end: 18 };
-                const barberBreaks = getBarberBreaks(barber, date);
+                const wh          = getBarberWH(barber, date);
+                const barberBreaks = wh ? getBarberBreaks(barber, date) : [];
                 const barberAppts  = displayAppts.filter(a => a.barberId === barber.id);
-                const offBeforeH   = ((wh.start - DAY_START) * 2) * SLOT_H;
-                const offAfterTop  = ((wh.end   - DAY_START) * 2) * SLOT_H;
+                // wh=null → barber isn't scheduled that day; shade the entire column.
+                const offBeforeH   = wh ? Math.max(0, ((wh.start - DAY_START) * 2) * SLOT_H) : TOTAL_H;
+                const offAfterTop  = wh ? ((wh.end - DAY_START) * 2) * SLOT_H : TOTAL_H;
                 const offAfterH    = TOTAL_H - offAfterTop;
 
                 return (

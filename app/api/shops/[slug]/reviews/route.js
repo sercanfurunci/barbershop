@@ -3,14 +3,14 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/shops/:slug/reviews?stars=4&sort=newest&take=20&skip=0
+// GET /api/shops/:slug/reviews?stars=4&sort=newest|oldest|highest|lowest&take=20&skip=0
 //
 // Public list of internal Review rows for the tenant's storefront. Returns
 // summary aggregates (avg + star histogram) and a paginated review feed.
 //
 // Filters:
 //   stars: 1..5 (filter by shopRating)
-//   sort:  "newest" (default) | "oldest"
+//   sort:  "newest" (default) | "oldest" | "highest" | "lowest"
 //   take:  1..50 (default 20)
 //   skip:  >=0 (default 0)
 export async function GET(request, { params }) {
@@ -21,7 +21,12 @@ export async function GET(request, { params }) {
     const v = Number(url.searchParams.get("stars"));
     return v >= 1 && v <= 5 ? Math.floor(v) : null;
   })();
-  const sort = url.searchParams.get("sort") === "oldest" ? "asc" : "desc";
+  const rawSort = url.searchParams.get("sort") || "newest";
+  const orderBy =
+    rawSort === "oldest"  ? { createdAt: "asc" }
+    : rawSort === "highest" ? { shopRating: "desc" }
+    : rawSort === "lowest"  ? { shopRating: "asc" }
+    : { createdAt: "desc" };
   const take = Math.min(50, Math.max(1, Number(url.searchParams.get("take")) || 20));
   const skip = Math.max(0, Number(url.searchParams.get("skip")) || 0);
   const barberId = url.searchParams.get("barberId") || null;
@@ -41,7 +46,7 @@ export async function GET(request, { params }) {
   const [reviews, distinctRaw, total] = await Promise.all([
     prisma.review.findMany({
       where,
-      orderBy: { createdAt: sort },
+      orderBy,
       take,
       skip,
       select: {

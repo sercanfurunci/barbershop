@@ -31,22 +31,21 @@ export async function GET(request) {
 }
 
 // POST /api/admin/holidays
-// body: { date, label?, barberId? }
+// body: { date, label?, barberId? }           — single day
+//    OR { startDate, endDate, label?, barberId? } — date range (max 180 days)
 export async function POST(request) {
   const payload = await requireAuth(request);
   if (!payload) return unauthorized();
   if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST") return forbidden();
   if (!payload.shopId) return forbidden();
 
-  const { date, label, barberId } = await request.json();
+  const body = await request.json();
+  const { label, barberId } = body;
 
-  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return NextResponse.json({ error: "Geçerli tarih gerekli (YYYY-MM-DD)" }, { status: 400 });
-  }
-  // Reject Feb 30, Apr 31, etc. by round-trip check.
-  const d = new Date(date + "T00:00:00Z");
-  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== date) {
-    return NextResponse.json({ error: "Geçersiz tarih" }, { status: 400 });
+  function validDate(s) {
+    if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+    const d = new Date(s + "T00:00:00Z");
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
   }
 
   // If a barber is specified, ensure they belong to the caller's shop
@@ -58,11 +57,48 @@ export async function POST(request) {
     if (!barber) return forbidden();
   }
 
+  // Range mode
+  if (body.startDate || body.endDate) {
+    if (!validDate(body.startDate) || !validDate(body.endDate)) {
+      return NextResponse.json({ error: "Geçerli başlangıç ve bitiş tarihi gerekli (YYYY-MM-DD)" }, { status: 400 });
+    }
+    if (body.endDate < body.startDate) {
+      return NextResponse.json({ error: "Bitiş tarihi başlangıç tarihinden önce olamaz" }, { status: 400 });
+    }
+    const start = new Date(body.startDate + "T00:00:00Z");
+    const end   = new Date(body.endDate   + "T00:00:00Z");
+    const diffDays = Math.round((end - start) / 86400000) + 1;
+    if (diffDays > 180) {
+      return NextResponse.json({ error: "İzin süresi en fazla 180 gün olabilir" }, { status: 400 });
+    }
+    const dates = Array.from({ length: diffDays }, (_, i) => {
+      const d = new Date(start);
+      d.setUTCDate(d.getUTCDate() + i);
+      return d.toISOString().slice(0, 10);
+    });
+    await prisma.holiday.createMany({
+      data: dates.map((date) => ({
+        shopId: payload.shopId,
+        date,
+        label: label || "İzin",
+        barberId: barberId || null,
+      })),
+      skipDuplicates: true,
+    });
+    return NextResponse.json({ ok: true, count: dates.length }, { status: 201 });
+  }
+
+  // Single day mode
+  const { date } = body;
+  if (!validDate(date)) {
+    return NextResponse.json({ error: "Geçerli tarih gerekli (YYYY-MM-DD)" }, { status: 400 });
+  }
+
   const holiday = await prisma.holiday.create({
     data: {
-      shopId:  payload.shopId,
+      shopId:   payload.shopId,
       date,
-      label:   label || "Tatil",
+      label:    label || "Tatil",
       barberId: barberId || null,
     },
     include: { barber: { select: { id: true, nameTr: true } } },

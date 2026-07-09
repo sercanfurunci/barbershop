@@ -26,8 +26,10 @@ model Shop {
   address         String?    @db.Text
   addressLine     String? // street line; pairs with city for structured display
   city            String?
-  latitude        Float?
-  longitude       Float?
+  latitude          Float?
+  longitude         Float?
+  formattedAddress  String?
+  locationUpdatedAt DateTime?
   phone           String?
   whatsappNumber  String? // E.164 — opens wa.me on landing
   email           String?
@@ -42,7 +44,10 @@ model Shop {
   instagramUrl    String?
   facebookUrl     String?
   tiktokUrl       String?
+  website         String?
   gallery         String[]   @default([]) // ordered Cloudinary URLs, max 12
+  featuredImage   String? // pinned hero: one gallery URL or coverImage; null = auto
+  mobileSettings  Json? // { coverStyle, barberDisplay, serviceDisplay, sectionVisibility }
   social          Json? // legacy { instagram, facebook, tiktok, twitter, website }
   googlePlaceId   String? // per-shop Google Place ID for reviews widget
   googlePlacesKey String? // per-shop Google Places API key (overrides global env)
@@ -81,6 +86,15 @@ model Shop {
   avgRating    Float @default(0)
   totalReviews Int   @default(0)
 
+  // ─── Amenities ────────────────────────────────────────────────────────────
+  wifi            Boolean @default(false)
+  parking         Boolean @default(false)
+  creditCard      Boolean @default(false)
+  airConditioning Boolean @default(false)
+  disabledAccess  Boolean @default(false)
+  childFriendly   Boolean @default(false)
+  hasPromotions   Boolean @default(false)
+
   // Per-shop toggle for the 2h post-completion review reminder cron.
   reviewReminderEnabled Boolean @default(true)
 
@@ -98,9 +112,18 @@ model Shop {
   reviews              Review[]
   invoices             Invoice[]
   analyticsEvents      AnalyticsEvent[]
+  favoritedBy          CustomerFavorite[]
+  shopMetrics          ShopMetric[]
+  loyaltyPoints        LoyaltyPoint[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([status, deletedAt])         // base filter on every public list query
+  @@index([status, deletedAt, avgRating])  // rating sort (most common)
+  @@index([status, deletedAt, totalReviews]) // mostReviewed sort
+  @@index([status, deletedAt, createdAt])  // newest sort
+  @@index([city])                      // city filter
 }
 
 // Lightweight conversion-funnel telemetry. Public ingest, never blocks UX.
@@ -178,8 +201,25 @@ model User {
   barber       Barber?  @relation(fields: [barberId], references: [id])
   clientId     String?  @unique // set when role = CUSTOMER
   client       Client?  @relation(fields: [clientId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+
+  // Customer profile fields (role = CUSTOMER only)
+  phone     String?
+  birthday  DateTime?
+  gender    String? // "male" | "female" | "other"
+  avatarUrl String?
+
+  // Notification preferences
+  notifAppt     Boolean @default(true)
+  notifReminder Boolean @default(true)
+  notifPromo    Boolean @default(false)
+
+  pushTokens       PushToken[]
+  favorites        CustomerFavorite[]
+  barberFavorites  BarberFavorite[]
+  loyaltyPoints    LoyaltyPoint[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([shopId])
 }
@@ -230,6 +270,7 @@ model Barber {
   services       BarberService[]
   reviewRequests ReviewRequest[]
   reviews        Review[]
+  favoritedBy    BarberFavorite[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -394,11 +435,19 @@ model Appointment {
   // is the actual guard.
   reviewed Boolean @default(false)
 
+  // Customer-uploaded reference photos (Cloudinary URLs). Barber sees them on the day.
+  photoUrls String[] @default([])
+
+  // QR check-in token — generated on booking, scanned on arrival.
+  checkInToken  String?  @unique @default(cuid())
+  checkedInAt   DateTime?
+
   notifications    Notification[]
   auditLogs        AuditLog[]
   notificationJobs NotificationJob[]
   reviewRequest    ReviewRequest?
   review           Review?
+  loyaltyPoint     LoyaltyPoint?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -475,6 +524,29 @@ model AuditLog {
   @@index([entity, entityId])
   @@index([userId])
   @@index([createdAt])
+}
+
+// ─── Precomputed daily metrics ────────────────────────────────────────────────
+// Populated nightly by /api/cron/shop-metrics. Avoids 10+ live aggregations on
+// every stats page load. The cron writes one row per (shopId, date), upserted
+// so re-runs are idempotent and missed nights can be backfilled.
+
+model ShopMetric {
+  id               String @id @default(cuid())
+  shopId           String
+  shop             Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  date             String // YYYY-MM-DD (shop local date)
+  revenue          Float  @default(0) // sum(grossAmount ?? price) for COMPLETED
+  shopAmount       Float  @default(0) // sum(shopAmount) for COMPLETED
+  barberAmount     Float  @default(0) // sum(barberAmount) for COMPLETED
+  appointmentCount Int    @default(0) // non-cancelled
+  completedCount   Int    @default(0)
+  cancelledCount   Int    @default(0)
+  walkInCount      Int    @default(0)
+  newClientCount   Int    @default(0)
+
+  @@unique([shopId, date])
+  @@index([shopId, date])
 }
 
 // ─── Notifications ────────────────────────────────────────────────────────────
@@ -667,4 +739,66 @@ model ProcessedWebhookEvent {
 
   @@id([provider, eventId])
   @@index([processedAt])
+}
+
+// ─── Push Tokens ──────────────────────────────────────────────────────────────
+// One row per (user, token). Upserted on app launch after permission grant.
+// TODO: add FCM/APNS delivery worker when push provider is chosen.
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String // "ios" | "android" | "web"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ─── Customer Favorites ───────────────────────────────────────────────────────
+// Backend-synced favorites for CUSTOMER accounts. Guest favorites remain in
+// AsyncStorage (useFavoritesStore) and are merged on login.
+model CustomerFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, shopId])
+  @@index([userId])
+}
+
+// ─── Barber Favorites ─────────────────────────────────────────────────────────
+model BarberFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  barberId  String
+  barber    Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, barberId])
+  @@index([userId])
+}
+
+// ─── Loyalty Points ───────────────────────────────────────────────────────────
+// Simple event-sourced ledger. Balance = SUM(points) per (userId, shopId).
+// Negative points represent redemptions.
+model LoyaltyPoint {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopId        String
+  shop          Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  appointmentId String?     @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  points        Int         // positive = earn, negative = redeem
+  reason        String      // "appointment" | "review" | "referral" | "redemption"
+  createdAt     DateTime    @default(now())
+
+  @@index([userId, shopId])
+  @@index([shopId])
 }

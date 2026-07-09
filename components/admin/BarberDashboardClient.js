@@ -624,7 +624,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
               onClick={() => setMoreSheet(false)} />
             <motion.div key="ms-panel"
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
               className="fixed left-0 right-0 bottom-0 z-50 lg:hidden rounded-t-2xl"
               style={{ background: C.card, border: `1px solid ${C.border}`, paddingBottom: "env(safe-area-inset-bottom, 16px)", maxHeight: "85dvh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               {/* Handle */}
@@ -1029,6 +1029,9 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
 function ProfileTab() {
   const { user, updateUser } = useAuth();
 
+  const syncPhotoToContext = (photo) =>
+    updateUser(user?.barber ? { barber: { ...user.barber, profilePhoto: photo } } : {});
+
   const [username, setUsername]       = useState(user?.username ?? "");
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
   const [profileSaving, setProfileSaving] = useState(false);
@@ -1038,6 +1041,12 @@ function ProfileTab() {
   const [photoLoading, setPhotoLoading] = useState(false);
   const [cropFile, setCropFile]         = useState(null);
   const photoRef = useRef(null);
+
+  // Keep local state in sync when AuthContext receives a fresher profilePhoto
+  // (e.g. /api/auth/me resolves after mount, or another writer updates it).
+  useEffect(() => {
+    setProfilePhoto(user?.barber?.profilePhoto ?? null);
+  }, [user?.barber?.profilePhoto]);
 
   const [curPwd, setCurPwd]   = useState("");
   const [newPwd, setNewPwd]   = useState("");
@@ -1099,6 +1108,7 @@ function ProfileTab() {
     try {
       const res = await apiFetch("/api/barber/photo", { method: "POST", body: JSON.stringify({ photo: dataUrl }) });
       setProfilePhoto(res.profilePhoto);
+      syncPhotoToContext(res.profilePhoto);
     } catch (err) { alert(err.message || "Fotoğraf yüklenemedi"); }
     finally { setPhotoLoading(false); }
   };
@@ -1109,6 +1119,7 @@ function ProfileTab() {
     try {
       await apiFetch("/api/barber/photo", { method: "DELETE" });
       setProfilePhoto(null);
+      syncPhotoToContext(null);
     } catch { /* ignore */ }
     finally { setPhotoLoading(false); }
   };
@@ -1491,7 +1502,7 @@ function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogou
           <motion.div
             key="more-sheet"
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 32, stiffness: 380, mass: 0.9 }}
+            transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
             className="fixed left-0 right-0 z-50"
             style={{
               bottom: "calc(64px + env(safe-area-inset-bottom))",

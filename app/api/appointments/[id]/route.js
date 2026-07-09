@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { todayStr } from "@/lib/utils";
+import { validateBookingWindow } from "@/lib/booking";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,16 @@ export async function PATCH(request, { params }) {
     const [h, m]  = newTime.split(":").map(Number);
     const startMin = h * 60 + m;
     const endMin   = startMin + appt.duration;
+
+    // Working hours / break / holiday gate — same rule set the public booking uses.
+    // Skip only when nothing about the schedule changed (notes-only PATCH won't reach here).
+    if (newDate !== appt.date || newTime !== appt.time) {
+      const window = await validateBookingWindow({
+        shopId: appt.shopId, barberId: appt.barberId, date: newDate,
+        startMin, durationMin: appt.duration,
+      });
+      if (!window.ok) return NextResponse.json({ error: window.error }, { status: window.status });
+    }
 
     const existing = await prisma.appointment.findMany({
       where: {

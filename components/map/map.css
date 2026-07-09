@@ -1,0 +1,232 @@
+/* Shared styles for MAKAS Leaflet maps: markers, clusters, user dot, controls */
+
+.makas-marker {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #fff;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transform-origin: center;
+}
+.makas-marker:hover {
+  transform: scale(1.08);
+}
+.makas-marker--hovered {
+  transform: scale(1.12);
+  border-color: #111;
+  animation: makas-marker-pulse 1.6s ease-out infinite;
+}
+/* Soft expanding ring — box-shadow so the marker's overflow:hidden can't clip it */
+@keyframes makas-marker-pulse {
+  0%   { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32), 0 0 0 0 rgba(17, 17, 17, 0.3); }
+  70%  { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32), 0 0 0 12px rgba(17, 17, 17, 0); }
+  100% { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32), 0 0 0 0 rgba(17, 17, 17, 0); }
+}
+.makas-marker--selected {
+  transform: scale(1.22);
+  border-color: #111;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.38);
+  animation: makas-bounce 0.45s ease;
+}
+@keyframes makas-bounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.38); }
+  70%  { transform: scale(1.12); }
+  100% { transform: scale(1.22); }
+}
+.makas-marker__fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  color: #fff;
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.makas-cluster {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2.5px solid #fff;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.makas-cluster:hover {
+  transform: scale(1.08);
+}
+
+/* Blue pulsing user-location dot */
+.makas-user-dot {
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+.makas-user-dot::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.35);
+  animation: makas-pulse 2s ease-out infinite;
+}
+.makas-user-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #2563eb;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
+}
+@keyframes makas-pulse {
+  0%   { transform: scale(0.5); opacity: 0.9; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+/* Floating map controls */
+.makas-map-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.makas-map-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.makas-map-btn:hover {
+  transform: scale(1.06);
+  background: #fff;
+}
+.makas-map-btn:active {
+  transform: scale(0.96);
+}
+.makas-map-btn--active {
+  background: #111;
+  color: #fff;
+}
+.makas-map-btn--active:hover {
+  background: #111;
+}
+
+/* "Search this area" pill — appears top-center after a user pan */
+.makas-area-btn {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  cursor: pointer;
+  animation: makas-area-in 0.25s ease;
+}
+.makas-area-btn:hover { background: #fff; }
+.makas-area-btn:active { transform: translateX(-50%) scale(0.96); }
+@keyframes makas-area-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Salon-name tooltip shown above a marker when its card is hovered */
+.makas-tooltip {
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+}
+.makas-tooltip.leaflet-tooltip-top::before {
+  border-top-color: #111;
+}
+
+/* One-shot glow when a card becomes selected (marker click / card click) */
+@keyframes makas-card-glow {
+  0%   { box-shadow: 0 0 0 0 rgba(17, 17, 17, 0.35); }
+  70%  { box-shadow: 0 0 0 9px rgba(17, 17, 17, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(17, 17, 17, 0); }
+}
+.makas-card-glow {
+  animation: makas-card-glow 0.8s ease-out 2;
+}
+
+/* Selected desktop card: slight lift + subtle shadow */
+.makas-card-lift {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
+}
+
+/* Connector cue: subtle animated line from the selected card toward the map */
+.makas-connector {
+  position: absolute;
+  right: -25px;
+  top: 50%;
+  width: 24px;
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, #111 0%, rgba(17, 17, 17, 0) 100%);
+  animation: makas-connector-in 0.4s ease;
+  pointer-events: none;
+}
+.makas-connector::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #111;
+  animation: makas-connector-pulse 1.6s ease-in-out infinite;
+}
+@keyframes makas-connector-in {
+  from { opacity: 0; width: 0; }
+  to   { opacity: 1; width: 24px; }
+}
+@keyframes makas-connector-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}

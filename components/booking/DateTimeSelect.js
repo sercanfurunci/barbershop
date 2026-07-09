@@ -36,8 +36,24 @@ export default function DateTimeSelect({ shopId, booking, allBarbers = [], selec
   const [slotBarberMap, setSlotBarberMap]   = useState({});
   const [loadingSlots, setLoadingSlots]     = useState(false);
 
+  // Per-day status for calendar rendering: { "YYYY-MM-DD": { status, label? } }
+  const [dayMap, setDayMap] = useState({});
+
   // Ref-based prefetch cache: dateStr → slots[] | "loading"
   const prefetchRef = useRef({});
+
+  // Load calendar day-states as soon as barber+service are known.
+  useEffect(() => {
+    const barberId  = booking.barber?.id;
+    const serviceId = booking.service?.id;
+    if (!shopId || !barberId || !serviceId) return;
+    let cancelled = false;
+    const startStr = format(new Date(), "yyyy-MM-dd");
+    apiFetch(`/api/availability/range?shopId=${shopId}&barberId=${barberId}&serviceId=${serviceId}&start=${startStr}&days=60`)
+      .then(r => { if (!cancelled) setDayMap(r.days ?? {}); })
+      .catch(() => { if (!cancelled) setDayMap({}); });
+    return () => { cancelled = true; };
+  }, [shopId, booking.barber?.id, booking.service?.id]);
 
   // Prefetch next 7 days in background as soon as barber + service are known.
   // Uses a ref so prefetch completions don't trigger re-renders.
@@ -126,6 +142,20 @@ export default function DateTimeSelect({ shopId, booking, allBarbers = [], selec
   const isDateAvailable = (date) => {
     const d = startOfDay(date);
     return !isBefore(d, today) && !isBefore(maxDate, d);
+  };
+
+  const dayState = (date) => {
+    const key = format(date, "yyyy-MM-dd");
+    if (!isDateAvailable(date)) return { status: "past" };
+    if (dayMap[key]) return dayMap[key];
+    return Object.keys(dayMap).length === 0 ? { status: "working" } : { status: "closed" };
+  };
+
+  const badgeFor = (status) => {
+    if (status === "fullyBooked") return { text: lang === "tr" ? "Dolu"   : "Full",   color: "#B45309" };
+    if (status === "closed")      return { text: lang === "tr" ? "Kapalı" : "Closed", color: "#8A8480" };
+    if (status === "holiday")     return { text: lang === "tr" ? "İzinli" : "Leave",  color: "#B91C1C" };
+    return null;
   };
 
   // ── Mobile date strip: next 30 days ──────────────────────────────────────
@@ -220,20 +250,27 @@ export default function DateTimeSelect({ shopId, booking, allBarbers = [], selec
             const isSelected = localDate && format(localDate, "yyyy-MM-dd") === dateStr;
             const isToday   = dateStr === format(today, "yyyy-MM-dd");
             const dayName   = format(date, "EEE", { locale }).slice(0, 3);
+            const { status, label } = dayState(date);
+            const selectable = status === "working" || status === "fullyBooked";
+            const badge = badgeFor(status);
 
             return (
               <button
                 key={dateStr}
+                disabled={!selectable}
                 onClick={() => handleDateSelect(date)}
+                title={status === "holiday" && label ? label : undefined}
                 style={{
                   width: "52px", flexShrink: 0, minHeight: "44px",
                   paddingTop: "9px", paddingBottom: "9px",
                   borderRadius: "10px",
                   border: `1px solid ${isSelected ? "var(--makas-ink)" : "var(--makas-border)"}`,
                   background: isSelected ? "var(--makas-ink)" : "var(--makas-surface)",
-                  color: isSelected ? "var(--makas-bg)" : "var(--makas-ink)",
+                  color: isSelected ? "var(--makas-bg)" : selectable ? "var(--makas-ink)" : "var(--makas-ink-muted)",
                   display: "flex", flexDirection: "column", alignItems: "center", gap: "1px",
-                  cursor: "pointer", transition: "all 0.15s",
+                  cursor: selectable ? "pointer" : "not-allowed",
+                  transition: "all 0.15s",
+                  opacity: selectable ? 1 : 0.55,
                 }}
               >
                 <span style={{ fontSize: "9px", letterSpacing: "0.04em", textTransform: "uppercase", color: isSelected ? "rgba(255,255,255,0.65)" : "var(--makas-ink-muted)" }}>
@@ -242,7 +279,11 @@ export default function DateTimeSelect({ shopId, booking, allBarbers = [], selec
                 <span style={{ fontSize: "18px", fontWeight: isToday ? 700 : 400, lineHeight: 1.15 }}>
                   {format(date, "d")}
                 </span>
-                {isToday && !isSelected && (
+                {badge && !isSelected ? (
+                  <span style={{ fontSize: "8px", fontWeight: 600, letterSpacing: "0.03em", color: badge.color, textTransform: "uppercase" }}>
+                    {badge.text}
+                  </span>
+                ) : isToday && !isSelected && (
                   <div style={{ width: "3px", height: "3px", borderRadius: "50%", background: "var(--makas-ink)" }} />
                 )}
               </button>
@@ -311,28 +352,37 @@ export default function DateTimeSelect({ shopId, booking, allBarbers = [], selec
           {/* Days */}
           <div className="grid grid-cols-7 gap-0.5">
             {paddedDays.map((day, idx) => {
-              if (!day) return <div key={`pad-${idx}`} style={{ minHeight: "36px" }} />;
-              const available = isDateAvailable(day);
+              if (!day) return <div key={`pad-${idx}`} style={{ minHeight: "44px" }} />;
+              const { status, label } = dayState(day);
+              const selectable = status === "working" || status === "fullyBooked";
               const isSelected = localDate && format(day, "yyyy-MM-dd") === format(localDate, "yyyy-MM-dd");
               const isToday = format(day, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
+              const badge = badgeFor(status);
               return (
                 <button
                   key={day.toISOString()}
-                  disabled={!available}
+                  disabled={!selectable}
                   onClick={() => handleDateSelect(day)}
-                  className="flex items-center justify-center relative transition-all duration-150"
+                  title={status === "holiday" && label ? label : undefined}
+                  className="flex flex-col items-center justify-center relative transition-all duration-150"
                   style={{
-                    fontSize: "12px", borderRadius: "7px", minHeight: "36px",
+                    fontSize: "12px", borderRadius: "7px", minHeight: "44px",
                     background: isSelected ? "var(--makas-ink)" : "transparent",
-                    color: isSelected ? "var(--makas-bg)" : available ? "var(--makas-ink)" : "var(--makas-ink-muted)",
-                    cursor: available ? "pointer" : "not-allowed",
+                    color: isSelected ? "var(--makas-bg)" : selectable ? "var(--makas-ink)" : "var(--makas-ink-muted)",
+                    cursor: selectable ? "pointer" : "not-allowed",
                     fontWeight: isToday ? 700 : 400,
+                    opacity: selectable ? 1 : 0.6,
+                    padding: "2px",
                   }}
-                  onMouseEnter={(e) => { if (available && !isSelected) e.currentTarget.style.background = "var(--makas-surface2)"; }}
+                  onMouseEnter={(e) => { if (selectable && !isSelected) e.currentTarget.style.background = "var(--makas-surface2)"; }}
                   onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
                 >
-                  {format(day, "d")}
-                  {isToday && !isSelected && (
+                  <span>{format(day, "d")}</span>
+                  {badge && !isSelected ? (
+                    <span style={{ fontSize: "7px", fontWeight: 600, letterSpacing: "0.03em", color: badge.color, textTransform: "uppercase", marginTop: "1px" }}>
+                      {badge.text}
+                    </span>
+                  ) : isToday && !isSelected && (
                     <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2" style={{ width: "3px", height: "3px", background: "var(--makas-ink)", borderRadius: "50%" }} />
                   )}
                 </button>

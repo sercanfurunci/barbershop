@@ -22,10 +22,11 @@ const PROFILE_SELECT = {
   logo: true, coverImage: true, gallery: true,
   address: true, addressLine: true, city: true,
   latitude: true, longitude: true,
+  formattedAddress: true, locationUpdatedAt: true,
   phone: true, whatsappNumber: true, email: true,
   description: true, about: true,
   ownerName: true, foundedYear: true, shopType: true,
-  instagramUrl: true, facebookUrl: true, tiktokUrl: true,
+  instagramUrl: true, facebookUrl: true, tiktokUrl: true, website: true,
   social: true,
   googlePlaceId: true, googlePlacesKey: true, googleReviewUrl: true, mapsEmbed: true,
   reviewReminderEnabled: true,
@@ -65,7 +66,8 @@ export async function PATCH(request) {
 
   // ponytail: 20 PATCH / 5 min per IP per shop is plenty for a manual edit form.
   const ip = getIp(request);
-  if (!rateLimit(`shop-profile:${ip}:${g.shopId ?? "super"}`, { limit: 20, windowMs: 5 * 60_000 })) {
+  const rl = await rateLimit(`shop-profile:${ip}:${g.shopId ?? "super"}`, { limit: 20, windowMs: 5 * 60_000 });
+  if (!rl.ok) {
     return NextResponse.json({ error: "Çok fazla istek. Birazdan dene." }, { status: 429 });
   }
 
@@ -132,6 +134,18 @@ export async function PATCH(request) {
       data.latitude  = ll.lat;
       data.longitude = ll.lng;
     }
+  } else if ((body.addressLine !== undefined || body.city !== undefined) && process.env.GOOGLE_PLACES_API_KEY) {
+    // Auto-geocode when address changes but caller didn't send explicit coordinates
+    const current = await prisma.shop.findUnique({ where: { id: shopId }, select: { latitude: true, longitude: true, addressLine: true, city: true } });
+    if (!current?.latitude || !current?.longitude) {
+      const query = [data.addressLine ?? current?.addressLine, data.city ?? current?.city, "Türkiye"].filter(Boolean).join(", ");
+      try {
+        const geoRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${process.env.GOOGLE_PLACES_API_KEY}`);
+        const geoJson = await geoRes.json();
+        const loc = geoJson.results?.[0]?.geometry?.location;
+        if (loc) { data.latitude = loc.lat; data.longitude = loc.lng; }
+      } catch {}
+    }
   }
 
   // ── Social URLs (strict http(s) check) ──
@@ -139,6 +153,7 @@ export async function PATCH(request) {
     ["instagramUrl", null],
     ["facebookUrl",  null],
     ["tiktokUrl",    null],
+    ["website",      null],
   ]) {
     if (body[key] !== undefined) {
       const r = validateHttpUrl(body[key], host ? { host } : undefined);
@@ -161,9 +176,15 @@ export async function PATCH(request) {
   }
 
   // ── Google / map ──
-  if (body.mapsEmbed       !== undefined) data.mapsEmbed       = sanitizeString(body.mapsEmbed, { max: 1000 });
-  if (body.googlePlaceId   !== undefined) data.googlePlaceId   = sanitizeString(body.googlePlaceId,   { max: 200 });
-  if (body.googlePlacesKey !== undefined) data.googlePlacesKey = sanitizeString(body.googlePlacesKey, { max: 200 });
+  if (body.mapsEmbed        !== undefined) data.mapsEmbed        = sanitizeString(body.mapsEmbed, { max: 1000 });
+  if (body.googlePlaceId    !== undefined) data.googlePlaceId    = sanitizeString(body.googlePlaceId,   { max: 200 });
+  // placeId is the short-form alias sent by the location picker (maps to googlePlaceId)
+  if (body.placeId          !== undefined) data.googlePlaceId    = sanitizeString(body.placeId, { max: 200 });
+  if (body.googlePlacesKey  !== undefined) data.googlePlacesKey  = sanitizeString(body.googlePlacesKey, { max: 200 });
+  if (body.formattedAddress !== undefined) {
+    data.formattedAddress  = sanitizeString(body.formattedAddress, { max: 500 });
+    if (body.formattedAddress) data.locationUpdatedAt = new Date();
+  }
   if (body.googleReviewUrl !== undefined) {
     const r = validateHttpUrl(body.googleReviewUrl);
     if (!r.ok) return NextResponse.json({ error: `googleReviewUrl: ${r.error}` }, { status: 400 });

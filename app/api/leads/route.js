@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req) {
   // 3 leads per 10 minutes per IP
   const ip = getIp(req);
-  const rl = rateLimit(`leads:${ip}`, { limit: 3, windowMs: 10 * 60 * 1000 });
+  const rl = await rateLimit(`leads:${ip}`, { limit: 3, windowMs: 10 * 60 * 1000 });
   if (!rl.ok) {
     return NextResponse.json(
       { ok: false, error: "Çok fazla istek. Lütfen bekleyin." },

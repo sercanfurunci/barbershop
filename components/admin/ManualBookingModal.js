@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiFetch } from "@/lib/api";
 import { todayStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -39,14 +40,6 @@ const selectStyle = {
   appearance: "none",
 };
 
-function generateTimeSlots(startH, endH) {
-  const slots = [];
-  for (let h = startH; h < endH; h++) {
-    slots.push(`${String(h).padStart(2, "0")}:00`);
-    slots.push(`${String(h).padStart(2, "0")}:30`);
-  }
-  return slots;
-}
 
 export default function ManualBookingModal({ onClose, defaultBarberId = "", initialDate = "" }) {
   useBodyScrollLock();
@@ -64,6 +57,9 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
   const [error, setError] = useState("");
   const [services, setServices] = useState([]);
   const [barbers, setBarbers] = useState([]);
+  const [slots, setSlots] = useState([]);
+  const [slotsMeta, setSlotsMeta] = useState({ loading: false, holiday: null, message: null });
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     fetch("/api/services").then(r => r.json()).then(data => setServices(Array.isArray(data) ? data : [])).catch(() => {});
@@ -72,12 +68,50 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
 
   const selectedService = services.find((s) => s.id === form.serviceId);
   const selectedBarber = barbers.find((b) => b.id === form.barberId);
-  const timeSlots = generateTimeSlots(9, 21);
 
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  // Ask the same endpoint the public booking uses — so admin selection honors
+  // working hours / breaks / holidays / existing appointments in one query.
+  useEffect(() => {
+    const shop = selectedBarber?.shopId;
+    if (!form.barberId || !form.serviceId || !form.date || !shop) return;
+    let cancelled = false;
+    apiFetch(`/api/availability?shopId=${shop}&barberId=${form.barberId}&serviceId=${form.serviceId}&date=${form.date}`)
+      .then((r) => {
+        if (cancelled) return;
+        setSlots(Array.isArray(r.slots) ? r.slots : []);
+        setSlotsMeta({
+          loading: false,
+          holiday: r.holiday ?? null,
+          message: (r.slots?.length ?? 0) === 0 && !r.holiday ? "Bu gün boş saat yok." : null,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) { setSlots([]); setSlotsMeta({ loading: false, holiday: null, message: "Uygun saatler alınamadı." }); }
+      });
+    return () => { cancelled = true; };
+  }, [form.barberId, form.serviceId, form.date, selectedBarber?.shopId]);
 
-  const handleSubmit = (e) => {
+  // Change any field that invalidates the fetched slot list → also drop the
+  // stale time so we never submit a slot that's since fallen outside the window.
+  const set = (k, v) => setForm((f) => {
+    const next = { ...f, [k]: v };
+    if (k === "barberId" || k === "serviceId" || k === "date") {
+      next.time = "";
+      // Mark meta as loading so the dropdown shows "Yükleniyor…" until the effect fires.
+      if (next.barberId && next.serviceId && next.date) {
+        setSlots([]);
+        setSlotsMeta({ loading: true, holiday: null, message: null });
+      } else {
+        setSlots([]);
+        setSlotsMeta({ loading: false, holiday: null, message: null });
+      }
+    }
+    return next;
+  });
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (busy) return;
     if (!form.client.trim()) { setError("Müşteri adı gerekli"); return; }
     if (!form.serviceId) { setError("Hizmet seçin"); return; }
     if (!form.barberId) { setError("Berber seçin"); return; }
@@ -85,24 +119,29 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
     if (!form.time) { setError("Saat seçin"); return; }
     setError("");
 
-    addAppointment({
-      client: form.client.trim(),
-      phone: form.phone.trim(),
-      serviceId: form.serviceId,
-      service: selectedService?.nameTr ?? form.serviceId,
-      barberId: form.barberId,
-      barber: selectedBarber?.nameTr ?? form.barberId,
-      date: form.date,
-      time: form.time,
-      duration: selectedService?.duration ?? 45,
-      price: selectedService?.price ?? 0,
-      notes: form.notes.trim(),
-      source: "MANUAL",
-      status: "confirmed",
-    });
-
-    setSaved(true);
-    setTimeout(onClose, 1200);
+    setBusy(true);
+    try {
+      await addAppointment({
+        client: form.client.trim(),
+        phone: form.phone.trim(),
+        serviceId: form.serviceId,
+        service: selectedService?.nameTr ?? form.serviceId,
+        barberId: form.barberId,
+        barber: selectedBarber?.nameTr ?? form.barberId,
+        date: form.date,
+        time: form.time,
+        duration: selectedService?.duration ?? 45,
+        price: selectedService?.price ?? 0,
+        notes: form.notes.trim(),
+        source: "MANUAL",
+        status: "confirmed",
+      });
+      setSaved(true);
+      setTimeout(onClose, 1200);
+    } catch (err) {
+      setError(err.message || "Randevu kaydedilemedi");
+      setBusy(false);
+    }
   };
 
   return (
@@ -267,9 +306,15 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                       value={form.time}
                       onChange={(e) => set("time", e.target.value)}
                       style={selectStyle}
+                      disabled={slotsMeta.loading || slots.length === 0}
                     >
-                      <option value="">Saat Seçin</option>
-                      {timeSlots.map((t) => (
+                      <option value="">
+                        {slotsMeta.loading ? "Yükleniyor…"
+                          : slotsMeta.holiday ? `Tatil: ${slotsMeta.holiday}`
+                          : slots.length === 0 ? (slotsMeta.message ?? "Önce hizmet/berber/tarih")
+                          : "Saat Seçin"}
+                      </option>
+                      {slots.map((t) => (
                         <option key={t} value={t}>{t}</option>
                       ))}
                     </select>
@@ -318,16 +363,18 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
 
                 <button
                   type="submit"
+                  disabled={busy}
                   style={{
                     width: "100%", height: "44px",
                     background: C.primary, color: "#fff",
                     border: "none", borderRadius: "10px",
                     fontSize: "13px", fontWeight: 600,
-                    cursor: "pointer", letterSpacing: "0.03em",
+                    cursor: busy ? "wait" : "pointer", letterSpacing: "0.03em",
                     marginTop: "4px",
+                    opacity: busy ? 0.7 : 1,
                   }}
                 >
-                  Randevuyu Kaydet
+                  {busy ? "Kaydediliyor…" : "Randevuyu Kaydet"}
                 </button>
               </div>
             )}

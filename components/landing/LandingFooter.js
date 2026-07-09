@@ -49,6 +49,21 @@ export default function LandingFooter() {
 
         <div>
           <p className="mb-3.5 text-[12px] font-bold uppercase tracking-[0.1em] text-background/50 font-mono-custom">
+            Müşteriler
+          </p>
+          <Link href="/salons" className="mb-1 block py-0.5 text-sm text-background/70 no-underline hover:text-background">
+            Salonları Keşfet
+          </Link>
+          <Link href="/salons?sort=rating" className="mb-1 block py-0.5 text-sm text-background/70 no-underline hover:text-background">
+            En İyi Salonlar
+          </Link>
+          <Link href="/salons?sort=newest" className="mb-1 block py-0.5 text-sm text-background/70 no-underline hover:text-background">
+            Yeni Salonlar
+          </Link>
+        </div>
+
+        <div>
+          <p className="mb-3.5 text-[12px] font-bold uppercase tracking-[0.1em] text-background/50 font-mono-custom">
             İletişim
           </p>
           <a
