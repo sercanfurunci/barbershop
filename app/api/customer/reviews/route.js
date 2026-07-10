@@ -7,25 +7,63 @@ export async function GET(request) {
   const payload = await requireAuth(request);
   if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const userId = payload.userId;
+
+  // Build OR conditions to find all reviews that belong to this user.
+  // The userId field is the primary key (set on all new reviews).
+  // Fallbacks cover reviews submitted before this field was added:
+  //   • customerId = User.clientId (if the User was already linked to a Client)
+  //   • customerId in phone-matched Clients (across all shops the user ever booked at)
+  const orConditions = [{ userId }];
+
   const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: { clientId: true },
+    where: { id: userId },
+    select: { clientId: true, phone: true },
   });
 
-  if (!user?.clientId) return NextResponse.json([]);
+  if (user?.clientId) {
+    orConditions.push({ customerId: user.clientId });
+  }
+
+  if (user?.phone) {
+    const phone10 = user.phone.replace(/\D/g, "").slice(-10);
+    if (phone10.length >= 10) {
+      const phoneClients = await prisma.client.findMany({
+        where: { phone: { endsWith: phone10 } },
+        select: { id: true },
+      });
+      if (phoneClients.length > 0) {
+        orConditions.push({ customerId: { in: phoneClients.map(c => c.id) } });
+      }
+    }
+  }
 
   const reviews = await prisma.review.findMany({
-    where:   { customerId: user.clientId, barberRating: { gt: 0 } },
+    where:   { OR: orConditions, barberRating: { gt: 0 } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true, barberRating: true, comment: true, createdAt: true,
-      barber:      { select: { id: true, nameTr: true, avatar: true } },
-      shop:        { select: { id: true, name: true, slug: true } },
-      appointment: { select: { date: true, service: { select: { nameTr: true } } } },
+      barber: {
+        select: {
+          id: true, slug: true, nameTr: true, titleTr: true,
+          avatar: true, profilePhoto: true,
+        },
+      },
+      shop: { select: { id: true, name: true, slug: true } },
+      appointment: {
+        select: {
+          id: true, date: true,
+          service: { select: { nameTr: true } },
+        },
+      },
     },
   });
 
-  return NextResponse.json(reviews);
+  // Deduplicate (in case a review matched multiple OR branches)
+  const seen = new Set();
+  const unique = reviews.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+
+  return NextResponse.json(unique);
 }
 
 // POST /api/customer/reviews
@@ -58,11 +96,11 @@ export async function POST(request) {
   if (appt.status !== "COMPLETED") return NextResponse.json({ error: "Sadece tamamlanan randevular değerlendirilebilir" }, { status: 422 });
   if (appt.reviewed) return NextResponse.json({ error: "Bu randevu zaten değerlendirildi" }, { status: 409 });
 
+  // Optional ownership check — only enforced if the User has a clientId linked
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
     select: { clientId: true },
   });
-
   if (user?.clientId && appt.clientId !== user.clientId) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
   }
@@ -77,7 +115,8 @@ export async function POST(request) {
         appointmentId,
         barberId:    appt.barberId,
         customerId:  appt.clientId,
-        shopRating:  0, // schema compat — no longer collected
+        userId:      payload.userId, // ← the fix: always store the User ID
+        shopRating:  0,              // schema compat — no longer collected
         barberRating,
         comment:     comment?.trim() || null,
       },

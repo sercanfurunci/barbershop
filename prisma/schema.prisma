@@ -227,6 +227,7 @@ model User {
   favorites        CustomerFavorite[]
   barberFavorites  BarberFavorite[]
   loyaltyPoints    LoyaltyPoint[]
+  reviews          Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -720,6 +721,8 @@ model Review {
   barber        Barber      @relation(fields: [barberId], references: [id], onDelete: Cascade)
   customerId    String? // null for walk-ins or pre-account submissions
   customer      Client?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  userId        String?     // set when submitted by an authenticated CUSTOMER User account
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   shopRating    Int // 1-5; salon as a whole
   barberRating  Int // 1-5; the assigned barber
   comment       String?     @db.Text

@@ -4,25 +4,33 @@ import { requireAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+// Returns the review only if the authenticated user owns it.
+// Ownership: userId matches OR (legacy) customerId matches user's clientId.
 async function getOwnedReview(reviewId, userId) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { clientId: true },
-  });
-  if (!user?.clientId) return null;
-
   const review = await prisma.review.findUnique({
     where: { id: reviewId },
     select: {
       id: true, barberRating: true, comment: true,
       barberId: true, appointmentId: true,
-      customerId: true,
+      customerId: true, userId: true,
       barber: { select: { rating: true, reviewCount: true } },
     },
   });
+  if (!review) return null;
 
-  if (!review || review.customerId !== user.clientId) return null;
-  return review;
+  // Primary: userId on the review (all reviews created after the fix)
+  if (review.userId === userId) return review;
+
+  // Fallback: legacy reviews stored before userId field was added
+  if (review.customerId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { clientId: true },
+    });
+    if (user?.clientId && review.customerId === user.clientId) return review;
+  }
+
+  return null;
 }
 
 // PATCH /api/customer/reviews/:id — edit barberRating or comment
@@ -46,7 +54,6 @@ export async function PATCH(request, { params }) {
   const oldRating  = review.barberRating;
   const { rating: oldAvg, reviewCount } = review.barber;
 
-  // Recalculate barber avg: replace old contribution with new one
   const newAvg = reviewCount > 0
     ? (oldAvg * reviewCount - oldRating + newRating) / reviewCount
     : newRating;
@@ -81,7 +88,7 @@ export async function DELETE(request, { params }) {
   const newCount = reviewCount - 1;
   const newAvg   = newCount > 0
     ? (oldAvg * reviewCount - review.barberRating) / newCount
-    : 5.0; // back to default when no reviews remain
+    : 5.0;
 
   await prisma.$transaction([
     prisma.review.delete({ where: { id } }),

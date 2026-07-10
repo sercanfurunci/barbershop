@@ -252,6 +252,15 @@ export async function POST(request) {
               data: { shopId, name: name.trim(), phone, email: email || null },
             });
 
+        // If a logged-in CUSTOMER hasn't been linked to a Client yet, do it now.
+        // This ensures future review lookups via User.clientId work across all shops.
+        if (bookedByUserId && !existingClient) {
+          await tx.user.updateMany({
+            where: { id: bookedByUserId, clientId: null },
+            data:  { clientId: client.id },
+          }).catch(() => {}); // ignore unique constraint if already set by a race
+        }
+
         return tx.appointment.create({
           data: {
             shopId,

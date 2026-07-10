@@ -7,7 +7,10 @@ import {
   Scissors, Calendar, Clock, Heart, User, Settings, LogOut,
   Star, MapPin, Phone, ChevronRight, X, Check, Loader2,
   Eye, EyeOff, Trash2, Bell, BellOff, MessageSquare, Pencil,
+  Search, Filter, SortAsc, SortDesc, BadgeCheck, ExternalLink,
+  ChevronDown,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
 const TABS = [
@@ -84,7 +87,7 @@ export default function AccountPage() {
             {tab === "upcoming"  && <AppointmentsTab type="upcoming" />}
             {tab === "history"   && <AppointmentsTab type="history" />}
             {tab === "favorites" && <FavoritesTab />}
-            {tab === "reviews"   && <MyReviewsTab />}
+            {tab === "reviews"   && <MyReviewsTab onSwitchTab={setTab} />}
             {tab === "profile"   && <ProfileTab user={user} onUpdated={refreshUser} />}
             {tab === "settings"  && <SettingsTab user={user} onUpdated={refreshUser} onLogout={handleLogout} />}
           </div>
@@ -509,10 +512,32 @@ function FavoritesTab() {
 
 // ── My Reviews ───────────────────────────────────────────────────────────────
 
-function MyReviewsTab() {
-  const [reviews, setReviews] = useState(null);
-  const [editing, setEditing] = useState(null); // { id, barberRating, comment }
-  const [toast, showToast] = useToast();
+const SORT_OPTIONS = [
+  { value: "newest",   label: "En Yeni" },
+  { value: "oldest",   label: "En Eski" },
+  { value: "highest",  label: "En Yüksek Puan" },
+  { value: "lowest",   label: "En Düşük Puan" },
+];
+
+function ReviewStars({ rating, size = 13 }) {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      {[1,2,3,4,5].map(i => (
+        <Star key={i} size={size} fill={i <= rating ? "#f59e0b" : "none"} color={i <= rating ? "#f59e0b" : "#d1d5db"} strokeWidth={1.5} />
+      ))}
+    </span>
+  );
+}
+
+function MyReviewsTab({ onSwitchTab }) {
+  const [reviews, setReviews]     = useState(null);
+  const [editing, setEditing]     = useState(null);
+  const [deleting, setDeleting]   = useState(null); // id being deleted
+  const [saving, setSaving]       = useState(false);
+  const [search, setSearch]       = useState("");
+  const [starFilter, setStarFilter] = useState(0); // 0 = all
+  const [sort, setSort]           = useState("newest");
+  const [sortOpen, setSortOpen]   = useState(false);
 
   useEffect(() => {
     fetch("/api/customer/reviews")
@@ -522,60 +547,274 @@ function MyReviewsTab() {
   }, []);
 
   async function saveEdit() {
-    if (!editing) return;
-    const res = await fetch(`/api/customer/reviews/${editing.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ barberRating: editing.barberRating, comment: editing.comment }),
-    });
-    if (res.ok) {
-      setReviews(prev => prev.map(r =>
-        r.id === editing.id ? { ...r, barberRating: editing.barberRating, comment: editing.comment } : r
-      ));
-      setEditing(null);
-      showToast("Yorum güncellendi");
-    } else {
-      const d = await res.json().catch(() => ({}));
-      showToast(d.error || "Güncellenemedi", false);
-    }
+    if (!editing || saving) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/customer/reviews/${editing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ barberRating: editing.barberRating, comment: editing.comment }),
+      });
+      if (res.ok) {
+        setReviews(prev => prev.map(r =>
+          r.id === editing.id ? { ...r, barberRating: editing.barberRating, comment: editing.comment } : r
+        ));
+        setEditing(null);
+        toast.success("Yorum güncellendi");
+      } else {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d.error || "Güncellenemedi");
+      }
+    } finally { setSaving(false); }
   }
 
-  async function deleteReview(id) {
-    if (!confirm("Bu yorumu silmek istediğinizden emin misiniz?")) return;
-    const res = await fetch(`/api/customer/reviews/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setReviews(prev => prev.filter(r => r.id !== id));
-      showToast("Yorum silindi");
-    } else {
-      showToast("Silinemedi", false);
-    }
+  async function confirmDelete(id) {
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/customer/reviews/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setReviews(prev => prev.filter(r => r.id !== id));
+        toast.success("Yorum silindi");
+      } else {
+        toast.error("Yorum silinemedi");
+      }
+    } finally { setDeleting(null); }
   }
+
+  // ── filter + sort ──────────────────────────────────────────────────────────
+  const q = search.trim().toLowerCase();
+  const filtered = (reviews ?? []).filter(r => {
+    if (starFilter > 0 && r.barberRating !== starFilter) return false;
+    if (!q) return true;
+    return (
+      r.barber?.nameTr?.toLowerCase().includes(q) ||
+      r.shop?.name?.toLowerCase().includes(q) ||
+      r.appointment?.service?.nameTr?.toLowerCase().includes(q) ||
+      r.comment?.toLowerCase().includes(q)
+    );
+  }).sort((a, b) => {
+    if (sort === "oldest")  return new Date(a.createdAt) - new Date(b.createdAt);
+    if (sort === "highest") return b.barberRating - a.barberRating;
+    if (sort === "lowest")  return a.barberRating - b.barberRating;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
 
   if (reviews === null) {
-    return <div className="flex items-center justify-center py-20"><Loader2 size={22} className="animate-spin text-muted-foreground" /></div>;
+    return <div className="flex items-center justify-center py-24"><Loader2 size={22} className="animate-spin text-muted-foreground" /></div>;
   }
 
   if (reviews.length === 0) {
     return (
       <EmptyState
-        icon={MessageSquare}
-        title="Henüz yorum yapmadınız"
-        sub="Tamamlanan randevularınızdan berber değerlendirmesi yapabilirsiniz."
-        action={<button onClick={() => {}} className="rounded-full bg-foreground text-background text-[13px] font-semibold px-5 py-2.5 hover:bg-foreground/90 transition-colors">Randevularım</button>}
+        icon={Star}
+        title="Henüz hiç berber değerlendirmesi yapmadınız"
+        sub="Tamamlanan randevularınızdan berber değerlendirmesi yaparak diğer müşterilere yardımcı olun."
+        action={
+          <button
+            onClick={() => onSwitchTab?.("history")}
+            className="rounded-full bg-foreground text-background text-[13px] font-semibold px-5 py-2.5 hover:bg-foreground/90 transition-colors"
+          >
+            Tamamlanan Randevularım
+          </button>
+        }
       />
     );
   }
 
   return (
-    <div className="space-y-3">
-      {toast && <Toast {...toast} />}
+    <div className="space-y-4">
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <input
+            type="search"
+            placeholder="Berber, salon veya hizmet ara…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 h-9 rounded-[10px] border border-border bg-card text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/40 transition-colors"
+          />
+        </div>
 
+        {/* Star filter chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 shrink-0">
+          {[0,5,4,3,2,1].map(s => (
+            <button
+              key={s}
+              onClick={() => setStarFilter(v => v === s ? 0 : s)}
+              className="shrink-0 flex items-center gap-1 rounded-full border px-2.5 h-9 text-[12px] font-medium transition-all"
+              style={{
+                borderColor: starFilter === s ? "var(--makas-ink)" : "var(--makas-border)",
+                background:  starFilter === s ? "var(--makas-ink)" : "transparent",
+                color:       starFilter === s ? "#fff" : "var(--makas-ink-secondary)",
+              }}
+            >
+              {s === 0 ? "Tümü" : <><Star size={11} fill="#f59e0b" color="#f59e0b" strokeWidth={0} />{s}</>}
+            </button>
+          ))}
+        </div>
+
+        {/* Sort */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setSortOpen(v => !v)}
+            className="flex items-center gap-1.5 h-9 px-3 rounded-[10px] border border-border text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <SortDesc size={13} />
+            {SORT_OPTIONS.find(o => o.value === sort)?.label}
+            <ChevronDown size={11} style={{ transform: sortOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+          </button>
+          {sortOpen && (
+            <div
+              className="absolute right-0 top-full mt-1 bg-card border border-border rounded-[10px] shadow-lg z-20 py-1 min-w-[160px]"
+              onMouseLeave={() => setSortOpen(false)}
+            >
+              {SORT_OPTIONS.map(o => (
+                <button
+                  key={o.value}
+                  onClick={() => { setSort(o.value); setSortOpen(false); }}
+                  className="w-full text-left px-3 py-2 text-[13px] hover:bg-secondary/60 transition-colors"
+                  style={{ color: sort === o.value ? "var(--makas-ink)" : "var(--makas-ink-secondary)", fontWeight: sort === o.value ? 600 : 400 }}
+                >
+                  {o.value === sort && <Check size={12} className="inline mr-1.5" />}
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Results count */}
+      {(search || starFilter > 0) && (
+        <p className="text-[12px] text-muted-foreground">{filtered.length} yorum bulundu</p>
+      )}
+
+      {filtered.length === 0 && (search || starFilter > 0) && (
+        <EmptyState
+          icon={Search}
+          title="Sonuç bulunamadı"
+          sub="Farklı bir arama veya filtre deneyin."
+          action={<button onClick={() => { setSearch(""); setStarFilter(0); }} className="rounded-full border border-border text-[13px] font-medium px-4 py-2 hover:bg-secondary/60 transition-colors">Filtreleri Temizle</button>}
+        />
+      )}
+
+      {/* ── Review cards ── */}
+      <div className="space-y-4">
+        {filtered.map(r => (
+          <div
+            key={r.id}
+            className="rounded-[16px] border border-border bg-card overflow-hidden transition-shadow hover:shadow-md"
+            style={{ animation: "fadeInUp 0.25s ease both" }}
+          >
+            {/* Card header: barber avatar + name + shop + badge */}
+            <div className="flex items-start gap-3 p-4 pb-3">
+              {/* Avatar */}
+              <div className="shrink-0 w-11 h-11 rounded-full overflow-hidden bg-secondary border border-border flex items-center justify-center">
+                {(r.barber?.profilePhoto || r.barber?.avatar) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={r.barber.profilePhoto || r.barber.avatar} alt={r.barber.nameTr} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="font-display text-[16px] font-light text-foreground">{(r.barber?.nameTr?.[0] || "B").toUpperCase()}</span>
+                )}
+              </div>
+
+              {/* Name + shop + service */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold text-[14px] text-foreground leading-snug">{r.barber?.nameTr}</p>
+                  <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 font-medium">
+                    <BadgeCheck size={10} />
+                    Doğrulanmış Randevu
+                  </span>
+                </div>
+                <p className="text-[12px] text-muted-foreground mt-0.5 line-clamp-1">
+                  {r.shop?.name}
+                  {r.appointment?.service?.nameTr && ` · ${r.appointment.service.nameTr}`}
+                </p>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-col gap-1 shrink-0">
+                <button
+                  onClick={() => setEditing({ id: r.id, barberRating: r.barberRating, comment: r.comment || "" })}
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-border rounded-full px-2.5 py-1 transition-colors"
+                >
+                  <Pencil size={10} />
+                  Düzenle
+                </button>
+                <button
+                  onClick={() => setDeleting(r.id)}
+                  className="flex items-center gap-1 text-[11px] text-red-500 hover:text-red-700 border border-red-200 rounded-full px-2.5 py-1 transition-colors"
+                >
+                  <Trash2 size={10} />
+                  Sil
+                </button>
+              </div>
+            </div>
+
+            {/* Rating + comment */}
+            <div className="px-4 pb-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <ReviewStars rating={r.barberRating} size={14} />
+                <span className="text-[12px] font-semibold text-foreground">{r.barberRating}.0</span>
+              </div>
+              {r.comment && (
+                <p className="text-[13px] text-secondary-foreground leading-relaxed">&ldquo;{r.comment}&rdquo;</p>
+              )}
+            </div>
+
+            {/* Footer: dates + links */}
+            <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-secondary/30 border-t border-border flex-wrap">
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                {r.appointment?.date && (
+                  <span className="flex items-center gap-1">
+                    <Calendar size={10} />
+                    Randevu: {new Date(r.appointment.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  <MessageSquare size={10} />
+                  Yorum: {new Date(r.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {r.barber?.slug && r.shop?.slug && (
+                  <Link
+                    href={`/${r.shop.slug}/berber/${r.barber.slug}`}
+                    className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-border rounded-full px-2.5 py-1 transition-colors no-underline"
+                  >
+                    <ExternalLink size={10} />
+                    Berberi Gör
+                  </Link>
+                )}
+                {r.shop?.slug && (
+                  <Link
+                    href={`/${r.shop.slug}`}
+                    className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-border rounded-full px-2.5 py-1 transition-colors no-underline"
+                  >
+                    <ExternalLink size={10} />
+                    Salonu Gör
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Edit modal ── */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={() => setEditing(null)}>
-          <div className="w-full max-w-md bg-card rounded-2xl p-6 space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div
+            className="w-full max-w-md bg-card rounded-2xl p-6 space-y-4 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+            style={{ animation: "slideUp 0.2s ease" }}
+          >
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-[17px]">Yorumu Düzenle</h3>
-              <button onClick={() => setEditing(null)}><X size={18} className="text-muted-foreground" /></button>
+              <button onClick={() => setEditing(null)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
             </div>
             <div>
               <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Puan</p>
@@ -585,66 +824,60 @@ function MyReviewsTab() {
               value={editing.comment || ""}
               onChange={e => setEditing(ed => ({ ...ed, comment: e.target.value }))}
               placeholder="Yorumunuz (isteğe bağlı)"
-              rows={3}
-              className="w-full rounded-[10px] border border-border bg-background px-3 py-2.5 text-[14px] resize-none focus:outline-none"
+              rows={4}
+              className="w-full rounded-[10px] border border-border bg-background px-3 py-2.5 text-[14px] resize-none outline-none focus:border-foreground/40 transition-colors"
             />
             <button
               onClick={saveEdit}
-              className="w-full h-11 rounded-full bg-foreground text-background text-[14px] font-semibold hover:opacity-90 transition-opacity"
+              disabled={saving}
+              className="w-full h-11 rounded-full bg-foreground text-background text-[14px] font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
             >
+              {saving && <Loader2 size={14} className="animate-spin" />}
               Kaydet
             </button>
           </div>
         </div>
       )}
 
-      {reviews.map(r => (
-        <div key={r.id} className="rounded-[14px] border border-border bg-card p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-semibold text-[14px] text-foreground">{r.barber?.nameTr}</p>
-                <span className="text-[11px] text-muted-foreground">·</span>
-                <p className="text-[13px] text-muted-foreground">{r.shop?.name}</p>
+      {/* ── Delete confirm modal ── */}
+      {deleting && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={() => setDeleting(null)}>
+          <div
+            className="w-full max-w-sm bg-card rounded-2xl p-6 space-y-4 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+            style={{ animation: "slideUp 0.2s ease" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                <Trash2 size={18} className="text-red-500" />
               </div>
-              {r.appointment?.date && (
-                <p className="text-[12px] text-muted-foreground mt-0.5">
-                  {new Date(r.appointment.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
-                  {r.appointment?.service?.nameTr && ` · ${r.appointment.service.nameTr}`}
-                </p>
-              )}
-              <div className="mt-2 flex items-center gap-1">
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} size={13} fill={i <= r.barberRating ? "#f59e0b" : "none"} color={i <= r.barberRating ? "#f59e0b" : "#d1d5db"} strokeWidth={1.5} />
-                ))}
-                <span className="text-[12px] font-semibold text-foreground ml-1">{r.barberRating}/5</span>
+              <div>
+                <h3 className="font-semibold text-[16px]">Yorumu Sil</h3>
+                <p className="text-[13px] text-muted-foreground mt-0.5">Bu yorum kalıcı olarak silinecek.</p>
               </div>
-              {r.comment && (
-                <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">&ldquo;{r.comment}&rdquo;</p>
-              )}
             </div>
-            <div className="flex flex-col gap-1.5 shrink-0">
+            <div className="flex gap-2">
               <button
-                onClick={() => setEditing({ id: r.id, barberRating: r.barberRating, comment: r.comment || "" })}
-                className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground border border-border rounded-full px-2.5 py-1 transition-colors"
+                onClick={() => setDeleting(null)}
+                className="flex-1 h-10 rounded-full border border-border text-[14px] font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Pencil size={11} />
-                Düzenle
+                Vazgeç
               </button>
               <button
-                onClick={() => deleteReview(r.id)}
-                className="flex items-center gap-1 text-[12px] text-red-500 hover:text-red-700 border border-red-200 rounded-full px-2.5 py-1 transition-colors"
+                onClick={() => confirmDelete(deleting)}
+                className="flex-1 h-10 rounded-full bg-red-500 text-white text-[14px] font-semibold hover:bg-red-600 transition-colors"
               >
-                <Trash2 size={11} />
                 Sil
               </button>
             </div>
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground/60">
-            {new Date(r.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
-          </p>
         </div>
-      ))}
+      )}
+
+      <style>{`
+        @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes slideUp  { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+      `}</style>
     </div>
   );
 }
