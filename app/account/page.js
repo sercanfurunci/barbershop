@@ -439,8 +439,8 @@ function FavoritesTab() {
     );
   }
 
-  const rating = (s) => s.googleRating ?? s.avgRating;
-  const ratingCount = (s) => s.googleTotalRatings ?? s.totalReviews;
+  const rating = (s) => s.googleRating ?? null;
+  const ratingCount = (s) => s.googleTotalRatings ?? null;
 
   return (
     <div className="space-y-3">

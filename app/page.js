@@ -358,7 +358,8 @@ function HeroPreview() {
 
 function SalonCard({ shop, index = 0, distanceKm }) {
   const img = shop.coverImage || (Array.isArray(shop.gallery) && shop.gallery[0]) || null;
-  const rating = shop.avgRating ? Number(shop.avgRating) : null;
+  const rating = shop.googleRating ? Number(shop.googleRating) : null;
+  const ratingCount = shop.googleTotalRatings ?? null;
 
   return (
     <FadeUp delay={index * 0.06} className="h-full">
@@ -384,13 +385,13 @@ function SalonCard({ shop, index = 0, distanceKm }) {
             </div>
           )}
 
-          {/* Rating badge */}
+          {/* Rating badge — Google Business only */}
           {rating ? (
             <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-background/95 px-2.5 py-1 text-[12px] font-semibold text-foreground backdrop-blur-sm">
               <Star size={11} fill="#F59E0B" className="text-amber-500" />
               {rating.toFixed(1)}
-              {shop.totalReviews ? (
-                <span className="text-muted-foreground font-normal">({shop.totalReviews})</span>
+              {ratingCount ? (
+                <span className="text-muted-foreground font-normal">({ratingCount})</span>
               ) : null}
             </div>
           ) : null}
@@ -490,8 +491,8 @@ function SalonSection({ title, eyebrow, href, shops, bg = "var(--makas-bg)", sho
 // the top section in with a fade once the data arrives.
 
 function featuredScore(s) {
-  const r = parseFloat(s.avgRating) || 0;
-  const n = parseInt(s.totalReviews) || 0;
+  const r = parseFloat(s.googleRating) || 0;
+  const n = parseInt(s.googleTotalRatings) || 0;
   return r * 2 + Math.log(n + 1) * 1.5 + (s.coverImage ? 1 : 0);
 }
 

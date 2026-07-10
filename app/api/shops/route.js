@@ -79,7 +79,7 @@ export async function GET(request) {
   }
 
   if (minRating > 0) {
-    andClauses.push({ avgRating: { gte: minRating } });
+    andClauses.push({ googleRating: { gte: minRating } });
   }
 
   if (service) {
@@ -153,9 +153,9 @@ export async function GET(request) {
   const orderBy =
     sort === "newest"        ? [{ createdAt: "desc" }, { id: "asc" }]
     : sort === "alpha"       ? [{ name: "asc" }, { id: "asc" }]
-    : sort === "mostReviewed"? [{ totalReviews: "desc" }, { avgRating: "desc" }, { id: "asc" }]
-    : sort === "rating"      ? [{ avgRating: "desc" }, { totalReviews: "desc" }, { id: "asc" }]
-    : [{ appointments: { _count: "desc" } }, { avgRating: "desc" }, { id: "asc" }]; // "popular" default + "nearest" fallback
+    : sort === "mostReviewed"? [{ googleTotalRatings: "desc" }, { googleRating: "desc" }, { id: "asc" }]
+    : sort === "rating"      ? [{ googleRating: "desc" }, { googleTotalRatings: "desc" }, { id: "asc" }]
+    : [{ appointments: { _count: "desc" } }, { googleRating: "desc" }, { id: "asc" }]; // "popular" default + "nearest" fallback
 
   const [shops, total] = await Promise.all([
     prisma.shop.findMany({

@@ -122,11 +122,11 @@ const SalonCard = memo(function SalonCard({ shop, userLoc }) {
               : <Scissors size={28} className="text-muted-foreground/30" />}
           </div>
         )}
-        {(shop.googleRating ?? shop.avgRating) ? (
+        {shop.googleRating ? (
           <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-semibold text-foreground backdrop-blur-sm">
             <Star size={11} strokeWidth={2.5} className="text-amber-500" />
-            {Number(shop.googleRating ?? shop.avgRating).toFixed(1)}
-            {(shop.googleTotalRatings ?? shop.totalReviews) ? <span className="text-muted-foreground font-normal">({shop.googleTotalRatings ?? shop.totalReviews})</span> : null}
+            {Number(shop.googleRating).toFixed(1)}
+            {shop.googleTotalRatings ? <span className="text-muted-foreground font-normal">({shop.googleTotalRatings})</span> : null}
           </div>
         ) : null}
         {shopTypeLabel ? (
@@ -147,20 +147,17 @@ const SalonCard = memo(function SalonCard({ shop, userLoc }) {
           <StatusPill shop={shop} />
         </div>
 
-        {/* 2. Rating (Google preferred, internal fallback) */}
+        {/* 2. Rating — Google Business only */}
         <div className="flex items-center gap-0.5 mt-1" style={{ minHeight: "1.1rem" }}>
-          {(shop.googleRating ?? shop.avgRating) ? (
+          {shop.googleRating ? (
             <>
-              {[1,2,3,4,5].map(i => {
-                const r = shop.googleRating ?? shop.avgRating;
-                return (
-                  <Star key={i} size={10} strokeWidth={1.5}
-                    fill={i <= Math.min(5, Math.round(Number(r))) ? "#f59e0b" : "none"}
-                    color={i <= Math.min(5, Math.round(Number(r))) ? "#f59e0b" : "#d1d5db"} />
-                );
-              })}
-              <span className="text-[12px] font-semibold text-foreground ml-1">{Number(shop.googleRating ?? shop.avgRating).toFixed(1)}</span>
-              {(shop.googleTotalRatings ?? shop.totalReviews) ? <span className="text-[11px] text-muted-foreground ml-0.5">({shop.googleTotalRatings ?? shop.totalReviews})</span> : null}
+              {[1,2,3,4,5].map(i => (
+                <Star key={i} size={10} strokeWidth={1.5}
+                  fill={i <= Math.min(5, Math.round(Number(shop.googleRating))) ? "#f59e0b" : "none"}
+                  color={i <= Math.min(5, Math.round(Number(shop.googleRating))) ? "#f59e0b" : "#d1d5db"} />
+              ))}
+              <span className="text-[12px] font-semibold text-foreground ml-1">{Number(shop.googleRating).toFixed(1)}</span>
+              {shop.googleTotalRatings ? <span className="text-[11px] text-muted-foreground ml-0.5">({shop.googleTotalRatings})</span> : null}
             </>
           ) : (
             <span className="text-[11px] text-muted-foreground/50">Henüz değerlendirme yok</span>

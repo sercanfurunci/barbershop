@@ -55,7 +55,7 @@ export default async function SalonsPage({ searchParams }) {
   }
 
   if (minRating > 0) {
-    andClauses.push({ avgRating: { gte: minRating } });
+    andClauses.push({ googleRating: { gte: minRating } });
   }
 
   if (service) {
@@ -79,9 +79,9 @@ export default async function SalonsPage({ searchParams }) {
   const orderBy =
     sort === "newest"        ? [{ createdAt: "desc" }, { id: "asc" }]
     : sort === "alpha"       ? [{ name: "asc" }, { id: "asc" }]
-    : sort === "mostReviewed"? [{ totalReviews: "desc" }, { avgRating: "desc" }, { id: "asc" }]
-    : sort === "rating"      ? [{ avgRating: "desc" }, { totalReviews: "desc" }, { id: "asc" }]
-    : [{ appointments: { _count: "desc" } }, { avgRating: "desc" }, { id: "asc" }];
+    : sort === "mostReviewed"? [{ googleTotalRatings: "desc" }, { googleRating: "desc" }, { id: "asc" }]
+    : sort === "rating"      ? [{ googleRating: "desc" }, { googleTotalRatings: "desc" }, { id: "asc" }]
+    : [{ appointments: { _count: "desc" } }, { googleRating: "desc" }, { id: "asc" }];
 
   const [shops, total] = await Promise.all([
     prisma.shop.findMany({
@@ -91,7 +91,7 @@ export default async function SalonsPage({ searchParams }) {
       select: {
         id: true, slug: true, name: true, city: true, addressLine: true,
         coverImage: true, gallery: true, logo: true,
-        avgRating: true, totalReviews: true, description: true, shopType: true,
+        googleRating: true, googleTotalRatings: true, description: true, shopType: true,
         services: { where: { active: true }, select: { id: true, nameTr: true }, take: 3, orderBy: { sortOrder: "asc" } },
       },
     }),

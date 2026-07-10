@@ -15,7 +15,7 @@ export async function GET(request) {
       shop: {
         select: {
           id: true, slug: true, name: true, city: true, addressLine: true,
-          logo: true, coverImage: true, avgRating: true, totalReviews: true,
+          logo: true, coverImage: true, googleRating: true, googleTotalRatings: true,
           googleRating: true, googleTotalRatings: true, phone: true,
         },
       },
