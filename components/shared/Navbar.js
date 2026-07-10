@@ -39,6 +39,8 @@ export default function Navbar() {
   const shopSlug = shop?.slug ?? "";
   const isBookPage  = pathname?.includes("/book");
   const isStaffPage = pathname?.startsWith("/admin") || pathname?.startsWith("/barber") || pathname?.startsWith("/superadmin");
+  // Build login URL with current path as return destination (only for non-auth pages)
+  const loginRedirect = !isStaffPage && pathname && pathname !== "/" ? `?redirect=${encodeURIComponent(pathname)}` : "";
 
   const navLinks = [
     { label: tx.nav.services, href: "#services" },
@@ -278,7 +280,7 @@ export default function Navbar() {
                           boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 200,
                         }}
                       >
-                        <Link href="/login" onClick={() => setLoginOpen(false)}
+                        <Link href={`/login${loginRedirect}`} onClick={() => setLoginOpen(false)}
                           className="flex items-center gap-2.5 rounded-[7px] px-3 py-2.5 transition-colors hover:bg-secondary/60"
                           style={{ fontSize: "13px", color: "var(--makas-ink)", textDecoration: "none" }}>
                           <User size={14} className="text-muted-foreground" /> Müşteri Girişi
@@ -412,7 +414,7 @@ export default function Navbar() {
                       style={{ fontSize: "14px", color: navTextMuted, minHeight: "44px", textDecoration: "none" }}>
                       <User size={15} /> Müşteri Girişi
                     </Link>
-                    <Link href="/login?tab=register" onClick={() => setMenuOpen(false)}
+                    <Link href={`/login${loginRedirect ? loginRedirect + "&tab=register" : "?tab=register"}`} onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 rounded-md transition-colors"
                       style={{ fontSize: "14px", color: navTextMuted, minHeight: "44px", textDecoration: "none" }}>
                       <User size={15} /> Müşteri Kaydı

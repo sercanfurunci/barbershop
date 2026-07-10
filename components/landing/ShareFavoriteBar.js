@@ -2,11 +2,13 @@
 
 import { useState, useCallback } from "react";
 import { Heart, Share2, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { toast } from "sonner";
 
 export default function ShareFavoriteBar({ shopId, shopName }) {
+  const router = useRouter();
   const { user } = useAuth();
   const { isFavorite, add, remove } = useFavorites();
   const [copied, setCopied]   = useState(false);
@@ -30,7 +32,8 @@ export default function ShareFavoriteBar({ shopId, shopName }) {
   const toggleFavorite = useCallback(async () => {
     if (pending) return;
     if (!user || user.role !== "CUSTOMER") {
-      toast.error("Favori eklemek için giriş yapın");
+      const returnUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
+      router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
       return;
     }
     const wasActive = favored;

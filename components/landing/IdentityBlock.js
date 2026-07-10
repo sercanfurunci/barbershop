@@ -12,6 +12,7 @@ import { track } from "@/lib/track";
 import { telHref, waHref } from "@/lib/validation";
 import { haversine, fmtDistance } from "@/lib/geo";
 import { useLang } from "@/contexts/LanguageContext";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { toast } from "sonner";
@@ -49,6 +50,7 @@ function prettifySlug(slug) {
 
 export default function IdentityBlock({ shop, hours, googleReviews }) {
   const { lang } = useLang();
+  const router = useRouter();
   const { user } = useAuth();
   const { isFavorite, add, remove } = useFavorites();
   const [copied,  setCopied]  = useState(false);
@@ -87,7 +89,8 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
   const toggleFav = useCallback(async () => {
     if (favLoad) return;
     if (!user || user.role !== "CUSTOMER") {
-      toast.error(lang === "tr" ? "Favori eklemek için giriş yapın" : "Sign in to save favorites");
+      const returnUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
+      router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
       return;
     }
     const wasFavored = isFavorite(shop.id);
