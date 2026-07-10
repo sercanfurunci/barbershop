@@ -12,6 +12,9 @@ import { track } from "@/lib/track";
 import { telHref, waHref } from "@/lib/validation";
 import { haversine, fmtDistance } from "@/lib/geo";
 import { useLang } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
+import { toast } from "sonner";
 
 // Note: no hero/cover image, no avatar overlay. Identity is text-first.
 // Mobile reorders to: title → meta → address → CTA. Desktop is unchanged.
@@ -46,11 +49,13 @@ function prettifySlug(slug) {
 
 export default function IdentityBlock({ shop, hours, googleReviews }) {
   const { lang } = useLang();
+  const { user } = useAuth();
+  const { isFavorite, add, remove } = useFavorites();
   const [copied,  setCopied]  = useState(false);
-  const [favored, setFavored] = useState(false);
   const [favLoad, setFavLoad] = useState(false);
-  const [toast,   setToast]   = useState("");
   const [dist,    setDist]    = useState(null);
+
+  const favored = isFavorite(shop?.id);
 
   // Distance from the visitor — only when geolocation is already granted, never prompt here
   useEffect(() => {
@@ -68,8 +73,6 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
 
   if (!shop) return null;
 
-  const flash = (text) => { setToast(text); setTimeout(() => setToast(""), 2200); };
-
   const share = async () => {
     const url = window.location.href;
     if (navigator.share) {
@@ -77,22 +80,37 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
     } else {
       await navigator.clipboard.writeText(url);
       setCopied(true); setTimeout(() => setCopied(false), 2000);
-      flash("Bağlantı kopyalandı");
+      toast.success(lang === "tr" ? "Bağlantı kopyalandı" : "Link copied");
     }
   };
 
   const toggleFav = useCallback(async () => {
     if (favLoad) return;
+    if (!user || user.role !== "CUSTOMER") {
+      toast.error(lang === "tr" ? "Favori eklemek için giriş yapın" : "Sign in to save favorites");
+      return;
+    }
+    const wasFavored = isFavorite(shop.id);
+    // Optimistic update via context — all other hearts for this shop update instantly
+    if (wasFavored) remove(shop.id); else add(shop.id);
     setFavLoad(true);
     try {
-      const res = favored
+      const res = wasFavored
         ? await fetch(`/api/customer/favorites/${shop.id}`, { method: "DELETE" })
         : await fetch("/api/customer/favorites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shopId: shop.id }) });
-      if (res.status === 401) { flash(lang === "tr" ? "Favori için giriş yapın" : "Sign in to save"); return; }
-      if (res.ok) { setFavored(!favored); flash(favored ? "Favorilerden çıkarıldı" : "Favorilere eklendi ♥"); }
-    } catch { flash("Bir hata oluştu"); }
+      if (!res.ok) throw new Error("failed");
+      if (wasFavored) {
+        toast("🤍 Favorilerden çıkarıldı");
+      } else {
+        toast.success("❤️ Favorilere eklendi");
+      }
+    } catch {
+      // Rollback
+      if (wasFavored) add(shop.id); else remove(shop.id);
+      toast.error("❌ Favoriler güncellenemedi. Tekrar deneyin.");
+    }
     finally { setFavLoad(false); }
-  }, [favLoad, favored, shop.id, lang]);
+  }, [favLoad, isFavorite, add, remove, shop.id, user, lang]);
 
   const displayName = shop.name?.trim() || prettifySlug(shop.slug);
   const phoneHref   = telHref(shop.phone);
@@ -399,16 +417,6 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
             >
               <Heart size={16} fill={favored ? "currentColor" : "none"} />
             </button>
-            {toast && (
-              <span style={{
-                position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
-                transform: "translateX(-50%)",
-                background: "var(--makas-ink)", color: "#fff",
-                padding: "6px 12px", borderRadius: 8,
-                fontSize: 12, fontWeight: 500, whiteSpace: "nowrap",
-                pointerEvents: "none", zIndex: 100,
-              }}>{toast}</span>
-            )}
           </div>
         </div>
 
