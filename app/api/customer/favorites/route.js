@@ -9,7 +9,17 @@ export async function GET(request) {
 
   const favs = await prisma.customerFavorite.findMany({
     where: { userId: payload.userId },
-    select: { shopId: true, createdAt: true },
+    select: {
+      shopId: true,
+      createdAt: true,
+      shop: {
+        select: {
+          id: true, slug: true, name: true, city: true, addressLine: true,
+          logo: true, coverImage: true, avgRating: true, totalReviews: true,
+          googleRating: true, googleTotalRatings: true, phone: true,
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
 

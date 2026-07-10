@@ -37,7 +37,7 @@ export async function POST(request) {
   if (!barberId) return NextResponse.json({ error: "barberId gerekli" }, { status: 400 });
 
   const barber = await prisma.barber.findFirst({
-    where: { id: barberId, status: "ACTIVE" },
+    where: { id: barberId, available: true },
     select: { id: true },
   });
   if (!barber) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
