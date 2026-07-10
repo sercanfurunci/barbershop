@@ -18,7 +18,7 @@ export async function POST(request) {
       );
     }
 
-    const { email, password } = await request.json();
+    const { email, password, expectedRole } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email ve şifre gerekli" }, { status: 400 });
@@ -50,6 +50,12 @@ export async function POST(request) {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       log.warn("login failed — wrong password", { userId: user.id });
+      return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
+    }
+
+    // Role guard: if caller declares expected role, reject mismatches before issuing token.
+    if (expectedRole && user.role !== expectedRole) {
+      log.warn("login failed — role mismatch", { userId: user.id, role: user.role, expectedRole });
       return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
     }
 

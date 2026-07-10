@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Check, Calendar, Clock, User, Scissors, Phone, Mail, ArrowRight, CalendarPlus, Download } from "lucide-react";
 import { googleCalendarUrl } from "@/lib/calendar";
 import { useShop } from "@/contexts/ShopContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { tr as dateFnsTr, enUS } from "date-fns/locale";
 import { toast } from "sonner";
@@ -12,12 +13,14 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { formatPhoneTRDisplay, toLocal10 } from "@/lib/validation";
 
-function validateForm(form) {
+function validateForm(form, isAuthenticated) {
   const errors = {};
-  if (!form.name.trim() || form.name.trim().length < 2)
-    errors.name = "En az 2 karakter olmalı";
-  if (!toLocal10(form.phone))
-    errors.phone = "Geçerli bir cep telefonu girin.";
+  if (!isAuthenticated) {
+    if (!form.name.trim() || form.name.trim().length < 2)
+      errors.name = "En az 2 karakter olmalı";
+    if (!toLocal10(form.phone))
+      errors.phone = "Geçerli bir cep telefonu girin.";
+  }
   if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
     errors.email = "Geçerli bir e-posta adresi girin";
   return errors;
@@ -26,6 +29,8 @@ function validateForm(form) {
 export default function Confirmation({ shopId, booking, onBack, onLoadingChange, onSuccess, lang = "tr", tx, compact = false }) {
   const shop = useShop();
   const shopSlug = shop?.slug;
+  const { user } = useAuth();
+  const isAuthenticated = !!(user && user.role === "CUSTOMER");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -34,7 +39,12 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
   const [apptShop, setApptShop] = useState(null);
 
   const setLoadingState = (v) => { setLoading(v); onLoadingChange?.(v); };
-  const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
+  const [form, setForm] = useState({
+    name:  isAuthenticated ? (user.displayName || "") : "",
+    phone: isAuthenticated ? (user.phone || "") : "",
+    email: isAuthenticated ? (user.email || "") : "",
+    notes: "",
+  });
   const s4 = tx?.booking?.step4 ?? {};
   const success = tx?.booking?.success ?? {};
   const locale = lang === "tr" ? dateFnsTr : enUS;
@@ -45,7 +55,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
 
   const handleBlur = (field) => {
     setTouched(t => ({ ...t, [field]: true }));
-    setErrors(validateForm({ ...form }));
+    setErrors(validateForm({ ...form }, isAuthenticated));
   };
 
   const submittingRef = useRef(false);
@@ -54,14 +64,14 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
     e.preventDefault();
     // Synchronous guard — blocks rapid double-clicks before React re-renders the disabled button.
     if (submittingRef.current) return;
-    const errs = validateForm(form);
+    const errs = validateForm(form, isAuthenticated);
     setErrors(errs);
     setTouched({ name: true, phone: true, email: true });
     if (Object.keys(errs).length > 0) {
       toast.error("Lütfen formdaki hataları düzeltin");
       return;
     }
-    if (!form.name || !form.phone) {
+    if (!isAuthenticated && (!form.name || !form.phone)) {
       toast.error(s4.errorMsg ?? "Lütfen tüm zorunlu alanları doldurun");
       return;
     }
@@ -361,41 +371,54 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
 
         {/* Form */}
         <form id="booking-confirm-form" onSubmit={handleSubmit} className="lg:col-span-3 space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-              label={s4.formLabels?.name ?? "Ad Soyad"}
-              placeholder={s4.placeholders?.name ?? "Ahmet Yılmaz"}
-              value={form.name}
-              onChange={(v) => setForm({ ...form, name: v })}
-              onBlur={() => handleBlur("name")}
-              error={touched.name ? errors.name : undefined}
-              required
-            />
-            <FormField
-              label={s4.formLabels?.phone ?? "Telefon"}
-              placeholder="0532 123 45 67"
-              value={form.phone}
-              onChange={handlePhoneChange}
-              onBlur={() => handleBlur("phone")}
-              error={touched.phone ? errors.phone : undefined}
-              icon={<Phone size={13} />}
-              inputMode="tel"
-              autoComplete="tel"
-              type="tel"
-              required
-            />
-          </div>
-
-          <FormField
-            label={(s4.formLabels?.email ?? "E-posta") + " (isteğe bağlı)"}
-            placeholder={s4.placeholders?.email ?? "ornek@mail.com"}
-            value={form.email}
-            onChange={(v) => setForm({ ...form, email: v })}
-            onBlur={() => handleBlur("email")}
-            error={touched.email ? errors.email : undefined}
-            type="email"
-            icon={<Mail size={13} />}
-          />
+          {isAuthenticated ? (
+            /* Logged-in: show read-only identity block — no re-entry needed */
+            <div className="rounded-[10px] border border-border bg-secondary/40 px-4 py-3 flex items-center gap-3">
+              <User size={15} className="text-muted-foreground shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-foreground">{form.name}</p>
+                <p className="text-[12px] text-muted-foreground">{form.phone}{form.email ? ` · ${form.email}` : ""}</p>
+              </div>
+            </div>
+          ) : (
+            /* Guest: collect name + phone */
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  label={s4.formLabels?.name ?? "Ad Soyad"}
+                  placeholder={s4.placeholders?.name ?? "Ahmet Yılmaz"}
+                  value={form.name}
+                  onChange={(v) => setForm({ ...form, name: v })}
+                  onBlur={() => handleBlur("name")}
+                  error={touched.name ? errors.name : undefined}
+                  required
+                />
+                <FormField
+                  label={s4.formLabels?.phone ?? "Telefon"}
+                  placeholder="0532 123 45 67"
+                  value={form.phone}
+                  onChange={handlePhoneChange}
+                  onBlur={() => handleBlur("phone")}
+                  error={touched.phone ? errors.phone : undefined}
+                  icon={<Phone size={13} />}
+                  inputMode="tel"
+                  autoComplete="tel"
+                  type="tel"
+                  required
+                />
+              </div>
+              <FormField
+                label={(s4.formLabels?.email ?? "E-posta") + " (isteğe bağlı)"}
+                placeholder={s4.placeholders?.email ?? "ornek@mail.com"}
+                value={form.email}
+                onChange={(v) => setForm({ ...form, email: v })}
+                onBlur={() => handleBlur("email")}
+                error={touched.email ? errors.email : undefined}
+                type="email"
+                icon={<Mail size={13} />}
+              />
+            </>
+          )}
 
           <div>
             <label className="text-muted-foreground" style={{ display: "block", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "8px", fontWeight: 500 }}>

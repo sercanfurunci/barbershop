@@ -70,6 +70,16 @@ export async function PATCH(request) {
     return NextResponse.json({ error: "Güncellenecek alan yok" }, { status: 400 });
   }
 
+  if (data.phone) {
+    const cleanPhone = data.phone.replace(/\D/g, "");
+    const phoneTaken = await prisma.user.findFirst({
+      where: { phone: { contains: cleanPhone }, NOT: { id: payload.userId } },
+    });
+    if (phoneTaken) {
+      return NextResponse.json({ error: "Bu telefon numarası zaten başka bir hesaba kayıtlı" }, { status: 409 });
+    }
+  }
+
   const user = await prisma.user.update({
     where: { id: payload.userId },
     data,

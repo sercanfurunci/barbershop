@@ -287,22 +287,27 @@ function AppointmentsTab({ type }) {
 // ── Review Modal ──────────────────────────────────────────────────────────────
 
 function ReviewModal({ appt, onClose, onDone, onError }) {
-  const [shopRating, setShopRating] = useState(0);
   const [barberRating, setBarberRating] = useState(0);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleUrl, setGoogleUrl] = useState(null);
 
   async function submit() {
-    if (!shopRating || !barberRating) { onError("Lütfen tüm puanları verin"); return; }
+    if (!barberRating) { onError("Lütfen bir puan verin"); return; }
     setLoading(true);
     const res = await fetch("/api/customer/reviews", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ appointmentId: appt.id, shopRating, barberRating, comment }),
+      body: JSON.stringify({ appointmentId: appt.id, barberRating, comment }),
     });
     setLoading(false);
     if (res.ok) {
-      onDone(appt.id);
+      const d = await res.json();
+      if (d.googleReviewUrl) {
+        setGoogleUrl(d.googleReviewUrl);
+      } else {
+        onDone(appt.id);
+      }
     } else {
       const d = await res.json().catch(() => ({}));
       onError(d.error || "Gönderilemedi");
@@ -310,44 +315,65 @@ function ReviewModal({ appt, onClose, onDone, onError }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={!googleUrl ? onClose : undefined}>
       <div
         className="w-full max-w-md bg-card rounded-2xl p-6 space-y-5 shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-[17px]">Değerlendirme</h3>
-          <button onClick={onClose}><X size={18} className="text-muted-foreground" /></button>
-        </div>
+        {googleUrl ? (
+          <>
+            <div className="text-center space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto">
+                <Check size={26} className="text-emerald-600" />
+              </div>
+              <p className="font-semibold text-[17px]">Teşekkürler!</p>
+              <p className="text-[13px] text-muted-foreground">Değerlendirmeniz alındı. Google&apos;da da paylaşmak ister misiniz?</p>
+            </div>
+            <a
+              href={googleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full h-11 rounded-full bg-foreground text-background text-[14px] font-semibold flex items-center justify-center gap-2 no-underline hover:opacity-90 transition-opacity"
+              onClick={() => onDone(appt.id)}
+            >
+              Google&apos;da Değerlendir
+            </a>
+            <button onClick={() => onDone(appt.id)} className="w-full text-[13px] text-muted-foreground hover:text-foreground">
+              Hayır, teşekkürler
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-[17px]">Değerlendirme</h3>
+              <button onClick={onClose}><X size={18} className="text-muted-foreground" /></button>
+            </div>
 
-        <div>
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Salon: {appt.shop?.name}</p>
-          <StarPicker value={shopRating} onChange={setShopRating} />
-        </div>
+            <div>
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                Berber: {appt.barber?.nameTr || "Berber"}
+              </p>
+              <StarPicker value={barberRating} onChange={setBarberRating} />
+            </div>
 
-        {appt.barber?.nameTr && (
-          <div>
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Berber: {appt.barber.nameTr}</p>
-            <StarPicker value={barberRating} onChange={setBarberRating} />
-          </div>
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              placeholder="Yorumunuz (isteğe bağlı)"
+              rows={3}
+              className="w-full rounded-[10px] border border-border bg-background px-3 py-2.5 text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-foreground/20"
+            />
+
+            <button
+              onClick={submit}
+              disabled={loading || !barberRating}
+              className="w-full h-11 rounded-full bg-foreground text-background text-[14px] font-semibold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
+            >
+              {loading && <Loader2 size={15} className="animate-spin" />}
+              Gönder
+            </button>
+          </>
         )}
-
-        <textarea
-          value={comment}
-          onChange={e => setComment(e.target.value)}
-          placeholder="Yorumunuz (isteğe bağlı)"
-          rows={3}
-          className="w-full rounded-[10px] border border-border bg-background px-3 py-2.5 text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-foreground/20"
-        />
-
-        <button
-          onClick={submit}
-          disabled={loading || !shopRating || !barberRating}
-          className="w-full h-11 rounded-full bg-foreground text-background text-[14px] font-semibold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
-        >
-          {loading && <Loader2 size={15} className="animate-spin" />}
-          Gönder
-        </button>
       </div>
     </div>
   );

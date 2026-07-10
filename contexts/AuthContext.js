@@ -25,10 +25,10 @@ export function AuthProvider({ children }) {
 
   const shopId = user?.shopId ?? user?.shop?.id ?? null;
 
-  const login = async (email, password) => {
+  const login = async (email, password, expectedRole) => {
     const data = await apiFetch("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, ...(expectedRole ? { expectedRole } : {}) }),
     });
     setUser(data.user);
     return data.user;

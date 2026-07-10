@@ -102,6 +102,12 @@ model Shop {
   // Per-shop toggle for the 2h post-completion review reminder cron.
   reviewReminderEnabled Boolean @default(true)
 
+  // Birthday campaign — per-salon, opt-in only. Disabled by default.
+  // type: null | "FREE_HAIRCUT" | "PERCENTAGE" | "FIXED" | "FREE_SERVICE" | "COUPON"
+  birthdayCampaignType   String?  // null = disabled
+  birthdayCampaignValue  Float?   // discount % or fixed amount
+  birthdayCampaignCoupon String?  // custom coupon code for COUPON type
+
   users                User[]
   barbers              Barber[]
   services             Service[]

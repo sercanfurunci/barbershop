@@ -35,12 +35,7 @@ export default function CustomerLoginPage() {
     setError("");
     setLoading(true);
     try {
-      const u = await login(email.trim(), password);
-      if (u.role !== "CUSTOMER") {
-        setError("Bu sayfa müşterilere özel. İşletme girişi için → /business/login");
-        setLoading(false);
-        return;
-      }
+      const u = await login(email.trim(), password, "CUSTOMER");
       router.replace(redirectTo);
     } catch (err) {
       setError(err.message || "Giriş başarısız");

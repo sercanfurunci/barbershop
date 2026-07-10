@@ -38,7 +38,7 @@ export async function GET(request) {
       notes: true,
       reviewed: true,
       shop: {
-        select: { id: true, name: true, slug: true, address: true, phone: true },
+        select: { id: true, name: true, slug: true, address: true, phone: true, googleReviewUrl: true },
       },
       barber: {
         select: { id: true, nameTr: true, avatar: true },

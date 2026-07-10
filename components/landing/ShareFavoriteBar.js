@@ -1,17 +1,28 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Heart, Share2, Link2, Check } from "lucide-react";
-
-// Floating share + favorite bar for the salon detail page.
-// Favorites require auth — 401 shows a brief "Giriş yapın" tooltip.
-// Share uses Web Share API with copy-to-clipboard fallback.
+import { useState, useCallback, useEffect } from "react";
+import { Heart, Share2, Check } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ShareFavoriteBar({ shopId, shopName }) {
-  const [copied, setCopied]     = useState(false);
-  const [favored, setFavored]   = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [msg, setMsg]           = useState("");
+  const { user } = useAuth();
+  const [copied, setCopied]   = useState(false);
+  const [favored, setFavored] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg]         = useState("");
+
+  // Sync initial favorite state from server when user is logged in
+  useEffect(() => {
+    if (!user || !shopId) return;
+    fetch("/api/customer/favorites")
+      .then(r => r.ok ? r.json() : [])
+      .then(list => {
+        if (Array.isArray(list)) {
+          setFavored(list.some(f => f.shopId === shopId));
+        }
+      })
+      .catch(() => {});
+  }, [user, shopId]);
 
   const flash = (text, ms = 2200) => {
     setMsg(text);
@@ -57,7 +68,6 @@ export default function ShareFavoriteBar({ shopId, shopName }) {
 
   return (
     <div style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 8 }}>
-      {/* Share */}
       <button
         onClick={share}
         aria-label="Paylaş"
@@ -76,7 +86,6 @@ export default function ShareFavoriteBar({ shopId, shopName }) {
         <span style={{ display: "none" }} className="sm-inline">Paylaş</span>
       </button>
 
-      {/* Favorite */}
       <button
         onClick={toggleFavorite}
         aria-label={favored ? "Favorilerden çıkar" : "Favorilere ekle"}
@@ -96,7 +105,6 @@ export default function ShareFavoriteBar({ shopId, shopName }) {
         <Heart size={15} fill={favored ? "currentColor" : "none"} />
       </button>
 
-      {/* Toast */}
       {msg && (
         <span
           style={{

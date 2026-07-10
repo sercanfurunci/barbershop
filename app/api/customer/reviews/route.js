@@ -3,19 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 
 // POST /api/customer/reviews
-// In-app review submission after a COMPLETED appointment.
-// If rating >= 4 AND shop has googleReviewUrl, the response includes it so
-// the mobile app can offer "Share on Google" CTA.
+// Customers rate the BARBER only. Salon rating is removed — shops use Google Reviews.
+// If barberRating >= 4 AND shop has googleReviewUrl, response includes it for CTA.
 export async function POST(request) {
   const payload = await requireAuth(request);
   if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { appointmentId, shopRating, barberRating, comment } = await request.json();
+  const { appointmentId, barberRating, comment } = await request.json();
 
-  if (!appointmentId || !shopRating || !barberRating) {
-    return NextResponse.json({ error: "appointmentId, shopRating ve barberRating gerekli" }, { status: 400 });
+  if (!appointmentId || !barberRating) {
+    return NextResponse.json({ error: "appointmentId ve barberRating gerekli" }, { status: 400 });
   }
-  if (shopRating < 1 || shopRating > 5 || barberRating < 1 || barberRating > 5) {
+  if (barberRating < 1 || barberRating > 5) {
     return NextResponse.json({ error: "Puan 1-5 arasında olmalı" }, { status: 400 });
   }
 
@@ -28,7 +27,7 @@ export async function POST(request) {
       shopId: true,
       barberId: true,
       clientId: true,
-      shop: { select: { id: true, avgRating: true, totalReviews: true, googleReviewUrl: true } },
+      shop:   { select: { id: true, googleReviewUrl: true } },
       barber: { select: { id: true, rating: true, reviewCount: true } },
     },
   });
@@ -37,7 +36,6 @@ export async function POST(request) {
   if (appt.status !== "COMPLETED") return NextResponse.json({ error: "Sadece tamamlanan randevular değerlendirilebilir" }, { status: 422 });
   if (appt.reviewed) return NextResponse.json({ error: "Bu randevu zaten değerlendirildi" }, { status: 409 });
 
-  // Verify reviewer owns the appointment
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
     select: { clientId: true },
@@ -47,40 +45,29 @@ export async function POST(request) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
   }
 
-  const newShopTotal = appt.shop.totalReviews + 1;
-  const newShopAvg = ((appt.shop.avgRating * appt.shop.totalReviews) + shopRating) / newShopTotal;
   const newBarberTotal = appt.barber.reviewCount + 1;
-  const newBarberAvg = ((appt.barber.rating * appt.barber.reviewCount) + barberRating) / newBarberTotal;
+  const newBarberAvg   = ((appt.barber.rating * appt.barber.reviewCount) + barberRating) / newBarberTotal;
 
   await prisma.$transaction([
     prisma.review.create({
       data: {
-        shopId: appt.shopId,
+        shopId:      appt.shopId,
         appointmentId,
-        barberId: appt.barberId,
-        customerId: appt.clientId,
-        shopRating,
+        barberId:    appt.barberId,
+        customerId:  appt.clientId,
+        shopRating:  0, // no longer collected — kept as 0 for schema compat
         barberRating,
-        comment: comment?.trim() || null,
+        comment:     comment?.trim() || null,
       },
     }),
-    prisma.appointment.update({
-      where: { id: appointmentId },
-      data: { reviewed: true },
-    }),
-    prisma.shop.update({
-      where: { id: appt.shopId },
-      data: { avgRating: newShopAvg, totalReviews: newShopTotal },
-    }),
+    prisma.appointment.update({ where: { id: appointmentId }, data: { reviewed: true } }),
     prisma.barber.update({
       where: { id: appt.barberId },
       data: { rating: newBarberAvg, reviewCount: newBarberTotal },
     }),
   ]);
 
-  // If high rating + shop has Google Review URL, include it in response
-  const googleReviewUrl =
-    shopRating >= 4 && barberRating >= 4 ? (appt.shop.googleReviewUrl ?? null) : null;
+  const googleReviewUrl = barberRating >= 4 ? (appt.shop.googleReviewUrl ?? null) : null;
 
   return NextResponse.json({ ok: true, googleReviewUrl }, { status: 201 });
 }

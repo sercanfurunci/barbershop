@@ -32,6 +32,16 @@ export async function POST(request) {
     return NextResponse.json({ error: "Bu email adresi zaten kullanılıyor" }, { status: 409 });
   }
 
+  if (phone) {
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length >= 10) {
+      const phoneTaken = await prisma.user.findFirst({ where: { phone: { contains: cleanPhone } } });
+      if (phoneTaken) {
+        return NextResponse.json({ error: "Bu telefon numarası zaten başka bir hesaba kayıtlı" }, { status: 409 });
+      }
+    }
+  }
+
 
   const passwordHash = await bcrypt.hash(password, 12);
 
