@@ -27,7 +27,7 @@ const GoogleIcon = () => (
   </svg>
 );
 
-export default function Testimonials({ googleReviews = null }) {
+export default function Testimonials({ googleReviews = null, googleReviewUrl = null }) {
   const { lang } = useLang();
   // ponytail: SSR-provided. No client fetch, no loading skeleton.
   const isGoogle      = !!(googleReviews?.reviews?.length);
@@ -92,9 +92,15 @@ export default function Testimonials({ googleReviews = null }) {
               lineHeight: 0.95,
               textWrap: "balance",
             }}>
-              {lang === "tr" ? "Müşterilerimiz" : "Our Clients"}{" "}
+              {isGoogle
+                ? (lang === "tr" ? "Google " : "Google ")
+                : (lang === "tr" ? "Müşterilerimiz " : "Our Clients ")
+              }
               <span style={{ fontStyle: "italic", color: C.primary }}>
-                {lang === "tr" ? "anlatıyor" : "speak"}
+                {isGoogle
+                  ? (lang === "tr" ? "değerlendirmeleri" : "Reviews")
+                  : (lang === "tr" ? "anlatıyor" : "speak")
+                }
               </span>
             </h2>
           </motion.div>
@@ -215,6 +221,31 @@ export default function Testimonials({ googleReviews = null }) {
               ))}
             </div>
           </>
+        )}
+        {/* Google Review CTA */}
+        {isGoogle && googleReviewUrl && (
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
+            <a
+              href={googleReviewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 10,
+                padding: "13px 24px",
+                background: C.primary, color: "#fff",
+                borderRadius: 999,
+                fontSize: 13, fontWeight: 700, letterSpacing: "0.04em",
+                textDecoration: "none",
+                textTransform: "uppercase",
+                transition: "opacity 0.18s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >
+              <GoogleIcon />
+              {lang === "tr" ? "Google'da Değerlendir" : "Write a Google Review"}
+            </a>
+          </div>
         )}
       </div>
 

@@ -2,8 +2,34 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 
+// GET /api/customer/reviews — list the logged-in customer's submitted reviews
+export async function GET(request) {
+  const payload = await requireAuth(request);
+  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { clientId: true },
+  });
+
+  if (!user?.clientId) return NextResponse.json([]);
+
+  const reviews = await prisma.review.findMany({
+    where:   { customerId: user.clientId, barberRating: { gt: 0 } },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true, barberRating: true, comment: true, createdAt: true,
+      barber:      { select: { id: true, nameTr: true, avatar: true } },
+      shop:        { select: { id: true, name: true, slug: true } },
+      appointment: { select: { date: true, service: { select: { nameTr: true } } } },
+    },
+  });
+
+  return NextResponse.json(reviews);
+}
+
 // POST /api/customer/reviews
-// Customers rate the BARBER only. Salon rating is removed — shops use Google Reviews.
+// Customers rate the BARBER only. Salon rating removed — shops use Google Reviews.
 // If barberRating >= 4 AND shop has googleReviewUrl, response includes it for CTA.
 export async function POST(request) {
   const payload = await requireAuth(request);
@@ -21,13 +47,9 @@ export async function POST(request) {
   const appt = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     select: {
-      id: true,
-      status: true,
-      reviewed: true,
-      shopId: true,
-      barberId: true,
-      clientId: true,
-      shop:   { select: { id: true, googleReviewUrl: true } },
+      id: true, status: true, reviewed: true,
+      shopId: true, barberId: true, clientId: true,
+      shop:   { select: { googleReviewUrl: true } },
       barber: { select: { id: true, rating: true, reviewCount: true } },
     },
   });
@@ -55,7 +77,7 @@ export async function POST(request) {
         appointmentId,
         barberId:    appt.barberId,
         customerId:  appt.clientId,
-        shopRating:  0, // no longer collected — kept as 0 for schema compat
+        shopRating:  0, // schema compat — no longer collected
         barberRating,
         comment:     comment?.trim() || null,
       },
@@ -68,6 +90,5 @@ export async function POST(request) {
   ]);
 
   const googleReviewUrl = barberRating >= 4 ? (appt.shop.googleReviewUrl ?? null) : null;
-
   return NextResponse.json({ ok: true, googleReviewUrl }, { status: 201 });
 }

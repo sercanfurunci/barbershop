@@ -20,7 +20,6 @@ const Services       = dynamic(() => import("@/components/landing/Services"));
 const Barbers        = dynamic(() => import("@/components/landing/Barbers"));
 const Gallery        = dynamic(() => import("@/components/landing/Gallery"));
 const Testimonials   = dynamic(() => import("@/components/landing/Testimonials"));
-const ReviewsSection = dynamic(() => import("@/components/landing/ReviewsSection"));
 const FAQ            = dynamic(() => import("@/components/landing/FAQ"));
 const SalonInfo      = dynamic(() => import("@/components/landing/SalonInfo"));
 
@@ -149,7 +148,6 @@ export default async function ShopHome({ params }) {
   if (!shop || shop.status !== "ACTIVE") notFound();
 
   let services = [], barbers = [], last24h = 0, hours = null, googleReviews = null;
-  let internalReviews = { summary: { avgRating: 0, totalReviews: 0, distribution: { 1:0,2:0,3:0,4:0,5:0 } }, reviews: [], hasMore: false };
   try {
     const now = new Date();
     const since = new Date(now.getTime() - 86_400_000);
@@ -157,7 +155,7 @@ export default async function ShopHome({ params }) {
     const todayDateStr = todayStr();
     const weekAheadStr = toDateStr(weekAhead);
 
-    const [dbServices, dbBarbers, completedByBarber, count24h, upcomingAppts, holidays, gReviews, reviewsPage1, reviewDistribution] = await Promise.all([
+    const [dbServices, dbBarbers, completedByBarber, count24h, upcomingAppts, holidays, gReviews] = await Promise.all([
       prisma.service.findMany({
         where: { shopId: shop.id, active: true },
         select: {
@@ -202,21 +200,6 @@ export default async function ShopHome({ params }) {
         select: { barberId: true, date: true },
       }),
       getGoogleReviews(shop.id),
-      prisma.review.findMany({
-        where: { shopId: shop.id },
-        orderBy: { createdAt: "desc" },
-        take: 20,
-        select: {
-          id: true, shopRating: true, barberRating: true, comment: true, createdAt: true,
-          barber:   { select: { id: true, nameTr: true, avatar: true, profilePhoto: true } },
-          customer: { select: { name: true } },
-        },
-      }),
-      prisma.review.groupBy({
-        by: ["shopRating"],
-        where: { shopId: shop.id },
-        _count: { _all: true },
-      }),
     ]);
 
     const completedMap = new Map(completedByBarber.map(r => [r.barberId, r._count._all]));
@@ -237,26 +220,6 @@ export default async function ShopHome({ params }) {
     last24h = count24h;
     hours = aggregateHours(dbBarbers.filter(b => b.available && b.workingHours).map(b => b.workingHours));
     googleReviews = gReviews;
-
-    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    for (const row of reviewDistribution) distribution[row.shopRating] = row._count._all;
-    internalReviews = {
-      summary: {
-        avgRating:    shop.avgRating,
-        totalReviews: shop.totalReviews,
-        distribution,
-      },
-      reviews: reviewsPage1.map((r) => ({
-        id:           r.id,
-        shopRating:   r.shopRating,
-        barberRating: r.barberRating,
-        comment:      r.comment,
-        createdAt:    r.createdAt.toISOString(),
-        customerName: r.customer?.name || "Misafir",
-        barber:       r.barber,
-      })),
-      hasMore: reviewsPage1.length < shop.totalReviews,
-    };
 
     services = dbServices.map((s) => ({
       id: s.id,
@@ -286,7 +249,7 @@ export default async function ShopHome({ params }) {
     console.error(`[ShopHome:${shopSlug}] DB error:`, err.message);
   }
 
-  const localBusinessLd = buildLocalBusinessLd(shop, googleReviews, internalReviews, hours);
+  const localBusinessLd = buildLocalBusinessLd(shop, googleReviews, hours);
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -302,8 +265,7 @@ export default async function ShopHome({ params }) {
     !!(shop.about?.trim())                && { id: "about",        label: { tr: "Hakkımızda",    en: "About"     } },
     services.length                       && { id: "services",     label: { tr: "Hizmetler",     en: "Services"  } },
     barbers.length                        && { id: "barbers",      label: { tr: "Ekip",          en: "Team"      } },
-    internalReviews.summary.totalReviews > 0 && { id: "reviews",      label: { tr: "Değerlendirmeler", en: "Reviews" } },
-    !!googleReviews?.reviews?.length      && { id: "testimonials", label: { tr: "Google",          en: "Google"  } },
+    !!googleReviews?.reviews?.length      && { id: "testimonials", label: { tr: "Değerlendirmeler", en: "Reviews" } },
     true                                  && { id: "faq",          label: { tr: "S.S.S",         en: "FAQ"       } },
     true                                  && { id: "location",     label: { tr: "Konum",         en: "Location"  } },
   ].filter(Boolean);
@@ -357,8 +319,7 @@ export default async function ShopHome({ params }) {
         <About about={shop.about} />
         <Services services={services} />
         <Barbers barbers={barbers} />
-        <ReviewsSection slug={shop.slug} initial={internalReviews} />
-        <Testimonials googleReviews={googleReviews} />
+        <Testimonials googleReviews={googleReviews} googleReviewUrl={shop.googleReviewUrl ?? null} />
         <FAQ />
         <SalonInfo shop={shop} barbers={barbers} hours={hours} googleReviews={googleReviews} />
       </main>
@@ -371,7 +332,7 @@ export default async function ShopHome({ params }) {
 const LD_DAY = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
 function minToHM(m) { return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; }
 
-function buildLocalBusinessLd(shop, googleReviews, internalReviews, hours) {
+function buildLocalBusinessLd(shop, googleReviews, hours) {
   const sameAs = [shop.instagramUrl, shop.facebookUrl, shop.tiktokUrl].filter(Boolean);
   const openingHours = (hours ?? [])
     .filter((h) => h.start != null && h.end != null)
@@ -406,8 +367,6 @@ function buildLocalBusinessLd(shop, googleReviews, internalReviews, hours) {
     sameAs: sameAs.length ? sameAs : undefined,
     aggregateRating: googleReviews?.rating != null
       ? { "@type": "AggregateRating", ratingValue: googleReviews.rating, reviewCount: googleReviews.totalRatings }
-      : (internalReviews?.summary?.totalReviews > 0
-        ? { "@type": "AggregateRating", ratingValue: Number(internalReviews.summary.avgRating.toFixed(1)), reviewCount: internalReviews.summary.totalReviews }
-        : undefined),
+      : undefined,
   };
 }

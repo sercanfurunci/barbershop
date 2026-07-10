@@ -63,7 +63,6 @@ export default function BarberProfile({ shop, barber, initialReviews }) {
       const d = await res.json();
       const fresh = (d.reviews ?? []).map(r => ({
         id:           r.id,
-        shopRating:   r.shopRating,
         barberRating: r.barberRating,
         comment:      r.comment,
         createdAt:    r.createdAt,

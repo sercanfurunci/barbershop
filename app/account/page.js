@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Scissors, Calendar, Clock, Heart, User, Settings, LogOut,
   Star, MapPin, Phone, ChevronRight, X, Check, Loader2,
-  Eye, EyeOff, Trash2, Bell, BellOff,
+  Eye, EyeOff, Trash2, Bell, BellOff, MessageSquare, Pencil,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -14,6 +14,7 @@ const TABS = [
   { id: "upcoming",  label: "Yaklaşan",  Icon: Calendar },
   { id: "history",   label: "Geçmiş",    Icon: Clock },
   { id: "favorites", label: "Favoriler", Icon: Heart },
+  { id: "reviews",   label: "Yorumlarım", Icon: MessageSquare },
   { id: "profile",   label: "Profil",    Icon: User },
   { id: "settings",  label: "Ayarlar",   Icon: Settings },
 ];
@@ -83,6 +84,7 @@ export default function AccountPage() {
             {tab === "upcoming"  && <AppointmentsTab type="upcoming" />}
             {tab === "history"   && <AppointmentsTab type="history" />}
             {tab === "favorites" && <FavoritesTab />}
+            {tab === "reviews"   && <MyReviewsTab />}
             {tab === "profile"   && <ProfileTab user={user} onUpdated={refreshUser} />}
             {tab === "settings"  && <SettingsTab user={user} onUpdated={refreshUser} onLogout={handleLogout} />}
           </div>
@@ -499,6 +501,148 @@ function FavoritesTab() {
           >
             <X size={16} />
           </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── My Reviews ───────────────────────────────────────────────────────────────
+
+function MyReviewsTab() {
+  const [reviews, setReviews] = useState(null);
+  const [editing, setEditing] = useState(null); // { id, barberRating, comment }
+  const [toast, showToast] = useToast();
+
+  useEffect(() => {
+    fetch("/api/customer/reviews")
+      .then(r => r.json())
+      .then(d => setReviews(Array.isArray(d) ? d : []))
+      .catch(() => setReviews([]));
+  }, []);
+
+  async function saveEdit() {
+    if (!editing) return;
+    const res = await fetch(`/api/customer/reviews/${editing.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ barberRating: editing.barberRating, comment: editing.comment }),
+    });
+    if (res.ok) {
+      setReviews(prev => prev.map(r =>
+        r.id === editing.id ? { ...r, barberRating: editing.barberRating, comment: editing.comment } : r
+      ));
+      setEditing(null);
+      showToast("Yorum güncellendi");
+    } else {
+      const d = await res.json().catch(() => ({}));
+      showToast(d.error || "Güncellenemedi", false);
+    }
+  }
+
+  async function deleteReview(id) {
+    if (!confirm("Bu yorumu silmek istediğinizden emin misiniz?")) return;
+    const res = await fetch(`/api/customer/reviews/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setReviews(prev => prev.filter(r => r.id !== id));
+      showToast("Yorum silindi");
+    } else {
+      showToast("Silinemedi", false);
+    }
+  }
+
+  if (reviews === null) {
+    return <div className="flex items-center justify-center py-20"><Loader2 size={22} className="animate-spin text-muted-foreground" /></div>;
+  }
+
+  if (reviews.length === 0) {
+    return (
+      <EmptyState
+        icon={MessageSquare}
+        title="Henüz yorum yapmadınız"
+        sub="Tamamlanan randevularınızdan berber değerlendirmesi yapabilirsiniz."
+        action={<button onClick={() => {}} className="rounded-full bg-foreground text-background text-[13px] font-semibold px-5 py-2.5 hover:bg-foreground/90 transition-colors">Randevularım</button>}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {toast && <Toast {...toast} />}
+
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={() => setEditing(null)}>
+          <div className="w-full max-w-md bg-card rounded-2xl p-6 space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-[17px]">Yorumu Düzenle</h3>
+              <button onClick={() => setEditing(null)}><X size={18} className="text-muted-foreground" /></button>
+            </div>
+            <div>
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Puan</p>
+              <StarPicker value={editing.barberRating} onChange={v => setEditing(e => ({ ...e, barberRating: v }))} />
+            </div>
+            <textarea
+              value={editing.comment || ""}
+              onChange={e => setEditing(ed => ({ ...ed, comment: e.target.value }))}
+              placeholder="Yorumunuz (isteğe bağlı)"
+              rows={3}
+              className="w-full rounded-[10px] border border-border bg-background px-3 py-2.5 text-[14px] resize-none focus:outline-none"
+            />
+            <button
+              onClick={saveEdit}
+              className="w-full h-11 rounded-full bg-foreground text-background text-[14px] font-semibold hover:opacity-90 transition-opacity"
+            >
+              Kaydet
+            </button>
+          </div>
+        </div>
+      )}
+
+      {reviews.map(r => (
+        <div key={r.id} className="rounded-[14px] border border-border bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-semibold text-[14px] text-foreground">{r.barber?.nameTr}</p>
+                <span className="text-[11px] text-muted-foreground">·</span>
+                <p className="text-[13px] text-muted-foreground">{r.shop?.name}</p>
+              </div>
+              {r.appointment?.date && (
+                <p className="text-[12px] text-muted-foreground mt-0.5">
+                  {new Date(r.appointment.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+                  {r.appointment?.service?.nameTr && ` · ${r.appointment.service.nameTr}`}
+                </p>
+              )}
+              <div className="mt-2 flex items-center gap-1">
+                {[1,2,3,4,5].map(i => (
+                  <Star key={i} size={13} fill={i <= r.barberRating ? "#f59e0b" : "none"} color={i <= r.barberRating ? "#f59e0b" : "#d1d5db"} strokeWidth={1.5} />
+                ))}
+                <span className="text-[12px] font-semibold text-foreground ml-1">{r.barberRating}/5</span>
+              </div>
+              {r.comment && (
+                <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">&ldquo;{r.comment}&rdquo;</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5 shrink-0">
+              <button
+                onClick={() => setEditing({ id: r.id, barberRating: r.barberRating, comment: r.comment || "" })}
+                className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground border border-border rounded-full px-2.5 py-1 transition-colors"
+              >
+                <Pencil size={11} />
+                Düzenle
+              </button>
+              <button
+                onClick={() => deleteReview(r.id)}
+                className="flex items-center gap-1 text-[12px] text-red-500 hover:text-red-700 border border-red-200 rounded-full px-2.5 py-1 transition-colors"
+              >
+                <Trash2 size={11} />
+                Sil
+              </button>
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground/60">
+            {new Date(r.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+          </p>
         </div>
       ))}
     </div>

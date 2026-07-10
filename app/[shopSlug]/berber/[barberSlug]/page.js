@@ -62,7 +62,7 @@ export default async function BarberPublicPage({ params }) {
       orderBy: { createdAt: "desc" },
       take: 20,
       select: {
-        id: true, shopRating: true, barberRating: true, comment: true, createdAt: true,
+        id: true, barberRating: true, comment: true, createdAt: true,
         customer: { select: { name: true } },
       },
     }),
@@ -74,7 +74,6 @@ export default async function BarberPublicPage({ params }) {
   const initialReviews = {
     reviews: reviewsRaw.map(r => ({
       id:           r.id,
-      shopRating:   r.shopRating,
       barberRating: r.barberRating,
       comment:      r.comment,
       createdAt:    r.createdAt.toISOString(),
