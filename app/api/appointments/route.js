@@ -95,7 +95,29 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, phone: rawPhone, email, serviceId, barberId, date, time, notes, source, shopId } = body;
+    const { name, phone: rawPhone, email, serviceId, barberId, date, time, notes, source, shopId,
+            bookedByUserId, bookedByName } = body;
+
+    // ── Guest phone-account check ────────────────────────────────────────────
+    // If caller is not logged in (no bookedByUserId) but phone belongs to a User
+    // account, reject — prevents ghost bookings that bypass account identity.
+    if (!bookedByUserId && rawPhone) {
+      const rawDigits = String(rawPhone).replace(/\D/g, "");
+      const normalizedForCheck = rawDigits.startsWith("0") ? rawDigits.slice(1)
+        : rawDigits.startsWith("90") ? rawDigits.slice(2) : rawDigits;
+      if (normalizedForCheck.length >= 10) {
+        const ownerUser = await prisma.user.findFirst({
+          where: { phone: { contains: normalizedForCheck } },
+          select: { id: true },
+        });
+        if (ownerUser) {
+          return NextResponse.json(
+            { error: "Bu telefon numarası kayıtlı bir müşteri hesabına ait. Devam etmek için lütfen giriş yapın.", code: "PHONE_HAS_ACCOUNT" },
+            { status: 409 }
+          );
+        }
+      }
+    }
 
     // ── Field presence ───────────────────────────────────────────────────────
     if (!shopId || !name || !rawPhone || !serviceId || !barberId || !date || !time) {
@@ -243,6 +265,8 @@ export async function POST(request) {
             status:    shop.autoConfirmBookings ? "CONFIRMED" : "PENDING",
             source:    normalizeSource(source),
             notes:     notes?.trim().slice(0, 500) ?? null,
+            bookedByUserId: bookedByUserId ?? null,
+            bookedByName:   bookedByName?.trim().slice(0, 100) ?? null,
           },
           include: { shop: { select: { name: true, address: true, phone: true } } },
         });

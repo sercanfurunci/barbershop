@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AppointmentsProvider } from "@/contexts/AppointmentsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { FavoritesProvider } from "@/contexts/FavoritesContext";
 
 // ponytail: self-hosted via next/font so no render-blocking @import + CLS
 // is preempted by the font-display: swap default.
@@ -102,6 +103,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <LanguageProvider>
           <AuthProvider>
+            <FavoritesProvider>
             <AppointmentsProvider>
               {children}
               <Toaster
@@ -115,6 +117,7 @@ export default function RootLayout({ children }) {
                 }}
               />
             </AppointmentsProvider>
+            </FavoritesProvider>
           </AuthProvider>
         </LanguageProvider>
       </body>

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, User, LogOut, Calendar, Store } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useShop } from "@/contexts/ShopContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const C = {
   bg:       "var(--makas-bg)",
@@ -23,13 +24,18 @@ const C = {
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen]   = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const loginRef = useRef(null);
   // Mode is driven by actual hero visibility via IntersectionObserver, not scrollY.
   // "default" until effect proves a hero is present + visible.
   const [mode, setMode]           = useState("default");
   const { lang, setLang }         = useLang();
   const tx = useT(lang);
   const pathname = usePathname();
+  const router = useRouter();
   const shop = useShop();
+  const { user, logout } = useAuth();
+  const isCustomer = user?.role === "CUSTOMER";
   const shopSlug = shop?.slug ?? "";
   const isBookPage  = pathname?.includes("/book");
   const isStaffPage = pathname?.startsWith("/admin") || pathname?.startsWith("/barber") || pathname?.startsWith("/superadmin");
@@ -71,6 +77,14 @@ export default function Navbar() {
   // Mobile menu colors inherit current navbar mode.
   const menuBg         = isHero ? "rgba(15,15,15,0.92)"        : "rgba(247,244,238,0.98)";
   const menuBorder     = isHero ? "rgba(255,255,255,0.08)"     : C.border;
+
+  // Close login dropdown on outside click
+  useEffect(() => {
+    if (!loginOpen) return;
+    const handler = (e) => { if (loginRef.current && !loginRef.current.contains(e.target)) setLoginOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [loginOpen]);
 
   // Body scroll lock + Escape-to-close while mobile menu open.
   useEffect(() => {
@@ -178,12 +192,115 @@ export default function Navbar() {
                 {tx.nav.admin}
               </Link>
 
+              {/* Auth CTA */}
+              {isCustomer ? (
+                /* Logged-in customer: avatar dropdown */
+                <div ref={loginRef} style={{ position: "relative" }}>
+                  <button
+                    onClick={() => setLoginOpen(v => !v)}
+                    className="flex items-center gap-2 transition-all duration-200"
+                    style={{
+                      background: ctaBg, color: ctaText,
+                      padding: "8px 14px", borderRadius: "7px",
+                      fontSize: "13px", fontWeight: 600,
+                      border: "none", cursor: "pointer",
+                    }}
+                  >
+                    <User size={14} />
+                    <span style={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {user.displayName?.split(" ")[0] || "Hesabım"}
+                    </span>
+                    <ChevronDown size={12} style={{ opacity: 0.7, transform: loginOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+                  </button>
+                  <AnimatePresence>
+                    {loginOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                        transition={{ duration: 0.14 }}
+                        style={{
+                          position: "absolute", top: "calc(100% + 8px)", right: 0,
+                          background: "var(--makas-bg)", border: "1px solid var(--makas-border)",
+                          borderRadius: "10px", padding: "6px", minWidth: 180,
+                          boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 200,
+                        }}
+                      >
+                        <Link href="/account" onClick={() => setLoginOpen(false)}
+                          className="flex items-center gap-2.5 rounded-[7px] px-3 py-2.5 transition-colors hover:bg-secondary/60"
+                          style={{ fontSize: "13px", color: "var(--makas-ink)", textDecoration: "none" }}>
+                          <User size={14} className="text-muted-foreground" /> Profilim
+                        </Link>
+                        <Link href="/account?tab=upcoming" onClick={() => setLoginOpen(false)}
+                          className="flex items-center gap-2.5 rounded-[7px] px-3 py-2.5 transition-colors hover:bg-secondary/60"
+                          style={{ fontSize: "13px", color: "var(--makas-ink)", textDecoration: "none" }}>
+                          <Calendar size={14} className="text-muted-foreground" /> Randevularım
+                        </Link>
+                        <div style={{ height: 1, background: "var(--makas-border)", margin: "4px 0" }} />
+                        <button
+                          onClick={async () => { setLoginOpen(false); await logout(); router.push("/login"); }}
+                          className="flex w-full items-center gap-2.5 rounded-[7px] px-3 py-2.5 transition-colors hover:bg-secondary/60"
+                          style={{ fontSize: "13px", color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}>
+                          <LogOut size={14} /> Çıkış Yap
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                /* Not logged in: Login dropdown */
+                <div ref={loginRef} style={{ position: "relative" }}>
+                  <button
+                    onClick={() => setLoginOpen(v => !v)}
+                    className="flex items-center gap-1.5 transition-all duration-200"
+                    style={{
+                      background: ctaBg, color: ctaText,
+                      padding: "9px 16px", borderRadius: "7px",
+                      fontSize: "13px", fontWeight: 600,
+                      border: "none", cursor: "pointer",
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    Giriş Yap
+                    <ChevronDown size={13} style={{ opacity: 0.75, transform: loginOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+                  </button>
+                  <AnimatePresence>
+                    {loginOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                        transition={{ duration: 0.14 }}
+                        style={{
+                          position: "absolute", top: "calc(100% + 8px)", right: 0,
+                          background: "var(--makas-bg)", border: "1px solid var(--makas-border)",
+                          borderRadius: "10px", padding: "6px", minWidth: 200,
+                          boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 200,
+                        }}
+                      >
+                        <Link href="/login" onClick={() => setLoginOpen(false)}
+                          className="flex items-center gap-2.5 rounded-[7px] px-3 py-2.5 transition-colors hover:bg-secondary/60"
+                          style={{ fontSize: "13px", color: "var(--makas-ink)", textDecoration: "none" }}>
+                          <User size={14} className="text-muted-foreground" /> Müşteri Girişi
+                        </Link>
+                        <Link href="/business/login" onClick={() => setLoginOpen(false)}
+                          className="flex items-center gap-2.5 rounded-[7px] px-3 py-2.5 transition-colors hover:bg-secondary/60"
+                          style={{ fontSize: "13px", color: "var(--makas-ink)", textDecoration: "none" }}>
+                          <Store size={14} className="text-muted-foreground" /> İşletme Girişi
+                        </Link>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
               <Link
                 href={shopSlug ? `/${shopSlug}/book` : "/book"}
                 className="inline-flex items-center gap-1.5 transition-all duration-200"
                 style={{
-                  background: ctaBg,
-                  color: ctaText,
+                  background: isCustomer ? "var(--makas-surface2)" : ctaBg,
+                  color: isCustomer ? "var(--makas-ink)" : ctaText,
+                  border: isCustomer ? "1px solid var(--makas-border)" : "none",
                   padding: "9px 20px",
                   borderRadius: "7px",
                   fontSize: "13px",
@@ -264,6 +381,49 @@ export default function Navbar() {
                 >
                   {tx.nav.admin}
                 </Link>
+              </div>
+              {/* Account section */}
+              <div className="pb-3 space-y-1.5" style={{ borderTop: `1px solid ${menuBorder}`, paddingTop: "12px" }}>
+                {isCustomer ? (
+                  <>
+                    <p className="px-4 text-[11px] uppercase tracking-widest font-medium" style={{ color: navTextMuted, opacity: 0.6 }}>Hesabım</p>
+                    <Link href="/account" onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 rounded-md transition-colors"
+                      style={{ fontSize: "14px", color: navTextMuted, minHeight: "44px", textDecoration: "none" }}>
+                      <User size={15} /> Profilim
+                    </Link>
+                    <Link href="/account?tab=upcoming" onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 rounded-md transition-colors"
+                      style={{ fontSize: "14px", color: navTextMuted, minHeight: "44px", textDecoration: "none" }}>
+                      <Calendar size={15} /> Randevularım
+                    </Link>
+                    <button
+                      onClick={async () => { setMenuOpen(false); await logout(); router.push("/login"); }}
+                      className="flex w-full items-center gap-3 px-4 rounded-md transition-colors"
+                      style={{ fontSize: "14px", color: "#ef4444", minHeight: "44px", background: "none", border: "none", cursor: "pointer" }}>
+                      <LogOut size={15} /> Çıkış Yap
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="px-4 text-[11px] uppercase tracking-widest font-medium" style={{ color: navTextMuted, opacity: 0.6 }}>Hesap</p>
+                    <Link href="/login" onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 rounded-md transition-colors"
+                      style={{ fontSize: "14px", color: navTextMuted, minHeight: "44px", textDecoration: "none" }}>
+                      <User size={15} /> Müşteri Girişi
+                    </Link>
+                    <Link href="/login?tab=register" onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 rounded-md transition-colors"
+                      style={{ fontSize: "14px", color: navTextMuted, minHeight: "44px", textDecoration: "none" }}>
+                      <User size={15} /> Müşteri Kaydı
+                    </Link>
+                    <Link href="/business/login" onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 rounded-md transition-colors"
+                      style={{ fontSize: "14px", color: navTextMuted, minHeight: "44px", textDecoration: "none" }}>
+                      <Store size={15} /> İşletme Girişi
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

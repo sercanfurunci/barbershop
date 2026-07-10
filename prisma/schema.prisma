@@ -452,6 +452,10 @@ model Appointment {
   checkInToken  String?  @unique @default(cuid())
   checkedInAt   DateTime?
 
+  // Who made the booking (may differ from the client if booking for someone else)
+  bookedByUserId String?
+  bookedByName   String?
+
   notifications    Notification[]
   auditLogs        AuditLog[]
   notificationJobs NotificationJob[]

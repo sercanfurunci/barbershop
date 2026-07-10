@@ -1,33 +1,18 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Heart, Share2, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
+import { toast } from "sonner";
 
 export default function ShareFavoriteBar({ shopId, shopName }) {
   const { user } = useAuth();
+  const { isFavorite, add, remove } = useFavorites();
   const [copied, setCopied]   = useState(false);
-  const [favored, setFavored] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg]         = useState("");
+  const [pending, setPending] = useState(false);
 
-  // Sync initial favorite state from server when user is logged in
-  useEffect(() => {
-    if (!user || !shopId) return;
-    fetch("/api/customer/favorites")
-      .then(r => r.ok ? r.json() : [])
-      .then(list => {
-        if (Array.isArray(list)) {
-          setFavored(list.some(f => f.shopId === shopId));
-        }
-      })
-      .catch(() => {});
-  }, [user, shopId]);
-
-  const flash = (text, ms = 2200) => {
-    setMsg(text);
-    setTimeout(() => setMsg(""), ms);
-  };
+  const favored = isFavorite(shopId);
 
   const share = useCallback(async () => {
     const url = window.location.href;
@@ -38,33 +23,45 @@ export default function ShareFavoriteBar({ shopId, shopName }) {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      flash("Bağlantı kopyalandı");
+      toast.success("Bağlantı kopyalandı");
     }
   }, [shopName]);
 
   const toggleFavorite = useCallback(async () => {
-    if (loading) return;
-    setLoading(true);
+    if (pending) return;
+    if (!user || user.role !== "CUSTOMER") {
+      toast.error("Favori eklemek için giriş yapın");
+      return;
+    }
+    const wasActive = favored;
+    // Optimistic update
+    if (wasActive) remove(shopId); else add(shopId);
+    setPending(true);
     try {
-      if (favored) {
-        const res = await fetch(`/api/customer/favorites/${shopId}`, { method: "DELETE" });
-        if (res.status === 401) { flash("Favori eklemek için giriş yapın"); return; }
-        if (res.ok) { setFavored(false); flash("Favorilerden çıkarıldı"); }
+      let res;
+      if (wasActive) {
+        res = await fetch(`/api/customer/favorites/${shopId}`, { method: "DELETE" });
       } else {
-        const res = await fetch("/api/customer/favorites", {
+        res = await fetch("/api/customer/favorites", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ shopId }),
         });
-        if (res.status === 401) { flash("Favori eklemek için giriş yapın"); return; }
-        if (res.ok) { setFavored(true); flash("Favorilere eklendi ♥"); }
+      }
+      if (!res.ok) throw new Error("failed");
+      if (wasActive) {
+        toast("🤍 Favorilerden çıkarıldı");
+      } else {
+        toast.success("❤️ Favorilere eklendi");
       }
     } catch {
-      flash("Bir hata oluştu");
+      // Rollback
+      if (wasActive) add(shopId); else remove(shopId);
+      toast.error("❌ Favoriler güncellenemedi. Tekrar deneyin.");
     } finally {
-      setLoading(false);
+      setPending(false);
     }
-  }, [favored, loading, shopId]);
+  }, [favored, pending, shopId, user, add, remove]);
 
   return (
     <div style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -89,36 +86,29 @@ export default function ShareFavoriteBar({ shopId, shopName }) {
       <button
         onClick={toggleFavorite}
         aria-label={favored ? "Favorilerden çıkar" : "Favorilere ekle"}
-        disabled={loading}
+        disabled={pending}
         style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 14px",
           background: favored ? "#fef2f2" : "transparent",
           border: `1px solid ${favored ? "#fca5a5" : "var(--makas-border)"}`,
-          borderRadius: 10, cursor: loading ? "wait" : "pointer",
+          borderRadius: 10, cursor: pending ? "wait" : "pointer",
           fontSize: 13, fontWeight: 600,
           color: favored ? "#ef4444" : "var(--makas-ink-secondary)",
           minHeight: 40,
           transition: "all 0.18s",
+          transform: pending ? "scale(0.92)" : "scale(1)",
         }}
       >
-        <Heart size={15} fill={favored ? "currentColor" : "none"} />
-      </button>
-
-      {msg && (
-        <span
+        <Heart
+          size={15}
+          fill={favored ? "currentColor" : "none"}
           style={{
-            position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
-            transform: "translateX(-50%)",
-            background: "var(--makas-ink)", color: "#fff",
-            padding: "6px 12px", borderRadius: 8,
-            fontSize: 12, fontWeight: 500, whiteSpace: "nowrap",
-            pointerEvents: "none", zIndex: 100,
+            transition: "transform 0.15s cubic-bezier(0.34,1.56,0.64,1)",
+            transform: favored ? "scale(1.25)" : "scale(1)",
           }}
-        >
-          {msg}
-        </span>
-      )}
+        />
+      </button>
     </div>
   );
 }

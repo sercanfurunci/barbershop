@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Check, Calendar, Clock, User, Scissors, Phone, Mail, ArrowRight, CalendarPlus, Download } from "lucide-react";
+import { Check, Calendar, Clock, User, Users, Scissors, Phone, Mail, ArrowRight, CalendarPlus, Download } from "lucide-react";
 import { googleCalendarUrl } from "@/lib/calendar";
 import { useShop } from "@/contexts/ShopContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,13 +13,18 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { formatPhoneTRDisplay, toLocal10 } from "@/lib/validation";
 
-function validateForm(form, isAuthenticated) {
+function validateForm(form, isAuthenticated, bookingFor) {
   const errors = {};
   if (!isAuthenticated) {
     if (!form.name.trim() || form.name.trim().length < 2)
       errors.name = "En az 2 karakter olmalı";
     if (!toLocal10(form.phone))
       errors.phone = "Geçerli bir cep telefonu girin.";
+  } else if (bookingFor === "other") {
+    if (!form.guestName.trim() || form.guestName.trim().length < 2)
+      errors.guestName = "En az 2 karakter olmalı";
+    if (!toLocal10(form.guestPhone))
+      errors.guestPhone = "Geçerli bir cep telefonu girin.";
   }
   if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
     errors.email = "Geçerli bir e-posta adresi girin";
@@ -31,31 +36,50 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
   const shopSlug = shop?.slug;
   const { user } = useAuth();
   const isAuthenticated = !!(user && user.role === "CUSTOMER");
+  const [bookingFor, setBookingFor] = useState("self"); // "self" | "other"
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [createdApptId, setCreatedApptId] = useState(null);
   const [apptShop, setApptShop] = useState(null);
+  const [phoneAccountError, setPhoneAccountError] = useState(null);
 
   const setLoadingState = (v) => { setLoading(v); onLoadingChange?.(v); };
   const [form, setForm] = useState({
     name:  isAuthenticated ? (user.displayName || "") : "",
     phone: isAuthenticated ? (user.phone || "") : "",
     email: isAuthenticated ? (user.email || "") : "",
+    guestName:  "",
+    guestPhone: "",
     notes: "",
   });
+
+  // Reset guest fields when toggling back to self
+  const handleBookingForChange = (val) => {
+    setBookingFor(val);
+    setErrors({});
+    setTouched({});
+    setPhoneAccountError(null);
+    if (val === "self") setForm(f => ({ ...f, guestName: "", guestPhone: "" }));
+  };
   const s4 = tx?.booking?.step4 ?? {};
   const success = tx?.booking?.success ?? {};
   const locale = lang === "tr" ? dateFnsTr : enUS;
 
   const handlePhoneChange = (raw) => {
     setForm(f => ({ ...f, phone: formatPhoneTRDisplay(raw) }));
+    setPhoneAccountError(null);
+  };
+
+  const handleGuestPhoneChange = (raw) => {
+    setForm(f => ({ ...f, guestPhone: formatPhoneTRDisplay(raw) }));
+    setPhoneAccountError(null);
   };
 
   const handleBlur = (field) => {
     setTouched(t => ({ ...t, [field]: true }));
-    setErrors(validateForm({ ...form }, isAuthenticated));
+    setErrors(validateForm({ ...form }, isAuthenticated, bookingFor));
   };
 
   const submittingRef = useRef(false);
@@ -64,19 +88,14 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
     e.preventDefault();
     // Synchronous guard — blocks rapid double-clicks before React re-renders the disabled button.
     if (submittingRef.current) return;
-    const errs = validateForm(form, isAuthenticated);
+    const errs = validateForm(form, isAuthenticated, bookingFor);
     setErrors(errs);
-    setTouched({ name: true, phone: true, email: true });
+    setTouched({ name: true, phone: true, guestName: true, guestPhone: true, email: true });
     if (Object.keys(errs).length > 0) {
       toast.error("Lütfen formdaki hataları düzeltin");
       return;
     }
-    if (!isAuthenticated && (!form.name || !form.phone)) {
-      toast.error(s4.errorMsg ?? "Lütfen tüm zorunlu alanları doldurun");
-      return;
-    }
     // "any" must be resolved to a real barber by TimeSelect/DateTimeSelect before this point.
-    // If it isn't, the API rejects null with a confusing error — surface a clear one instead.
     const resolvedBarberId = booking.barber?.id;
     if (!resolvedBarberId || resolvedBarberId === "any") {
       toast.error("Berber seçiminde bir sorun oluştu. Lütfen saati yeniden seçin.");
@@ -89,19 +108,29 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
         ? format(booking.date, "yyyy-MM-dd")
         : booking.date;
 
+      // Determine actual customer identity
+      const isForOther = isAuthenticated && bookingFor === "other";
+      const customerName  = isForOther ? form.guestName  : form.name;
+      const customerPhone = isForOther ? form.guestPhone : form.phone;
+      const customerEmail = form.email;
+
       const created = await apiFetch("/api/appointments", {
         method: "POST",
         body: JSON.stringify({
           shopId,
-          name:      form.name,
-          phone:     toLocal10(form.phone),
-          email:     form.email,
+          name:      customerName,
+          phone:     toLocal10(customerPhone),
+          email:     customerEmail,
           notes:     form.notes,
           serviceId: booking.service?.id,
           barberId:  resolvedBarberId,
           date:      dateStr,
           time:      booking.time,
           source:    "ONLINE",
+          ...(isAuthenticated && {
+            bookedByUserId: user.id,
+            bookedByName:   user.displayName || user.email,
+          }),
         }),
       });
       setCreatedApptId(created?.id ?? null);
@@ -110,7 +139,11 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
       onSuccess?.();
       toast.success(success.confirmed ?? "Randevunuz onaylandı!");
     } catch (err) {
-      toast.error(err.message ?? "Randevu oluşturulamadı. Bağlantınızı kontrol edip tekrar deneyin.");
+      if (err.code === "PHONE_HAS_ACCOUNT" || (err.message && err.message.includes("PHONE_HAS_ACCOUNT"))) {
+        setPhoneAccountError(err.message);
+      } else {
+        toast.error(err.message ?? "Randevu oluşturulamadı. Bağlantınızı kontrol edip tekrar deneyin.");
+      }
       submittingRef.current = false;
     } finally {
       setLoadingState(false);
@@ -372,14 +405,74 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
         {/* Form */}
         <form id="booking-confirm-form" onSubmit={handleSubmit} className="lg:col-span-3 space-y-5">
           {isAuthenticated ? (
-            /* Logged-in: show read-only identity block — no re-entry needed */
-            <div className="rounded-[10px] border border-border bg-secondary/40 px-4 py-3 flex items-center gap-3">
-              <User size={15} className="text-muted-foreground shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[13px] font-medium text-foreground">{form.name}</p>
-                <p className="text-[12px] text-muted-foreground">{form.phone}{form.email ? ` · ${form.email}` : ""}</p>
+            <>
+              {/* Who is this booking for? */}
+              <div className="space-y-2">
+                <label className="text-muted-foreground" style={{ fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>Randevu Kimin İçin?</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[["self", User, "Kendim İçin"], ["other", Users, "Başkası İçin"]].map(([val, Icon, label]) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => handleBookingForChange(val)}
+                      className="flex items-center gap-2 rounded-[10px] border px-4 py-3 transition-all text-left"
+                      style={{
+                        borderColor: bookingFor === val ? "var(--makas-ink)" : "var(--makas-border)",
+                        background: bookingFor === val ? "var(--makas-ink)" : "transparent",
+                        color: bookingFor === val ? "#fff" : "var(--makas-ink-secondary)",
+                        fontSize: "13px", fontWeight: 500,
+                      }}
+                    >
+                      <Icon size={14} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+
+              {bookingFor === "self" ? (
+                /* Logged-in booking for self: read-only identity */
+                <div className="rounded-[10px] border border-border bg-secondary/40 px-4 py-3 flex items-center gap-3">
+                  <User size={15} className="text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-foreground">{form.name}</p>
+                    <p className="text-[12px] text-muted-foreground">{form.phone}{form.email ? ` · ${form.email}` : ""}</p>
+                  </div>
+                </div>
+              ) : (
+                /* Booking for someone else: collect their name + phone */
+                <div className="space-y-4">
+                  <div className="rounded-[10px] border border-border bg-secondary/40 px-4 py-2.5 flex items-center gap-2">
+                    <User size={13} className="text-muted-foreground shrink-0" />
+                    <p className="text-[12px] text-muted-foreground">Hesap: <span className="text-foreground font-medium">{form.name}</span></p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      label="Kişinin Adı Soyadı"
+                      placeholder="Ahmet Yılmaz"
+                      value={form.guestName}
+                      onChange={(v) => setForm(f => ({ ...f, guestName: v }))}
+                      onBlur={() => handleBlur("guestName")}
+                      error={touched.guestName ? errors.guestName : undefined}
+                      required
+                    />
+                    <FormField
+                      label="Kişinin Telefonu"
+                      placeholder="0532 123 45 67"
+                      value={form.guestPhone}
+                      onChange={handleGuestPhoneChange}
+                      onBlur={() => handleBlur("guestPhone")}
+                      error={touched.guestPhone ? errors.guestPhone : undefined}
+                      icon={<Phone size={13} />}
+                      inputMode="tel"
+                      autoComplete="tel"
+                      type="tel"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             /* Guest: collect name + phone */
             <>
@@ -388,7 +481,7 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
                   label={s4.formLabels?.name ?? "Ad Soyad"}
                   placeholder={s4.placeholders?.name ?? "Ahmet Yılmaz"}
                   value={form.name}
-                  onChange={(v) => setForm({ ...form, name: v })}
+                  onChange={(v) => { setForm(f => ({ ...f, name: v })); setPhoneAccountError(null); }}
                   onBlur={() => handleBlur("name")}
                   error={touched.name ? errors.name : undefined}
                   required
@@ -407,11 +500,22 @@ export default function Confirmation({ shopId, booking, onBack, onLoadingChange,
                   required
                 />
               </div>
+              {phoneAccountError && (
+                <div className="rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 space-y-2">
+                  <p className="text-[13px] text-amber-800">{phoneAccountError}</p>
+                  <Link
+                    href={`/login?redirect=${typeof window !== "undefined" ? encodeURIComponent(window.location.pathname + window.location.search) : ""}`}
+                    className="inline-flex items-center gap-1.5 rounded-[8px] bg-foreground text-background px-4 py-2 text-[13px] font-semibold"
+                  >
+                    Giriş Yap <ArrowRight size={12} />
+                  </Link>
+                </div>
+              )}
               <FormField
                 label={(s4.formLabels?.email ?? "E-posta") + " (isteğe bağlı)"}
                 placeholder={s4.placeholders?.email ?? "ornek@mail.com"}
                 value={form.email}
-                onChange={(v) => setForm({ ...form, email: v })}
+                onChange={(v) => setForm(f => ({ ...f, email: v }))}
                 onBlur={() => handleBlur("email")}
                 error={touched.email ? errors.email : undefined}
                 type="email"
