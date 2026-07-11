@@ -16,11 +16,13 @@ export async function GET(request) {
 
   if (!user) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
 
-  // Find all appointments linked to this customer's Client records
+  // Find all appointments linked to this customer's Client records.
+  // Use endsWith(last-10) consistent with stats/reviews to avoid partial matches.
+  const phone10 = user.phone ? user.phone.replace(/\D/g, "").slice(-10) : null;
   const clientFilter = user.clientId
     ? { clientId: user.clientId }
-    : user.phone
-      ? { client: { phone: { contains: user.phone.replace(/\D/g, "") } } }
+    : phone10 && phone10.length >= 10
+      ? { client: { phone: { endsWith: phone10 } } }
       : null;
 
   if (!clientFilter) return NextResponse.json([]);

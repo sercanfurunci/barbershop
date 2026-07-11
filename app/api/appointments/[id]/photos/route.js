@@ -4,8 +4,9 @@ import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const MAX_PHOTOS = 4;
-const MAX_BYTES  = 8 * 1024 * 1024; // 8 MB per image
+const MAX_PHOTOS   = 4;
+const MAX_BYTES    = 8 * 1024 * 1024; // 8 MB per image
+const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/heic"]);
 
 function canAccess(payload, appt) {
   if (payload.role === "SUPER_ADMIN") return true;
@@ -42,6 +43,8 @@ export async function POST(request, { params }) {
     const file = form.get("photo");
     if (!file || typeof file === "string")
       return NextResponse.json({ error: "Fotoğraf gerekli" }, { status: 400 });
+    if (!ALLOWED_MIME.has(file.type))
+      return NextResponse.json({ error: "Sadece JPEG, PNG, WebP veya HEIC yüklenebilir" }, { status: 400 });
 
     const buf  = Buffer.from(await file.arrayBuffer());
     if (buf.length > MAX_BYTES)
@@ -74,6 +77,8 @@ export async function POST(request, { params }) {
     const file = form.get("photo");
     if (!file || typeof file === "string")
       return NextResponse.json({ error: "Fotoğraf gerekli" }, { status: 400 });
+    if (!ALLOWED_MIME.has(file.type))
+      return NextResponse.json({ error: "Sadece JPEG, PNG, WebP veya HEIC yüklenebilir" }, { status: 400 });
     const buf = Buffer.from(await file.arrayBuffer());
     if (buf.length > MAX_BYTES)
       return NextResponse.json({ error: "Fotoğraf çok büyük (max 8MB)" }, { status: 400 });

@@ -70,10 +70,33 @@ export async function PATCH(request) {
     return NextResponse.json({ error: "Güncellenecek alan yok" }, { status: 400 });
   }
 
+  if (data.displayName !== undefined && data.displayName !== null) {
+    if (typeof data.displayName !== "string" || data.displayName.trim().length > 100) {
+      return NextResponse.json({ error: "Görünen ad en fazla 100 karakter olabilir" }, { status: 400 });
+    }
+    data.displayName = data.displayName.trim() || null;
+  }
+
+  if (data.gender !== undefined && data.gender !== null) {
+    if (!["male", "female", "other"].includes(data.gender)) {
+      return NextResponse.json({ error: "Geçersiz cinsiyet değeri" }, { status: 400 });
+    }
+  }
+
+  if (data.avatarUrl !== undefined && data.avatarUrl !== null) {
+    if (typeof data.avatarUrl !== "string" || data.avatarUrl.length > 500 ||
+        !/^https:\/\/res\.cloudinary\.com\//.test(data.avatarUrl)) {
+      return NextResponse.json({ error: "Geçersiz avatar URL" }, { status: 400 });
+    }
+  }
+
   if (data.phone) {
-    const cleanPhone = data.phone.replace(/\D/g, "");
+    const phone10 = data.phone.replace(/\D/g, "").slice(-10);
+    if (phone10.length < 10) {
+      return NextResponse.json({ error: "Geçersiz telefon numarası" }, { status: 400 });
+    }
     const phoneTaken = await prisma.user.findFirst({
-      where: { phone: { contains: cleanPhone }, NOT: { id: payload.userId } },
+      where: { phone: { endsWith: phone10 }, NOT: { id: payload.userId } },
     });
     if (phoneTaken) {
       return NextResponse.json({ error: "Bu telefon numarası zaten başka bir hesaba kayıtlı" }, { status: 409 });

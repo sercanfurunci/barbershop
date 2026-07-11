@@ -33,15 +33,14 @@ export async function POST(request) {
   }
 
   if (phone) {
-    const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length >= 10) {
-      const phoneTaken = await prisma.user.findFirst({ where: { phone: { contains: cleanPhone } } });
+    const phone10 = phone.replace(/\D/g, "").slice(-10);
+    if (phone10.length >= 10) {
+      const phoneTaken = await prisma.user.findFirst({ where: { phone: { endsWith: phone10 } } });
       if (phoneTaken) {
         return NextResponse.json({ error: "Bu telefon numarası zaten başka bir hesaba kayıtlı" }, { status: 409 });
       }
     }
   }
-
 
   const passwordHash = await bcrypt.hash(password, 12);
 
@@ -50,10 +49,10 @@ export async function POST(request) {
   // ponytail: link only when there's exactly one match to avoid ambiguity.
   let clientId = null;
   if (phone) {
-    const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length >= 10) {
+    const phone10 = phone.replace(/\D/g, "").slice(-10);
+    if (phone10.length >= 10) {
       const clients = await prisma.client.findMany({
-        where: { phone: { contains: cleanPhone } },
+        where: { phone: { endsWith: phone10 } },
         select: { id: true },
         take: 2,
       });

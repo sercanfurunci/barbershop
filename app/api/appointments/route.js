@@ -94,20 +94,23 @@ export async function POST(request) {
       );
     }
 
+    // Optional auth — used to bind bookedByUserId safely from the JWT, not the body.
+    const authPayload = await requireAuth(request).catch(() => null);
+
     const body = await request.json();
     const { name, phone: rawPhone, email, serviceId, barberId, date, time, notes, source, shopId,
-            bookedByUserId, bookedByName } = body;
+            bookedByName } = body;
+    // Always derive bookedByUserId from the verified JWT, never from the request body.
+    const bookedByUserId = authPayload?.userId ?? null;
 
     // ── Guest phone-account check ────────────────────────────────────────────
-    // If caller is not logged in (no bookedByUserId) but phone belongs to a User
-    // account, reject — prevents ghost bookings that bypass account identity.
+    // If caller is not logged in but phone belongs to a User account, reject —
+    // prevents ghost bookings that bypass account identity.
     if (!bookedByUserId && rawPhone) {
-      const rawDigits = String(rawPhone).replace(/\D/g, "");
-      const normalizedForCheck = rawDigits.startsWith("0") ? rawDigits.slice(1)
-        : rawDigits.startsWith("90") ? rawDigits.slice(2) : rawDigits;
-      if (normalizedForCheck.length >= 10) {
+      const phone10check = String(rawPhone).replace(/\D/g, "").slice(-10);
+      if (phone10check.length >= 10) {
         const ownerUser = await prisma.user.findFirst({
-          where: { phone: { contains: normalizedForCheck } },
+          where: { phone: { endsWith: phone10check } },
           select: { id: true },
         });
         if (ownerUser) {

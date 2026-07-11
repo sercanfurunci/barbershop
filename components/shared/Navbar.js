@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, User, LogOut, Calendar, Store } from "lucide-react";
+import { Menu, X, ChevronDown, User, LogOut, Calendar, Store, Heart, Clock, MessageSquare, Settings } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useShop } from "@/contexts/ShopContext";
@@ -39,6 +39,7 @@ export default function Navbar() {
   const shopSlug = shop?.slug ?? "";
   const isBookPage  = pathname?.includes("/book");
   const isStaffPage = pathname?.startsWith("/admin") || pathname?.startsWith("/barber") || pathname?.startsWith("/superadmin");
+  const isAccountPage = pathname?.startsWith("/account");
   // Build login URL with current path as return destination (only for non-auth pages)
   const loginRedirect = !isStaffPage && pathname && pathname !== "/" ? `?redirect=${encodeURIComponent(pathname)}` : "";
 
@@ -52,6 +53,7 @@ export default function Navbar() {
   // mode is "hero"; otherwise "default". Pages without a hero stay "default" forever.
   useEffect(() => {
     const el = typeof document !== "undefined" && document.querySelector("[data-hero]");
+    // eslint-disable-next-line react-compiler/react-compiler
     if (!el) { setMode("default"); return; }
     setMode("hero"); // avoid flash: hero is at top of layout, assume visible on mount
     const io = new IntersectionObserver(
@@ -150,20 +152,22 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop links */}
-            <div className="hidden md:flex items-center gap-8">
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="relative px-4 py-2 transition-colors duration-200 rounded-md"
-                  style={{ fontSize: "13px", letterSpacing: "0.02em", color: navTextMuted, fontWeight: 400 }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = navText)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = navTextMuted)}
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
+            {!isAccountPage && (
+              <div className="hidden md:flex items-center gap-8">
+                {navLinks.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="relative px-4 py-2 transition-colors duration-200 rounded-md"
+                    style={{ fontSize: "13px", letterSpacing: "0.02em", color: navTextMuted, fontWeight: 400 }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = navText)}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = navTextMuted)}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            )}
 
             {/* Right side */}
             <div className="hidden md:flex items-center gap-2">
@@ -184,15 +188,17 @@ export default function Navbar() {
                 {lang === "tr" ? "🇹🇷 TR" : "🇬🇧 EN"}
               </button>
 
-              <Link
-                href={shopSlug ? `/${shopSlug}/barber` : "/barber"}
-                className="px-4 py-2 rounded-md transition-all duration-200"
-                style={{ fontSize: "13px", color: navTextMuted, letterSpacing: "0.02em" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = navText)}
-                onMouseLeave={(e) => (e.currentTarget.style.color = navTextMuted)}
-              >
-                {tx.nav.admin}
-              </Link>
+              {!isAccountPage && (
+                <Link
+                  href={shopSlug ? `/${shopSlug}/barber` : "/barber"}
+                  className="px-4 py-2 rounded-md transition-all duration-200"
+                  style={{ fontSize: "13px", color: navTextMuted, letterSpacing: "0.02em" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = navText)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = navTextMuted)}
+                >
+                  {tx.nav.admin}
+                </Link>
+              )}
 
               {/* Auth CTA */}
               {isCustomer ? (
@@ -228,16 +234,20 @@ export default function Navbar() {
                           boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 200,
                         }}
                       >
-                        <Link href="/account" onClick={() => setLoginOpen(false)}
-                          className="flex items-center gap-2.5 rounded-[7px] px-3 py-2.5 transition-colors hover:bg-secondary/60"
-                          style={{ fontSize: "13px", color: "var(--makas-ink)", textDecoration: "none" }}>
-                          <User size={14} className="text-muted-foreground" /> Profilim
-                        </Link>
-                        <Link href="/account?tab=upcoming" onClick={() => setLoginOpen(false)}
-                          className="flex items-center gap-2.5 rounded-[7px] px-3 py-2.5 transition-colors hover:bg-secondary/60"
-                          style={{ fontSize: "13px", color: "var(--makas-ink)", textDecoration: "none" }}>
-                          <Calendar size={14} className="text-muted-foreground" /> Randevularım
-                        </Link>
+                        {[
+                          { href: "/account?tab=profile",   Icon: User,           label: "Profil"               },
+                          { href: "/account?tab=upcoming",  Icon: Calendar,       label: "Yaklaşan Randevular"  },
+                          { href: "/account?tab=history",   Icon: Clock,          label: "Geçmiş"               },
+                          { href: "/account?tab=favorites", Icon: Heart,          label: "Favoriler"            },
+                          { href: "/account?tab=reviews",   Icon: MessageSquare,  label: "Yorumlar"             },
+                          { href: "/account?tab=settings",  Icon: Settings,       label: "Ayarlar"              },
+                        ].map(({ href, Icon, label }) => (
+                          <Link key={href} href={href} onClick={() => setLoginOpen(false)}
+                            className="flex items-center gap-2.5 rounded-[7px] px-3 py-2.5 transition-colors hover:bg-secondary/60"
+                            style={{ fontSize: "13px", color: "var(--makas-ink)", textDecoration: "none" }}>
+                            <Icon size={14} style={{ color: "var(--makas-ink-muted)", flexShrink: 0 }} /> {label}
+                          </Link>
+                        ))}
                         <div style={{ height: 1, background: "var(--makas-border)", margin: "4px 0" }} />
                         <button
                           onClick={async () => { setLoginOpen(false); await logout(); router.push("/login"); }}
@@ -435,7 +445,7 @@ export default function Navbar() {
 
       {/* Mobile sticky bottom book bar — only on global marketing site (no shop).
           ponytail: tenant pages use richer <StickyActionBar/> with WhatsApp/Call/Maps. */}
-      {!isBookPage && !isStaffPage && !shop && <div
+      {!isBookPage && !isStaffPage && !isAccountPage && !shop && <div
         className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
         style={{
           background: "rgba(247,244,238,0.97)",

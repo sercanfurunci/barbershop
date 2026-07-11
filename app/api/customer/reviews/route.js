@@ -18,7 +18,7 @@ export async function GET(request) {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { clientId: true, phone: true },
+    select: { clientId: true, phone: true, email: true },
   });
 
   if (user?.clientId) {
@@ -38,11 +38,22 @@ export async function GET(request) {
     }
   }
 
+  // 4th fallback: email-based Client lookup (covers email-only registrations)
+  if (user?.email) {
+    const emailClients = await prisma.client.findMany({
+      where: { email: user.email },
+      select: { id: true },
+    });
+    if (emailClients.length > 0) {
+      orConditions.push({ customerId: { in: emailClients.map(c => c.id) } });
+    }
+  }
+
   const reviews = await prisma.review.findMany({
     where:   { OR: orConditions, barberRating: { gt: 0 } },
     orderBy: { createdAt: "desc" },
     select: {
-      id: true, barberRating: true, comment: true, createdAt: true,
+      id: true, userId: true, barberRating: true, comment: true, createdAt: true,
       barber: {
         select: {
           id: true, slug: true, nameTr: true, titleTr: true,
@@ -63,7 +74,17 @@ export async function GET(request) {
   const seen = new Set();
   const unique = reviews.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
 
-  return NextResponse.json(unique);
+  // Backfill userId on legacy reviews found via fallback — fast path next time
+  const toBackfill = unique.filter(r => !r.userId).map(r => r.id);
+  if (toBackfill.length > 0) {
+    prisma.review.updateMany({
+      where: { id: { in: toBackfill } },
+      data: { userId },
+    }).catch(() => {});
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  return NextResponse.json(unique.map(({ userId: _uid, ...r }) => r));
 }
 
 // POST /api/customer/reviews
@@ -81,12 +102,16 @@ export async function POST(request) {
   if (barberRating < 1 || barberRating > 5) {
     return NextResponse.json({ error: "Puan 1-5 arasında olmalı" }, { status: 400 });
   }
+  if (comment && String(comment).length > 1000) {
+    return NextResponse.json({ error: "Yorum en fazla 1000 karakter olabilir" }, { status: 400 });
+  }
 
   const appt = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     select: {
       id: true, status: true, reviewed: true,
       shopId: true, barberId: true, clientId: true,
+      bookedByUserId: true,
       shop:   { select: { googleReviewUrl: true } },
       barber: { select: { id: true, rating: true, reviewCount: true } },
     },
@@ -96,13 +121,30 @@ export async function POST(request) {
   if (appt.status !== "COMPLETED") return NextResponse.json({ error: "Sadece tamamlanan randevular değerlendirilebilir" }, { status: 422 });
   if (appt.reviewed) return NextResponse.json({ error: "Bu randevu zaten değerlendirildi" }, { status: 409 });
 
-  // Optional ownership check — only enforced if the User has a clientId linked
+  // Ownership check: must be the booking user, the linked client, or phone-matched client.
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    select: { clientId: true },
+    select: { clientId: true, phone: true },
   });
-  if (user?.clientId && appt.clientId !== user.clientId) {
-    return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
+
+  const isClientOwner  = user?.clientId && appt.clientId === user.clientId;
+  const isBookingOwner = appt.bookedByUserId === payload.userId;
+
+  if (!isClientOwner && !isBookingOwner) {
+    // Last resort: phone-based match (legacy guest bookings later registered)
+    let phoneMatch = false;
+    if (user?.phone) {
+      const phone10 = user.phone.replace(/\D/g, "").slice(-10);
+      if (phone10.length >= 10) {
+        const client = await prisma.client.findUnique({
+          where: { id: appt.clientId },
+          select: { phone: true },
+        });
+        const cp10 = client?.phone?.replace(/\D/g, "").slice(-10) ?? "";
+        phoneMatch = cp10.length >= 10 && cp10 === phone10;
+      }
+    }
+    if (!phoneMatch) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
   }
 
   const newBarberTotal = appt.barber.reviewCount + 1;

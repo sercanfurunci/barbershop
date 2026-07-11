@@ -11,29 +11,31 @@ export async function DELETE(request, { params }) {
 
   const { id } = await params;
 
-  const appt = await prisma.appointment.findUnique({
-    where: { id },
-    select: { id: true, status: true, date: true, clientId: true },
-  });
+  const [appt, user] = await Promise.all([
+    prisma.appointment.findUnique({
+      where: { id },
+      select: { id: true, status: true, date: true, clientId: true, bookedByUserId: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { clientId: true },
+    }),
+  ]);
 
   if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
   if (!["PENDING", "CONFIRMED"].includes(appt.status)) {
     return NextResponse.json({ error: "Bu randevu iptal edilemez" }, { status: 422 });
   }
 
-  // Verify ownership via user's linked clientId
-  const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: { clientId: true },
-  });
+  const isOwner =
+    (user?.clientId && appt.clientId === user.clientId) ||
+    appt.bookedByUserId === payload.userId;
 
-  if (!user?.clientId || appt.clientId !== user.clientId) {
-    return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
-  }
+  if (!isOwner) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
 
   await prisma.appointment.update({
     where: { id },
-    data: { status: "CANCELLED" },
+    data: { status: "CANCELLED", cancelledAt: new Date(), cancelledBy: "client" },
   });
 
   return NextResponse.json({ ok: true });

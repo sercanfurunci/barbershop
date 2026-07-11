@@ -13,14 +13,15 @@ export async function POST(request) {
   }
 
   const { token, platform = "ios" } = await request.json();
-  if (!token || typeof token !== "string") {
-    return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+  if (!token || typeof token !== "string" || token.length > 512) {
+    return NextResponse.json({ error: "Geçersiz token" }, { status: 400 });
   }
+  const safePlatform = ["ios", "android", "web"].includes(platform) ? platform : "ios";
 
   await prisma.pushToken.upsert({
     where: { token },
-    update: { userId: payload.userId, platform, updatedAt: new Date() },
-    create: { userId: payload.userId, token, platform },
+    update: { userId: payload.userId, platform: safePlatform, updatedAt: new Date() },
+    create: { userId: payload.userId, token, platform: safePlatform },
   });
 
   return NextResponse.json({ ok: true });

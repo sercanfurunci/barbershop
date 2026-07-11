@@ -61,7 +61,7 @@ export async function POST(request) {
       status: "CANCELLED",
       cancelledAt: new Date(),
       cancelledBy: "client",
-      cancellationReason: reason || null,
+      cancellationReason: typeof reason === "string" ? reason.trim().slice(0, 500) || null : null,
     },
   });
 

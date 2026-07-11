@@ -113,7 +113,7 @@ const SalonCard = memo(function SalonCard({ shop, userLoc }) {
       <div className="relative shrink-0 bg-secondary overflow-hidden" style={{ height: IMG_H }}>
         {img ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={img} alt={shop.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+          <img src={img} alt={shop.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" onError={e => { e.currentTarget.style.display = "none"; }} />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             {shop.logo

@@ -27,14 +27,13 @@ export async function GET(request) {
   const phone = normalizePhone(rawPhone);
   if (!phone) return NextResponse.json({ error: "Geçersiz telefon numarası" }, { status: 400 });
 
-  // 30 days back in Istanbul local time — toISOString() is UTC and would
-  // report the wrong date between 00:00–03:00 Istanbul (UTC+3).
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const sinceStr = toDateStr(since);
+  // Only upcoming appointments — no history. Exposing past appointments
+  // to anyone who knows a phone number is a BOLA/privacy risk.
+  const todayStr = toDateStr(new Date());
 
   const clients = await prisma.client.findMany({
     where: { phone },
-    select: { id: true, shopId: true },
+    select: { id: true },
   });
 
   if (!clients.length) return NextResponse.json([]);
@@ -42,7 +41,8 @@ export async function GET(request) {
   const appointments = await prisma.appointment.findMany({
     where: {
       clientId: { in: clients.map((c) => c.id) },
-      date: { gte: sinceStr },
+      date:     { gte: todayStr },
+      status:   { in: ["PENDING", "CONFIRMED"] },
     },
     include: {
       shop:    { select: { id: true, name: true, slug: true, address: true, phone: true, logo: true } },
@@ -50,10 +50,10 @@ export async function GET(request) {
       service: { select: { id: true, nameTr: true, duration: true } },
     },
     orderBy: [{ date: "asc" }, { time: "asc" }],
-    take: 50,
+    take: 10,
   });
 
-  // Strip sensitive client data — only return what the phone owner needs
+  // notes intentionally excluded — contains potentially sensitive admin remarks
   return NextResponse.json(
     appointments.map((a) => ({
       id:       a.id,
@@ -61,8 +61,6 @@ export async function GET(request) {
       time:     a.time,
       duration: a.duration,
       status:   a.status,
-      price:    a.price,
-      notes:    a.notes,
       shop:     a.shop,
       barber:   a.barber,
       service:  a.service,
