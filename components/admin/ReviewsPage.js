@@ -5,6 +5,7 @@ import { Star, AlertTriangle, TrendingUp, MessageSquare, Loader2 } from "lucide-
 import { apiFetch } from "@/lib/api";
 
 import { C } from "@/lib/adminTheme";
+import { AdminPageHeader, DSStatTile, DSCard, DSEmptyState, DSSkeleton, DSBadge } from "@/components/ds";
 
 function StarRow({ rating, size = 12 }) {
   return (
@@ -63,67 +64,80 @@ export default function ReviewsPage() {
 
   return (
     <div className="space-y-5">
-      <h1 style={{ fontSize: "20px", fontWeight: 700, color: C.primary, letterSpacing: "-0.01em", marginBottom: 4 }}>Yorumlar</h1>
+      <AdminPageHeader title="Yorumlar" sub="Müşteri değerlendirmeleri ve puan dağılımı" />
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard icon={Star} label="Ortalama Puan" value={data?.stats?.avgRating?.toFixed(1) ?? "—"} accent={C.primary} />
-        <KpiCard icon={MessageSquare} label="Toplam Yorum" value={data?.stats?.totalCount ?? "—"} accent="#2563eb" />
-        <KpiCard icon={AlertTriangle} label="Olumsuz Yorum" value={negativeReviews.length} accent={C.yellow} />
-        <KpiCard icon={TrendingUp} label="Bu Hafta" value={weekCount(data?.reviews)} accent={C.green} />
+        <DSStatTile icon={Star}         label="Ortalama Puan"  value={data?.stats?.avgRating?.toFixed(1) ?? "—"} accent={C.primary} />
+        <DSStatTile icon={MessageSquare} label="Toplam Yorum"  value={data?.stats?.totalCount ?? "—"}            accent="#2563eb" />
+        <DSStatTile icon={AlertTriangle} label="Olumsuz Yorum" value={negativeReviews.length}                    accent={C.yellow} />
+        <DSStatTile icon={TrendingUp}    label="Bu Hafta"      value={weekCount(data?.reviews)}                  accent={C.green} />
       </div>
 
       {/* Dispatch pipeline */}
       {data?.stats?.pipeline && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "16px 20px" }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: C.muted, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 12 }}>Hatırlatma Kuyruğu</p>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: C.secondary }}>
-            <span>Bekliyor <strong style={{ color: C.primary }}>{data.stats.pipeline.PENDING}</strong></span>
-            <span>Gönderildi <strong style={{ color: C.primary }}>{data.stats.pipeline.SENT}</strong></span>
-            <span>Tamamlandı <strong style={{ color: C.primary }}>{data.stats.pipeline.REVIEWED}</strong></span>
-            <span>Atlandı <strong style={{ color: C.primary }}>{data.stats.pipeline.SKIPPED}</strong></span>
+        <DSCard>
+          <div className="p-4 flex flex-wrap gap-5 items-center">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground shrink-0">Hatırlatma Kuyruğu</p>
+            {[
+              { label: "Bekliyor",   val: data.stats.pipeline.PENDING },
+              { label: "Gönderildi", val: data.stats.pipeline.SENT },
+              { label: "Tamamlandı", val: data.stats.pipeline.REVIEWED },
+              { label: "Atlandı",    val: data.stats.pipeline.SKIPPED },
+            ].map(({ label, val }) => (
+              <span key={label} className="text-[12px] text-muted-foreground">
+                {label} <strong className="text-foreground font-semibold">{val}</strong>
+              </span>
+            ))}
           </div>
-        </div>
+        </DSCard>
       )}
 
       {/* Rating distribution */}
       {data?.stats?.distribution && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "20px 24px" }}>
-          <p style={{ fontSize: 12, fontWeight: 600, color: C.secondary, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 16 }}>Salon Puan Dağılımı</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {data.stats.distribution.map(({ stars: s, count }) => {
-              const pct = data.stats.totalCount > 0 ? (count / data.stats.totalCount) * 100 : 0;
-              return (
-                <div key={s} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, width: 60, flexShrink: 0 }}>
-                    <span style={{ fontSize: 12, color: C.secondary, fontWeight: 500 }}>{s}</span>
-                    <Star size={11} fill={C.primary} style={{ color: C.primary }} />
+        <DSCard>
+          <div className="p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-4">Salon Puan Dağılımı</p>
+            <div className="flex flex-col gap-2.5">
+              {data.stats.distribution.map(({ stars: s, count }) => {
+                const pct = data.stats.totalCount > 0 ? (count / data.stats.totalCount) * 100 : 0;
+                return (
+                  <div key={s} className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 w-14 shrink-0">
+                      <span className="text-[12px] font-semibold text-foreground">{s}</span>
+                      <Star size={10} fill="var(--makas-ink)" style={{ color: "var(--makas-ink)" }} />
+                    </div>
+                    <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-secondary">
+                      <div
+                        className="h-full rounded-full bg-foreground transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-[11px] text-muted-foreground w-6 text-right shrink-0">{count}</span>
                   </div>
-                  <div style={{ flex: 1, height: 6, background: C.surface, borderRadius: 3, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: C.primary, borderRadius: 3, transition: "width 0.5s ease" }} />
-                  </div>
-                  <span style={{ fontSize: 11, color: C.muted, width: 28, textAlign: "right", flexShrink: 0 }}>{count}</span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </DSCard>
       )}
 
       {/* Negative alerts */}
       {negativeReviews.length > 0 && (
-        <div style={{ background: "#FEF9EE", border: "1px solid #FDE68A", borderRadius: 10, padding: "16px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <AlertTriangle size={15} style={{ color: C.yellow }} />
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#92400e" }}>Olumsuz Geri Bildirimler ({negativeReviews.length})</p>
+        <div className="rounded-[14px] border p-4 space-y-3" style={{ background: "#FEF9EE", borderColor: "#FDE68A" }}>
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={14} style={{ color: C.yellow }} />
+            <p className="text-[13px] font-semibold" style={{ color: "#92400e" }}>
+              Olumsuz Geri Bildirimler ({negativeReviews.length})
+            </p>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="flex flex-col gap-2">
             {negativeReviews.slice(0, 3).map((r) => (
-              <div key={r.id} style={{ padding: "10px 12px", background: "#fff", borderRadius: 7, border: "1px solid #FDE68A" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <div key={r.id} className="p-3 bg-white rounded-[10px] border" style={{ borderColor: "#FDE68A" }}>
+                <div className="flex items-center gap-2 mb-1">
                   <StarRow rating={r.shopRating} size={11} />
-                  <span style={{ fontSize: 11, color: C.muted }}>{r.customerName} · {r.barber?.nameTr}</span>
+                  <span className="text-[11px] text-muted-foreground">{r.customerName} · {r.barber?.nameTr}</span>
                 </div>
-                {r.comment && <p style={{ fontSize: 12, color: C.secondary, lineHeight: 1.5 }}>{r.comment}</p>}
+                {r.comment && <p className="text-[12px] text-secondary-foreground leading-relaxed">{r.comment}</p>}
               </div>
             ))}
           </div>
@@ -131,56 +145,61 @@ export default function ReviewsPage() {
       )}
 
       {/* Reviews list */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: C.primary }}>Tüm Yorumlar</p>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <DSCard className="overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-wrap gap-2">
+          <p className="text-[13px] font-semibold text-foreground">Tüm Yorumlar</p>
+          <div className="flex gap-1.5 flex-wrap">
             <FilterBtn active={stars === null} onClick={() => setStars(null)}>Tümü</FilterBtn>
             {[5,4,3,2,1].map((s) => (
               <FilterBtn key={s} active={stars === s} onClick={() => setStars(s)}>
-                {s}<Star size={10} fill="currentColor" style={{ marginLeft: 3, verticalAlign: "-1px" }} />
+                {s}<Star size={10} fill="currentColor" style={{ marginLeft: 2, verticalAlign: "-1px" }} />
               </FilterBtn>
             ))}
           </div>
         </div>
 
         {loading ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-            <Loader2 size={18} style={{ color: C.muted }} className="animate-spin" />
+          <div className="flex justify-center py-10">
+            <Loader2 size={18} className="animate-spin text-muted-foreground" />
           </div>
         ) : data?.reviews?.length === 0 ? (
-          <p style={{ textAlign: "center", padding: 32, fontSize: 13, color: C.muted }}>Henüz yorum yok</p>
+          <DSEmptyState
+            icon={Star}
+            title="Henüz yorum yok"
+            sub="Müşteriler randevularını tamamladıktan sonra buraya görünür."
+            compact
+          />
         ) : (
           <div>
             {data?.reviews?.map((r, i) => (
-              <div key={r.id} style={{
-                padding: "14px 20px",
-                borderBottom: i < data.reviews.length - 1 ? `1px solid ${C.border}` : "none",
-                display: "flex", alignItems: "flex-start", gap: 12,
-              }}>
+              <div
+                key={r.id}
+                className="flex items-start gap-3 px-5 py-4"
+                style={{ borderBottom: i < data.reviews.length - 1 ? "1px solid var(--makas-border)" : "none" }}
+              >
                 <BarberAvatar barber={r.barber} size={36} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: C.primary }}>{r.customerName}</span>
-                    <span style={{ fontSize: 11, color: C.muted }}>→ {r.barber?.nameTr}</span>
-                    <span style={{ fontSize: 10, color: C.muted, marginLeft: "auto" }}>{formatRelative(r.createdAt)}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span className="text-[13px] font-semibold text-foreground">{r.customerName}</span>
+                    <span className="text-[11px] text-muted-foreground">→ {r.barber?.nameTr}</span>
+                    <span className="text-[10px] text-muted-foreground ml-auto">{formatRelative(r.createdAt)}</span>
                   </div>
-                  <div style={{ display: "flex", gap: 16, marginBottom: 6 }}>
+                  <div className="flex gap-4 mb-1.5">
                     <RatingPair label="Salon" value={r.shopRating} />
                     <RatingPair label="Berber" value={r.barberRating} />
                   </div>
                   {r.comment && (
-                    <p style={{ fontSize: 12, color: C.secondary, lineHeight: 1.55, marginBottom: 4 }}>{r.comment}</p>
+                    <p className="text-[12px] text-secondary-foreground leading-relaxed">{r.comment}</p>
                   )}
                   {r.appointment?.service?.nameTr && (
-                    <p style={{ fontSize: 10, color: C.muted }}>{r.appointment.service.nameTr}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">{r.appointment.service.nameTr}</p>
                   )}
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </DSCard>
     </div>
   );
 }
@@ -188,8 +207,8 @@ export default function ReviewsPage() {
 function RatingPair({ label, value }) {
   if (!value || value <= 0) return null;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ fontSize: 10, color: C.muted, letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</span>
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">{label}</span>
       <StarRow rating={value} size={11} />
     </div>
   );
@@ -200,29 +219,15 @@ function FilterBtn({ active, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium transition-colors"
       style={{
-        padding: "4px 10px", borderRadius: 5, fontSize: 11, fontWeight: 500, cursor: "pointer", border: "none",
-        background: active ? C.primary : C.surface,
-        color: active ? "#fff" : C.secondary,
-        display: "inline-flex", alignItems: "center",
+        background: active ? "var(--makas-ink)" : "var(--makas-surface2)",
+        color: active ? "#fff" : "var(--makas-ink-secondary)",
+        border: active ? "none" : "1px solid var(--makas-border)",
       }}
     >
       {children}
     </button>
-  );
-}
-
-function KpiCard({ icon: Icon, label, value, accent }) {
-  return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "16px 18px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <div style={{ width: 28, height: 28, borderRadius: 7, background: `${accent}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon size={14} style={{ color: accent }} />
-        </div>
-        <span style={{ fontSize: 11, color: C.muted, letterSpacing: "0.04em" }}>{label}</span>
-      </div>
-      <p style={{ fontSize: 22, fontWeight: 700, color: C.primary, letterSpacing: "-0.02em" }}>{value}</p>
-    </div>
   );
 }
 

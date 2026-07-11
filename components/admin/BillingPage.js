@@ -1,9 +1,5 @@
 "use client";
 
-// Read-only billing dashboard. Upgrades are sales-led for now, so there is no
-// in-app purchase flow — the CTA is a contact prompt. Wire iyzico later and
-// flip the CTA into a real /api/payments/checkout call.
-
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import {
@@ -11,50 +7,27 @@ import {
   Users, MessageSquare, Smartphone, TrendingUp, Mail,
 } from "lucide-react";
 
-import { C, SHADOW } from "@/lib/adminTheme";
+import { C } from "@/lib/adminTheme";
+import {
+  AdminPageHeader, DSCard, DSStatTile, DSBadge,
+  DSEmptyState, DSPageLoader,
+} from "@/components/ds";
 
-const STATUS_BADGE = {
-  TRIAL:     { bg: "#DBEAFE", color: "#1E40AF", label: "Deneme" },
-  ACTIVE:    { bg: "#D1FAE5", color: "#065F46", label: "Aktif" },
-  PAST_DUE:  { bg: "#FEF3C7", color: "#92400E", label: "Ödeme Bekleniyor" },
-  SUSPENDED: { bg: "#FEE2E2", color: "#991B1B", label: "Askıda" },
-  CANCELLED: { bg: "#F3F4F6", color: "#6B7280", label: "İptal" },
+const STATUS_VARIANT = {
+  TRIAL:     "trial",
+  ACTIVE:    "active",
+  PAST_DUE:  "past_due",
+  SUSPENDED: "suspended",
+  CANCELLED: "cancelled",
 };
 
-function StatusBadge({ status }) {
-  const s = STATUS_BADGE[status] ?? STATUS_BADGE.TRIAL;
-  return (
-    <span style={{
-      background: s.bg, color: s.color, fontSize: "11px", fontWeight: 700,
-      padding: "4px 10px", borderRadius: "100px", letterSpacing: "0.02em",
-    }}>{s.label}</span>
-  );
-}
-
-function Card({ children, style }) {
-  return (
-    <div style={{
-      background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px",
-      padding: "20px", display: "flex", flexDirection: "column", gap: "12px",
-      ...style,
-    }}>{children}</div>
-  );
-}
-
-function StatTile({ Icon, label, value, hint }) {
-  return (
-    <Card>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <Icon size={16} color={C.muted} />
-        <span style={{ fontSize: "11px", color: C.muted, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-          {label}
-        </span>
-      </div>
-      <div style={{ fontSize: "24px", fontWeight: 700, color: C.primary, lineHeight: 1 }}>{value}</div>
-      {hint && <div style={{ fontSize: "11px", color: C.muted }}>{hint}</div>}
-    </Card>
-  );
-}
+const STATUS_LABEL = {
+  TRIAL:     "Deneme",
+  ACTIVE:    "Aktif",
+  PAST_DUE:  "Ödeme Bekleniyor",
+  SUSPENDED: "Askıda",
+  CANCELLED: "İptal",
+};
 
 function formatTry(n) {
   return new Intl.NumberFormat("tr-TR").format(n) + " ₺";
@@ -79,20 +52,15 @@ export default function BillingPage() {
     return () => { cancelled = true; };
   }, []);
 
-  if (loading) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px", color: C.muted }}>
-        <Loader2 size={20} className="animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <DSPageLoader />;
+
   if (error || !data) {
     return (
-      <Card>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#991B1B" }}>
-          <AlertCircle size={16} /> {error ?? "Veri yok"}
+      <DSCard className="p-5">
+        <div className="flex items-center gap-2 text-destructive text-[13px]">
+          <AlertCircle size={15} /> {error ?? "Veri yok"}
         </div>
-      </Card>
+      </DSCard>
     );
   }
 
@@ -100,109 +68,93 @@ export default function BillingPage() {
   const isTrial = subscription.status === "TRIAL";
 
   return (
-    <div className="w-full" style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "none" }}>
-      <h1 style={{ fontSize: "20px", fontWeight: 700, color: C.primary, letterSpacing: "-0.01em", marginBottom: 4 }}>Faturalama</h1>
-      {/* Plan + status card */}
-      <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
-          <div>
-            <div style={{ fontSize: "11px", color: C.muted, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: "4px" }}>
-              Mevcut Plan
+    <div className="flex flex-col gap-4">
+      <AdminPageHeader
+        title="Faturalama"
+        sub="Plan bilgileri ve bu ayki kullanım özeti"
+      />
+
+      {/* Plan card */}
+      <DSCard>
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-1">Mevcut Plan</p>
+              <h2 className="text-[22px] font-semibold tracking-tight text-foreground">{plan.label}</h2>
+              <p className="text-[13px] text-muted-foreground mt-0.5">
+                {formatTry(plan.priceMonthlyTry)} / ay · sınırsız berber
+              </p>
             </div>
-            <div style={{ fontSize: "22px", fontWeight: 700, color: C.primary }}>{plan.label}</div>
-            <div style={{ fontSize: "13px", color: C.secondary, marginTop: "2px" }}>
-              {formatTry(plan.priceMonthlyTry)} / ay • sınırsız berber
+            <DSBadge variant={STATUS_VARIANT[subscription.status] ?? "default"}>
+              {STATUS_LABEL[subscription.status] ?? subscription.status}
+            </DSBadge>
+          </div>
+
+          {/* Dates grid */}
+          <div className="grid grid-cols-2 gap-3 p-3 rounded-[10px] bg-secondary/40 border border-border">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">
+                {isTrial ? "Deneme başlangıcı" : "Üyelik başlangıcı"}
+              </p>
+              <p className="text-[13px] font-medium text-foreground">{fmtDate(subscription.startedAt)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">
+                {isTrial ? "Deneme bitişi" : "Sonraki ödeme"}
+              </p>
+              <p className="text-[13px] font-medium text-foreground">
+                {fmtDate(isTrial ? subscription.trialEndsAt : subscription.currentPeriodEndsAt)}
+              </p>
             </div>
           </div>
-          <StatusBadge status={subscription.status} />
+
+          {isTrial && subscription.trialDaysLeft !== null && (
+            <div className="flex items-center gap-2 mt-3 px-3 py-2.5 rounded-[10px] text-[12px] font-medium"
+              style={{ background: "#DBEAFE", color: "#1E40AF" }}>
+              <Calendar size={13} />
+              Deneme süreniz <strong>{subscription.trialDaysLeft} gün</strong> sonra bitiyor.
+            </div>
+          )}
+
+          {subscription.status === "PAST_DUE" && (
+            <div className="flex items-center gap-2 mt-3 px-3 py-2.5 rounded-[10px] text-[12px] font-medium"
+              style={{ background: "#FEF3C7", color: "#92400E" }}>
+              <AlertCircle size={13} />
+              Ödeme alınamadı. Lütfen bizimle iletişime geçin.
+            </div>
+          )}
         </div>
+      </DSCard>
 
-        {/* Subscription dates: start + end (trial or paid period) */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "12px",
-          padding: "12px",
-          background: C.bg,
-          borderRadius: "8px",
-          border: `1px solid ${C.border}`,
-        }}>
-          <div>
-            <div style={{ fontSize: "10px", color: C.muted, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: "3px" }}>
-              {isTrial ? "Deneme başlangıcı" : "Üyelik başlangıcı"}
-            </div>
-            <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>
-              {fmtDate(subscription.startedAt)}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: "10px", color: C.muted, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: "3px" }}>
-              {isTrial ? "Deneme bitişi" : "Sonraki ödeme"}
-            </div>
-            <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>
-              {fmtDate(isTrial ? subscription.trialEndsAt : subscription.currentPeriodEndsAt)}
-            </div>
-          </div>
-        </div>
-
-        {isTrial && subscription.trialDaysLeft !== null && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: "8px",
-            padding: "10px 12px", background: "#DBEAFE", borderRadius: "8px",
-            fontSize: "12px", color: "#1E40AF",
-          }}>
-            <Calendar size={14} />
-            Deneme süreniz {subscription.trialDaysLeft} gün sonra bitiyor.
-          </div>
-        )}
-
-        {subscription.status === "PAST_DUE" && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: "8px",
-            padding: "10px 12px", background: "#FEF3C7", borderRadius: "8px",
-            fontSize: "12px", color: "#92400E",
-          }}>
-            <AlertCircle size={14} />
-            Ödeme alınamadı. Lütfen bizimle iletişime geçin.
-          </div>
-        )}
-      </Card>
-
-      {/* Usage this month */}
+      {/* Usage */}
       <div>
-        <div style={{ fontSize: "13px", fontWeight: 700, color: C.primary, marginBottom: "8px" }}>
-          Bu Ayki Kullanım
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
-          <StatTile Icon={TrendingUp}  label="Randevu"     value={usage.bookingsThisMonth} />
-          <StatTile Icon={Smartphone}  label="SMS"         value={usage.smsSent} />
-          <StatTile Icon={MessageSquare} label="WhatsApp"  value={usage.waSent} />
-          <StatTile Icon={Users}       label="Aktif Berber" value={usage.activeBarbers} hint="/ sınırsız" />
-          <StatTile Icon={Users}       label="Toplam Müşteri" value={usage.customerCount} />
+        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-3">Bu Ayki Kullanım</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <DSStatTile icon={TrendingUp}    label="Randevu"        value={usage.bookingsThisMonth} />
+          <DSStatTile icon={Smartphone}    label="SMS"            value={usage.smsSent} />
+          <DSStatTile icon={MessageSquare} label="WhatsApp"       value={usage.waSent} />
+          <DSStatTile icon={Users}         label="Aktif Berber"   value={usage.activeBarbers} sub="/ sınırsız" />
+          <DSStatTile icon={Users}         label="Toplam Müşteri" value={usage.customerCount} />
         </div>
       </div>
 
-      {/* Renew / contact CTA — sales-led, no online checkout yet */}
-      <Card style={{ background: C.primary, border: "none", color: "#fff" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <CreditCard size={18} />
-          <div style={{ fontSize: "15px", fontWeight: 700 }}>Süreyi uzatmak ister misiniz?</div>
+      {/* CTA */}
+      <div className="rounded-[14px] p-5 flex flex-col gap-3" style={{ background: "var(--makas-ink)" }}>
+        <div className="flex items-center gap-3">
+          <CreditCard size={18} className="text-white/70" />
+          <p className="text-[15px] font-semibold text-white">Süreyi uzatmak ister misiniz?</p>
         </div>
-        <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.75)" }}>
+        <p className="text-[12px] text-white/60 leading-relaxed">
           Ödeme almak için bizimle iletişime geçin. 24 saat içinde dönüş yapıyoruz.
-        </div>
+        </p>
         <a
           href="mailto:satis@makas.app?subject=Abonelik%20Yenileme"
-          style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            background: "#fff", color: C.primary, fontWeight: 700,
-            fontSize: "13px", padding: "10px 16px", borderRadius: "8px",
-            textDecoration: "none", alignSelf: "flex-start", minHeight: "44px",
-          }}
+          className="inline-flex items-center gap-2 self-start px-4 h-10 rounded-full bg-white text-[13px] font-semibold no-underline transition-opacity hover:opacity-90"
+          style={{ color: "var(--makas-ink)" }}
         >
-          <Mail size={14} /> İletişime Geç
+          <Mail size={13} /> İletişime Geç
         </a>
-      </Card>
+      </div>
     </div>
   );
 }

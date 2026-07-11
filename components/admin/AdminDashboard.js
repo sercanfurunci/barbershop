@@ -259,45 +259,30 @@ function BarberSelectorBar({ globalBarberId, setGlobalBarberId, realBarbers = []
   const options = [allOption, ...realBarbers.map(b => ({ id: b.id, label: (b.nameTr ?? b.name ?? "").split(" ")[0], avatar: b.avatar }))];
 
   return (
-    <div
-      style={{
-        display: "flex", alignItems: "center", gap: "6px",
-        padding: "8px 16px",
-        overflowX: "auto",
-        scrollbarWidth: "none",
-        msOverflowStyle: "none",
-        WebkitOverflowScrolling: "touch",
-        width: "100%",
-        boxSizing: "border-box",
-      }}
-    >
+    <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto no-scrollbar w-full">
       {options.map(({ id, label, avatar }) => {
         const active = globalBarberId === id;
         return (
           <button
             key={id ?? "all"}
             onClick={() => setGlobalBarberId(id)}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-full text-[11px] font-medium whitespace-nowrap shrink-0 transition-all duration-150 border"
             style={{
-              display: "flex", alignItems: "center", gap: "5px",
-              padding: "0 12px", minHeight: "44px", borderRadius: "20px",
-              background: active ? C.primary : C.surface,
-              border: `1px solid ${active ? C.primary : C.border}`,
-              color: active ? "#fff" : C.secondary,
-              fontSize: "11px", fontWeight: active ? 600 : 400,
-              whiteSpace: "nowrap", cursor: "pointer",
-              flexShrink: 0,
-              transition: "all 0.15s",
+              background: active ? "var(--makas-ink)" : "var(--makas-surface2)",
+              borderColor: active ? "var(--makas-ink)" : "var(--makas-border)",
+              color: active ? "#fff" : "var(--makas-ink-secondary)",
+              fontWeight: active ? 600 : 400,
             }}
           >
             {avatar && (
-              <span style={{
-                width: "16px", height: "16px", borderRadius: "4px",
-                background: active ? "rgba(255,255,255,0.22)" : C.muted + "40",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "7px", fontWeight: 700,
-                color: active ? "#fff" : C.muted,
-                flexShrink: 0, letterSpacing: 0,
-              }}>{avatar}</span>
+              <span
+                className="flex items-center justify-center shrink-0 rounded-[3px] text-[7px] font-bold"
+                style={{
+                  width: "14px", height: "14px",
+                  background: active ? "rgba(255,255,255,0.2)" : "rgba(17,17,17,0.1)",
+                  color: active ? "#fff" : "var(--makas-ink-muted)",
+                }}
+              >{avatar}</span>
             )}
             {label}
           </button>
@@ -1070,16 +1055,36 @@ function BusinessKPIs({ barberId, activeBarberCount = 0 }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
       {cards.map((c, i) => (
-        <div key={i} className={i === 0 ? "col-span-2 lg:col-span-1" : ""} style={{
-          background: c.hero ? `linear-gradient(135deg, ${C.primary} 0%, #111111 100%)` : C.card,
-          border: c.alert ? `1px solid rgba(245,158,11,0.4)` : `1px solid ${C.border}`,
-          borderRadius: "10px", padding: "16px 18px", position: "relative", overflow: "hidden",
-        }}>
-          {c.hero && <div style={{ position: "absolute", right: "-16px", top: "-16px", width: "88px", height: "88px", background: "rgba(255,255,255,0.05)", borderRadius: "50%" }} />}
-          <div style={{ fontSize: "9px", color: c.hero ? "rgba(255,255,255,0.55)" : C.secondary, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "8px" }}>{c.label}</div>
-          <div style={{ fontSize: c.hero ? "26px" : "22px", color: c.hero ? "#fff" : (c.valueColor || C.primary), fontWeight: c.hero ? 700 : 300, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: "4px" }}>{c.value}</div>
-          <div style={{ fontSize: "10px", color: c.hero ? "rgba(255,255,255,0.45)" : C.muted }}>{c.sub}</div>
-          {c.alert && <div style={{ position: "absolute", top: "10px", right: "10px", width: "6px", height: "6px", borderRadius: "50%", background: "#B45309" }} />}
+        <div
+          key={i}
+          className={`relative overflow-hidden rounded-[14px] p-4 ${i === 0 ? "col-span-2 lg:col-span-1" : ""}`}
+          style={{
+            background: c.hero ? "var(--makas-ink)" : "var(--makas-surface)",
+            border: c.alert ? "1px solid rgba(245,158,11,0.4)" : "1px solid var(--makas-border)",
+            boxShadow: "var(--shadow-card)",
+          }}
+        >
+          {c.hero && (
+            <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
+          )}
+          <p className="text-[9px] font-semibold uppercase tracking-[0.1em] mb-2"
+            style={{ color: c.hero ? "rgba(255,255,255,0.5)" : "var(--makas-ink-muted)" }}>
+            {c.label}
+          </p>
+          <p className="font-display font-semibold leading-none mb-1"
+            style={{
+              fontSize: c.hero ? "28px" : "24px",
+              color: c.hero ? "#fff" : (c.valueColor || "var(--makas-ink)"),
+              letterSpacing: "-0.02em",
+            }}>
+            {c.value}
+          </p>
+          <p className="text-[10px]" style={{ color: c.hero ? "rgba(255,255,255,0.4)" : "var(--makas-ink-muted)" }}>
+            {c.sub}
+          </p>
+          {c.alert && (
+            <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full" style={{ background: "#B45309" }} />
+          )}
         </div>
       ))}
     </div>
@@ -1095,55 +1100,82 @@ function StaffPerformance({ barberId, realBarbers = [] }) {
   const visibleBarbers = barberId ? realBarbers.filter(b => b.id === barberId) : realBarbers;
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-      <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "12px", fontWeight: 500, color: C.primary }}>Berber Performansı</span>
-        <span style={{ fontSize: "10px", color: C.secondary, letterSpacing: "0.06em", textTransform: "uppercase" }}>Bugün</span>
+    <div className="bg-card border border-border rounded-[14px] overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <span className="text-[12px] font-semibold text-foreground">Berber Performansı</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Bugün</span>
       </div>
-      <div style={{ padding: "12px", display: "grid", gridTemplateColumns: barberId ? "1fr" : "1fr 1fr", gap: "8px" }}>
+      <div
+        className="p-3 grid gap-2"
+        style={{ gridTemplateColumns: barberId ? "1fr" : "1fr 1fr" }}
+      >
         {visibleBarbers.map(b => {
-          const bAppts   = todayAppts.filter(a => a.barberId === b.id);
-          const bCompleted = bAppts.filter(a => a.status === "completed");
-          const bRevenue = bCompleted.reduce((s, a) => s + ((a.grossAmount ?? a.price) || 0), 0);
+          const bAppts      = todayAppts.filter(a => a.barberId === b.id);
+          const bCompleted  = bAppts.filter(a => a.status === "completed");
+          const bRevenue    = bCompleted.reduce((s, a) => s + ((a.grossAmount ?? a.price) || 0), 0);
           const bBarberShare = bCompleted.reduce((s, a) => s + ((a.barberAmount ?? a.price) || 0) + (a.tipAmount || 0), 0);
-          const bSlots   = bAppts.reduce((s, a) => s + Math.ceil((a.duration || 30) / 30), 0);
-          const util     = Math.round((bSlots / TOTAL_SLOTS) * 100);
-          const pendingCt = bAppts.filter(a => a.status === "pending").length;
+          const bSlots      = bAppts.reduce((s, a) => s + Math.ceil((a.duration || 30) / 30), 0);
+          const util        = Math.round((bSlots / TOTAL_SLOTS) * 100);
+          const pendingCt   = bAppts.filter(a => a.status === "pending").length;
 
           return (
-            <div key={b.id} style={{ background: C.surface, borderRadius: "8px", padding: "12px 14px", border: `1px solid ${C.border}` }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-                <div style={{ width: "30px", height: "30px", background: `linear-gradient(135deg, #111111, #111111)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+            <div key={b.id} className="bg-secondary/40 rounded-[10px] p-3 border border-border">
+              <div className="flex items-center gap-2 mb-2.5">
+                <div
+                  className="flex items-center justify-center shrink-0 rounded-[7px] text-[9px] font-bold text-white"
+                  style={{ width: "28px", height: "28px", background: "var(--makas-ink)" }}
+                >
                   {b.avatar}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(b.nameTr ?? b.name ?? "").split(" ")[0]}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-                    <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: b.available !== false ? "#15803D" : C.muted }} />
-                    <span style={{ fontSize: "9px", color: b.available !== false ? "#15803D" : C.muted }}>{b.available !== false ? "Aktif" : "İzinli"}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-medium text-foreground truncate">
+                    {(b.nameTr ?? b.name ?? "").split(" ")[0]}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <div
+                      className="w-1 h-1 rounded-full"
+                      style={{ background: b.available !== false ? "#15803D" : "var(--makas-ink-muted)" }}
+                    />
+                    <span
+                      className="text-[9px]"
+                      style={{ color: b.available !== false ? "#15803D" : "var(--makas-ink-muted)" }}
+                    >
+                      {b.available !== false ? "Aktif" : "İzinli"}
+                    </span>
                   </div>
                 </div>
                 {pendingCt > 0 && (
-                  <span style={{ fontSize: "9px", background: "rgba(245,158,11,0.15)", color: "#B45309", borderRadius: "4px", padding: "1px 5px", flexShrink: 0 }}>{pendingCt} bekl</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-[4px] shrink-0 font-semibold"
+                    style={{ background: "rgba(245,158,11,0.15)", color: "#B45309" }}>
+                    {pendingCt} bekl
+                  </span>
                 )}
               </div>
-              <div style={{ display: "flex", gap: "10px", marginBottom: "8px", minWidth: 0 }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: "16px", color: C.primary, fontWeight: 300, lineHeight: 1 }}>{bAppts.length}</div>
-                  <div style={{ fontSize: "9px", color: C.muted }}>randevu</div>
+              <div className="flex gap-3 mb-2.5 min-w-0">
+                <div>
+                  <p className="text-[16px] font-semibold text-foreground leading-none">{bAppts.length}</p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">randevu</p>
                 </div>
-                <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
-                  <div style={{ fontSize: "16px", color: bRevenue > 0 ? C.primary : C.muted, fontWeight: 300, lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>₺{bRevenue.toLocaleString()}</div>
-                  <div style={{ fontSize: "9px", color: C.muted }}>brüt · berbere ₺{bBarberShare.toLocaleString()}</div>
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className="text-[16px] font-semibold leading-none truncate"
+                    style={{ color: bRevenue > 0 ? "var(--makas-ink)" : "var(--makas-ink-muted)" }}>
+                    ₺{bRevenue.toLocaleString()}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">brüt · ₺{bBarberShare.toLocaleString()} berber</p>
                 </div>
               </div>
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
-                  <span style={{ fontSize: "9px", color: C.muted }}>Doluluk</span>
-                  <span style={{ fontSize: "9px", color: util > 50 ? "#15803D" : C.secondary }}>{util}%</span>
+                <div className="flex justify-between mb-1">
+                  <span className="text-[9px] text-muted-foreground">Doluluk</span>
+                  <span className="text-[9px] font-semibold" style={{ color: util > 50 ? "#15803D" : "var(--makas-ink-secondary)" }}>
+                    {util}%
+                  </span>
                 </div>
-                <div style={{ height: "3px", background: C.border, borderRadius: "2px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${util}%`, background: util > 70 ? "#15803D" : util > 40 ? "#B45309" : C.primary, borderRadius: "2px" }} />
+                <div className="h-1 rounded-full overflow-hidden bg-border">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${util}%`, background: util > 70 ? "#15803D" : util > 40 ? "#B45309" : "var(--makas-ink)" }}
+                  />
                 </div>
               </div>
             </div>
@@ -1176,97 +1208,132 @@ function PendingConfirmations({ onNewBooking, barberId }) {
   const dateLabel = now.toLocaleDateString("tr-TR", { weekday: "short", day: "numeric", month: "short" });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+    <div className="flex flex-col gap-3">
 
       {/* Onay Bekliyor card */}
-      <div style={{ background: C.card, border: pending.length > 0 ? `1px solid rgba(245,158,11,0.25)` : `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: "7px" }}>
-          <span style={{ fontSize: "12px", fontWeight: 500, color: C.primary }}>Onay Bekliyor</span>
+      <div
+        className="bg-card rounded-[14px] overflow-hidden"
+        style={{
+          border: pending.length > 0 ? "1px solid rgba(245,158,11,0.3)" : "1px solid var(--makas-border)",
+          boxShadow: "var(--shadow-card)",
+        }}
+      >
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+          <span className="text-[12px] font-semibold text-foreground">Onay Bekliyor</span>
           {pending.length > 0
-            ? <span style={{ fontSize: "10px", background: "rgba(245,158,11,0.15)", color: "#B45309", borderRadius: "4px", padding: "1px 6px" }}>{pending.length}</span>
-            : <span style={{ fontSize: "10px", background: "rgba(34,197,94,0.1)", color: "#15803D", borderRadius: "4px", padding: "1px 6px", display: "inline-flex", alignItems: "center" }}><Check size={10} /></span>
+            ? <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px]"
+                style={{ background: "rgba(245,158,11,0.15)", color: "#B45309" }}>
+                {pending.length}
+              </span>
+            : <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px]"
+                style={{ background: "rgba(34,197,94,0.1)", color: "#15803D" }}>
+                <Check size={10} />
+              </span>
           }
-          <button onClick={onNewBooking} style={{ marginLeft: "auto", fontSize: "11px", color: C.primary, background: "none", border: `1px solid rgba(17,17,17,0.25)`, borderRadius: "5px", padding: "3px 10px", cursor: "pointer" }}>+ Ekle</button>
+          <button
+            onClick={onNewBooking}
+            className="ml-auto text-[11px] font-medium px-2.5 py-1 rounded-[6px] border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors bg-transparent"
+          >
+            + Ekle
+          </button>
         </div>
         {pending.length === 0 ? (
-          <div style={{ padding: "14px 18px" }}>
-            <p style={{ fontSize: "11px", color: C.muted }}>Tüm randevular onaylandı.</p>
+          <div className="px-4 py-3">
+            <p className="text-[11px] text-muted-foreground">Tüm randevular onaylandı.</p>
           </div>
         ) : (
-          <div style={{ maxHeight: "220px", overflowY: "auto" }}>
-            {pending.map((appt, i) => {
-              return (
-                <div key={appt.id} style={{ padding: "9px 14px", borderBottom: i < pending.length - 1 ? `1px solid ${C.border}` : "none", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "11px", color: C.secondary, minWidth: "36px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
-                    <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}{appt.barber ? ` · ${appt.barber.split(" ")[0]}` : ""}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
-                    <button onClick={() => updateStatus(appt.id, "confirmed")}
-                      style={{ width: "26px", height: "26px", background: "rgba(34,197,94,0.12)", border: `1px solid rgba(34,197,94,0.25)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#15803D" }}
-                      title="Onayla"
-                    ><Check size={12} /></button>
-                    <button onClick={() => updateStatus(appt.id, "cancelled")}
-                      style={{ width: "26px", height: "26px", background: "rgba(248,113,113,0.08)", border: `1px solid rgba(248,113,113,0.2)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#991B1B" }}
-                      title="İptal"
-                    ><X size={12} /></button>
-                  </div>
+          <div className="max-h-[220px] overflow-y-auto">
+            {pending.map((appt, i) => (
+              <div
+                key={appt.id}
+                className="flex items-center gap-2 px-4 py-2.5"
+                style={{ borderBottom: i < pending.length - 1 ? "1px solid var(--makas-border)" : "none" }}
+              >
+                <span className="font-mono-custom text-[11px] text-muted-foreground shrink-0 w-9">{appt.time}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-medium text-foreground truncate">{appt.client}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {appt.service}{appt.barber ? ` · ${appt.barber.split(" ")[0]}` : ""}
+                  </p>
                 </div>
-              );
-            })}
+                <div className="flex gap-1 shrink-0">
+                  <button
+                    onClick={() => updateStatus(appt.id, "confirmed")}
+                    className="flex items-center justify-center w-7 h-7 rounded-[6px]"
+                    style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.25)", color: "#15803D" }}
+                    title="Onayla"
+                  ><Check size={12} /></button>
+                  <button
+                    onClick={() => updateStatus(appt.id, "cancelled")}
+                    className="flex items-center justify-center w-7 h-7 rounded-[6px]"
+                    style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "#991B1B" }}
+                    title="İptal"
+                  ><X size={12} /></button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
       {/* Day summary card */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: "12px", fontWeight: 500, color: C.primary }}>Günlük Özet</span>
-          <span style={{ fontSize: "10px", color: C.secondary }}>{dateLabel}</span>
+      <div className="bg-card border border-border rounded-[14px] overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <span className="text-[12px] font-semibold text-foreground">Günlük Özet</span>
+          <span className="text-[10px] text-muted-foreground">{dateLabel}</span>
         </div>
 
         {/* Stats strip */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1px", background: C.border }}>
+        <div className="grid grid-cols-3 divide-x divide-border">
           {[
-            { label: "Kazanç",       value: `₺${revenue.toLocaleString()}`, color: revenue > 0 ? "#15803D" : C.secondary },
-            { label: "Tamamlanan",   value: todayDone.length,               color: C.primary },
-            { label: "Koltuğa Aldı", value: todayInProgress.length,         color: todayInProgress.length > 0 ? "#2563EB" : C.muted },
+            { label: "Kazanç",       value: `₺${revenue.toLocaleString()}`, color: revenue > 0 ? "#15803D" : undefined },
+            { label: "Tamamlanan",   value: todayDone.length },
+            { label: "Koltuğa Aldı", value: todayInProgress.length, color: todayInProgress.length > 0 ? "#2563EB" : undefined },
           ].map((s, i) => (
-            <div key={i} style={{ background: C.card, padding: "12px 10px", textAlign: "center" }}>
-              <div style={{ fontSize: "18px", color: s.color, fontWeight: 300, lineHeight: 1, marginBottom: "3px" }}>{s.value}</div>
-              <div style={{ fontSize: "9px", color: C.muted, letterSpacing: "0.04em" }}>{s.label}</div>
+            <div key={i} className="py-3 text-center">
+              <p className="font-display font-semibold text-[18px] leading-none"
+                style={{ color: s.color ?? "var(--makas-ink)" }}>{s.value}</p>
+              <p className="text-[9px] text-muted-foreground mt-1 uppercase tracking-[0.06em]">{s.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Upcoming appointments */}
+        {/* Upcoming */}
         {upcoming.length > 0 ? (
           <>
-            <div style={{ padding: "10px 14px 4px", fontSize: "9px", color: C.muted, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              Sıradaki Randevular · {upcoming.length}
-            </div>
-            {upcoming.map((appt, i) => {
+            <p className="px-4 pt-3 pb-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Sıradaki · {upcoming.length}
+            </p>
+            {upcoming.map((appt) => {
               const isActive = appt.status === "in-progress";
               const barberInitials = appt.barber ? appt.barber.split(" ").map(w => w[0]).slice(0, 2).join("") : "?";
               return (
-                <div key={appt.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px", borderTop: `1px solid ${C.border}` }}>
-                  <span style={{ fontSize: "11px", color: isActive ? "#2563EB" : C.primary, fontWeight: 600, minWidth: "38px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
-                  <div style={{ width: "18px", height: "18px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                    {barberInitials}
+                <div key={appt.id} className="flex items-center gap-2 px-4 py-2 border-t border-border">
+                  <span
+                    className="font-mono-custom text-[11px] font-semibold shrink-0 w-10"
+                    style={{ color: isActive ? "#2563EB" : "var(--makas-ink)" }}
+                  >{appt.time}</span>
+                  <div
+                    className="flex items-center justify-center shrink-0 rounded-[4px] text-[7px] font-bold text-white"
+                    style={{ width: "18px", height: "18px", background: "var(--makas-ink)" }}
+                  >{barberInitials}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-medium text-foreground truncate">{appt.client}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{appt.service}</p>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
-                    <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}</div>
-                  </div>
-                  {isActive && <span style={{ fontSize: "9px", color: "#2563EB", background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.2)", padding: "2px 6px", borderRadius: "4px", flexShrink: 0 }}>Devam</span>}
+                  {isActive && (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-[4px] shrink-0"
+                      style={{ color: "#2563EB", background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.2)" }}>
+                      Devam
+                    </span>
+                  )}
                 </div>
               );
             })}
           </>
         ) : (
-          <div style={{ padding: "16px 18px" }}>
-            <p style={{ fontSize: "11px", color: C.muted }}>Bugün kalan randevu yok.</p>
+          <div className="px-4 py-3">
+            <p className="text-[11px] text-muted-foreground">Bugün kalan randevu yok.</p>
           </div>
         )}
       </div>
@@ -1292,32 +1359,38 @@ function TodaySchedule({ onNewBooking, barberId }) {
   };
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-      <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "12px", fontWeight: 500, color: C.primary }}>Günün Programı</span>
-        <span style={{ fontSize: "11px", color: C.secondary }}>{todayAppts.length} randevu</span>
+    <div className="bg-card border border-border rounded-[14px] overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <span className="text-[12px] font-semibold text-foreground">Günün Programı</span>
+        <span className="text-[11px] text-muted-foreground">{todayAppts.length} randevu</span>
       </div>
       {todayAppts.length === 0 ? (
-        <div style={{ padding: "32px 18px", textAlign: "center" }}>
-          <div style={{ fontSize: "11px", color: C.muted, marginBottom: "10px" }}>Bugün randevu yok</div>
-          <button onClick={onNewBooking} style={{ fontSize: "11px", color: C.primary, background: "none", border: `1px solid rgba(17,17,17,0.3)`, borderRadius: "6px", padding: "5px 12px", cursor: "pointer" }}>+ Yeni Randevu</button>
+        <div className="flex flex-col items-center py-8 gap-2">
+          <p className="text-[11px] text-muted-foreground">Bugün randevu yok</p>
+          <button
+            onClick={onNewBooking}
+            className="text-[11px] font-medium px-3 py-1.5 rounded-[7px] border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors bg-transparent"
+          >
+            + Yeni Randevu
+          </button>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))" }}>
-          {todayAppts.map((appt, i) => {
-            const sc  = SC[appt.status] ?? SC.pending;
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))" }}>
+          {todayAppts.map((appt) => {
+            const sc = SC[appt.status] ?? SC.pending;
             const barberInitials = appt.barber ? appt.barber.split(" ").map(w => w[0]).slice(0, 2).join("") : "?";
             return (
-              <div key={appt.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 18px", borderRight: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
-                <span style={{ fontSize: "11px", color: C.primary, fontWeight: 600, minWidth: "38px", flexShrink: 0, fontFamily: "'DM Mono', monospace" }}>{appt.time}</span>
-                <div style={{ width: "20px", height: "20px", background: `linear-gradient(135deg, #111111, #111111)`, borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                  {barberInitials}
+              <div key={appt.id} className="flex items-center gap-2.5 px-4 py-2.5 border-r border-b border-border">
+                <span className="font-mono-custom text-[11px] font-semibold text-foreground shrink-0 w-10">{appt.time}</span>
+                <div
+                  className="flex items-center justify-center shrink-0 rounded-[5px] text-[7px] font-bold text-white"
+                  style={{ width: "20px", height: "20px", background: "var(--makas-ink)" }}
+                >{barberInitials}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-medium text-foreground truncate">{appt.client}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{appt.service}</p>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "11px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
-                  <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}</div>
-                </div>
-                <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: sc.color, flexShrink: 0 }} />
+                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sc.color }} />
               </div>
             );
           })}
@@ -1350,35 +1423,48 @@ function RecentActivityFeed() {
   };
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden", height: "100%" }}>
-      <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "12px", fontWeight: 500, color: C.primary }}>Son Aktivite</span>
-        <span style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.06em", textTransform: "uppercase" }}>Canlı</span>
+    <div className="bg-card border border-border rounded-[14px] overflow-hidden h-full" style={{ boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <span className="text-[12px] font-semibold text-foreground">Son Aktivite</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Canlı</span>
       </div>
-      <div style={{ overflowY: "auto", maxHeight: "360px" }}>
+      <div className="overflow-y-auto max-h-[360px]">
         {recent.map((appt, i) => {
           const color = STATUS_COLOR[appt.status] ?? "#57514B";
           const isToday = appt.date === today;
           const barberInitials = appt.barber ? appt.barber.split(" ").map(w => w[0]).slice(0, 2).join("") : "?";
           return (
-            <div key={appt.id} style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 18px", borderBottom: i < recent.length - 1 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, marginTop: "5px", flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "1px" }}>
-                  <span style={{ fontSize: "12px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</span>
-                  <span style={{ fontSize: "9px", color: color, background: `${color}18`, borderRadius: "3px", padding: "1px 5px", flexShrink: 0 }}>{STATUS_LABEL[appt.status]}</span>
+            <div
+              key={appt.id}
+              className="flex items-start gap-2.5 px-4 py-3"
+              style={{ borderBottom: i < recent.length - 1 ? "1px solid var(--makas-border)" : "none" }}
+            >
+              <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: color }} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="text-[12px] font-medium text-foreground truncate">{appt.client}</span>
+                  <span
+                    className="text-[9px] font-semibold rounded-[3px] px-1.5 py-0.5 shrink-0"
+                    style={{ color, background: `${color}18` }}
+                  >{STATUS_LABEL[appt.status]}</span>
                 </div>
-                <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "3px" }}>
-                  <div style={{ width: "14px", height: "14px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "6px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                    {barberInitials}
-                  </div>
-                  <span style={{ fontSize: "10px", color: C.muted }}>{appt.barber?.split(" ")[0]}</span>
-                  <span style={{ fontSize: "10px", color: C.muted }}>·</span>
-                  <span style={{ fontSize: "10px", color: isToday ? C.primary : C.muted, fontFamily: "'DM Mono', monospace" }}>{isToday ? appt.time : appt.date}</span>
+                <p className="text-[10px] text-muted-foreground truncate">{appt.service}</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div
+                    className="flex items-center justify-center shrink-0 rounded-[3px] text-[6px] font-bold text-white"
+                    style={{ width: "14px", height: "14px", background: "var(--makas-ink)" }}
+                  >{barberInitials}</div>
+                  <span className="text-[10px] text-muted-foreground">{appt.barber?.split(" ")[0]}</span>
+                  <span className="text-[10px] text-muted-foreground">·</span>
+                  <span
+                    className="font-mono-custom text-[10px]"
+                    style={{ color: isToday ? "var(--makas-ink)" : "var(--makas-ink-muted)" }}
+                  >{isToday ? appt.time : appt.date}</span>
                 </div>
               </div>
-              <span style={{ fontSize: "11px", color: C.primary, fontWeight: 600, flexShrink: 0 }}>{appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}</span>
+              <span className="text-[11px] font-semibold text-foreground shrink-0">
+                {appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}
+              </span>
             </div>
           );
         })}
@@ -1396,20 +1482,20 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, onWalkIn, barberId, real
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground leading-tight truncate">
             {activeBarber ? (activeBarber.nameTr ?? activeBarber.name) : tx.admin.greeting}
           </h1>
-          <p style={{ fontSize: "12px", color: C.secondary, marginTop: "2px" }}>
+          <p className="text-[12px] text-muted-foreground mt-0.5">
             {activeBarber ? (activeBarber.titleTr ?? activeBarber.title?.tr) : dateStr}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+        <div className="flex gap-2 shrink-0">
           {onWalkIn && (
             <button
               onClick={onWalkIn}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 12px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.primary }}
+              className="flex items-center gap-1.5 px-3 h-9 rounded-[10px] border border-border bg-secondary text-[12px] font-semibold text-foreground hover:bg-secondary/70 transition-colors"
               title="Şimdi gelen müşteriyi kaydet"
             >
               <Plus size={13} />
@@ -1418,9 +1504,9 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, onWalkIn, barberId, real
           )}
           <button
             onClick={onNewBooking}
-            style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 14px", background: C.primary, border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "#fff" }}
+            className="flex items-center gap-1.5 px-3 h-9 rounded-[10px] bg-foreground text-background text-[12px] font-semibold hover:opacity-90 transition-opacity"
           >
-            <Plus size={14} />
+            <Plus size={13} />
             <span className="hidden sm:inline">Yeni Randevu</span>
           </button>
         </div>
@@ -1454,11 +1540,9 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, onWalkIn, barberId, real
           <button
             key={t}
             onClick={() => setTab(t)}
-            style={{ padding: "11px 16px", borderRadius: "8px", background: C.card, border: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "7px", fontSize: "12px", color: C.secondary }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(17,17,17,0.2)"; e.currentTarget.style.color = C.primary; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.secondary; }}
+            className="flex items-center justify-center gap-2 h-10 rounded-[10px] bg-card border border-border text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
           >
-            <Icon size={13} style={{ color: C.primary }} />
+            <Icon size={13} className="text-foreground/70" />
             {label}
           </button>
         ))}
@@ -1520,36 +1604,32 @@ function CustomersPage({ barberId }) {
 
   return (
     <div>
-      <div style={{ marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>
-            Müşteriler
-          </h1>
-          <p style={{ fontSize: "12px", color: C.secondary, marginTop: "2px" }}>
-            {loading ? "Yükleniyor…" : `${total} kayıt`}
-          </p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "0 10px", height: "34px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "6px" }}>
-          <Search size={11} style={{ color: C.muted }} />
-          <input
-            placeholder="İsim veya telefon ara…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ background: "none", border: "none", outline: "none", fontSize: "12px", color: C.primary, width: "180px" }}
-          />
-        </div>
-      </div>
+      <PageHeader
+        title="Müşteriler"
+        sub={loading ? "Yükleniyor…" : `${total} kayıt`}
+        actions={
+          <div className="flex items-center gap-2 px-3 h-9 bg-card border border-border rounded-[10px]">
+            <Search size={12} className="text-muted-foreground" />
+            <input
+              placeholder="İsim veya telefon ara…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="bg-transparent border-none outline-none text-[12px] text-foreground placeholder:text-muted-foreground w-44"
+            />
+          </div>
+        }
+      />
 
       {loading ? (
-        <div style={{ padding: "48px", textAlign: "center", color: C.muted, fontSize: "13px" }}>Yükleniyor…</div>
+        <div className="flex justify-center py-12 text-muted-foreground text-[13px]">Yükleniyor…</div>
       ) : clients.length === 0 ? (
-        <div style={{ padding: "48px", textAlign: "center", color: C.muted, fontSize: "13px" }}>
+        <div className="flex justify-center py-12 text-muted-foreground text-[13px]">
           {search ? "Arama sonucu bulunamadı." : "Henüz müşteri kaydı yok."}
         </div>
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
+          <div className="hidden md:block bg-card border border-border rounded-[14px] overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${C.border}` }}>
@@ -1663,11 +1743,14 @@ function RevenuePage({ tx, barberId, realBarbers = [] }) {
 
 /* ─── Settings Page ───────────────────────────────────────────────────────── */
 /* ─── Page Header ─────────────────────────────────────────────────────────── */
-function PageHeader({ title, sub }) {
+function PageHeader({ title, sub, actions }) {
   return (
-    <div>
-      <h1 className="font-display font-light" style={{ fontSize: "26px", color: C.primary, letterSpacing: "-0.01em" }}>{title}</h1>
-      <p style={{ fontSize: "13px", color: C.secondary, marginTop: "3px" }}>{sub}</p>
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground leading-tight">{title}</h1>
+        {sub && <p className="text-[13px] text-muted-foreground mt-0.5">{sub}</p>}
+      </div>
+      {actions && <div className="shrink-0 flex items-center gap-2 pt-0.5">{actions}</div>}
     </div>
   );
 }

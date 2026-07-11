@@ -11,6 +11,7 @@ import { SortableContext, arrayMove, useSortable, sortableKeyboardCoordinates, r
 import { CSS } from "@dnd-kit/utilities";
 
 import { C, SHADOW } from "@/lib/adminTheme";
+import { AdminPageHeader, DSTabBar } from "@/components/ds";
 
 const DAYS = [
   { key: "mon", label: "Pazartesi" },
@@ -51,30 +52,12 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "26px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>Ayarlar</h1>
-        <p style={{ fontSize: "13px", color: C.secondary, marginTop: "3px" }}>Çalışma saatleri, tatil günleri ve randevu kuralları</p>
-      </div>
+      <AdminPageHeader
+        title="Ayarlar"
+        sub="Çalışma saatleri, tatil günleri ve randevu kuralları"
+      />
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: "4px", marginBottom: "24px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "4px" }}>
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setActiveTab(id)}
-            style={{
-              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-              padding: "9px 12px", borderRadius: "7px", border: "none", cursor: "pointer",
-              background: activeTab === id ? C.surface : "transparent",
-              color: activeTab === id ? C.primary : C.secondary,
-              fontSize: "13px", fontWeight: activeTab === id ? 500 : 400,
-              transition: "all 0.15s",
-              boxShadow: activeTab === id ? "0 1px 4px rgba(17,17,17,0.12)" : "none",
-            }}
-          >
-            <Icon size={13} />
-            <span className="hidden sm:inline">{label}</span>
-          </button>
-        ))}
-      </div>
+      <DSTabBar tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
       <AnimatePresence mode="wait">
         <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
