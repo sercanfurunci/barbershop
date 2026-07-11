@@ -208,7 +208,7 @@ function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedu
             ) : (
               <div
                 className="flex items-center justify-center font-bold text-white"
-                style={{ width: "44px", height: "44px", background: `linear-gradient(135deg, ${barber.color || C.primary}, #9A1212)`, borderRadius: "10px", fontSize: "14px" }}
+                style={{ width: "44px", height: "44px", background: barber.color || C.primary, borderRadius: "10px", fontSize: "14px" }}
               >
                 {photoLoading ? <Loader2 size={14} className="animate-spin" /> : barber.avatar}
               </div>

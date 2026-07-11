@@ -713,7 +713,7 @@ export default function CalendarView() {
                   cursor: "pointer",
                 }}
               >
-                {cfg.short}
+                {cfg.label}
               </button>
             ))}
           </div>

@@ -100,7 +100,7 @@ function KPICard({ card, delay, vsLabel }) {
 
       <div className="flex items-end justify-between gap-4">
         <span style={{ fontSize: "11px", color: C.muted, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{vsLabel}</span>
-        <svg width={SW} height={SH} className="shrink-0">
+        <svg width={SW} height={SH} className="shrink-0 hidden sm:block">
           <defs>
             <linearGradient id={`sg-${card.key}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={card.accent} stopOpacity="0.25" />

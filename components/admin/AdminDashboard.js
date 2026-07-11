@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Calendar, Users, Settings,
   Bell, Search, ExternalLink, Plus, CalendarDays, LogOut, Scissors,
-  UserCheck, TrendingUp, User, MoreHorizontal, X,
+  UserCheck, TrendingUp, User, MoreHorizontal, X, Check,
   ChevronLeft, ChevronRight, Activity, Clock, Star, CreditCard,
 } from "lucide-react";
 import {
@@ -1184,7 +1184,7 @@ function PendingConfirmations({ onNewBooking, barberId }) {
           <span style={{ fontSize: "12px", fontWeight: 500, color: C.primary }}>Onay Bekliyor</span>
           {pending.length > 0
             ? <span style={{ fontSize: "10px", background: "rgba(245,158,11,0.15)", color: "#B45309", borderRadius: "4px", padding: "1px 6px" }}>{pending.length}</span>
-            : <span style={{ fontSize: "10px", background: "rgba(34,197,94,0.1)", color: "#15803D", borderRadius: "4px", padding: "1px 6px" }}>✓</span>
+            : <span style={{ fontSize: "10px", background: "rgba(34,197,94,0.1)", color: "#15803D", borderRadius: "4px", padding: "1px 6px", display: "inline-flex", alignItems: "center" }}><Check size={10} /></span>
           }
           <button onClick={onNewBooking} style={{ marginLeft: "auto", fontSize: "11px", color: C.primary, background: "none", border: `1px solid rgba(17,17,17,0.25)`, borderRadius: "5px", padding: "3px 10px", cursor: "pointer" }}>+ Ekle</button>
         </div>
@@ -1204,13 +1204,13 @@ function PendingConfirmations({ onNewBooking, barberId }) {
                   </div>
                   <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
                     <button onClick={() => updateStatus(appt.id, "confirmed")}
-                      style={{ width: "26px", height: "26px", background: "rgba(34,197,94,0.12)", border: `1px solid rgba(34,197,94,0.25)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#15803D", fontSize: "13px", lineHeight: 1 }}
+                      style={{ width: "26px", height: "26px", background: "rgba(34,197,94,0.12)", border: `1px solid rgba(34,197,94,0.25)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#15803D" }}
                       title="Onayla"
-                    >✓</button>
+                    ><Check size={12} /></button>
                     <button onClick={() => updateStatus(appt.id, "cancelled")}
-                      style={{ width: "26px", height: "26px", background: "rgba(248,113,113,0.08)", border: `1px solid rgba(248,113,113,0.2)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#111111", fontSize: "13px", lineHeight: 1 }}
+                      style={{ width: "26px", height: "26px", background: "rgba(248,113,113,0.08)", border: `1px solid rgba(248,113,113,0.2)`, borderRadius: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#991B1B" }}
                       title="İptal"
-                    >✕</button>
+                    ><X size={12} /></button>
                   </div>
                 </div>
               );
@@ -1300,7 +1300,7 @@ function TodaySchedule({ onNewBooking, barberId }) {
       {todayAppts.length === 0 ? (
         <div style={{ padding: "32px 18px", textAlign: "center" }}>
           <div style={{ fontSize: "11px", color: C.muted, marginBottom: "10px" }}>Bugün randevu yok</div>
-          <button onClick={onNewBooking} style={{ fontSize: "11px", color: C.primary, background: "none", border: `1px solid rgba(17,17,17,0.3)`, borderRadius: "6px", padding: "5px 12px", cursor: "pointer" }}>+ Randevu Ekle</button>
+          <button onClick={onNewBooking} style={{ fontSize: "11px", color: C.primary, background: "none", border: `1px solid rgba(17,17,17,0.3)`, borderRadius: "6px", padding: "5px 12px", cursor: "pointer" }}>+ Yeni Randevu</button>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))" }}>

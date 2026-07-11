@@ -34,7 +34,7 @@ function StatusBadge({ status }) {
 function Card({ children, style }) {
   return (
     <div style={{
-      background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px",
+      background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px",
       padding: "20px", display: "flex", flexDirection: "column", gap: "12px",
       ...style,
     }}>{children}</div>
@@ -101,6 +101,7 @@ export default function BillingPage() {
 
   return (
     <div className="w-full" style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "none" }}>
+      <h1 style={{ fontSize: "20px", fontWeight: 700, color: C.primary, letterSpacing: "-0.01em", marginBottom: 4 }}>Faturalama</h1>
       {/* Plan + status card */}
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
@@ -172,11 +173,11 @@ export default function BillingPage() {
         <div style={{ fontSize: "13px", fontWeight: 700, color: C.primary, marginBottom: "8px" }}>
           Bu Ayki Kullanım
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
           <StatTile Icon={TrendingUp}  label="Randevu"     value={usage.bookingsThisMonth} />
           <StatTile Icon={Smartphone}  label="SMS"         value={usage.smsSent} />
           <StatTile Icon={MessageSquare} label="WhatsApp"  value={usage.waSent} />
-          <StatTile Icon={Users}       label="Aktif Berber" value={usage.activeBarbers} hint="sınırsız" />
+          <StatTile Icon={Users}       label="Aktif Berber" value={usage.activeBarbers} hint="/ sınırsız" />
           <StatTile Icon={Users}       label="Toplam Müşteri" value={usage.customerCount} />
         </div>
       </div>

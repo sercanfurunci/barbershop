@@ -130,8 +130,8 @@ function StatsRow({ stats }) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
-      {items.map(({ label, value, Icon, color }) => (
-        <div key={label} className="flex flex-col gap-2 p-4 rounded-[14px] border border-border bg-card"
+      {items.map(({ label, value, Icon, color }, idx) => (
+        <div key={label} className={`flex flex-col gap-2 p-4 rounded-[14px] border border-border bg-card${idx === items.length - 1 && items.length % 2 !== 0 ? " col-span-2 sm:col-span-1" : ""}`}
           style={{ boxShadow: "var(--shadow-card)" }}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{label}</span>
@@ -260,7 +260,7 @@ function MobileBottomNav({ tab, setTab }) {
         paddingBottom: "max(8px, env(safe-area-inset-bottom))",
       }}>
       <div className="flex items-stretch h-14">
-        {TABS.slice(0, 5).map(({ id, label, Icon }) => {
+        {TABS.map(({ id, label, Icon }) => {
           const active = tab === id;
           return (
             <button key={id} onClick={() => setTab(id)}
@@ -1150,7 +1150,7 @@ function ProfileTab({ user, onUpdated }) {
         )}
       </div>
 
-      <style>{`.field-inp{width:100%;border-radius:10px;border:1px solid var(--border);background:var(--card);padding:10px 14px;font-size:14px;color:var(--foreground);outline:none;transition:box-shadow .15s}.field-inp:focus{box-shadow:0 0 0 2px color-mix(in srgb,var(--foreground) 15%,transparent)}`}</style>
+      <style>{`.field-inp{width:100%;border-radius:10px;border:1px solid var(--border);background:var(--card);padding:10px 14px;font-size:14px;color:var(--foreground);outline:none;transition:box-shadow .15s}.field-inp:focus{box-shadow:0 0 0 2px color-mix(in srgb,var(--foreground) 15%,transparent)}select.field-inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}input[type=date].field-inp{appearance:none}`}</style>
     </div>
   );
 }
@@ -1299,10 +1299,6 @@ function SettingsTab({ user, onUpdated, onLogout }) {
         </div>
       </div>
 
-      {/* Future: dark mode placeholder */}
-      <div className="rounded-[14px] border border-dashed border-border p-4 text-center">
-        <p className="text-[12px] text-muted-foreground">Karanlık mod ve dil seçenekleri yakında</p>
-      </div>
     </div>
   );
 }

@@ -59,10 +59,11 @@ export default function ReviewsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const negativeReviews = data?.reviews?.filter((r) => r.shopRating <= 3) ?? [];
+  const negativeReviews = data?.reviews?.filter((r) => r.barberRating > 0 && r.barberRating <= 3) ?? [];
 
   return (
     <div className="space-y-5">
+      <h1 style={{ fontSize: "20px", fontWeight: 700, color: C.primary, letterSpacing: "-0.01em", marginBottom: 4 }}>Yorumlar</h1>
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard icon={Star} label="Ortalama Puan" value={data?.stats?.avgRating?.toFixed(1) ?? "—"} accent={C.primary} />
@@ -185,6 +186,7 @@ export default function ReviewsPage() {
 }
 
 function RatingPair({ label, value }) {
+  if (!value || value <= 0) return null;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <span style={{ fontSize: 10, color: C.muted, letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</span>
