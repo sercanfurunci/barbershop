@@ -9,7 +9,8 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import ImageCropModal from "@/components/shared/ImageCropModal";
 
-import { C, SHADOW } from "@/lib/adminTheme";
+import { C } from "@/lib/adminTheme";
+import { DSPageLoader } from "@/components/ds";
 
 const DAYS_TR = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
 const DAYS_KEY = ["mon","tue","wed","thu","fri","sat","sun"];
@@ -84,16 +85,10 @@ export default function BarbersManagement() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center gap-2 py-24" style={{ color: C.muted }}>
-        <Loader2 size={16} className="animate-spin" /> Yükleniyor…
-      </div>
-    );
-  }
+  if (loading) return <DSPageLoader />;
 
   if (error) {
-    return <div className="py-16 text-center text-[13px]" style={{ color: C.primary }}>{error}</div>;
+    return <div className="py-16 text-center text-[13px] text-foreground">{error}</div>;
   }
 
   return (
@@ -121,18 +116,7 @@ export default function BarbersManagement() {
       {/* Add barber button */}
       <button
         onClick={() => setCreateOpen(true)}
-        className="w-full flex items-center justify-center gap-2 transition-all duration-200"
-        style={{
-          border: `1px dashed ${C.muted}`,
-          borderRadius: "12px",
-          padding: "20px",
-          fontSize: "12px",
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          color: C.muted,
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.color = C.primary; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.muted; }}
+        className="w-full flex items-center justify-center gap-2 rounded-[14px] p-5 text-[12px] uppercase tracking-[0.1em] border border-dashed border-border text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
       >
         <Plus size={14} /> Yeni Berber Ekle
       </button>
@@ -191,7 +175,7 @@ function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedu
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.07, duration: 0.4 }}
-      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column" }}
+      className="bg-card border border-border rounded-[14px] p-5 flex flex-col"
     >
       {/* Hidden file input */}
       <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
@@ -215,17 +199,13 @@ function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedu
             )}
           </div>
           <div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: C.primary, lineHeight: 1.3 }}>{name}</div>
-            <div style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: C.primary, lineHeight: 1.3 }}>{title}</div>
+            <div className="text-[14px] font-semibold text-foreground leading-snug">{name}</div>
+            <div className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground leading-snug">{title}</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span style={{
-            display: "inline-flex", alignItems: "center", height: "20px", padding: "0 8px",
-            fontSize: "10px", borderRadius: "4px", fontWeight: 500,
-            background: barber.available ? "rgba(34,197,94,0.1)" : "rgba(82,82,91,0.2)",
-            color: barber.available ? C.green : C.secondary,
-          }}>
+          <span className={`inline-flex items-center h-5 px-2 text-[10px] rounded-[4px] font-medium ${barber.available ? "text-emerald-700" : "text-muted-foreground"}`}
+            style={{ background: barber.available ? "rgba(34,197,94,0.1)" : "rgba(82,82,91,0.15)" }}>
             {barber.available ? "Aktif" : "İzinde"}
           </span>
           <div className="relative">
@@ -239,10 +219,7 @@ function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedu
             {menuFor === barber.id && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuFor(null)} />
-                <div
-                  className="absolute right-0 mt-1 z-20 rounded-lg overflow-hidden min-w-[160px]"
-                  style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}
-                >
+                <div className="absolute right-0 mt-1 z-20 bg-card border border-border rounded-[10px] overflow-hidden min-w-[160px] shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
                   <MI onClick={onEdit}>Düzenle</MI>
                   <MI onClick={onSchedule}>Programı Gör</MI>
                   <MI onClick={() => { setMenuFor(null); fileRef.current?.click(); }}>Fotoğraf Yükle</MI>
@@ -257,15 +234,13 @@ function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedu
       </div>
 
       {bio && (
-        <p className="line-clamp-2" style={{ fontSize: "12px", color: C.secondary, lineHeight: 1.6, marginBottom: "14px" }}>
-          {bio}
-        </p>
+        <p className="line-clamp-2 text-[12px] text-secondary-foreground leading-relaxed mb-3.5">{bio}</p>
       )}
 
       {barber.specialties?.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {barber.specialties.map((s) => (
-            <span key={s} style={{ fontSize: "10px", letterSpacing: "0.06em", padding: "2px 8px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "4px", color: C.secondary }}>
+            <span key={s} className="text-[10px] tracking-[0.06em] px-2 py-0.5 bg-secondary border border-border rounded-[4px] text-secondary-foreground">
               {s}
             </span>
           ))}
@@ -274,14 +249,14 @@ function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedu
 
       <div style={{ flex: 1 }} />
 
-      <div className="grid grid-cols-2 gap-2 pt-4" style={{ borderTop: `1px solid ${C.border}` }}>
+      <div className="grid grid-cols-2 gap-2 pt-4 border-t border-border">
         {[
           { label: "Deneyim", value: `${barber.yearsExp} yıl` },
           { label: "Puan",    value: barber.rating?.toFixed(1) ?? "—" },
         ].map((s) => (
           <div key={s.label} className="text-center">
-            <div className="font-display font-light" style={{ fontSize: "18px", color: C.primary, lineHeight: 1.1 }}>{s.value}</div>
-            <div style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: C.muted, marginTop: "2px" }}>{s.label}</div>
+            <div className="font-display font-semibold text-[18px] text-foreground leading-none">{s.value}</div>
+            <div className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mt-0.5">{s.label}</div>
           </div>
         ))}
       </div>
@@ -293,8 +268,7 @@ function MI({ children, onClick, danger }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-3 py-2 text-[12px] hover:bg-black/[0.04] transition-colors"
-      style={{ color: danger ? C.primary : C.secondary }}
+      className={`w-full text-left px-3 py-2 text-[12px] hover:bg-secondary transition-colors ${danger ? "text-destructive" : "text-secondary-foreground"}`}
     >
       {children}
     </button>
@@ -426,7 +400,7 @@ function ScheduleModal({ barber, onClose, onSaved }) {
 
   return (
     <Modal title={`${barber.nameTr} — Program`} onClose={onClose} wide>
-      {loading && <div className="flex justify-center py-8"><Loader2 size={16} className="animate-spin" style={{ color: C.muted }} /></div>}
+      {loading && <div className="flex justify-center py-8"><Loader2 size={16} className="animate-spin text-muted-foreground" /></div>}
       {!loading && wh && (
         <div className="space-y-2">
           {DAYS_KEY.map((day, i) => {
@@ -435,20 +409,19 @@ function ScheduleModal({ barber, onClose, onSaved }) {
               <div key={day} className="flex items-center gap-3">
                 <button
                   onClick={() => toggle(day)}
-                  className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors"
-                  style={{ background: on ? C.primary : C.surface, border: `1px solid ${on ? C.primary : C.border}` }}
+                  className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors border ${on ? "bg-foreground border-foreground" : "bg-secondary border-border"}`}
                 >
                   {on && <Check size={10} color="#fff" strokeWidth={3} />}
                 </button>
-                <span className="w-24 text-[13px]" style={{ color: C.primary }}>{DAYS_TR[i]}</span>
+                <span className="w-24 text-[13px] text-foreground">{DAYS_TR[i]}</span>
                 {on ? (
                   <div className="flex items-center gap-2">
                     <TimeInput value={minToTime(wh[day].start)} onChange={(v) => setTime(day, "start", v)} />
-                    <span style={{ color: C.muted, fontSize: "12px" }}>—</span>
+                    <span className="text-[12px] text-muted-foreground">—</span>
                     <TimeInput value={minToTime(wh[day].end)} onChange={(v) => setTime(day, "end", v)} />
                   </div>
                 ) : (
-                  <span className="text-[12px]" style={{ color: C.muted }}>Kapalı</span>
+                  <span className="text-[12px] text-muted-foreground">Kapalı</span>
                 )}
               </div>
             );
@@ -457,9 +430,9 @@ function ScheduleModal({ barber, onClose, onSaved }) {
       )}
       {err && <ErrMsg>{err}</ErrMsg>}
       {!loading && (
-        <div className="flex justify-end gap-2 pt-4 mt-2" style={{ borderTop: `1px solid ${C.border}` }}>
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px]" style={{ color: C.primary, background: C.surface }}>İptal</button>
-          <button onClick={save} disabled={busy} className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium" style={{ background: C.primary, color: "#fff", opacity: busy ? 0.7 : 1 }}>
+        <div className="flex justify-end gap-2 pt-4 mt-2 border-t border-border">
+          <button onClick={onClose} className="px-4 py-2 rounded-[10px] text-[13px] text-foreground bg-secondary border border-border">İptal</button>
+          <button onClick={save} disabled={busy} className="flex items-center gap-2 px-4 py-2 rounded-[10px] text-[13px] font-medium bg-foreground text-background disabled:opacity-60">
             {busy && <Loader2 size={13} className="animate-spin" />} Kaydet
           </button>
         </div>
@@ -475,8 +448,7 @@ function TimeInput({ value, onChange }) {
       type="time"
       value={safe}
       onChange={(e) => onChange(e.target.value)}
-      className="px-2 py-1 rounded-md text-[13px] outline-none"
-      style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.primary }}
+      className="px-2 py-1 rounded-[8px] text-[13px] outline-none bg-secondary border border-border text-foreground"
     />
   );
 }
@@ -581,7 +553,7 @@ function CommissionFields({ form, setForm }) {
 }
 
 /* ── Shared UI pieces ────────────────────────────────────────────────────── */
-const inp = "w-full px-3 py-2 text-[13px] rounded-lg outline-none";
+const inp = "w-full px-3 py-2 text-[13px] rounded-[10px] outline-none bg-transparent text-foreground";
 
 function Modal({ title, onClose, children, wide }) {
   useBodyScrollLock();
@@ -601,18 +573,11 @@ function Modal({ title, onClose, children, wide }) {
       <motion.div
         initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
         transition={{ duration: 0.18 }}
-        className={`w-full rounded-2xl ${wide ? "max-w-[560px]" : "max-w-[480px]"}`}
-        style={{
-          background: C.card,
-          border: `1px solid ${C.border}`,
-          maxHeight: "90dvh",
-          display: "flex",
-          flexDirection: "column",
-        }}
+        className={`w-full rounded-[20px] bg-card border border-border flex flex-col max-h-[90dvh] ${wide ? "max-w-[560px]" : "max-w-[480px]"}`}
       >
-        <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{ borderBottom: `1px solid ${C.border}` }}>
-          <h3 className="text-[15px] font-semibold" style={{ color: C.primary }}>{title}</h3>
-          <button onClick={onClose} style={{ color: C.muted }}><X size={18} /></button>
+        <div className="px-5 py-4 flex items-center justify-between shrink-0 border-b border-border">
+          <h3 className="text-[15px] font-semibold text-foreground">{title}</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X size={18} /></button>
         </div>
         <div
           className="px-5 py-5"
@@ -634,9 +599,9 @@ function Modal({ title, onClose, children, wide }) {
 function Field({ label, hint, children }) {
   return (
     <label className="block">
-      <div className="text-[12px] font-medium mb-1" style={{ color: C.primary }}>{label}</div>
-      <div className="rounded-lg" style={{ background: C.surface, border: `1px solid ${C.border}` }}>{children}</div>
-      {hint && <div className="text-[11px] mt-1" style={{ color: C.muted }}>{hint}</div>}
+      <div className="text-[12px] font-medium text-foreground mb-1">{label}</div>
+      <div className="rounded-[10px] bg-secondary border border-border">{children}</div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-1">{hint}</div>}
     </label>
   );
 }
@@ -647,7 +612,7 @@ function Row2({ children }) {
 
 function ErrMsg({ children }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-md text-[12px]" style={{ color: C.primary, background: "rgba(17,17,17,0.08)" }}>
+    <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] text-[12px] text-foreground bg-secondary">
       <AlertCircle size={13} /> {children}
     </div>
   );
@@ -656,8 +621,8 @@ function ErrMsg({ children }) {
 function FormActions({ onClose, busy, label }) {
   return (
     <div className="flex justify-end gap-2 pt-2">
-      <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-[13px]" style={{ color: C.primary, background: C.surface }}>İptal</button>
-      <button type="submit" disabled={busy} className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium" style={{ background: C.primary, color: "#fff", opacity: busy ? 0.7 : 1 }}>
+      <button type="button" onClick={onClose} className="px-4 py-2 rounded-[10px] text-[13px] text-foreground bg-secondary border border-border">İptal</button>
+      <button type="submit" disabled={busy} className="flex items-center gap-2 px-4 py-2 rounded-[10px] text-[13px] font-medium bg-foreground text-background disabled:opacity-60">
         {busy && <Loader2 size={13} className="animate-spin" />} {label}
       </button>
     </div>

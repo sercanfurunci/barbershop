@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import {
-  MessageSquare, Smartphone, Bell, Clock, CheckCircle2, XCircle,
+  MessageSquare, Smartphone, Bell, Clock, CheckCircle2,
   AlertCircle, Loader2, ChevronLeft, ChevronRight, RefreshCw, Save,
 } from "lucide-react";
 
-import { C, SHADOW } from "@/lib/adminTheme";
+import { AdminPageHeader, DSCard, DSPageLoader, DSChip } from "@/components/ds";
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 const STATUS_COLORS = {
@@ -21,7 +21,7 @@ const STATUS_COLORS = {
 function StatusBadge({ status }) {
   const s = STATUS_COLORS[status] ?? STATUS_COLORS.PENDING;
   return (
-    <span style={{ background: s.bg, color: s.color, fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "100px", letterSpacing: "0.02em" }}>
+    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full tracking-[0.02em]" style={{ background: s.bg, color: s.color }}>
       {s.label}
     </span>
   );
@@ -34,92 +34,73 @@ function Toggle({ checked, onChange, disabled }) {
       type="button"
       onClick={() => !disabled && onChange(!checked)}
       disabled={disabled}
-      style={{
-        width: "40px", height: "22px", borderRadius: "100px", border: "none",
-        background: checked ? C.primary : C.dim,
-        position: "relative", cursor: disabled ? "not-allowed" : "pointer",
-        transition: "background 0.2s", flexShrink: 0,
-      }}
+      className="relative shrink-0 w-10 h-[22px] rounded-full border-0 transition-colors disabled:cursor-not-allowed"
+      style={{ background: checked ? "var(--makas-ink)" : "#D8D1C7" }}
     >
-      <span style={{
-        position: "absolute", top: "3px", left: checked ? "21px" : "3px",
-        width: "16px", height: "16px", borderRadius: "50%", background: "#fff",
-        transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-      }} />
+      <span
+        className="absolute top-[3px] w-4 h-4 rounded-full bg-white transition-[left] duration-200"
+        style={{ left: checked ? "21px" : "3px", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}
+      />
     </button>
   );
 }
 
-// ─── Input ────────────────────────────────────────────────────────────────────
-function Input({ label, value, onChange, type = "text", maxLength, placeholder, hint }) {
+// ─── Field wrappers ───────────────────────────────────────────────────────────
+function NField({ label, hint, children }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <label style={{ fontSize: "11px", fontWeight: 600, color: C.secondary, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-        {label}
-      </label>
+    <div className="flex flex-col gap-1">
+      <label className="text-[11px] font-semibold text-secondary-foreground uppercase tracking-[0.04em]">{label}</label>
+      {children}
+      {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
+    </div>
+  );
+}
+
+function NInput({ label, value, onChange, type = "text", maxLength, placeholder, hint }) {
+  return (
+    <NField label={label} hint={hint}>
       <input
         type={type}
         value={value ?? ""}
         onChange={e => onChange(e.target.value)}
         maxLength={maxLength}
         placeholder={placeholder}
-        style={{
-          height: "36px", padding: "0 10px", borderRadius: "8px",
-          border: `1px solid ${C.border}`, background: C.card,
-          fontSize: "13px", color: C.primary, outline: "none",
-          fontFamily: "inherit",
-        }}
-        onFocus={e => (e.target.style.borderColor = "rgba(17,17,17,0.35)")}
-        onBlur={e => (e.target.style.borderColor = C.border)}
+        className="h-9 px-2.5 rounded-[8px] border border-border bg-card text-[13px] text-foreground outline-none focus:border-foreground/30 transition-colors"
       />
-      {hint && <span style={{ fontSize: "10px", color: C.muted }}>{hint}</span>}
-    </div>
+    </NField>
   );
 }
 
-// ─── Textarea ─────────────────────────────────────────────────────────────────
-function Textarea({ label, value, onChange, placeholder, hint }) {
+function NTextarea({ label, value, onChange, placeholder, hint }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <label style={{ fontSize: "11px", fontWeight: 600, color: C.secondary, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-        {label}
-      </label>
+    <NField label={label} hint={hint}>
       <textarea
         value={value ?? ""}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         rows={3}
-        style={{
-          padding: "8px 10px", borderRadius: "8px",
-          border: `1px solid ${C.border}`, background: C.card,
-          fontSize: "12px", color: C.primary, outline: "none",
-          fontFamily: "inherit", resize: "vertical", lineHeight: 1.5,
-        }}
-        onFocus={e => (e.target.style.borderColor = "rgba(17,17,17,0.35)")}
-        onBlur={e => (e.target.style.borderColor = C.border)}
+        className="px-2.5 py-2 rounded-[8px] border border-border bg-card text-[12px] text-foreground outline-none resize-y leading-relaxed focus:border-foreground/30 transition-colors"
       />
-      {hint && <span style={{ fontSize: "10px", color: C.muted }}>{hint}</span>}
-    </div>
+    </NField>
   );
 }
 
 // ─── Section card ─────────────────────────────────────────────────────────────
 function SectionCard({ title, children }) {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
-      {title && <div style={{ fontSize: "13px", fontWeight: 700, color: C.primary, letterSpacing: "0.01em" }}>{title}</div>}
+    <DSCard className="p-5 flex flex-col gap-4">
+      {title && <p className="text-[13px] font-semibold text-foreground">{title}</p>}
       {children}
-    </div>
+    </DSCard>
   );
 }
 
-// ─── Toggle row ───────────────────────────────────────────────────────────────
 function ToggleRow({ label, description, checked, onChange, disabled }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+    <div className="flex items-center justify-between gap-4">
       <div>
-        <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{label}</div>
-        {description && <div style={{ fontSize: "11px", color: C.muted, marginTop: "2px" }}>{description}</div>}
+        <p className="text-[13px] text-foreground font-medium">{label}</p>
+        {description && <p className="text-[11px] text-muted-foreground mt-0.5">{description}</p>}
       </div>
       <Toggle checked={checked} onChange={onChange} disabled={disabled} />
     </div>
@@ -148,21 +129,12 @@ function SettingsTab() {
   useEffect(() => {
     apiFetch("/api/admin/notification-settings")
       .then(data => setForm({
-        smsEnabled:      false,
-        waEnabled:       false,
-        netgsmUser:      "",
-        netgsmPassword:  "",
-        netgsmHeader:    "",
-        reminder48h:     true,
-        reminder3h:      true,
-        followupEnabled: false,
-        followupHours:   24,
-        tplCreated:      "",
-        tplConfirmed:    "",
-        tplCancelled:    "",
-        tplReminder48h:  "",
-        tplReminder3h:   "",
-        tplFollowup:     "",
+        smsEnabled: false, waEnabled: false,
+        netgsmUser: "", netgsmPassword: "", netgsmHeader: "",
+        reminder48h: true, reminder3h: true,
+        followupEnabled: false, followupHours: 24,
+        tplCreated: "", tplConfirmed: "", tplCancelled: "",
+        tplReminder48h: "", tplReminder3h: "", tplFollowup: "",
         ...data,
       }))
       .catch(() => setError("Ayarlar yüklenemedi."))
@@ -172,14 +144,9 @@ function SettingsTab() {
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   const handleSave = async () => {
-    setSaving(true);
-    setSaved(false);
-    setError(null);
+    setSaving(true); setSaved(false); setError(null);
     try {
-      const updated = await apiFetch("/api/admin/notification-settings", {
-        method: "PATCH",
-        body: JSON.stringify(form),
-      });
+      const updated = await apiFetch("/api/admin/notification-settings", { method: "PATCH", body: JSON.stringify(form) });
       setForm(f => ({ ...f, ...updated }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -190,139 +157,56 @@ function SettingsTab() {
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "200px", gap: "8px", color: C.muted }}>
-        <Loader2 size={18} className="animate-spin" />
-        <span style={{ fontSize: "13px" }}>Yükleniyor…</span>
-      </div>
-    );
-  }
-
+  if (loading) return <DSPageLoader />;
   if (!form) return null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-
-      {/* Channels */}
+    <div className="flex flex-col gap-4">
       <SectionCard title="Kanal Ayarları">
-        <ToggleRow
-          label="SMS Aktif"
-          description="Netgsm üzerinden SMS bildirimleri gönder"
-          checked={form.smsEnabled}
-          onChange={v => set("smsEnabled", v)}
-        />
-        <ToggleRow
-          label="WhatsApp Aktif"
-          description="Netgsm üzerinden WhatsApp mesajları gönder"
-          checked={form.waEnabled}
-          onChange={v => set("waEnabled", v)}
-        />
+        <ToggleRow label="SMS Aktif" description="Netgsm üzerinden SMS bildirimleri gönder" checked={form.smsEnabled} onChange={v => set("smsEnabled", v)} />
+        <ToggleRow label="WhatsApp Aktif" description="Netgsm üzerinden WhatsApp mesajları gönder" checked={form.waEnabled} onChange={v => set("waEnabled", v)} />
       </SectionCard>
 
-      {/* Credentials */}
       <SectionCard title="Netgsm Kimlik Bilgileri">
-        <Input
-          label="Kullanıcı Adı"
-          value={form.netgsmUser}
-          onChange={v => set("netgsmUser", v)}
-          placeholder="Netgsm kullanıcı adı"
-        />
-        <Input
-          label="Şifre"
-          type="password"
-          value={form.netgsmPassword}
-          onChange={v => set("netgsmPassword", v)}
-          placeholder="Netgsm şifresi"
-        />
-        <Input
-          label="SMS Başlığı"
-          value={form.netgsmHeader}
-          onChange={v => set("netgsmHeader", v)}
-          maxLength={11}
-          placeholder="Max 11 karakter"
-          hint="SMS gönderici adı. Maksimum 11 karakter."
-        />
+        <NInput label="Kullanıcı Adı" value={form.netgsmUser} onChange={v => set("netgsmUser", v)} placeholder="Netgsm kullanıcı adı" />
+        <NInput label="Şifre" type="password" value={form.netgsmPassword} onChange={v => set("netgsmPassword", v)} placeholder="Netgsm şifresi" />
+        <NInput label="SMS Başlığı" value={form.netgsmHeader} onChange={v => set("netgsmHeader", v)} maxLength={11} placeholder="Max 11 karakter" hint="SMS gönderici adı. Maksimum 11 karakter." />
       </SectionCard>
 
-      {/* Reminders */}
       <SectionCard title="Hatırlatma Ayarları">
-        <ToggleRow
-          label="48 Saat Hatırlatma"
-          description="Randevudan 48 saat önce müşteriye hatırlatma gönder"
-          checked={form.reminder48h}
-          onChange={v => set("reminder48h", v)}
-        />
-        <ToggleRow
-          label="3 Saat Hatırlatma"
-          description="Randevudan 3 saat önce müşteriye hatırlatma gönder"
-          checked={form.reminder3h}
-          onChange={v => set("reminder3h", v)}
-        />
-        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: "14px", display: "flex", flexDirection: "column", gap: "12px" }}>
-          <ToggleRow
-            label="Randevu Sonrası Geri Bildirim"
-            description="Randevudan belirli saat sonra geri bildirim mesajı gönder"
-            checked={form.followupEnabled}
-            onChange={v => set("followupEnabled", v)}
-          />
+        <ToggleRow label="48 Saat Hatırlatma" description="Randevudan 48 saat önce müşteriye hatırlatma gönder" checked={form.reminder48h} onChange={v => set("reminder48h", v)} />
+        <ToggleRow label="3 Saat Hatırlatma" description="Randevudan 3 saat önce müşteriye hatırlatma gönder" checked={form.reminder3h} onChange={v => set("reminder3h", v)} />
+        <div className="border-t border-border pt-3.5 flex flex-col gap-3">
+          <ToggleRow label="Randevu Sonrası Geri Bildirim" description="Randevudan belirli saat sonra geri bildirim mesajı gönder" checked={form.followupEnabled} onChange={v => set("followupEnabled", v)} />
           {form.followupEnabled && (
-            <Input
-              label="Geri Bildirim Gecikmesi (Saat)"
-              type="number"
-              value={form.followupHours}
-              onChange={v => set("followupHours", parseInt(v) || 24)}
-              placeholder="24"
-              hint="Randevudan kaç saat sonra geri bildirim gönderilsin?"
-            />
+            <NInput label="Geri Bildirim Gecikmesi (Saat)" type="number" value={form.followupHours} onChange={v => set("followupHours", parseInt(v) || 24)} placeholder="24" hint="Randevudan kaç saat sonra geri bildirim gönderilsin?" />
           )}
         </div>
       </SectionCard>
 
-      {/* Templates */}
       <SectionCard title="Mesaj Şablonları">
-        <p style={{ fontSize: "12px", color: C.muted, margin: 0 }}>
-          Boş bırakılan şablonlar için varsayılan Türkçe mesajlar kullanılır.
-        </p>
+        <p className="text-[12px] text-muted-foreground">Boş bırakılan şablonlar için varsayılan Türkçe mesajlar kullanılır.</p>
         {TEMPLATE_FIELDS.map(({ key, label }) => (
-          <Textarea
-            key={key}
-            label={label}
-            value={form[key]}
-            onChange={v => set(key, v)}
-            placeholder="Boş bırakın — varsayılan şablon kullanılır"
-            hint={PLACEHOLDER_HINT}
-          />
+          <NTextarea key={key} label={label} value={form[key]} onChange={v => set(key, v)} placeholder="Boş bırakın — varsayılan şablon kullanılır" hint={PLACEHOLDER_HINT} />
         ))}
       </SectionCard>
 
-      {/* Error / success */}
       {error && (
-        <div style={{ background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", color: "#991B1B", display: "flex", alignItems: "center", gap: "8px" }}>
-          <AlertCircle size={14} />
-          {error}
+        <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-[8px] text-[13px] text-destructive bg-destructive/8 border border-destructive/20">
+          <AlertCircle size={14} /> {error}
         </div>
       )}
       {saved && (
-        <div style={{ background: "#D1FAE5", border: "1px solid #A7F3D0", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", color: "#065F46", display: "flex", alignItems: "center", gap: "8px" }}>
-          <CheckCircle2 size={14} />
-          Ayarlar kaydedildi.
+        <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-[8px] text-[13px]" style={{ background: "#D1FAE5", color: "#065F46", border: "1px solid #A7F3D0" }}>
+          <CheckCircle2 size={14} /> Ayarlar kaydedildi.
         </div>
       )}
 
-      {/* Save button */}
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <div className="flex justify-end">
         <button
           onClick={handleSave}
           disabled={saving}
-          style={{
-            display: "flex", alignItems: "center", gap: "8px",
-            height: "38px", padding: "0 20px", borderRadius: "8px",
-            background: saving ? C.dim : C.primary,
-            border: "none", color: "#fff", fontSize: "13px", fontWeight: 600,
-            cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit",
-            transition: "background 0.15s",
-          }}
+          className="flex items-center gap-2 h-9 px-5 rounded-[8px] bg-foreground text-background text-[13px] font-semibold disabled:opacity-50 transition-opacity"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? "Kaydediliyor…" : "Kaydet"}
@@ -334,12 +218,8 @@ function SettingsTab() {
 
 // ─── History tab ──────────────────────────────────────────────────────────────
 const EVENT_LABELS = {
-  CREATED:      "Oluşturuldu",
-  CONFIRMED:    "Onaylandı",
-  CANCELLED:    "İptal",
-  REMINDER_48H: "48s Hatırlatma",
-  REMINDER_3H:  "3s Hatırlatma",
-  FOLLOWUP:     "Geri Bildirim",
+  CREATED: "Oluşturuldu", CONFIRMED: "Onaylandı", CANCELLED: "İptal",
+  REMINDER_48H: "48s Hatırlatma", REMINDER_3H: "3s Hatırlatma", FOLLOWUP: "Geri Bildirim",
 };
 
 function HistoryTab() {
@@ -352,17 +232,14 @@ function HistoryTab() {
   const LIMIT = 50;
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const params = new URLSearchParams({
-        limit:  String(LIMIT),
-        offset: String(page * LIMIT),
+        limit: String(LIMIT), offset: String(page * LIMIT),
         ...(channelFilter && { channel: channelFilter }),
         ...(statusFilter  && { status:  statusFilter  }),
       });
-      const res = await apiFetch(`/api/admin/notification-history?${params}`);
-      setData(res);
+      setData(await apiFetch(`/api/admin/notification-history?${params}`));
     } catch (e) {
       setError(e.message ?? "Geçmiş yüklenemedi.");
     } finally {
@@ -371,161 +248,89 @@ function HistoryTab() {
   }, [page, channelFilter, statusFilter]);
 
   useEffect(() => { load(); }, [load]);
-
-  // Reset page on filter change
   useEffect(() => { setPage(0); }, [channelFilter, statusFilter]);
 
   const totalPages = Math.ceil(data.total / LIMIT);
 
-  const filterBtn = (label, value, current, onChange) => (
-    <button
-      key={value}
-      onClick={() => onChange(current === value ? "" : value)}
-      style={{
-        height: "30px", padding: "0 12px", borderRadius: "6px",
-        border: `1px solid ${current === value ? C.primary : C.border}`,
-        background: current === value ? C.primary : C.card,
-        color: current === value ? "#fff" : C.secondary,
-        fontSize: "11px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-        transition: "all 0.15s",
-      }}
-    >
-      {label}
-    </button>
-  );
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-
+    <div className="flex flex-col gap-4">
       {/* Filter bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-        <span style={{ fontSize: "11px", fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Kanal:</span>
-        {filterBtn("Tümü", "",          channelFilter, setChannelFilter)}
-        {filterBtn("SMS",  "SMS",       channelFilter, setChannelFilter)}
-        {filterBtn("WhatsApp", "WHATSAPP", channelFilter, setChannelFilter)}
-
-        <div style={{ width: "1px", height: "20px", background: C.border, margin: "0 4px" }} />
-
-        <span style={{ fontSize: "11px", fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Durum:</span>
-        {filterBtn("Tümü",        "",           statusFilter, setStatusFilter)}
-        {filterBtn("Bekliyor",    "PENDING",    statusFilter, setStatusFilter)}
-        {filterBtn("Gönderildi",  "SENT",       statusFilter, setStatusFilter)}
-        {filterBtn("Başarısız",   "FAILED",     statusFilter, setStatusFilter)}
-
-        <button
-          onClick={load}
-          style={{ marginLeft: "auto", height: "30px", width: "30px", borderRadius: "6px", border: `1px solid ${C.border}`, background: C.card, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}
-          title="Yenile"
-        >
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.05em]">Kanal:</span>
+        {[["Tümü",""],["SMS","SMS"],["WhatsApp","WHATSAPP"]].map(([label, val]) => (
+          <DSChip key={val} active={channelFilter === val} onClick={() => setChannelFilter(channelFilter === val ? "" : val)}>{label}</DSChip>
+        ))}
+        <div className="w-px h-5 bg-border mx-1" />
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.05em]">Durum:</span>
+        {[["Tümü",""],["Bekliyor","PENDING"],["Gönderildi","SENT"],["Başarısız","FAILED"]].map(([label, val]) => (
+          <DSChip key={val} active={statusFilter === val} onClick={() => setStatusFilter(statusFilter === val ? "" : val)}>{label}</DSChip>
+        ))}
+        <button onClick={load} className="ml-auto w-8 h-7 flex items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground hover:text-foreground transition-colors" title="Yenile">
           <RefreshCw size={13} />
         </button>
       </div>
 
-      {/* Error */}
       {error && (
-        <div style={{ background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", color: "#991B1B" }}>
-          {error}
-        </div>
+        <div className="px-3.5 py-2.5 rounded-[8px] text-[13px] text-destructive bg-destructive/8 border border-destructive/20">{error}</div>
       )}
 
       {/* Table */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", overflow: "hidden" }}>
+      <DSCard className="overflow-hidden">
         {loading ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "160px", gap: "8px", color: C.muted }}>
-            <Loader2 size={18} className="animate-spin" />
-            <span style={{ fontSize: "13px" }}>Yükleniyor…</span>
-          </div>
+          <DSPageLoader />
         ) : data.jobs.length === 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "160px", gap: "6px", color: C.muted }}>
-            <Bell size={24} style={{ opacity: 0.3 }} />
-            <span style={{ fontSize: "13px" }}>Bildirim bulunamadı.</span>
+          <div className="flex flex-col items-center justify-center h-40 gap-1.5 text-muted-foreground">
+            <Bell size={24} className="opacity-30" />
+            <span className="text-[13px]">Bildirim bulunamadı.</span>
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-[12px]">
               <thead>
-                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                  {["Kanal", "Olay", "Telefon", "Mesaj", "Durum", "Planlandı", "Deneme"].map(h => (
-                    <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: "10px", fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
-                      {h}
-                    </th>
+                <tr className="border-b border-border">
+                  {["Kanal","Olay","Telefon","Mesaj","Durum","Planlandı","Deneme"].map(h => (
+                    <th key={h} className="px-3.5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.05em] whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {data.jobs.map((job, i) => (
-                  <tr
-                    key={job.id}
-                    style={{ borderBottom: i < data.jobs.length - 1 ? `1px solid ${C.border}` : "none" }}
-                  >
-                    {/* Channel */}
-                    <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: job.channel === "SMS" ? "#1D4ED8" : "#16A34A" }}>
-                        {job.channel === "SMS"
-                          ? <Smartphone size={13} />
-                          : <MessageSquare size={13} />}
-                        <span style={{ fontSize: "11px", fontWeight: 600 }}>{job.channel}</span>
+                  <tr key={job.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                    <td className="px-3.5 py-2.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5" style={{ color: job.channel === "SMS" ? "#1D4ED8" : "#16A34A" }}>
+                        {job.channel === "SMS" ? <Smartphone size={13} /> : <MessageSquare size={13} />}
+                        <span className="text-[11px] font-semibold">{job.channel}</span>
                       </div>
                     </td>
-                    {/* Event */}
-                    <td style={{ padding: "10px 14px", color: C.secondary, whiteSpace: "nowrap" }}>
-                      {EVENT_LABELS[job.event] ?? job.event}
+                    <td className="px-3.5 py-2.5 text-secondary-foreground whitespace-nowrap">{EVENT_LABELS[job.event] ?? job.event}</td>
+                    <td className="px-3.5 py-2.5 text-foreground font-mono-custom whitespace-nowrap">{job.phone}</td>
+                    <td className="px-3.5 py-2.5 text-secondary-foreground max-w-[260px]">
+                      <span className="block truncate" title={job.message}>{job.message}</span>
                     </td>
-                    {/* Phone */}
-                    <td style={{ padding: "10px 14px", color: C.primary, fontFamily: "monospace", whiteSpace: "nowrap" }}>
-                      {job.phone}
-                    </td>
-                    {/* Message preview */}
-                    <td style={{ padding: "10px 14px", color: C.secondary, maxWidth: "260px" }}>
-                      <span
-                        title={job.message}
-                        style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                      >
-                        {job.message}
-                      </span>
-                    </td>
-                    {/* Status */}
-                    <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}>
-                      <StatusBadge status={job.status} />
-                    </td>
-                    {/* Scheduled */}
-                    <td style={{ padding: "10px 14px", color: C.muted, whiteSpace: "nowrap" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <td className="px-3.5 py-2.5 whitespace-nowrap"><StatusBadge status={job.status} /></td>
+                    <td className="px-3.5 py-2.5 text-muted-foreground whitespace-nowrap">
+                      <div className="flex items-center gap-1">
                         <Clock size={11} />
                         {new Date(job.scheduledFor).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}
                       </div>
                     </td>
-                    {/* Attempts */}
-                    <td style={{ padding: "10px 14px", color: C.muted, textAlign: "center" }}>
-                      {job.attempts}/{job.maxAttempts}
-                    </td>
+                    <td className="px-3.5 py-2.5 text-muted-foreground text-center">{job.attempts}/{job.maxAttempts}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </div>
+      </DSCard>
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-          <span style={{ fontSize: "12px", color: C.muted }}>
-            Toplam {data.total} kayıt — Sayfa {page + 1} / {totalPages}
-          </span>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <button
-              onClick={() => setPage(p => Math.max(0, p - 1))}
-              disabled={page === 0}
-              style={{ height: "30px", width: "30px", borderRadius: "6px", border: `1px solid ${C.border}`, background: C.card, display: "flex", alignItems: "center", justifyContent: "center", cursor: page === 0 ? "not-allowed" : "pointer", color: page === 0 ? C.dim : C.secondary }}
-            >
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[12px] text-muted-foreground">Toplam {data.total} kayıt — Sayfa {page + 1} / {totalPages}</span>
+          <div className="flex gap-1.5">
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="w-8 h-7 flex items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground disabled:opacity-40 hover:bg-secondary transition-colors">
               <ChevronLeft size={14} />
             </button>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              style={{ height: "30px", width: "30px", borderRadius: "6px", border: `1px solid ${C.border}`, background: C.card, display: "flex", alignItems: "center", justifyContent: "center", cursor: page >= totalPages - 1 ? "not-allowed" : "pointer", color: page >= totalPages - 1 ? C.dim : C.secondary }}
-            >
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="w-8 h-7 flex items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground disabled:opacity-40 hover:bg-secondary transition-colors">
               <ChevronRight size={14} />
             </button>
           </div>
@@ -539,34 +344,21 @@ function HistoryTab() {
 export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("settings");
 
-  const tabs = [
-    { id: "settings", label: "Ayarlar" },
-    { id: "history",  label: "Geçmiş"  },
-  ];
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      {/* Page header */}
-      <div>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: C.primary, margin: 0 }}>Bildirimler</h1>
-        <p style={{ fontSize: "13px", color: C.muted, margin: "4px 0 0" }}>
-          SMS ve WhatsApp bildirim ayarları ile geçmiş log
-        </p>
-      </div>
+    <div className="flex flex-col gap-5">
+      <AdminPageHeader title="Bildirimler" sub="SMS ve WhatsApp bildirim ayarları ile geçmiş log" />
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: "4px", borderBottom: `1px solid ${C.border}`, paddingBottom: "1px" }}>
-        {tabs.map(t => (
+      {/* Underline tab bar */}
+      <div className="flex gap-1 border-b border-border">
+        {[{ id: "settings", label: "Ayarlar" }, { id: "history", label: "Geçmiş" }].map(t => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
+            className="h-9 px-4 text-[13px] font-semibold transition-colors"
             style={{
-              height: "34px", padding: "0 16px", border: "none", background: "none",
-              fontSize: "13px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-              color: activeTab === t.id ? C.primary : C.muted,
-              borderBottom: activeTab === t.id ? `2px solid ${C.primary}` : "2px solid transparent",
+              color: activeTab === t.id ? "var(--makas-ink)" : "var(--makas-ink-muted)",
+              borderBottom: activeTab === t.id ? "2px solid var(--makas-ink)" : "2px solid transparent",
               marginBottom: "-1px",
-              transition: "color 0.15s, border-color 0.15s",
             }}
           >
             {t.label}
@@ -574,7 +366,6 @@ export default function NotificationsPage() {
         ))}
       </div>
 
-      {/* Tab content */}
       {activeTab === "settings" && <SettingsTab />}
       {activeTab === "history"  && <HistoryTab  />}
     </div>

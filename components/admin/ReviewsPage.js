@@ -4,45 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Star, AlertTriangle, TrendingUp, MessageSquare, Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
-import { C } from "@/lib/adminTheme";
-import { AdminPageHeader, DSStatTile, DSCard, DSEmptyState, DSSkeleton, DSBadge } from "@/components/ds";
-
-function StarRow({ rating, size = 12 }) {
-  return (
-    <div style={{ display: "flex", gap: 2 }}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Star key={n} size={size} fill={n <= rating ? C.primary : "none"} style={{ color: n <= rating ? C.primary : C.dim }} />
-      ))}
-    </div>
-  );
-}
-
-function BarberAvatar({ barber, size = 36 }) {
-  if (barber?.profilePhoto) {
-    return (
-      <img
-        src={barber.profilePhoto}
-        alt={barber.nameTr}
-        style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `1px solid ${C.border}` }}
-      />
-    );
-  }
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: "50%", flexShrink: 0,
-      background: `linear-gradient(135deg, ${C.primary}, #7f1d1d)`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: size * 0.3, fontWeight: 700, color: "#fff",
-    }}>
-      {barber?.avatar || "?"}
-    </div>
-  );
-}
+import { AdminPageHeader, DSStatTile, DSCard, DSEmptyState, DSAvatar, StarRating, DSChip } from "@/components/ds";
 
 export default function ReviewsPage() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
-  const [stars, setStars]     = useState(null); // null = all
+  const [stars, setStars]     = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,12 +32,13 @@ export default function ReviewsPage() {
   return (
     <div className="space-y-5">
       <AdminPageHeader title="Yorumlar" sub="Müşteri değerlendirmeleri ve puan dağılımı" />
+
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <DSStatTile icon={Star}         label="Ortalama Puan"  value={data?.stats?.avgRating?.toFixed(1) ?? "—"} accent={C.primary} />
-        <DSStatTile icon={MessageSquare} label="Toplam Yorum"  value={data?.stats?.totalCount ?? "—"}            accent="#2563eb" />
-        <DSStatTile icon={AlertTriangle} label="Olumsuz Yorum" value={negativeReviews.length}                    accent={C.yellow} />
-        <DSStatTile icon={TrendingUp}    label="Bu Hafta"      value={weekCount(data?.reviews)}                  accent={C.green} />
+        <DSStatTile icon={Star}          label="Ortalama Puan"  value={data?.stats?.avgRating?.toFixed(1) ?? "—"} />
+        <DSStatTile icon={MessageSquare} label="Toplam Yorum"   value={data?.stats?.totalCount ?? "—"} accent="#2563eb" />
+        <DSStatTile icon={AlertTriangle} label="Olumsuz Yorum"  value={negativeReviews.length} accent="#CA8A04" />
+        <DSStatTile icon={TrendingUp}    label="Bu Hafta"       value={weekCount(data?.reviews)} accent="#15803D" />
       </div>
 
       {/* Dispatch pipeline */}
@@ -104,13 +72,10 @@ export default function ReviewsPage() {
                   <div key={s} className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 w-14 shrink-0">
                       <span className="text-[12px] font-semibold text-foreground">{s}</span>
-                      <Star size={10} fill="var(--makas-ink)" style={{ color: "var(--makas-ink)" }} />
+                      <Star size={10} fill="currentColor" className="text-foreground" />
                     </div>
                     <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-secondary">
-                      <div
-                        className="h-full rounded-full bg-foreground transition-all duration-500"
-                        style={{ width: `${pct}%` }}
-                      />
+                      <div className="h-full rounded-full bg-foreground transition-all duration-500" style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-[11px] text-muted-foreground w-6 text-right shrink-0">{count}</span>
                   </div>
@@ -125,7 +90,7 @@ export default function ReviewsPage() {
       {negativeReviews.length > 0 && (
         <div className="rounded-[14px] border p-4 space-y-3" style={{ background: "#FEF9EE", borderColor: "#FDE68A" }}>
           <div className="flex items-center gap-2">
-            <AlertTriangle size={14} style={{ color: C.yellow }} />
+            <AlertTriangle size={14} style={{ color: "#CA8A04" }} />
             <p className="text-[13px] font-semibold" style={{ color: "#92400e" }}>
               Olumsuz Geri Bildirimler ({negativeReviews.length})
             </p>
@@ -134,7 +99,7 @@ export default function ReviewsPage() {
             {negativeReviews.slice(0, 3).map((r) => (
               <div key={r.id} className="p-3 bg-white rounded-[10px] border" style={{ borderColor: "#FDE68A" }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <StarRow rating={r.shopRating} size={11} />
+                  <StarRating rating={r.shopRating} size={11} />
                   <span className="text-[11px] text-muted-foreground">{r.customerName} · {r.barber?.nameTr}</span>
                 </div>
                 {r.comment && <p className="text-[12px] text-secondary-foreground leading-relaxed">{r.comment}</p>}
@@ -149,11 +114,11 @@ export default function ReviewsPage() {
         <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-wrap gap-2">
           <p className="text-[13px] font-semibold text-foreground">Tüm Yorumlar</p>
           <div className="flex gap-1.5 flex-wrap">
-            <FilterBtn active={stars === null} onClick={() => setStars(null)}>Tümü</FilterBtn>
+            <DSChip active={stars === null} onClick={() => setStars(null)}>Tümü</DSChip>
             {[5,4,3,2,1].map((s) => (
-              <FilterBtn key={s} active={stars === s} onClick={() => setStars(s)}>
-                {s}<Star size={10} fill="currentColor" style={{ marginLeft: 2, verticalAlign: "-1px" }} />
-              </FilterBtn>
+              <DSChip key={s} active={stars === s} onClick={() => setStars(s)}>
+                {s} <Star size={9} fill="currentColor" className="inline -mt-px" />
+              </DSChip>
             ))}
           </div>
         </div>
@@ -177,7 +142,12 @@ export default function ReviewsPage() {
                 className="flex items-start gap-3 px-5 py-4"
                 style={{ borderBottom: i < data.reviews.length - 1 ? "1px solid var(--makas-border)" : "none" }}
               >
-                <BarberAvatar barber={r.barber} size={36} />
+                <DSAvatar
+                  src={r.barber?.profilePhoto}
+                  name={r.barber?.nameTr || "?"}
+                  size={36}
+                  shape="circle"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                     <span className="text-[13px] font-semibold text-foreground">{r.customerName}</span>
@@ -209,25 +179,8 @@ function RatingPair({ label, value }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">{label}</span>
-      <StarRow rating={value} size={11} />
+      <StarRating rating={value} size={11} />
     </div>
-  );
-}
-
-function FilterBtn({ active, onClick, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium transition-colors"
-      style={{
-        background: active ? "var(--makas-ink)" : "var(--makas-surface2)",
-        color: active ? "#fff" : "var(--makas-ink-secondary)",
-        border: active ? "none" : "1px solid var(--makas-border)",
-      }}
-    >
-      {children}
-    </button>
   );
 }
 

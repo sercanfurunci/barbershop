@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, MoreVertical, Eye, Pencil, Trash2, ArrowRight, Phone, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, MoreVertical, Eye, Pencil, Trash2, ArrowRight, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
-
-import { C, SHADOW } from "@/lib/adminTheme";
+import { DSAvatar, DSEmptyState } from "@/components/ds";
 
 function getStatusStyle(status) {
   const map = {
@@ -24,34 +23,18 @@ function getStatusStyle(status) {
   return map[status] || map.pending;
 }
 
-function Avatar({ name, size = 28 }) {
-  const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("");
-  const hue = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+function StatusPill({ status, label }) {
+  const s = getStatusStyle(status);
   return (
-    <div
-      className="flex items-center justify-center font-medium shrink-0"
-      style={{
-        width: size, height: size,
-        borderRadius: "6px",
-        background: `hsl(${hue}, 30%, 22%)`,
-        color: `hsl(${hue}, 60%, 70%)`,
-        fontSize: size * 0.38,
-        border: `1px solid hsl(${hue}, 30%, 28%)`,
-      }}
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[5px] text-[10px] font-medium tracking-[0.04em]"
+      style={{ background: s.bg, color: s.text }}
     >
-      {initials}
-    </div>
-  );
-}
-
-function StatusPill({ status, label, style }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1" style={{ background: style.bg, borderRadius: "5px" }}>
       <span
-        className={style.pulse ? "animate-pulse" : ""}
-        style={{ width: "5px", height: "5px", borderRadius: "50%", background: style.dot, display: "inline-block", flexShrink: 0 }}
+        className={`w-[5px] h-[5px] rounded-full shrink-0 ${s.pulse ? "animate-pulse" : ""}`}
+        style={{ background: s.dot }}
       />
-      <span style={{ fontSize: "10px", fontWeight: 500, color: style.text, letterSpacing: "0.04em" }}>{label}</span>
+      {label}
     </span>
   );
 }
@@ -67,7 +50,6 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
   const apptTx = tx.admin.appointments;
   const { appointments, updateStatus, deleteAppointment } = useAppointments();
 
-  // Reset page whenever filters change
   useEffect(() => { setPage(0); }, [search, statusFilter, barberId]);
 
   const allFiltered = appointments
@@ -79,21 +61,19 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
     .sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
 
   const totalPages = Math.max(1, Math.ceil(allFiltered.length / PAGE_SIZE));
-
-  // limit prop → overview widget (no pagination); else → paginated full list
   const rows = limit
     ? allFiltered.slice(0, limit)
     : allFiltered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", overflow: "hidden" }}>
+    <div className="bg-card border border-border rounded-[14px] overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center gap-3 flex-wrap px-5 py-4" style={{ borderBottom: `1px solid ${C.border}` }}>
+      <div className="flex items-center gap-3 flex-wrap px-5 py-4 border-b border-border">
         <div>
-          <span style={{ fontSize: "13px", fontWeight: 500, color: C.primary }}>
+          <span className="text-[13px] font-medium text-foreground">
             {limit ? apptTx.recent : apptTx.all}
           </span>
-          <span style={{ fontSize: "12px", color: C.secondary, marginLeft: "8px" }}>
+          <span className="text-[12px] text-muted-foreground ml-2">
             {apptTx.entries(rows.length)}
           </span>
         </div>
@@ -101,32 +81,19 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
         <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
           {!limit && (
             <>
-              <div
-                className="flex items-center gap-2 px-3 h-8"
-                style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "6px", minWidth: 0, width: "160px" }}
-              >
-                <Search size={11} style={{ color: C.muted, flexShrink: 0 }} />
+              <div className="flex items-center gap-2 px-3 h-8 bg-card border border-border rounded-[6px] w-40">
+                <Search size={11} className="text-muted-foreground shrink-0" />
                 <input
                   placeholder={apptTx.search}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="flex-1 bg-transparent outline-none"
-                  style={{ fontSize: "12px", color: C.primary, caretColor: C.primary }}
+                  className="flex-1 bg-transparent outline-none text-[12px] text-foreground"
                 />
               </div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatus(e.target.value)}
-                className="outline-none"
-                style={{
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: "6px",
-                  padding: "0 10px",
-                  height: "32px",
-                  fontSize: "12px",
-                  color: C.secondary,
-                }}
+                className="outline-none bg-card border border-border rounded-[6px] px-2.5 h-8 text-[12px] text-secondary-foreground"
               >
                 <option value="all">{apptTx.allStatus}</option>
                 <option value="confirmed">{apptTx.status.confirmed}</option>
@@ -139,10 +106,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
           {limit && onViewAll && (
             <button
               onClick={onViewAll}
-              className="flex items-center gap-1.5 transition-colors"
-              style={{ fontSize: "12px", color: C.secondary }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = C.primary)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = C.secondary)}
+              className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors"
             >
               {apptTx.viewAll} <ArrowRight size={11} />
             </button>
@@ -153,46 +117,48 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
       {/* Mobile card list */}
       <div className="md:hidden">
         {rows.map((appt, i) => {
-          const statusStyle = getStatusStyle(appt.status);
           const statusLabel = apptTx.status[appt.status] || appt.status;
           return (
             <div
               key={appt.id}
-              style={{ padding: "14px 16px", borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : "none" }}
+              className="px-4 py-3.5"
+              style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--makas-border)" : "none" }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Avatar name={appt.client} size={32} />
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-2">
+                  <DSAvatar name={appt.client} size={32} shape="square" radius={6} />
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                      <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{appt.client}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13px] font-medium text-foreground">{appt.client}</span>
                       {appt.source === "manual" && (
-                        <span style={{ fontSize: "8px", padding: "1px 4px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", letterSpacing: "0.05em", fontWeight: 600 }}>TEL</span>
+                        <span className="text-[8px] px-1 py-px rounded-[3px] font-semibold tracking-[0.05em]"
+                          style={{ background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)" }}>
+                          TEL
+                        </span>
                       )}
                     </div>
-                    <div style={{ fontSize: "11px", color: C.secondary }}>{appt.service}</div>
+                    <p className="text-[11px] text-muted-foreground">{appt.service}</p>
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600 }}>{appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}</div>
-                  <div style={{ fontSize: "10px", color: C.secondary, marginTop: "1px", fontFamily: "'DM Mono', monospace" }}>{appt.time}</div>
+                <div className="text-right">
+                  <p className="text-[15px] font-semibold text-foreground">
+                    {appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-px font-mono-custom">{appt.time}</p>
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <StatusPill status={appt.status} label={statusLabel} style={statusStyle} />
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "11px", color: C.muted }}>{appt.barber}</span>
-                  <span style={{ fontSize: "11px", color: C.muted }}>{appt.date}</span>
+              <div className="flex items-center justify-between">
+                <StatusPill status={appt.status} label={statusLabel} />
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">{appt.barber}</span>
+                  <span className="text-[11px] text-muted-foreground">{appt.date}</span>
                 </div>
               </div>
             </div>
           );
         })}
         {rows.length === 0 && (
-          <div style={{ padding: "48px 16px", textAlign: "center" }}>
-            <div style={{ fontSize: "28px", marginBottom: "8px", opacity: 0.3 }}>◎</div>
-            <p style={{ fontSize: "13px", color: C.secondary }}>{apptTx.empty}</p>
-          </div>
+          <DSEmptyState icon={Calendar} title={apptTx.empty} compact />
         )}
       </div>
 
@@ -200,20 +166,11 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+            <tr className="border-b border-border">
               {apptTx.cols.map((h, i) => (
                 <th
                   key={i}
-                  style={{
-                    padding: "10px 16px",
-                    textAlign: "left",
-                    fontSize: "10px",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    color: C.muted,
-                    fontWeight: 400,
-                    whiteSpace: "nowrap",
-                  }}
+                  className="px-4 py-2.5 text-left text-[10px] uppercase tracking-[0.1em] text-muted-foreground font-normal whitespace-nowrap"
                 >
                   {h}
                 </th>
@@ -222,7 +179,6 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
           </thead>
           <tbody>
             {rows.map((appt, i) => {
-              const statusStyle = getStatusStyle(appt.status);
               const statusLabel = apptTx.status[appt.status] || appt.status;
               return (
                 <motion.tr
@@ -230,70 +186,61 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className="group"
-                  style={{ borderBottom: `1px solid ${C.border}` }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = C.surface + "80")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  className="group border-b border-border hover:bg-secondary/40 transition-colors"
                 >
-                  <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-2.5">
-                      <Avatar name={appt.client} />
+                      <DSAvatar name={appt.client} size={28} shape="square" radius={6} />
                       <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500, lineHeight: 1.3 }}>{appt.client}</div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[13px] font-medium text-foreground leading-snug">{appt.client}</span>
                           {appt.source === "manual" && (
-                            <span style={{ fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", letterSpacing: "0.06em", fontWeight: 600 }}>
+                            <span className="text-[8px] px-1.5 py-px rounded-[3px] font-semibold tracking-[0.06em]"
+                              style={{ background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)" }}>
                               TEL
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: "10px", color: C.muted, fontFamily: "'DM Mono', monospace", lineHeight: 1.3 }}>
+                        <p className="text-[10px] text-muted-foreground font-mono-custom leading-snug">
                           {appt.phone || appt.id}
-                        </div>
+                        </p>
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span style={{ fontSize: "12px", color: C.secondary, whiteSpace: "nowrap" }}>{appt.service}</span>
+                  <td className="px-4 py-3">
+                    <span className="text-[12px] text-secondary-foreground whitespace-nowrap">{appt.service}</span>
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span style={{ fontSize: "12px", color: C.secondary, whiteSpace: "nowrap" }}>{appt.barber}</span>
+                  <td className="px-4 py-3">
+                    <span className="text-[12px] text-secondary-foreground whitespace-nowrap">{appt.barber}</span>
                   </td>
-                  <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
-                    <div style={{ fontSize: "12px", color: C.primary, lineHeight: 1.4 }}>{appt.date}</div>
-                    <div style={{ fontSize: "10px", color: C.secondary, fontFamily: "'DM Mono', monospace", lineHeight: 1.4 }}>{appt.time}</div>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <p className="text-[12px] text-foreground leading-snug">{appt.date}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono-custom leading-snug">{appt.time}</p>
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span className="font-display font-light" style={{ fontSize: "16px", color: C.primary }}>{appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}</span>
+                  <td className="px-4 py-3">
+                    <span className="font-display font-semibold text-[16px] text-foreground">
+                      {appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}
+                    </span>
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <StatusPill status={appt.status} label={statusLabel} style={statusStyle} />
+                  <td className="px-4 py-3">
+                    <StatusPill status={appt.status} label={statusLabel} />
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
+                  <td className="px-4 py-3">
                     <DropdownMenu>
-                      <DropdownMenuTrigger
-                        className="w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ color: C.secondary, borderRadius: "5px" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = C.surface)}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                      >
+                      <DropdownMenuTrigger className="w-7 h-7 flex items-center justify-center rounded-[5px] opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:bg-secondary">
                         <MoreVertical size={14} />
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        style={{ background: "#FFFFFF", border: `1px solid ${C.border}`, borderRadius: "8px", minWidth: "160px" }}
-                      >
+                      <DropdownMenuContent align="end" className="min-w-[160px]">
                         {[
-                          { label: "Onaylandı",      action: () => updateStatus(appt.id, "confirmed"),   icon: Eye,    danger: false },
-                          { label: "Tamamlandı",     action: () => updateStatus(appt.id, "completed"),   icon: Pencil, danger: false },
-                          { label: "Gelmedi",        action: () => updateStatus(appt.id, "noshow"),      icon: Trash2, danger: false },
-                          { label: apptTx.actions.cancel, action: () => updateStatus(appt.id, "cancelled"), icon: Trash2, danger: true },
-                        ].map(({ label, icon: Icon, danger, action }) => (
+                          { label: "Onaylandı",          action: () => updateStatus(appt.id, "confirmed"),   icon: Eye },
+                          { label: "Tamamlandı",          action: () => updateStatus(appt.id, "completed"),   icon: Pencil },
+                          { label: "Gelmedi",             action: () => updateStatus(appt.id, "noshow"),      icon: Trash2 },
+                          { label: apptTx.actions.cancel, action: () => updateStatus(appt.id, "cancelled"),   icon: Trash2 },
+                        ].map(({ label, icon: Icon, action }) => (
                           <DropdownMenuItem
                             key={label}
                             onSelect={action}
-                            className="flex items-center gap-2.5 cursor-pointer"
-                            style={{ padding: "7px 12px", fontSize: "12px", color: danger ? "#111111" : C.secondary, borderRadius: "5px" }}
+                            className="flex items-center gap-2.5 cursor-pointer text-[12px]"
                           >
                             <Icon size={12} />
                             {label}
@@ -309,52 +256,31 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
         </table>
 
         {rows.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16">
-            <div style={{ fontSize: "32px", marginBottom: "8px" }}>◎</div>
-            <p style={{ fontSize: "13px", color: C.secondary }}>{apptTx.empty}</p>
-          </div>
+          <DSEmptyState icon={Calendar} title={apptTx.empty} compact />
         )}
       </div>
 
-      {/* Pagination — only in full list mode */}
+      {/* Pagination */}
       {!limit && totalPages > 1 && (
-        <div
-          className="flex items-center justify-between"
-          style={{ padding: "10px 16px", borderTop: `1px solid ${C.border}` }}
-        >
-          <span style={{ fontSize: "11px", color: C.muted }}>
-            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, allFiltered.length)}{" "}
-            / {allFiltered.length}
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-border">
+          <span className="text-[11px] text-muted-foreground">
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, allFiltered.length)} / {allFiltered.length}
           </span>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
-              style={{
-                width: 40, height: 40, borderRadius: 6,
-                border: `1px solid ${C.border}`,
-                background: page === 0 ? C.surface : C.card,
-                color: page === 0 ? C.muted : C.secondary,
-                cursor: page === 0 ? "not-allowed" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
+              className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-border text-muted-foreground disabled:opacity-40 hover:bg-secondary transition-colors"
             >
               <ChevronLeft size={12} />
             </button>
-            <span style={{ fontSize: "11px", color: C.secondary, minWidth: 48, textAlign: "center" }}>
+            <span className="text-[11px] text-muted-foreground min-w-12 text-center">
               {page + 1} / {totalPages}
             </span>
             <button
               onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={page === totalPages - 1}
-              style={{
-                width: 40, height: 40, borderRadius: 6,
-                border: `1px solid ${C.border}`,
-                background: page === totalPages - 1 ? C.surface : C.card,
-                color: page === totalPages - 1 ? C.muted : C.secondary,
-                cursor: page === totalPages - 1 ? "not-allowed" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
+              className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-border text-muted-foreground disabled:opacity-40 hover:bg-secondary transition-colors"
             >
               <ChevronRight size={12} />
             </button>

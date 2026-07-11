@@ -1,0 +1,306 @@
+openapi: "3.1.0"
+info:
+  title: Makas API v1
+  version: "1.0.0"
+  description: |
+    Mobile-facing API surface. All paths available at both `/api/*` (web) and
+    `/api/v1/*` (mobile — stable versioned prefix, same handlers).
+
+    **Auth:** `Authorization: Bearer <token>` header. Token obtained from
+    `POST /api/auth/login`. Refresh via `POST /api/auth/refresh`.
+
+servers:
+  - url: /api/v1
+    description: Versioned mobile prefix (rewrites to /api)
+  - url: /api
+    description: Direct (web)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+    User:
+      type: object
+      properties:
+        id:          { type: string }
+        email:       { type: string }
+        displayName: { type: string, nullable: true }
+        role:        { type: string, enum: [SUPER_ADMIN, ADMIN, BARBER, RECEPTIONIST] }
+        barber:
+          nullable: true
+          type: object
+          properties:
+            id:     { type: string }
+            slug:   { type: string }
+            nameTr: { type: string }
+            avatar: { type: string, nullable: true }
+        shop:
+          nullable: true
+          type: object
+          properties:
+            id:                 { type: string }
+            slug:               { type: string }
+            name:               { type: string }
+            status:             { type: string }
+            subscriptionStatus: { type: string }
+            planTier:           { type: string }
+
+    Appointment:
+      type: object
+      properties:
+        id:         { type: string }
+        date:       { type: string, format: date }
+        time:       { type: string, example: "14:30" }
+        duration:   { type: integer, description: "Minutes" }
+        status:     { type: string, enum: [PENDING, CONFIRMED, COMPLETED, CANCELLED, NOSHOW] }
+        price:      { type: number }
+        grossAmount: { type: number, nullable: true }
+        barberAmount: { type: number, nullable: true }
+        shopAmount:  { type: number, nullable: true }
+        isWalkIn:   { type: boolean }
+        client:
+          type: object
+          properties:
+            id:    { type: string }
+            name:  { type: string }
+            phone: { type: string }
+        barber:
+          type: object
+          properties:
+            id:     { type: string }
+            nameTr: { type: string }
+        service:
+          type: object
+          properties:
+            id:     { type: string }
+            nameTr: { type: string }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:    { type: string }
+                password: { type: string }
+      responses:
+        "200":
+          description: Token + user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user:  { $ref: "#/components/schemas/User" }
+        "401": { description: Invalid credentials, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "429": { description: Rate limited }
+
+  /auth/refresh:
+    post:
+      summary: Refresh session token
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+        "401": { description: Session expired or invalidated }
+
+  /auth/logout:
+    post:
+      summary: Single-device logout (clears cookie, client discards Bearer)
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /auth/logout-all:
+    post:
+      summary: Invalidate all sessions (bumps tokenVersion)
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /auth/forgot-password:
+    post:
+      summary: Request password reset email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string }
+      responses:
+        "200":
+          description: Always 200 (no user enumeration)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /auth/reset-password:
+    post:
+      summary: Reset password with token from email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token:    { type: string }
+                password: { type: string, minLength: 8 }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+        "400": { description: Invalid or expired token }
+
+  /auth/me:
+    get:
+      summary: Current user + shop info
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401": { description: Unauthorized }
+
+  /appointments:
+    get:
+      summary: List appointments (auth required)
+      parameters:
+        - { name: date,     in: query, schema: { type: string, format: date } }
+        - { name: barberId, in: query, schema: { type: string } }
+        - { name: status,   in: query, schema: { type: string } }
+        - { name: limit,    in: query, schema: { type: integer, default: 200 } }
+        - { name: offset,   in: query, schema: { type: integer, default: 0 } }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Appointment" }
+        "401": { description: Unauthorized }
+
+  /availability:
+    get:
+      summary: Available time slots for a single day
+      security: []
+      parameters:
+        - { name: shopId,    in: query, required: true,  schema: { type: string } }
+        - { name: barberId,  in: query, required: true,  schema: { type: string } }
+        - { name: serviceId, in: query, required: true,  schema: { type: string } }
+        - { name: date,      in: query, required: true,  schema: { type: string, format: date } }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slots:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        time:      { type: string }
+                        available: { type: boolean }
+
+  /availability/range:
+    get:
+      summary: Per-day availability status for a date range (calendar)
+      security: []
+      parameters:
+        - { name: shopId,    in: query, required: true, schema: { type: string } }
+        - { name: barberId,  in: query, required: true, schema: { type: string } }
+        - { name: serviceId, in: query, required: true, schema: { type: string } }
+        - { name: from,      in: query, required: true, schema: { type: string, format: date } }
+        - { name: to,        in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        status: { type: string, enum: [working, fullyBooked, closed, holiday, past] }
+
+  /uploads/sign:
+    post:
+      summary: Get signed Cloudinary upload params (mobile direct upload)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind]
+              properties:
+                kind:      { type: string, enum: [barber-avatar, shop-logo, shop-cover, shop-gallery] }
+                barberId:  { type: string }
+                shopId:    { type: string }
+                slot:      { type: string }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signature:  { type: string }
+                  timestamp:  { type: integer }
+                  public_id:  { type: string }
+                  eager:      { type: string }
+                  api_key:    { type: string }
+                  cloud_name: { type: string }

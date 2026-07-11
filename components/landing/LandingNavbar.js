@@ -3,11 +3,7 @@ import PillButton from "@/components/shared/PillButton";
 import AuthNav from "@/components/landing/AuthNav";
 import DemoButton from "@/components/landing/DemoButton";
 import MobileNav from "@/components/landing/MobileNav";
-
-function MakasMark({ variant = "dark", className }) {
-  const src = variant === "dark" ? "/logo-dark.svg" : "/logo-light.svg";
-  return <img src={src} alt="MAKAS" className={className} style={{ display: "block" }} />;
-}
+import { BrandMark } from "@/components/ds";
 
 export default function LandingNavbar() {
   return (
@@ -19,10 +15,10 @@ export default function LandingNavbar() {
         background: "color-mix(in oklab, var(--makas-bg) 88%, transparent)",
       }}
     >
-      <nav className="mx-auto flex h-[68px] md:h-[76px] max-w-[1200px] items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-3.5 md:gap-4 no-underline">
-          <MakasMark variant="dark" className="block h-9 w-9 md:h-11 md:w-11" />
-          <span className="font-display text-[22px] md:text-[26px] font-extrabold leading-none tracking-[-0.02em] text-foreground">
+      <nav className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-6">
+        <Link href="/" className="flex items-center gap-3.5 no-underline">
+          <BrandMark variant="dark" size={40} />
+          <span className="font-display text-[24px] font-extrabold leading-none tracking-[-0.02em] text-foreground">
             MAKAS
           </span>
         </Link>

@@ -1,9 +1,5 @@
 import Link from "next/link";
-
-function MakasMark({ variant = "light", className }) {
-  const src = variant === "dark" ? "/logo-dark.svg" : "/logo-light.svg";
-  return <img src={src} alt="MAKAS" className={className} style={{ display: "block" }} />;
-}
+import { BrandMark } from "@/components/ds";
 
 const NAV = [
   { label: "Özellikler", href: "/#explore" },
@@ -23,8 +19,8 @@ export default function LandingFooter() {
       >
         <div className="lg:col-span-2">
           <Link href="/" className="mb-3 flex items-center gap-3.5 no-underline">
-            <MakasMark variant="light" className="block h-10 w-10" />
-            <span className="font-display text-[22px] font-extrabold leading-none tracking-[-0.02em]">
+            <BrandMark variant="light" size={40} />
+            <span className="font-display text-[24px] font-extrabold leading-none tracking-[-0.02em]">
               MAKAS
             </span>
           </Link>
@@ -74,7 +70,7 @@ export default function LandingFooter() {
         {/* Brand */}
         <div className="mb-5">
           <Link href="/" className="mb-2 flex items-center gap-3 no-underline">
-            <MakasMark variant="light" className="block h-8 w-8" />
+            <BrandMark variant="light" size={34} />
             <span className="font-display text-[20px] font-extrabold leading-none tracking-[-0.02em]">
               MAKAS
             </span>

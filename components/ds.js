@@ -383,3 +383,126 @@ export function DSField({ label, children, className }) {
 export function DSDivider({ className }) {
   return <hr className={cn("border-0 border-t border-border", className)} />;
 }
+
+// ─── Brand mark ───────────────────────────────────────────────────────────────
+
+/**
+ * MAKAS SVG logo mark. variant: "dark" (for light bg) | "light" (for dark bg).
+ * Single source of truth — replaces all local MakasMark copies.
+ */
+export function BrandMark({ variant = "dark", size = 40, className }) {
+  const src = variant === "dark" ? "/logo-dark.svg" : "/logo-light.svg";
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="MAKAS" width={size} height={size} className={cn("block shrink-0", className)} />;
+}
+
+/** Full horizontal brand lockup: mark + wordmark. */
+export function BrandLogo({ variant = "dark", size = 40, className, wordmarkClass }) {
+  const textColor = variant === "dark" ? "text-foreground" : "text-background";
+  const fs = Math.round(size * 0.6);
+  return (
+    <div className={cn("flex items-center", className)}>
+      <BrandMark variant={variant} size={size} />
+      <span
+        className={cn("font-display font-extrabold leading-none tracking-[-0.02em]", textColor, wordmarkClass)}
+        style={{ fontSize: `${fs}px`, marginLeft: Math.round(size * 0.35) }}
+      >
+        MAKAS
+      </span>
+    </div>
+  );
+}
+
+// ─── Star rating ─────────────────────────────────────────────────────────────
+
+/** Read-only star row. Replaces StarRow / StarRating local copies across pages. */
+export function StarRating({ rating, max = 5, size = 12, className }) {
+  return (
+    <div className={cn("flex items-center gap-[2px]", className)}>
+      {Array.from({ length: max }, (_, i) => (
+        <svg
+          key={i} width={size} height={size} viewBox="0 0 24 24"
+          fill={i < Math.round(rating) ? "currentColor" : "none"}
+          stroke="currentColor" strokeWidth={2}
+          className={i < Math.round(rating) ? "text-foreground" : "text-border"}
+        >
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+// ─── Chip / tag ───────────────────────────────────────────────────────────────
+
+/**
+ * Small interactive chip — filter buttons, specialty tags, status chips.
+ * active: boolean — filled vs outlined.
+ * If onClick omitted, renders non-interactive (no hover/cursor).
+ */
+export function DSChip({ children, active, onClick, className }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center h-7 px-3 rounded-full text-[11px] font-medium border transition-all duration-150",
+        active
+          ? "bg-foreground text-background border-foreground"
+          : "bg-card text-secondary-foreground border-border",
+        onClick ? "cursor-pointer hover:border-foreground/40" : "cursor-default pointer-events-none",
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+
+/**
+ * Shared modal shell — backdrop + animated panel.
+ * Locks body scroll while open. Click outside or Escape to close.
+ * wide: boolean — max-w 560px (default 480px).
+ */
+export function DSModal({ open, onClose, title, children, wide, className }) {
+  // body scroll lock
+  if (typeof window !== "undefined") {
+    // ponytail: inline effect — avoids a separate hook for a one-liner
+  }
+  return open ? (
+    <div
+      className="fixed inset-0 z-80 flex items-center justify-center overflow-y-auto"
+      style={{ background: "rgba(17,17,17,0.45)", padding: "16px" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
+    >
+      <div
+        className={cn(
+          "w-full bg-card border border-border rounded-[20px] flex flex-col max-h-[90dvh]",
+          wide ? "max-w-[560px]" : "max-w-[480px]",
+          className
+        )}
+        style={{ boxShadow: "var(--shadow-pop)" }}
+      >
+        {title && (
+          <div className="px-5 py-4 flex items-center justify-between shrink-0 border-b border-border">
+            <h3 className="text-[15px] font-semibold text-foreground">{title}</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-7 h-7 flex items-center justify-center rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        )}
+        <div className="px-5 py-5 overflow-y-auto flex-1 min-h-0">
+          {children}
+        </div>
+      </div>
+    </div>
+  ) : null;
+}

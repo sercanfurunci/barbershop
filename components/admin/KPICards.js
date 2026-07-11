@@ -7,8 +7,6 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { apiFetch } from "@/lib/api";
 
-import { C, SHADOW } from "@/lib/adminTheme";
-
 function buildSparkPath(data, w, h) {
   if (!data || data.length < 2) return { path: `M 0 ${h} L ${w} ${h}`, pts: [] };
   const min = Math.min(...data);
@@ -61,25 +59,18 @@ function KPICard({ card, delay, vsLabel }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -2 }}
-      className="relative overflow-hidden"
-      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "18px 20px", display: "flex", flexDirection: "column", boxShadow: SHADOW.card, transition: "box-shadow 0.18s" }}
-      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = SHADOW.elevated; }}
-      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = SHADOW.card; }}
+      className="relative overflow-hidden bg-card border border-border rounded-[14px] p-5 flex flex-col"
+      style={{ boxShadow: "var(--shadow-card)", transition: "box-shadow 0.18s" }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-elevated)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-card)"; }}
     >
       <div className="flex items-center justify-between mb-4">
-        <span className="font-mono-custom" style={{ fontSize: "10px", letterSpacing: "0.14em", color: C.muted, textTransform: "uppercase" }}>
+        <span className="font-mono-custom text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
           {card.label}
         </span>
         <span
+          className="inline-flex items-center gap-[3px] h-5 px-[7px] rounded-full text-[10px] font-semibold"
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "3px",
-            height: "20px",
-            padding: "0 7px",
-            borderRadius: "20px",
-            fontSize: "10px",
-            fontWeight: 600,
             background: positive ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
             color: positive ? "#15803D" : "#111111",
           }}
@@ -89,17 +80,14 @@ function KPICard({ card, delay, vsLabel }) {
         </span>
       </div>
 
-      <div
-        className="font-display"
-        style={{ fontSize: "28px", color: C.primary, lineHeight: 1, letterSpacing: "-0.02em", fontWeight: 400 }}
-      >
+      <div className="font-display font-semibold text-[28px] text-foreground leading-none tracking-[-0.02em]">
         {card.format(animated)}
       </div>
 
-      <div style={{ flex: 1 }} />
+      <div className="flex-1" />
 
       <div className="flex items-end justify-between gap-4">
-        <span style={{ fontSize: "11px", color: C.muted, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{vsLabel}</span>
+        <span className="text-[11px] text-muted-foreground flex-1 min-w-0 truncate">{vsLabel}</span>
         <svg width={SW} height={SH} className="shrink-0 hidden sm:block">
           <defs>
             <linearGradient id={`sg-${card.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -159,10 +147,11 @@ export default function KPICards() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.07, duration: 0.4 }}
-            style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "18px 20px", height: "118px", boxShadow: SHADOW.card }}
+            className="bg-card border border-border rounded-[14px] p-5 h-[118px]"
+            style={{ boxShadow: "var(--shadow-card)" }}
           >
-            <div style={{ height: "8px", background: C.surface, borderRadius: "4px", width: "60%", marginBottom: "16px" }} />
-            <div style={{ height: "28px", background: C.surface, borderRadius: "4px", width: "50%" }} />
+            <div className="h-2 bg-secondary rounded w-[60%] mb-4" />
+            <div className="h-7 bg-secondary rounded w-[50%]" />
           </motion.div>
         ))}
       </div>
