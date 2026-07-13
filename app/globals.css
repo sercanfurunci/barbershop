@@ -295,6 +295,36 @@ button, a, [role="button"] {
   background: #000;
 }
 
+/* Consistent form input — shared by account, booking, login, and admin forms.
+   Extracted here so no page needs an inline <style> block. */
+.field-inp {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--makas-border);
+  background: var(--card);
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--foreground);
+  outline: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  min-height: 44px;
+}
+.field-inp::placeholder { color: var(--muted-foreground); }
+.field-inp:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-color: color-mix(in srgb, var(--foreground) 28%, transparent);
+}
+.field-inp:disabled { opacity: 0.5; cursor: not-allowed; }
+select.field-inp {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+input[type="date"].field-inp { appearance: none; }
+
 /* Interaction defaults — Tailwind v4 dropped the implicit pointer cursor on
    buttons. Restore it for every clickable affordance and add a consistent
    focus-visible ring so keyboard users always see where they are. */
@@ -530,3 +560,68 @@ button, [role="button"] {
 
 /* Nav offset utility — use as padding-top on sections that need to clear sticky nav */
 .nav-offset { scroll-margin-top: var(--nav-h); }
+
+/* Page-level entry animation — use on route-level wrappers for smooth transitions */
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: pageEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Shimmer effect for premium skeletons */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--makas-surface2) 25%,
+    color-mix(in srgb, var(--makas-surface2) 60%, var(--makas-surface)) 50%,
+    var(--makas-surface2) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* Card hover lift — consistent across all clickable cards */
+.card-hover {
+  transition: transform 0.18s cubic-bezier(0.16,1,0.3,1), box-shadow 0.18s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Booking confirmation success animation */
+@keyframes successPop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  60%  { transform: scale(1.12); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.success-pop { animation: successPop 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* Favorite heart animation */
+@keyframes heartBeat {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.35); }
+  60%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.heart-beat { animation: heartBeat 0.4s cubic-bezier(0.16,1,0.3,1); }
+
+/* Tab content fade — smoother than instant swap */
+@keyframes tabFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tab-enter { animation: tabFade 0.22s ease both; }
+
+/* Toast slide-up — used by confirmation screens */
+@keyframes toastUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.toast-up { animation: toastUp 0.28s cubic-bezier(0.16,1,0.3,1) both; }

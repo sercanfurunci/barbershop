@@ -1,8 +1,8 @@
 "use client";
 
-// Rich salon card for the mobile map bottom sheet.
-// Cover image + logo + rating + distance + open/closed + price + availability,
-// plus action row: favorite / share / call / navigate / reserve.
+// Salon card for the mobile map bottom sheet.
+// compact=true  → horizontal 88px card (carousel / peek / half snaps)
+// compact=false → full card with cover image (expanded list)
 
 import { memo, useState } from "react";
 import Link from "next/link";
@@ -10,7 +10,7 @@ import { Scissors, Star, MapPin, Navigation, Heart, Share2, Phone, Clock } from 
 import { haversine, fmtDistance } from "@/lib/geo";
 import { useFirstAvailable, fmtFirstAvail } from "./useFirstAvailable";
 
-function StarRating({ rating, count }) {
+function StarRow({ rating, count }) {
   if (!rating) return <span className="text-[11px] text-muted-foreground/60">Henüz değerlendirme yok</span>;
   const filled = Math.min(5, Math.round(Number(rating)));
   return (
@@ -30,14 +30,12 @@ function ActionBtn({ children, onClick, href, label, active }) {
   const cls = `w-8 h-8 rounded-full border flex items-center justify-center transition-colors shrink-0 ${
     active ? "border-red-300 bg-red-50 text-red-500" : "border-border bg-card text-foreground/70 hover:text-foreground"
   }`;
-  if (href) {
-    return (
-      <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer"
-        onClick={(e) => e.stopPropagation()} aria-label={label} className={cls}>
-        {children}
-      </a>
-    );
-  }
+  if (href) return (
+    <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()} aria-label={label} className={cls}>
+      {children}
+    </a>
+  );
   return (
     <button type="button" onClick={(e) => { e.stopPropagation(); onClick?.(); }} aria-label={label} className={cls}>
       {children}
@@ -45,7 +43,7 @@ function ActionBtn({ children, onClick, href, label, active }) {
   );
 }
 
-function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
+function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef, compact, style }) {
   const [favored, setFavored] = useState(false);
   const fa = useFirstAvailable(shop.id);
 
@@ -56,6 +54,8 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
     : null;
   const prices = shop.services?.map(s => s.price).filter(p => p > 0) ?? [];
   const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+  const rating = shop.googleRating ?? shop.avgRating;
+  const ratingCount = shop.googleTotalRatings ?? shop.totalReviews;
 
   const navUrl = (shop.latitude && shop.longitude)
     ? `https://www.google.com/maps/dir/?api=1&destination=${shop.latitude},${shop.longitude}`
@@ -67,8 +67,7 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
     try {
       const res = next
         ? await fetch("/api/customer/favorites", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ shopId: shop.id }),
           })
         : await fetch(`/api/customer/favorites/${shop.id}`, { method: "DELETE" });
@@ -84,6 +83,77 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
     } catch { /* cancelled */ }
   }
 
+  // ── Compact: horizontal card (carousel peek/half state) ────────────────────
+  if (compact) {
+    return (
+      <div
+        ref={cardRef}
+        onClick={() => onSelect?.(shop)}
+        className={`flex items-center gap-3 rounded-[14px] border bg-card overflow-hidden cursor-pointer transition-all ${
+          isSelected ? "border-foreground ring-2 ring-foreground makas-card-glow" : "border-border"
+        }`}
+        style={{ height: 88, padding: "10px 12px", scrollMarginInline: 12 }}
+      >
+        {/* Thumbnail */}
+        <div className="shrink-0 rounded-[10px] overflow-hidden bg-secondary" style={{ width: 64, height: 64 }}>
+          {img ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={img} alt={shop.name} className="w-full h-full object-cover" loading="lazy" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              {shop.logo
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={shop.logo} alt="" className="w-8 h-8 object-contain opacity-50" />
+                : <Scissors size={18} className="text-muted-foreground/30" />}
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-foreground text-[14px] leading-tight truncate">{shop.name}</p>
+
+          {rating ? (
+            <div className="flex items-center gap-1 mt-0.5">
+              <Star size={10} strokeWidth={0} fill="#f59e0b" />
+              <span className="text-[12px] font-semibold text-foreground">{Number(rating).toFixed(1)}</span>
+              {ratingCount ? <span className="text-[11px] text-muted-foreground">({ratingCount})</span> : null}
+              {dist && <span className="text-[11px] text-muted-foreground ml-1">· {dist}</span>}
+            </div>
+          ) : dist ? (
+            <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground">
+              <Navigation size={9} />{dist}
+            </div>
+          ) : null}
+
+          <div className="flex items-center gap-1.5 mt-0.5">
+            {typeof shop.openNow === "boolean" && (
+              <span className={`text-[11px] font-medium ${shop.openNow ? "text-emerald-600" : "text-muted-foreground/60"}`}>
+                {shop.openNow ? "Açık" : "Kapalı"}
+              </span>
+            )}
+            {minPrice && (
+              <span className="text-[11px] text-muted-foreground">
+                {typeof shop.openNow === "boolean" ? "· " : ""}{minPrice.toLocaleString("tr-TR")} ₺+
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* CTA */}
+        <Link
+          href={`/${shop.slug}`}
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0 rounded-full bg-foreground text-background flex items-center justify-center text-[12px] font-semibold no-underline hover:opacity-90 transition-opacity whitespace-nowrap"
+          style={{ height: 34, padding: "0 14px" }}
+        >
+          Randevu Al
+        </Link>
+      </div>
+    );
+  }
+
+  // ── Full: vertical card with cover image (expanded list state) ─────────────
   return (
     <div
       ref={cardRef}
@@ -91,9 +161,9 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
       className={`flex flex-col rounded-[14px] border bg-card overflow-hidden cursor-pointer transition-all flex-1 ${
         isSelected ? "border-foreground ring-2 ring-foreground makas-card-glow" : "border-border"
       }`}
-      style={{ scrollMarginTop: 12, minHeight: 280 }}
+      style={{ scrollMarginTop: 12, minHeight: 280, ...style }}
     >
-      {/* Cover — 140px tall */}
+      {/* Cover */}
       <div className="relative shrink-0 bg-secondary" style={{ height: 140 }}>
         {img ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -110,11 +180,11 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
             {shop.openNow ? "Açık" : "Kapalı"}
           </span>
         )}
-        {(shop.googleRating ?? shop.avgRating) ? (
+        {rating ? (
           <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-semibold text-foreground backdrop-blur-sm">
             <Star size={10} strokeWidth={2.5} className="text-amber-500" />
-            {Number(shop.googleRating ?? shop.avgRating).toFixed(1)}
-            {(shop.googleTotalRatings ?? shop.totalReviews) ? <span className="text-muted-foreground font-normal">({shop.googleTotalRatings ?? shop.totalReviews})</span> : null}
+            {Number(rating).toFixed(1)}
+            {ratingCount ? <span className="text-muted-foreground font-normal">({ratingCount})</span> : null}
           </span>
         ) : null}
         {shop.logo && (
@@ -125,13 +195,11 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
 
       {/* Body */}
       <div className="flex flex-col flex-1 px-3 pb-3 min-h-0" style={{ paddingTop: shop.logo ? 18 : 12 }}>
-        {/* Name — always visible, never pushed off */}
         <p className="shrink-0 font-semibold text-foreground text-[15px] leading-snug line-clamp-1">{shop.name}</p>
 
-        {/* Info rows — flex-1 + overflow-hidden so they never push actions off */}
         <div className="flex-1 overflow-hidden min-h-0 flex flex-col mt-0.5">
           <div className="shrink-0">
-            <StarRating rating={shop.googleRating ?? shop.avgRating} count={shop.googleTotalRatings ?? shop.totalReviews} />
+            <StarRow rating={rating} count={ratingCount} />
           </div>
 
           {(shop.todayHours || typeof shop.openNow === "boolean") && (
@@ -180,7 +248,7 @@ function MapSheetCard({ shop, userLoc, isSelected, onSelect, cardRef }) {
           </div>
         </div>
 
-        {/* Actions — shrink-0 so always visible regardless of content above */}
+        {/* Actions */}
         <div className="shrink-0 pt-2 flex items-center gap-1.5">
           <ActionBtn onClick={toggleFavorite} label="Favorilere ekle" active={favored}>
             <Heart size={14} fill={favored ? "currentColor" : "none"} />
@@ -210,5 +278,7 @@ export default memo(MapSheetCard, (prev, next) =>
   prev.isSelected === next.isSelected &&
   prev.userLoc === next.userLoc &&
   prev.onSelect === next.onSelect &&
-  prev.cardRef === next.cardRef
+  prev.cardRef === next.cardRef &&
+  prev.compact === next.compact &&
+  prev.style === next.style
 );

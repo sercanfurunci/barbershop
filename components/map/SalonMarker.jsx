@@ -23,17 +23,17 @@ function buildIcon(salon, isSelected, isHovered) {
   });
 }
 
-function SalonMarker({ salon, isSelected, isHovered, onSelect, userLoc }) {
+function SalonMarker({ salon, isSelected, isHovered, onSelect, userLoc, showPopup = true }) {
   const markerRef = useRef(null);
 
   const icon = useMemo(() => buildIcon(salon, isSelected, isHovered), [salon, isSelected, isHovered]);
 
   // Open popup on selection — deferred past the 0.6s flyTo, which would close it
   useEffect(() => {
-    if (!isSelected) return;
+    if (!isSelected || !showPopup) return;
     const t = setTimeout(() => markerRef.current?.openPopup(), 650);
     return () => clearTimeout(t);
-  }, [isSelected]);
+  }, [isSelected, showPopup]);
 
   return (
     <Marker
@@ -48,9 +48,11 @@ function SalonMarker({ salon, isSelected, isHovered, onSelect, userLoc }) {
           {salon.name}
         </Tooltip>
       )}
-      <Popup offset={[0, -20]} closeButton={false} autoPan>
-        <SalonPopup salon={salon} userLoc={userLoc} />
-      </Popup>
+      {showPopup && (
+        <Popup offset={[0, -20]} closeButton={false} autoPan>
+          <SalonPopup salon={salon} userLoc={userLoc} />
+        </Popup>
+      )}
     </Marker>
   );
 }
@@ -61,5 +63,6 @@ export default memo(SalonMarker, (prev, next) =>
   prev.isSelected === next.isSelected &&
   prev.isHovered === next.isHovered &&
   prev.userLoc === next.userLoc &&
-  prev.onSelect === next.onSelect
+  prev.onSelect === next.onSelect &&
+  prev.showPopup === next.showPopup
 );

@@ -3,6 +3,7 @@
 // All values reference CSS variables from globals.css (--makas-* tokens).
 "use client";
 
+import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -156,37 +157,37 @@ export function DSBadge({ variant = "default", children, className }) {
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 export function DSEmptyState({ icon: Icon, title, sub, action, compact = false, className }) {
+  const iconSize  = compact ? 52 : 72;
+  const iconInner = compact ? 20 : 28;
+  const radius    = compact ? 14 : 20;
   return (
     <div className={cn(
       "flex flex-col items-center justify-center text-center",
-      compact ? "py-10" : "py-20",
+      compact ? "py-10" : "py-24",
       className
     )}>
       <div
-        className="flex items-center justify-center mb-4"
+        className="flex items-center justify-center mb-5"
         style={{
-          width: compact ? "52px" : "64px",
-          height: compact ? "52px" : "64px",
-          borderRadius: "18px",
+          width: iconSize, height: iconSize,
+          borderRadius: radius,
           background: "var(--makas-surface2)",
           border: "1px solid var(--makas-border)",
+          boxShadow: "0 1px 3px rgba(17,17,17,0.05)",
         }}
       >
-        <Icon
-          size={compact ? 20 : 26}
-          style={{ color: "var(--makas-ink-muted)", opacity: 0.5 }}
-        />
+        <Icon size={iconInner} style={{ color: "var(--makas-ink-muted)", opacity: 0.45 }} />
       </div>
       <p className={cn(
         "font-display font-semibold tracking-tight text-foreground",
-        compact ? "text-[18px]" : "text-[20px]"
+        compact ? "text-[18px]" : "text-[22px]"
       )}>
         {title}
       </p>
       {sub && (
-        <p className="mt-1.5 text-[13px] text-muted-foreground max-w-xs leading-relaxed">{sub}</p>
+        <p className="mt-2 text-[14px] text-muted-foreground max-w-[280px] leading-relaxed">{sub}</p>
       )}
-      {action && <div className="mt-5">{action}</div>}
+      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }
@@ -438,10 +439,13 @@ export function DSChip({ children, active, onClick, className }) {
  * wide: boolean — max-w 560px (default 480px).
  */
 export function DSModal({ open, onClose, title, children, wide, className }) {
-  // body scroll lock
-  if (typeof window !== "undefined") {
-    // ponytail: inline effect — avoids a separate hook for a one-liner
-  }
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
   return open ? (
     <div
       className="fixed inset-0 z-80 flex items-center justify-center overflow-y-auto"

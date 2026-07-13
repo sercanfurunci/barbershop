@@ -17,11 +17,7 @@ import { Sheet } from "@/components/landing/MobileNav";
 // Leaflet touches `window` at import time — client-only load
 const SalonMap = dynamic(() => import("@/components/map/SalonMap"), {
   ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-secondary">
-      <span className="text-muted-foreground text-sm">Harita yükleniyor…</span>
-    </div>
-  ),
+  loading: () => <div className="w-full h-full skeleton-shimmer" />,
 });
 
 const CITIES = ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Kocaeli"];
@@ -294,7 +290,7 @@ export default function SalonsClient({
   const [selectedShopId, setSelectedShopId] = useState(null);
   const [hoveredShopId, setHoveredShopId] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileSnap, setMobileSnap] = useState(0.25);
+  const [mobileSnap, setMobileSnap] = useState(0.17);
   const [showMapFilters, setShowMapFilters] = useState(false);
 
   const [recentSearches, setRecentSearches] = useState([]);
@@ -352,6 +348,7 @@ export default function SalonsClient({
     }
   }, [isMobile, viewMode]);
 
+
   // Marker click → highlight card + scroll it into view / center it in the carousel.
   // Slight delay lets the bottom sheet's snap animation settle first.
   useEffect(() => {
@@ -363,8 +360,7 @@ export default function SalonsClient({
 
   const handleSalonSelect = useCallback((salon) => {
     setSelectedShopId(salon.id);
-    // Collapsed sheet hides the cards — pop to half so the selected card shows
-    setMobileSnap((s) => (s <= 0.25 ? 0.55 : s));
+    // Sheet stays at current snap; floating preview card handles the selection display
   }, []);
 
   const handleUserLocate = useCallback((loc) => setUserLoc(loc), []);
@@ -932,7 +928,7 @@ export default function SalonsClient({
                     onUserLocate={handleUserLocate}
                     onSearchArea={handleSearchArea}
                     fitToken={fitToken}
-                    padBottomFraction={0.25}
+                    padBottomFraction={0.17}
                   />
                   <button
                     onClick={() => setViewMode("list")}
@@ -1054,6 +1050,7 @@ export default function SalonsClient({
                   }
                 >
                   {displayShops.length === 0 ? (
+                    /* Empty state */
                     <div className="flex-1 overflow-y-auto overscroll-contain pt-10 pb-4 px-4 flex flex-col items-center text-center">
                       <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
                         <Scissors size={26} className="text-muted-foreground/40" />
@@ -1067,41 +1064,9 @@ export default function SalonsClient({
                         </button>
                       )}
                     </div>
-                  ) : mobileSnap < 0.9 ? (
-                    /* Collapsed: horizontal snap carousel (Google Maps style) */
-                    <div
-                      className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4 scroll-px-4 pb-3 pt-1"
-                      style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
-                    >
-                      {displayShops.map((shop, i) => (
-                        <motion.div
-                          key={shop.id}
-                          className="snap-center shrink-0 flex flex-col"
-                          style={{ width: "85%" }}
-                          initial={{ opacity: 0, y: 14 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.25, delay: Math.min(i * 0.04, 0.3) }}
-                        >
-                          <MapSheetCard
-                            shop={shop}
-                            userLoc={userLoc}
-                            isSelected={selectedShopId === shop.id}
-                            onSelect={handleSalonSelect}
-                            cardRef={selectedShopId === shop.id ? selectedCardRef : null}
-                          />
-                        </motion.div>
-                      ))}
-                      {hasMore && !loading && (
-                        <div className="snap-center shrink-0 flex items-center" style={{ width: "40%" }}>
-                          <button onClick={loadMore}
-                            className="w-full rounded-[16px] border border-border bg-card px-4 py-6 text-[13px] font-semibold text-foreground">
-                            Daha Fazla
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    /* Expanded: vertical list — owns its own scroll so it doesn't clip horizontally */
+
+                  ) : mobileSnap >= 0.88 ? (
+                    /* Full (88%): scrollable vertical list */
                     <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-1 pb-4 space-y-3">
                       {displayShops.map((shop, i) => (
                         <motion.div
@@ -1124,6 +1089,41 @@ export default function SalonsClient({
                           <button onClick={loadMore}
                             className="rounded-[14px] border border-border bg-card px-8 py-3 text-[14px] font-semibold text-foreground">
                             Daha Fazla Göster
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                  ) : (
+                    /* Peek (17%): compact horizontal carousel only */
+                    <div
+                      className="shrink-0 flex gap-2.5 overflow-x-auto snap-x snap-mandatory px-4 scroll-px-4 pb-3 pt-1"
+                      style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
+                    >
+                      {displayShops.map((shop, i) => (
+                        <motion.div
+                          key={shop.id}
+                          className="snap-center shrink-0"
+                          style={{ width: "82%" }}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2, delay: Math.min(i * 0.03, 0.25) }}
+                        >
+                          <MapSheetCard
+                            compact
+                            shop={shop}
+                            userLoc={userLoc}
+                            isSelected={selectedShopId === shop.id}
+                            onSelect={handleSalonSelect}
+                            cardRef={selectedShopId === shop.id ? selectedCardRef : null}
+                          />
+                        </motion.div>
+                      ))}
+                      {hasMore && !loading && (
+                        <div className="snap-center shrink-0 flex items-center justify-center" style={{ width: "44px" }}>
+                          <button onClick={loadMore}
+                            className="rounded-full border border-border bg-card w-10 h-10 flex items-center justify-center text-[11px] font-semibold text-foreground">
+                            +
                           </button>
                         </div>
                       )}

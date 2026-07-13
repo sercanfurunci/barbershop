@@ -12,7 +12,7 @@ import {
   ChevronLeft, ChevronRight, Activity, Clock, Star, CreditCard,
   UserX,
 } from "lucide-react";
-import { DSPageLoader, DSEmptyState } from "@/components/ds";
+import { DSPageLoader, DSEmptyState, DSSkeleton } from "@/components/ds";
 import {
   BarberDayView, BarberAppointmentsList, BarberCustomersView,
   addDays, formatDateLong, isToday as isTodayDate, nowTimeStr,
@@ -33,7 +33,17 @@ import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { C, SHADOW } from "@/lib/adminTheme";
 
 // Heavy tab components — loaded only when the tab is first visited
-const TabSpinner = () => <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Yükleniyor…</div>;
+const TabSpinner = () => (
+  <div className="space-y-4 p-1 pt-2">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {[1,2,3,4].map(i => <DSSkeleton key={i} className="h-24 rounded-[14px]" />)}
+    </div>
+    <DSSkeleton className="h-64 rounded-[14px]" />
+    <div className="space-y-2">
+      {[1,2,3].map(i => <DSSkeleton key={i} className="h-16 rounded-[12px]" />)}
+    </div>
+  </div>
+);
 const KPICards           = dynamic(() => import("./KPICards"),                             { loading: TabSpinner });
 const BarbersManagement  = dynamic(() => import("./BarbersManagement"),                    { loading: TabSpinner });
 const AreaChart          = dynamic(() => import("./AreaChart"),                            { loading: TabSpinner });

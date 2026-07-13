@@ -261,7 +261,7 @@ function MapControls({ salons, userLoc, onUserLocate, padBottomFraction = 0 }) {
   );
 }
 
-export default function SalonMap({ salons = [], selectedSalonId = null, hoveredSalonId = null, onSalonSelect, userLoc = null, onUserLocate, onSearchArea, fitToken = 0, padBottomFraction = 0 }) {
+export default function SalonMap({ salons = [], selectedSalonId = null, hoveredSalonId = null, onSalonSelect, userLoc = null, onUserLocate, onSearchArea, fitToken = 0, padBottomFraction = 0, showPopup = true }) {
   const located = useMemo(
     () => salons.filter(s => s.latitude != null && s.longitude != null),
     [salons]
@@ -330,6 +330,7 @@ export default function SalonMap({ salons = [], selectedSalonId = null, hoveredS
             isHovered={salon.id === hoveredSalonId}
             onSelect={handleSelect}
             userLoc={userLoc}
+            showPopup={showPopup}
           />
         ))}
       </MarkerClusterGroup>

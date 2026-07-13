@@ -1,41 +1,101 @@
 "use client";
 
-// Draggable bottom sheet for the mobile map view (Apple/Google Maps style).
-// Snap points: 10% (collapsed: handle + count) / 45% (half: carousel) / 90% (expanded list).
-// Drag via the grab handle; the inner content scrolls independently.
+// Draggable bottom sheet — Google Maps / Uber style.
+// Snaps: 17% peek (compact carousel) / 50% half (selected card + carousel) / 88% full list.
+// Uses height animation — handle is always at the visible top edge.
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useDragControls } from "framer-motion";
-import { OVERLAY_TRANSITION, OVERLAY_SHADOW } from "@/lib/overlay";
+import { motion, useMotionValue, animate } from "framer-motion";
+import { OVERLAY_SHADOW } from "@/lib/overlay";
 
-// 25% = collapsed peek (~200px), 55% = half carousel, 90% = full list
-export const SNAPS = [0.25, 0.55, 0.9];
+export const SNAPS = [0.17, 0.88];
+const MIN_SNAP = SNAPS[0];
 const MAX_SNAP = SNAPS[SNAPS.length - 1];
+
+const SPRING = { type: "spring", stiffness: 400, damping: 40 };
 
 export default function MapBottomSheet({ snap, onSnapChange, header, children }) {
   const [vh, setVh] = useState(0);
-  const dragControls = useDragControls();
-  const listRef = useRef(null);
+  const heightMV = useMotionValue(0);
+  const animRef = useRef(null);
+
+  // Drag state
+  const dragging = useRef(false);
+  const startY = useRef(0);
+  const startH = useRef(0);
+  const lastY = useRef(0);
+  const lastT = useRef(0);
+  const velocity = useRef(0);
 
   useEffect(() => {
-    const update = () => setVh(window.innerHeight);
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    // ponytail: snapshot at mount; only re-measure on real orientation change (>100px)
+    const snapshot = () => setVh(window.innerHeight);
+    snapshot();
+    let prevVh = window.innerHeight;
+    const onResize = () => {
+      const newVh = window.innerHeight;
+      if (Math.abs(newVh - prevVh) > 100) { prevVh = newVh; snapshot(); }
+    };
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", snapshot);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", snapshot);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!vh) return;
+    if (animRef.current) animRef.current.stop();
+    animRef.current = animate(heightMV, vh * snap, SPRING);
+  }, [vh, snap, heightMV]);
 
   if (!vh) return null;
 
-  const sheetH = vh * MAX_SNAP;
-  const yFor = (s) => sheetH - vh * s; // translateY from fully-open position
-  const y = yFor(snap);
+  const snapH = (s) => vh * s;
+  const clamp = (h) => Math.max(snapH(MIN_SNAP) * 0.7, Math.min(snapH(MAX_SNAP), h));
 
-  function handleDragEnd(_, info) {
-    const endY = y + info.offset.y + info.velocity.y * 0.15;
-    let best = SNAPS[0];
-    let bestDist = Infinity;
+  function onPointerDown(e) {
+    if (animRef.current) animRef.current.stop();
+    dragging.current = true;
+    startY.current = e.clientY;
+    startH.current = heightMV.get();
+    lastY.current = e.clientY;
+    lastT.current = performance.now();
+    velocity.current = 0;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e) {
+    if (!dragging.current) return;
+    const now = performance.now();
+    const dt = now - lastT.current;
+    if (dt > 0) {
+      velocity.current = (e.clientY - lastY.current) / dt * 1000;
+      lastY.current = e.clientY;
+      lastT.current = now;
+    }
+    heightMV.set(clamp(startH.current - (e.clientY - startY.current)));
+  }
+
+  function onPointerUp() {
+    if (!dragging.current) return;
+    dragging.current = false;
+
+    const vel = velocity.current; // positive = downward drag (shrinks height)
+    const currentH = heightMV.get();
+    const idx = SNAPS.indexOf(snap);
+
+    // Fast fling: jump to adjacent snap in drag direction
+    if (Math.abs(vel) > 350) {
+      if (vel > 0 && idx > 0)                   { onSnapChange(SNAPS[idx - 1]); return; }
+      if (vel < 0 && idx < SNAPS.length - 1)    { onSnapChange(SNAPS[idx + 1]); return; }
+    }
+
+    // Slow drag: nearest snap
+    let best = SNAPS[0], bestDist = Infinity;
     for (const s of SNAPS) {
-      const d = Math.abs(yFor(s) - endY);
+      const d = Math.abs(snapH(s) - currentH);
       if (d < bestDist) { bestDist = d; best = s; }
     }
     onSnapChange(best);
@@ -43,29 +103,26 @@ export default function MapBottomSheet({ snap, onSnapChange, header, children })
 
   return (
     <motion.div
-      className="motion-safety-exempt fixed inset-x-0 bottom-0 z-30 md:hidden flex flex-col rounded-t-[20px] bg-background border-t border-border"
-      style={{ height: sheetH, boxShadow: OVERLAY_SHADOW }}
-      initial={false}
-      animate={{ y }}
-      transition={OVERLAY_TRANSITION}
-      drag="y"
-      dragListener={false}
-      dragControls={dragControls}
-      dragConstraints={{ top: 0, bottom: yFor(SNAPS[0]) }}
-      dragElastic={0.06}
-      onDragEnd={handleDragEnd}
+      className="motion-safety-exempt fixed inset-x-0 bottom-0 z-30 md:hidden flex flex-col bg-background overflow-hidden"
+      style={{ height: heightMV, boxShadow: OVERLAY_SHADOW, borderRadius: "20px 20px 0 0" }}
     >
-      {/* Grab handle — tight padding so first card feels connected */}
+      {/* Grab handle — pointer events captured here */}
       <div
-        className="shrink-0 pt-2 pb-1 px-4 cursor-grab active:cursor-grabbing touch-none"
-        onPointerDown={(e) => dragControls.start(e)}
+        className="shrink-0 flex flex-col items-center pt-2.5 pb-0.5 touch-none select-none cursor-grab active:cursor-grabbing"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => { dragging.current = false; }}
       >
-        <div className="mx-auto w-10 h-1.5 rounded-full bg-border" />
-        {header}
+        <div className="w-9 h-[3px] rounded-full" style={{ background: "var(--makas-border, #e5e7eb)" }} />
+        {header && <div className="w-full px-4 mt-1.5">{header}</div>}
       </div>
 
-      {/* Content — no overflow here so children own scrolling and cards never clip */}
-      <div ref={listRef} className="flex-1 min-h-0 flex flex-col">
+      {/* Content — safe-area padding so iOS home indicator never clips content */}
+      <div
+        className="flex-1 min-h-0 flex flex-col"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         {children}
       </div>
     </motion.div>
