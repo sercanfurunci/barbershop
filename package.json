@@ -7,7 +7,11 @@
     "build": "prisma generate && next build",
     "migrate:deploy": "prisma migrate deploy",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -45,9 +49,16 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/ui": "^4.1.10",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
-    "tailwindcss": "^4"
+    "jsdom": "^29.1.1",
+    "tailwindcss": "^4",
+    "vitest": "^4.1.10"
   }
 }

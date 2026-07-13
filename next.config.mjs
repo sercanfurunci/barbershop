@@ -3,6 +3,7 @@ const nextConfig = {
   serverExternalPackages: ["pg", "@prisma/client", "@prisma/adapter-pg", "cloudinary"],
 
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
     ],
@@ -32,7 +33,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://res.cloudinary.com https://lh3.googleusercontent.com https://api.qrserver.com https://*.tile.openstreetmap.org",
-              "connect-src 'self' https://nominatim.openstreetmap.org",
+              "connect-src 'self' https://nominatim.openstreetmap.org https://api.cloudinary.com",
               "frame-src https://www.google.com https://maps.google.com",
               "frame-ancestors 'none'",
               "worker-src blob:",
