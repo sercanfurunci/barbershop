@@ -93,7 +93,7 @@ Run `node -e "require('./lib/env')"` to verify all required vars are set.
 
 Run before every deploy:
 ```bash
-npm test              # unit tests (46 tests)
+npm test              # unit tests (109 tests, 7 skipped without DB)
 npm run build         # production build check
 npm run lint          # ESLint
 ```
