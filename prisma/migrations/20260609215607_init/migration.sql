@@ -176,3 +176,49 @@ ALTER TABLE "Appointment" ADD CONSTRAINT "Appointment_barberId_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "Appointment" ADD CONSTRAINT "Appointment_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- CreateTable (Holiday, AuditLog, Notification were omitted from original init; restored for shadow-db replay)
+CREATE TABLE "Holiday" (
+    "id" TEXT NOT NULL,
+    "barberId" TEXT,
+    "date" TEXT NOT NULL,
+    "label" TEXT NOT NULL DEFAULT 'Tatil',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Holiday_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "AuditLog" (
+    "id" TEXT NOT NULL,
+    "entity" TEXT NOT NULL,
+    "entityId" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "before" JSONB,
+    "after" JSONB,
+    "userId" TEXT,
+    "appointmentId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "Notification" (
+    "id" TEXT NOT NULL,
+    "clientId" TEXT,
+    "appointmentId" TEXT,
+    "type" TEXT NOT NULL,
+    "channel" TEXT NOT NULL,
+    "body" TEXT,
+    "sentAt" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+);
+
+-- AddForeignKey
+ALTER TABLE "Holiday" ADD CONSTRAINT "Holiday_barberId_fkey" FOREIGN KEY ("barberId") REFERENCES "Barber"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE INDEX "AuditLog_entity_entityId_idx" ON "AuditLog"("entity", "entityId");
+CREATE INDEX "AuditLog_userId_idx" ON "AuditLog"("userId");
+CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");

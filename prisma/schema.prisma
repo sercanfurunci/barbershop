@@ -73,7 +73,11 @@ model Shop {
   planTier            PlanTier           @default(STARTER)
   subscriptionStatus  SubscriptionStatus @default(TRIAL)
   trialEndsAt         DateTime?
+  subscriptionStartAt DateTime?          // when the current paid period started
   currentPeriodEndsAt DateTime?
+  cancelledAt         DateTime?          // when the subscription was explicitly cancelled
+  gracePeriodEndsAt   DateTime?          // after PAST_DUE, hard cutoff (replaces updatedAt heuristic)
+  autoRenew           Boolean            @default(true)
   paymentProvider     String? // "iyzico" | "stripe" — null until wired
   paymentProviderRef  String? // provider-side customer / subscription id
 
@@ -108,6 +112,14 @@ model Shop {
   birthdayCampaignValue  Float?   // discount % or fixed amount
   birthdayCampaignCoupon String?  // custom coupon code for COUPON type
 
+  // AI channel toggles — per-tenant, all false by default.
+  // Must be flipped by super-admin; lib/features.isChannelEnabled() also checks
+  // the plan gate in lib/features.js before granting access.
+  aiChatEnabled      Boolean @default(false)
+  whatsappAiEnabled  Boolean @default(false)
+  instagramAiEnabled Boolean @default(false)
+  voiceAiEnabled     Boolean @default(false)
+
   users                User[]
   barbers              Barber[]
   services             Service[]
@@ -125,6 +137,11 @@ model Shop {
   favoritedBy          CustomerFavorite[]
   shopMetrics          ShopMetric[]
   loyaltyPoints        LoyaltyPoint[]
+  conversations        Conversation[]
+  featureOverrides     ShopFeatureOverride[]
+  integrations         Integration[]
+  webhookSubscriptions WebhookSubscription[]
+  backgroundJobs       BackgroundJob[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -134,6 +151,8 @@ model Shop {
   @@index([status, deletedAt, totalReviews]) // mostReviewed sort
   @@index([status, deletedAt, createdAt])  // newest sort
   @@index([city])                      // city filter
+  @@index([city, status, deletedAt])   // city + active filter
+  @@index([slug, deletedAt])           // slug lookup with soft-delete filter
 }
 
 // Lightweight conversion-funnel telemetry. Public ingest, never blocks UX.
@@ -158,8 +177,10 @@ enum ShopStatus {
 
 enum PlanTier {
   STARTER
-  PRO
+  PRO          // legacy — maps to PROFESSIONAL in lib/plans.js
   ENTERPRISE
+  PROFESSIONAL // structured mid-tier: API access, multi-branch, Google sync
+  AI           // includes all AI channel features
 }
 
 // Subscription lifecycle. SUSPENDED blocks public booking but admin/staff
@@ -223,11 +244,13 @@ model User {
   notifReminder Boolean @default(true)
   notifPromo    Boolean @default(false)
 
-  pushTokens       PushToken[]
-  favorites        CustomerFavorite[]
-  barberFavorites  BarberFavorite[]
-  loyaltyPoints    LoyaltyPoint[]
-  reviews          Review[]
+  pushTokens        PushToken[]
+  favorites         CustomerFavorite[]
+  barberFavorites   BarberFavorite[]
+  loyaltyPoints     LoyaltyPoint[]
+  reviews           Review[]
+  externalIdentities ExternalIdentity[]
+  conversations     Conversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -386,15 +409,18 @@ model Client {
   totalSpent    Int            @default(0)
   visitCount    Int            @default(0)
   lastVisitAt   DateTime?
-  appointments  Appointment[]
-  notifications Notification[]
-  reviews       Review[]
-  user          User? // set if client has a CUSTOMER account
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  appointments       Appointment[]
+  notifications      Notification[]
+  reviews            Review[]
+  user               User?           // set if client has a CUSTOMER account
+  externalIdentities ExternalIdentity[]
+  conversations      Conversation[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
   @@unique([shopId, phone])
   @@index([shopId, name])
+  @@index([shopId, createdAt])
 }
 
 // ─── Appointments ─────────────────────────────────────────────────────────────
@@ -469,8 +495,13 @@ model Appointment {
   @@unique([barberId, date, time]) // race condition guard
   @@index([shopId, date])
   @@index([shopId, status])
+  @@index([shopId, date, status])
+  @@index([shopId, barberId, date])
+  @@index([shopId, createdAt])
   @@index([barberId, date])
+  @@index([barberId, date, status])
   @@index([clientId])
+  @@index([clientId, status, date])
   @@index([date])
   @@index([date, status]) // revenue reports
   @@index([status])
@@ -489,6 +520,12 @@ enum BookingSource {
   ONLINE
   WALK_IN
   MANUAL
+  // Future channels — add implementations in lib/channels/ as needed.
+  WHATSAPP
+  INSTAGRAM
+  VOICE
+  AI_CHAT
+  MESSENGER
 }
 
 enum PaymentType {
@@ -522,22 +559,26 @@ model Holiday {
 // ─── Audit Log ────────────────────────────────────────────────────────────────
 
 model AuditLog {
-  id            String       @id @default(cuid())
-  shopId        String? // null for platform-level actions by SUPER_ADMIN
-  shop          Shop?        @relation(fields: [shopId], references: [id], onDelete: Restrict)
-  entity        String // "appointment", "barber", etc.
-  entityId      String
-  action        String // "status_change", "reschedule", "delete", "create"
-  before        Json?
-  after         Json?
-  userId        String? // who performed the action (null = system / public)
-  appointmentId String?
-  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
-  createdAt     DateTime     @default(now())
+  id             String        @id @default(cuid())
+  shopId         String? // null for platform-level actions by SUPER_ADMIN
+  shop           Shop?         @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  entity         String // "appointment", "barber", etc.
+  entityId       String
+  action         String // "status_change", "reschedule", "delete", "create"
+  before         Json?
+  after          Json?
+  userId         String? // who performed the action (null = system / public / AI)
+  channel        String? // source channel: WEBSITE | WHATSAPP | AI_CHAT | VOICE | etc.
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  appointmentId  String?
+  appointment    Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
 
   @@index([shopId, createdAt])
   @@index([entity, entityId])
   @@index([userId])
+  @@index([channel])
   @@index([createdAt])
 }
 
@@ -638,7 +679,9 @@ model NotificationJob {
 
   @@index([status, scheduledFor])
   @@index([shopId, createdAt])
+  @@index([shopId, status, scheduledFor])
   @@index([appointmentId])
+  @@index([appointmentId, event, status])
 }
 
 enum NotifChannel {
@@ -729,6 +772,7 @@ model Review {
   createdAt     DateTime    @default(now())
 
   @@index([shopId, createdAt])
+  @@index([shopId, barberId, createdAt])
   @@index([barberId, createdAt])
   @@index([shopId, shopRating])
   @@index([barberId, barberRating])
@@ -818,4 +862,181 @@ model LoyaltyPoint {
 
   @@index([userId, shopId])
   @@index([shopId])
+}
+
+// ─── Multi-Channel Identity ───────────────────────────────────────────────────
+// Maps a channel-specific external ID (WhatsApp number, Instagram PSID, etc.)
+// to an internal User or Client. One external ID can only belong to one identity.
+// Future AI/channel integrations look up the customer here before falling back
+// to phone or email search.
+model ExternalIdentity {
+  id         String   @id @default(cuid())
+  channel    String   // matches BookingSource: WHATSAPP | INSTAGRAM | VOICE | AI_CHAT | MESSENGER
+  externalId String   // channel-specific identifier (phone in E.164, PSID, etc.)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId   String?
+  client     Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  metadata   Json?    // channel extras: display name, avatar, locale, verified status
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([channel, externalId])
+  @@index([userId])
+  @@index([clientId])
+}
+
+// ─── Conversation History ─────────────────────────────────────────────────────
+// One thread per channel session. Groups all messages exchanged with one
+// customer in one session. Future AI assistants write OUTBOUND messages here;
+// future webhook handlers write INBOUND messages here.
+model Conversation {
+  id         String    @id @default(cuid())
+  channel    String    // WHATSAPP | INSTAGRAM | VOICE | AI_CHAT | MESSENGER | WEBSITE
+  shopId     String
+  shop       Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  externalId String?   // channel thread/session ID for dedup on incoming webhooks
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  clientId   String?
+  client     Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  status     String    @default("OPEN") // OPEN | RESOLVED | ABANDONED
+  metadata   Json?     // channel session data, resolved intent, handoff state
+  messages   Message[]
+  auditLogs  AuditLog[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([shopId, channel, createdAt])
+  @@index([shopId, status, updatedAt])
+  @@index([userId])
+  @@index([clientId])
+  @@index([externalId])
+}
+
+// One message in a conversation. Direction and senderType together capture who
+// sent what: INBOUND/USER = customer, OUTBOUND/BOT = AI, OUTBOUND/AGENT = staff.
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction      String       // INBOUND | OUTBOUND
+  senderType     String       // USER | BOT | AGENT | SYSTEM
+  contentType    String       @default("TEXT") // TEXT | IMAGE | AUDIO | DOCUMENT | TEMPLATE | TOOL_CALL | TOOL_RESULT
+  content        String       @db.Text
+  metadata       Json?        // intent, entities, confidence score, tool call args/results
+  attachments    String[]     @default([]) // Cloudinary or channel media URLs
+  status         String       @default("SENT") // SENT | DELIVERED | READ | FAILED
+  externalId     String?      // channel message ID for dedup + status updates
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([externalId])
+}
+
+// ─── Feature Flags ────────────────────────────────────────────────────────────
+// Per-tenant overrides on top of plan defaults. Super-admin sets these for
+// early access, exceptions, or restrictions. Business logic reads via
+// lib/services/FeatureService.hasFeature() — never checks plan names directly.
+model ShopFeatureOverride {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  feature   String   // one of FEATURE constants from lib/constants/features.js
+  enabled   Boolean
+  reason    String?  // "early_access" | "support_exception" | "restricted" etc.
+  setBy     String?  // userId of the super-admin who set this
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([shopId, feature])
+  @@index([shopId])
+  @@index([feature])
+}
+
+// ─── External Integrations ────────────────────────────────────────────────────
+// One row per (shop, provider). Future integrations write their config here.
+// Credentials are stored encrypted-at-rest by the application layer — the DB
+// column name "encryptedCreds" is intentional to remind implementors.
+model Integration {
+  id             String    @id @default(cuid())
+  shopId         String
+  shop           Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  provider       String    // "GOOGLE_BUSINESS" | "GOOGLE_CALENDAR" | "OPENAI" | "WHATSAPP" | etc.
+  status         String    @default("DISCONNECTED") // CONNECTED | DISCONNECTED | ERROR | PENDING
+  config         Json?     // non-sensitive settings (scopes, sync preferences, etc.)
+  encryptedCreds Json?     // encrypted secrets — NEVER store plaintext API keys here
+  lastSyncAt     DateTime?
+  lastError      String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([shopId, provider])
+  @@index([shopId])
+  @@index([provider, status])
+}
+
+// ─── Webhooks ─────────────────────────────────────────────────────────────────
+// External systems subscribe to MAKAS events via webhooks.
+// lib/services/WebhookService.js dispatches on EventBus events.
+model WebhookSubscription {
+  id        String            @id @default(cuid())
+  shopId    String
+  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  url       String
+  events    String[]          // ["appointment.created", "review.created", ...]
+  secret    String            // HMAC-SHA256 signing secret (generated on create)
+  active    Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  deliveries WebhookDelivery[]
+
+  @@index([shopId])
+  @@index([active])
+}
+
+model WebhookDelivery {
+  id             String              @id @default(cuid())
+  subscriptionId String
+  subscription   WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  event          String              // EventBus event name
+  payload        Json                // serialized event payload
+  status         String              @default("PENDING") // PENDING | DELIVERED | FAILED
+  attempts       Int                 @default(0)
+  maxAttempts    Int                 @default(3)
+  nextRetryAt    DateTime?
+  responseStatus Int?
+  responseBody   String?             @db.Text
+  lastError      String?             @db.Text
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([subscriptionId, status])
+  @@index([status, nextRetryAt])
+  @@index([event])
+}
+
+// ─── Background Jobs ──────────────────────────────────────────────────────────
+// Generic job queue for tasks not covered by NotificationJob (birthday checks,
+// analytics refresh, Google sync, cache warm-up, cleanup, etc.).
+// A cron or worker picks up PENDING jobs ordered by scheduledFor.
+model BackgroundJob {
+  id          String    @id @default(cuid())
+  shopId      String?   // null for platform-wide jobs
+  shop        Shop?     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  type        String    // "BIRTHDAY_CHECK" | "ANALYTICS_REFRESH" | "GOOGLE_SYNC" | etc.
+  payload     Json?     // job-specific input data
+  status      String    @default("PENDING") // PENDING | PROCESSING | DONE | FAILED | CANCELLED
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  scheduledFor DateTime @default(now())
+  processedAt DateTime?
+  lastError   String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([shopId, type])
+  @@index([type])
+  @@index([type, status])
 }
