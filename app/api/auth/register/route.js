@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { signToken } from "@/lib/auth";
 import { rateLimit, getIp } from "@/lib/rateLimit";
 import bcrypt from "bcryptjs";
+import { err, created, conflict, tooManyRequests } from "@/lib/apiResponse";
 
 // POST /api/auth/register
 // Creates a CUSTOMER account. Guest bookings are linked if phone matches a Client.
@@ -10,26 +11,23 @@ export async function POST(request) {
   const ip = getIp(request);
   const rl = await rateLimit(`register:${ip}`, { limit: 5, windowMs: 15 * 60 * 1000 });
   if (!rl.ok) {
-    return NextResponse.json(
-      { error: "Çok fazla kayıt denemesi. Lütfen bekleyin." },
-      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
-    );
+    return tooManyRequests(rl.retryAfter);
   }
 
   const { displayName, email, password, phone } = await request.json();
 
   if (!email || !password) {
-    return NextResponse.json({ error: "Email ve şifre gerekli" }, { status: 400 });
+    return err("Email ve şifre gerekli");
   }
   if (password.length < 8) {
-    return NextResponse.json({ error: "Şifre en az 8 karakter olmalı" }, { status: 400 });
+    return err("Şifre en az 8 karakter olmalı");
   }
 
   const normalizedEmail = email.toLowerCase().trim();
 
   const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (existing) {
-    return NextResponse.json({ error: "Bu email adresi zaten kullanılıyor" }, { status: 409 });
+    return conflict("Bu email adresi zaten kullanılıyor");
   }
 
   if (phone) {
@@ -37,7 +35,7 @@ export async function POST(request) {
     if (phone10.length >= 10) {
       const phoneTaken = await prisma.user.findFirst({ where: { phone: { endsWith: phone10 } } });
       if (phoneTaken) {
-        return NextResponse.json({ error: "Bu telefon numarası zaten başka bir hesaba kayıtlı" }, { status: 409 });
+        return conflict("Bu telefon numarası zaten başka bir hesaba kayıtlı");
       }
     }
   }
@@ -81,11 +79,11 @@ export async function POST(request) {
         tokenVersion: true,
       },
     });
-  } catch (err) {
-    if (err.code === "P2002") {
-      return NextResponse.json({ error: "Bu email adresi zaten kullanılıyor" }, { status: 409 });
+  } catch (e) {
+    if (e.code === "P2002") {
+      return conflict("Bu email adresi zaten kullanılıyor");
     }
-    throw err;
+    throw e;
   }
 
   const token = await signToken({

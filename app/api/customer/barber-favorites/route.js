@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { withAuth } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
 // GET  /api/customer/barber-favorites — list favorited barber IDs
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAuth(async (request, _ctx, payload) => {
 
   const favs = await prisma.barberFavorite.findMany({
     where: { userId: payload.userId },
@@ -26,12 +24,10 @@ export async function GET(request) {
   });
 
   return NextResponse.json(favs);
-}
+});
 
 // POST /api/customer/barber-favorites
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withAuth(async (request, _ctx, payload) => {
 
   const { barberId } = await request.json();
   if (!barberId) return NextResponse.json({ error: "barberId gerekli" }, { status: 400 });
@@ -49,4 +45,4 @@ export async function POST(request) {
   });
 
   return NextResponse.json({ ok: true }, { status: 201 });
-}
+});

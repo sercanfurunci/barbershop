@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, clearAuthCache } from "@/lib/auth";
+import { requireAuth, clearAuthCache } from "@/lib/auth";
+import { ok, unauthorized } from "@/lib/apiResponse";
+import { withAuth } from "@/lib/middleware/withRole";
 
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const GET = withAuth(async (request, _ctx, payload) => {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
@@ -18,8 +18,8 @@ export async function GET(request) {
   });
 
   if (!user) return unauthorized();
-  return NextResponse.json(user);
-}
+  return ok(user);
+});
 
 export async function DELETE(request) {
   const payload = await requireAuth(request);
@@ -30,7 +30,7 @@ export async function DELETE(request) {
       data: { tokenVersion: { increment: 1 } },
     }).catch(() => {});
   }
-  const response = NextResponse.json({ ok: true });
+  const response = ok({ ok: true });
   response.cookies.set("makas-token", "", { maxAge: 0, path: "/" });
   return response;
 }

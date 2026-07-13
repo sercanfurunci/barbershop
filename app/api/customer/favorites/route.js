@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { withAuth } from "@/lib/middleware/withRole";
 
 // GET /api/customer/favorites — list user's favorited shop IDs
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAuth(async (request, _ctx, payload) => {
 
   const favs = await prisma.customerFavorite.findMany({
     where: { userId: payload.userId },
@@ -24,12 +22,10 @@ export async function GET(request) {
   });
 
   return NextResponse.json(favs);
-}
+});
 
 // POST /api/customer/favorites — add a favorite
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withAuth(async (request, _ctx, payload) => {
 
   const { shopId } = await request.json();
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
@@ -47,4 +43,4 @@ export async function POST(request) {
   });
 
   return NextResponse.json({ ok: true }, { status: 201 });
-}
+});

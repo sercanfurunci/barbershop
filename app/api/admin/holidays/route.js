@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
+
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "RECEPTIONIST"];
 
 // GET /api/admin/holidays?barberId=brb-1  (optional filter)
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST" && payload.role !== "SUPER_ADMIN") return forbidden();
+export const GET = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
 
   const { searchParams } = new URL(request.url);
   const barberId = searchParams.get("barberId");
@@ -28,15 +28,12 @@ export async function GET(request) {
     include: { barber: { select: { id: true, nameTr: true } } },
   });
   return NextResponse.json(holidays);
-}
+});
 
 // POST /api/admin/holidays
 // body: { date, label?, barberId? }           — single day
 //    OR { startDate, endDate, label?, barberId? } — date range (max 180 days)
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST") return forbidden();
+export const POST = withRole(["ADMIN", "RECEPTIONIST"], async (request, _ctx, payload) => {
   if (!payload.shopId) return forbidden();
 
   const body = await request.json();
@@ -105,4 +102,4 @@ export async function POST(request) {
   });
 
   return NextResponse.json(holiday, { status: 201 });
-}
+});

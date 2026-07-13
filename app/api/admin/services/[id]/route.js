@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
 const VALID_CATEGORIES = ["CUTS", "BEARD", "COMBO", "PREMIUM"];
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
 
 async function resolve(id, payload) {
-  if (!payload) return { err: unauthorized() };
-  if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN") return { err: forbidden() };
   const where = payload.role === "SUPER_ADMIN" ? { id } : { id, shopId: payload.shopId };
   const service = await prisma.service.findFirst({ where });
   if (!service) return { err: NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 }) };
@@ -16,18 +15,16 @@ async function resolve(id, payload) {
 }
 
 // GET /api/admin/services/[id]
-export async function GET(request, { params }) {
-  const payload = await requireAuth(request);
+export const GET = withRole(ADMIN_ROLES, async (request, { params }, payload) => {
   const { id } = await params;
   const { err, service } = await resolve(id, payload);
   if (err) return err;
   return NextResponse.json(service);
-}
+});
 
 // PATCH /api/admin/services/[id]
 // Accepts any subset of: nameTr, nameEn, descTr, descEn, duration, price, icon, image, category, popular, active, sortOrder
-export async function PATCH(request, { params }) {
-  const payload = await requireAuth(request);
+export const PATCH = withRole(ADMIN_ROLES, async (request, { params }, payload) => {
   const { id } = await params;
   const { err, service } = await resolve(id, payload);
   if (err) return err;
@@ -67,11 +64,10 @@ export async function PATCH(request, { params }) {
 
   const updated = await prisma.service.update({ where: { id: service.id }, data });
   return NextResponse.json(updated);
-}
+});
 
 // DELETE /api/admin/services/[id]
-export async function DELETE(request, { params }) {
-  const payload = await requireAuth(request);
+export const DELETE = withRole(ADMIN_ROLES, async (request, { params }, payload) => {
   const { id } = await params;
   const { err, service } = await resolve(id, payload);
   if (err) return err;
@@ -80,4 +76,4 @@ export async function DELETE(request, { params }) {
   const { count } = await prisma.service.deleteMany({ where: { id: service.id, shopId: service.shopId } });
   if (!count) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
   return NextResponse.json({ ok: true });
-}
+});

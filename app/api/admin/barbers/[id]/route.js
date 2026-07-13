@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
-async function resolveBarber(id, payload) {
-  if (!payload) return { err: unauthorized() };
-  if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN") return { err: forbidden() };
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
 
+async function resolveBarber(id, payload) {
   const where = payload.role === "SUPER_ADMIN"
     ? { id }
     : { id, shopId: payload.shopId };
@@ -18,8 +17,7 @@ async function resolveBarber(id, payload) {
 }
 
 // GET /api/admin/barbers/[id]
-export async function GET(request, { params }) {
-  const payload = await requireAuth(request);
+export const GET = withRole(ADMIN_ROLES, async (request, { params }, payload) => {
   const { id } = await params;
   const { err, barber } = await resolveBarber(id, payload);
   if (err) return err;
@@ -29,13 +27,12 @@ export async function GET(request, { params }) {
     include: { workingHours: true, breaks: true },
   });
   return NextResponse.json(full);
-}
+});
 
 // PATCH /api/admin/barbers/[id]
 // Accepts any subset of: nameTr, nameEn, titleTr, titleEn, bioTr, bioEn,
 //                        avatar, color, yearsExp, specialties, available
-export async function PATCH(request, { params }) {
-  const payload = await requireAuth(request);
+export const PATCH = withRole(ADMIN_ROLES, async (request, { params }, payload) => {
   const { id } = await params;
   const { err, barber } = await resolveBarber(id, payload);
   if (err) return err;
@@ -91,11 +88,10 @@ export async function PATCH(request, { params }) {
     include: { workingHours: true },
   });
   return NextResponse.json(updated);
-}
+});
 
 // DELETE /api/admin/barbers/[id]
-export async function DELETE(request, { params }) {
-  const payload = await requireAuth(request);
+export const DELETE = withRole(ADMIN_ROLES, async (request, { params }, payload) => {
   const { id } = await params;
   const { err, barber } = await resolveBarber(id, payload);
   if (err) return err;
@@ -104,4 +100,4 @@ export async function DELETE(request, { params }) {
   const { count } = await prisma.barber.deleteMany({ where: { id: barber.id, shopId: barber.shopId } });
   if (!count) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
   return NextResponse.json({ ok: true });
-}
+});

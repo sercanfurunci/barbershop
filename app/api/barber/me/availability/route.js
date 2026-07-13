@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
+const BARBER_ROLES = ["BARBER", "ADMIN", "SUPER_ADMIN"];
+
 // POST — barber toggles own availability (Müsait / Müsait Değil)
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const POST = withRole(BARBER_ROLES, async (request, _ctx, payload) => {
   if (!payload.barberId) return forbidden();
 
   let body;
@@ -22,4 +23,4 @@ export async function POST(request) {
     select: { id: true, available: true },
   });
   return NextResponse.json(updated);
-}
+});

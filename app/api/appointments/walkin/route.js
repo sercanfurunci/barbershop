@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
 import { todayStr, nowMinutes } from "@/lib/utils";
 import { createReviewRequest } from "@/lib/reviews";
 import { validateBookingWindow } from "@/lib/booking";
 import { splitRevenue } from "@/lib/revenue";
+import { withAuth } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +27,7 @@ const PAYMENT_METHODS = new Set(["CASH", "CARD", "TRANSFER"]);
 //   name: string (required),
 //   phone?: string                        // optional — anonymous walk-in falls back to a placeholder
 // }
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const POST = withAuth(async (request, _ctx, payload) => {
   if (!["ADMIN", "SUPER_ADMIN", "BARBER"].includes(payload.role)) return forbidden();
 
   const body = await request.json();
@@ -241,4 +240,4 @@ export async function POST(request) {
     console.error("[POST /api/appointments/walkin]", e);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
-}
+});

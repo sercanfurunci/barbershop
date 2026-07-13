@@ -4,21 +4,18 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { badRequest } from "@/lib/apiResponse";
 import { getPlan } from "@/lib/plans";
 import { daysUntilTrialEnds, getMonthlyUsage } from "@/lib/subscription";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (!["ADMIN", "SUPER_ADMIN"].includes(payload.role)) return forbidden();
-
+export const GET = withRole(["ADMIN", "SUPER_ADMIN"], async (request, _ctx, payload) => {
   const shopId = payload.role === "SUPER_ADMIN"
     ? new URL(request.url).searchParams.get("shopId")
     : payload.shopId;
-  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+  if (!shopId) return badRequest("shopId gerekli");
 
   const shop = await prisma.shop.findUnique({
     where: { id: shopId },
@@ -54,4 +51,4 @@ export async function GET(request) {
     },
     usage,
   });
-}
+});

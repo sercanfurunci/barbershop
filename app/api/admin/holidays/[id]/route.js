@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
 // DELETE /api/admin/holidays/[id]
-export async function DELETE(request, { params }) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST" && payload.role !== "SUPER_ADMIN") return forbidden();
+export const DELETE = withRole(["ADMIN", "RECEPTIONIST", "SUPER_ADMIN"], async (request, { params }, payload) => {
 
   const { id } = await params;
 
@@ -19,4 +17,4 @@ export async function DELETE(request, { params }) {
 
   await prisma.holiday.delete({ where: { id } });
   return NextResponse.json({ ok: true });
-}
+});

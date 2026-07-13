@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 import { todayStr } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+const BARBER_ROLES = ["BARBER", "ADMIN", "SUPER_ADMIN"];
 
 function validDate(s) {
   if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
@@ -12,9 +15,7 @@ function validDate(s) {
 }
 
 // GET /api/barber/me/leave — upcoming leaves for this barber
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const GET = withRole(BARBER_ROLES, async (request, _ctx, payload) => {
   if (!payload.barberId) return forbidden();
 
   const today = todayStr();
@@ -23,13 +24,11 @@ export async function GET(request) {
     orderBy: { date: "asc" },
   });
   return NextResponse.json(leaves);
-}
+});
 
 // POST /api/barber/me/leave — create leave range for self
 // body: { startDate, endDate, label? }
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const POST = withRole(BARBER_ROLES, async (request, _ctx, payload) => {
   if (!payload.barberId) return forbidden();
 
   const barber = await prisma.barber.findUnique({
@@ -70,12 +69,10 @@ export async function POST(request) {
   });
 
   return NextResponse.json({ ok: true, count: dates.length }, { status: 201 });
-}
+});
 
 // DELETE /api/barber/me/leave — remove all upcoming leaves for self
-export async function DELETE(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const DELETE = withRole(BARBER_ROLES, async (request, _ctx, payload) => {
   if (!payload.barberId) return forbidden();
 
   const { searchParams } = new URL(request.url);
@@ -94,4 +91,4 @@ export async function DELETE(request) {
     });
   }
   return NextResponse.json({ ok: true });
-}
+});

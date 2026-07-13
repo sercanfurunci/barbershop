@@ -27,44 +27,91 @@ export async function GET(request) {
     select: { id: true },
   });
 
-  let computed = 0;
-  for (const { id: shopId } of shops) {
-    const [completed, cancelled, walkIns, newClients] = await Promise.all([
-      prisma.appointment.findMany({
-        where:  { shopId, status: "COMPLETED", date: targetDate },
-        select: { price: true, grossAmount: true, shopAmount: true, barberAmount: true, isWalkIn: true },
-      }),
-      prisma.appointment.count({ where: { shopId, status: "CANCELLED",  date: targetDate } }),
-      prisma.appointment.count({ where: { shopId, status: "COMPLETED",  date: targetDate, isWalkIn: true } }),
-      prisma.client.count({
-        where: { shopId, createdAt: { gte: new Date(`${targetDate}T00:00:00.000Z`), lt: new Date(`${targetDate}T23:59:59.999Z`) } },
-      }),
-    ]);
-
-    const rev   = completed.reduce((s, a) => s + (a.grossAmount ?? a.price ?? 0), 0);
-    const shop  = completed.reduce((s, a) => s + (a.shopAmount  ?? 0), 0);
-    const barb  = completed.reduce((s, a) => s + (a.barberAmount ?? 0), 0);
-
-    await prisma.shopMetric.upsert({
-      where:  { shopId_date: { shopId, date: targetDate } },
-      update: {
-        revenue: rev, shopAmount: shop, barberAmount: barb,
-        appointmentCount: completed.length + cancelled,
-        completedCount: completed.length, cancelledCount: cancelled,
-        walkInCount: walkIns, newClientCount: newClients,
-      },
-      create: {
-        shopId, date: targetDate,
-        revenue: rev, shopAmount: shop, barberAmount: barb,
-        appointmentCount: completed.length + cancelled,
-        completedCount: completed.length, cancelledCount: cancelled,
-        walkInCount: walkIns, newClientCount: newClients,
-      },
-    });
-    computed++;
+  const shopIds = shops.map(s => s.id);
+  if (shopIds.length === 0) {
+    return NextResponse.json({ ok: true, date: targetDate, computed: 0 });
   }
 
-  return NextResponse.json({ ok: true, date: targetDate, computed });
+  // Batch all queries across all shops — one round-trip per query type instead of N.
+  const [completedRows, cancelledGroups, newClientGroups] = await Promise.all([
+    prisma.appointment.findMany({
+      where:  { shopId: { in: shopIds }, status: "COMPLETED", date: targetDate },
+      select: { shopId: true, price: true, grossAmount: true, shopAmount: true, barberAmount: true, isWalkIn: true },
+    }),
+    prisma.appointment.groupBy({
+      by:     ["shopId"],
+      where:  { shopId: { in: shopIds }, status: "CANCELLED", date: targetDate },
+      _count: { _all: true },
+    }),
+    prisma.client.groupBy({
+      by:     ["shopId"],
+      where:  { shopId: { in: shopIds }, createdAt: { gte: new Date(`${targetDate}T00:00:00.000Z`), lt: new Date(`${targetDate}T23:59:59.999Z`) } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  // Index batched results by shopId for O(1) lookup.
+  const cancelledMap   = Object.fromEntries(cancelledGroups.map(r => [r.shopId, r._count._all]));
+  const newClientMap   = Object.fromEntries(newClientGroups.map(r => [r.shopId, r._count._all]));
+
+  // Group completed appointments by shop.
+  const completedByShop = {};
+  for (const row of completedRows) {
+    if (!completedByShop[row.shopId]) completedByShop[row.shopId] = [];
+    completedByShop[row.shopId].push(row);
+  }
+
+  // Build one row per shop in memory, then batch-upsert in a single SQL statement.
+  const rows = shops.map(({ id: shopId }) => {
+    const completed  = completedByShop[shopId] ?? [];
+    const cancelled  = cancelledMap[shopId]    ?? 0;
+    const newClients = newClientMap[shopId]    ?? 0;
+    const rev        = completed.reduce((s, a) => s + (a.grossAmount ?? a.price ?? 0), 0);
+    const shopAmt    = completed.reduce((s, a) => s + (a.shopAmount  ?? 0), 0);
+    const barb       = completed.reduce((s, a) => s + (a.barberAmount ?? 0), 0);
+    const walkIns    = completed.filter(a => a.isWalkIn).length;
+    return {
+      shopId,
+      rev, shopAmt, barb,
+      appointmentCount: completed.length + cancelled,
+      completedCount:   completed.length,
+      cancelledCount:   cancelled,
+      walkInCount:      walkIns,
+      newClientCount:   newClients,
+    };
+  });
+
+  if (rows.length > 0) {
+    // Pipeline all upserts over one connection via $transaction(array).
+    // Prisma doesn't expose a bulk upsert API, so this is the lowest-overhead
+    // option: N statements, 1 connection checkout, no BEGIN/COMMIT overhead.
+    await prisma.$transaction(
+      rows.map(r =>
+        prisma.shopMetric.upsert({
+          where:  { shopId_date: { shopId: r.shopId, date: targetDate } },
+          update: {
+            revenue: r.rev, shopAmount: r.shopAmt, barberAmount: r.barb,
+            appointmentCount: r.appointmentCount,
+            completedCount:   r.completedCount,
+            cancelledCount:   r.cancelledCount,
+            walkInCount:      r.walkInCount,
+            newClientCount:   r.newClientCount,
+          },
+          create: {
+            shopId: r.shopId, date: targetDate,
+            revenue: r.rev, shopAmount: r.shopAmt, barberAmount: r.barb,
+            appointmentCount: r.appointmentCount,
+            completedCount:   r.completedCount,
+            cancelledCount:   r.cancelledCount,
+            walkInCount:      r.walkInCount,
+            newClientCount:   r.newClientCount,
+          },
+        })
+      )
+    );
+  }
+
+  return NextResponse.json({ ok: true, date: targetDate, computed: rows.length });
 }
 
 function yesterdayUtc() {

@@ -1,21 +1,13 @@
-import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { rateLimit, getIp } from "@/lib/rateLimit";
 import {
   validateHttpUrl, normalizePhoneTR, sanitizeString, validateLatLng, SHOP_TYPES,
 } from "@/lib/validation";
+import { ok, err, badRequest, notFound, tooManyRequests } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
-const ALLOWED_ROLES = ["ADMIN", "SUPER_ADMIN"];
-
-function guard(payload) {
-  if (!payload) return { error: unauthorized() };
-  if (!ALLOWED_ROLES.includes(payload.role)) return { error: forbidden() };
-  if (payload.role === "SUPER_ADMIN") return { shopId: null };
-  if (!payload.shopId) return { error: forbidden() };
-  return { shopId: payload.shopId };
-}
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
 
 const PROFILE_SELECT = {
   id: true, name: true, slug: true,
@@ -40,39 +32,37 @@ function isGoogleHost(host) {
   return h === "google.com" || h.endsWith(".google.com");
 }
 
-// GET /api/admin/shop — full shop profile
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  const g = guard(payload);
-  if (g.error) return g.error;
+function resolveShopId(payload, request) {
+  return payload.role === "SUPER_ADMIN"
+    ? new URL(request.url).searchParams.get("shopId")
+    : payload.shopId;
+}
 
-  const shopId = g.shopId ?? new URL(request.url).searchParams.get("shopId");
-  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+// GET /api/admin/shop — full shop profile
+export const GET = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  const shopId = resolveShopId(payload, request);
+  if (!shopId) return badRequest("shopId gerekli");
 
   const shop = await prisma.shop.findUnique({
     where: { id: shopId },
     select: PROFILE_SELECT,
   });
 
-  if (!shop) return NextResponse.json({ error: "Salon bulunamadı" }, { status: 404 });
-  return NextResponse.json(shop);
-}
+  if (!shop) return notFound("Salon bulunamadı");
+  return ok(shop);
+});
 
 // PATCH /api/admin/shop — update shop settings + salon profile
-export async function PATCH(request) {
-  const payload = await requireAuth(request);
-  const g = guard(payload);
-  if (g.error) return g.error;
-
+export const PATCH = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
   // ponytail: 20 PATCH / 5 min per IP per shop is plenty for a manual edit form.
   const ip = getIp(request);
-  const rl = await rateLimit(`shop-profile:${ip}:${g.shopId ?? "super"}`, { limit: 20, windowMs: 5 * 60_000 });
+  const rl = await rateLimit(`shop-profile:${ip}:${payload.shopId ?? "super"}`, { limit: 20, windowMs: 5 * 60_000 });
   if (!rl.ok) {
-    return NextResponse.json({ error: "Çok fazla istek. Birazdan dene." }, { status: 429 });
+    return tooManyRequests(rl.retryAfter);
   }
 
-  const shopId = g.shopId ?? new URL(request.url).searchParams.get("shopId");
-  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+  const shopId = resolveShopId(payload, request);
+  if (!shopId) return badRequest("shopId gerekli");
 
   const body = await request.json().catch(() => ({}));
   const data = {};
@@ -80,7 +70,7 @@ export async function PATCH(request) {
   // ── Basic identity ──
   if (body.name !== undefined) {
     const n = sanitizeString(body.name, { max: 120 });
-    if (!n) return NextResponse.json({ error: "Salon adı boş olamaz" }, { status: 400 });
+    if (!n) return badRequest("Salon adı boş olamaz");
     data.name = n;
   }
   if (body.ownerName   !== undefined) data.ownerName   = sanitizeString(body.ownerName,   { max: 120 });
@@ -91,13 +81,13 @@ export async function PATCH(request) {
   if (body.foundedYear !== undefined) {
     const y = body.foundedYear == null || body.foundedYear === "" ? null : Number(body.foundedYear);
     if (y !== null && (!Number.isInteger(y) || y < 1900 || y > new Date().getFullYear() + 1)) {
-      return NextResponse.json({ error: "Geçersiz kuruluş yılı" }, { status: 400 });
+      return badRequest("Geçersiz kuruluş yılı");
     }
     data.foundedYear = y;
   }
   if (body.shopType !== undefined) {
     if (body.shopType && !SHOP_TYPES.includes(body.shopType)) {
-      return NextResponse.json({ error: "Geçersiz salon tipi" }, { status: 400 });
+      return badRequest("Geçersiz salon tipi");
     }
     data.shopType = body.shopType || null;
   }
@@ -106,13 +96,13 @@ export async function PATCH(request) {
   if (body.phone !== undefined) {
     data.phone = body.phone ? normalizePhoneTR(body.phone) : null;
     if (body.phone && !data.phone) {
-      return NextResponse.json({ error: "Geçersiz telefon — Türkiye cep numarası girin" }, { status: 400 });
+      return badRequest("Geçersiz telefon — Türkiye cep numarası girin");
     }
   }
   if (body.whatsappNumber !== undefined) {
     data.whatsappNumber = body.whatsappNumber ? normalizePhoneTR(body.whatsappNumber) : null;
     if (body.whatsappNumber && !data.whatsappNumber) {
-      return NextResponse.json({ error: "Geçersiz WhatsApp numarası — Türkiye cep numarası girin" }, { status: 400 });
+      return badRequest("Geçersiz WhatsApp numarası — Türkiye cep numarası girin");
     }
   }
 
@@ -130,7 +120,7 @@ export async function PATCH(request) {
       data.latitude = null; data.longitude = null;
     } else {
       const ll = validateLatLng(body.latitude, body.longitude);
-      if (!ll) return NextResponse.json({ error: "Geçersiz koordinatlar" }, { status: 400 });
+      if (!ll) return badRequest("Geçersiz koordinatlar");
       data.latitude  = ll.lat;
       data.longitude = ll.lng;
     }
@@ -157,7 +147,7 @@ export async function PATCH(request) {
   ]) {
     if (body[key] !== undefined) {
       const r = validateHttpUrl(body[key], host ? { host } : undefined);
-      if (!r.ok) return NextResponse.json({ error: `${key}: ${r.error}` }, { status: 400 });
+      if (!r.ok) return badRequest(`${key}: ${r.error}`);
       data[key] = r.value;
     }
   }
@@ -168,7 +158,7 @@ export async function PATCH(request) {
     for (const k of ["instagram", "facebook", "tiktok", "twitter", "website"]) {
       if (body.social[k] != null) {
         const r = validateHttpUrl(body.social[k]);
-        if (!r.ok) return NextResponse.json({ error: `social.${k}: ${r.error}` }, { status: 400 });
+        if (!r.ok) return badRequest(`social.${k}: ${r.error}`);
         out[k] = r.value;
       }
     }
@@ -187,12 +177,12 @@ export async function PATCH(request) {
   }
   if (body.googleReviewUrl !== undefined) {
     const r = validateHttpUrl(body.googleReviewUrl);
-    if (!r.ok) return NextResponse.json({ error: `googleReviewUrl: ${r.error}` }, { status: 400 });
+    if (!r.ok) return badRequest(`googleReviewUrl: ${r.error}`);
     if (r.value) {
       let parsed;
       try { parsed = new URL(r.value); } catch { parsed = null; }
       if (!parsed || !isGoogleHost(parsed.hostname)) {
-        return NextResponse.json({ error: "googleReviewUrl: Sadece google.com adresleri kabul edilir" }, { status: 400 });
+        return badRequest("googleReviewUrl: Sadece google.com adresleri kabul edilir");
       }
     }
     data.googleReviewUrl = r.value;
@@ -216,5 +206,5 @@ export async function PATCH(request) {
     try { revalidatePath(`/${shop.slug}`); } catch {}
   }
 
-  return NextResponse.json(shop);
-}
+  return ok(shop);
+});

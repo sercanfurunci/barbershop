@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, getIp } from "@/lib/rateLimit";
+import { ok, err, created, tooManyRequests } from "@/lib/apiResponse";
 
 export const dynamic = "force-dynamic";
 
@@ -9,32 +9,26 @@ export async function POST(req) {
   const ip = getIp(req);
   const rl = await rateLimit(`leads:${ip}`, { limit: 3, windowMs: 10 * 60 * 1000 });
   if (!rl.ok) {
-    return NextResponse.json(
-      { ok: false, error: "Çok fazla istek. Lütfen bekleyin." },
-      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
-    );
+    return tooManyRequests(rl.retryAfter);
   }
 
   const body = await req.json().catch(() => ({}));
   const { businessName, name, phone, email, message } = body;
 
   if (!businessName?.trim() || !name?.trim() || !phone?.trim()) {
-    return NextResponse.json(
-      { ok: false, error: "businessName, name ve phone zorunludur." },
-      { status: 400 }
-    );
+    return err("businessName, name ve phone zorunludur.");
   }
 
   // Length caps to prevent abuse
-  if (businessName.trim().length > 120) return NextResponse.json({ ok: false, error: "businessName çok uzun." }, { status: 400 });
-  if (name.trim().length > 80)         return NextResponse.json({ ok: false, error: "name çok uzun." },         { status: 400 });
-  if (phone.trim().length > 20)        return NextResponse.json({ ok: false, error: "phone çok uzun." },        { status: 400 });
-  if (email && email.trim().length > 120) return NextResponse.json({ ok: false, error: "email çok uzun." },     { status: 400 });
-  if (message && message.trim().length > 1000) return NextResponse.json({ ok: false, error: "Mesaj çok uzun." },{ status: 400 });
+  if (businessName.trim().length > 120) return err("businessName çok uzun.");
+  if (name.trim().length > 80)          return err("name çok uzun.");
+  if (phone.trim().length > 20)         return err("phone çok uzun.");
+  if (email && email.trim().length > 120) return err("email çok uzun.");
+  if (message && message.trim().length > 1000) return err("Mesaj çok uzun.");
 
   // Basic email format check
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    return NextResponse.json({ ok: false, error: "Geçersiz e-posta formatı." }, { status: 400 });
+    return err("Geçersiz e-posta formatı.");
   }
 
   await prisma.lead.create({
@@ -47,5 +41,5 @@ export async function POST(req) {
     },
   });
 
-  return NextResponse.json({ ok: true }, { status: 201 });
+  return created({ ok: true });
 }

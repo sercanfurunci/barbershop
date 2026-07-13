@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
 import { uploadBarberPhoto, deleteBarberPhoto } from "@/lib/cloudinary";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
+const BARBER_ROLES = ["BARBER", "ADMIN", "SUPER_ADMIN"];
+
 // POST — barber updates own profile photo
-export async function POST(request) {
+export const POST = withRole(BARBER_ROLES, async (request, _ctx, payload) => {
   try {
-    const payload = await requireAuth(request);
-    if (!payload) return unauthorized();
     if (!payload.barberId) return forbidden();
 
     let body;
@@ -42,13 +43,11 @@ export async function POST(request) {
     console.error("[POST /api/barber/photo]", err);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
-}
+});
 
 // DELETE — remove own photo
-export async function DELETE(request) {
+export const DELETE = withRole(BARBER_ROLES, async (request, _ctx, payload) => {
   try {
-    const payload = await requireAuth(request);
-    if (!payload) return unauthorized();
     if (!payload.barberId) return forbidden();
 
     await deleteBarberPhoto(payload.barberId);
@@ -62,4 +61,4 @@ export async function DELETE(request) {
     console.error("[DELETE /api/barber/photo]", err);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
-}
+});

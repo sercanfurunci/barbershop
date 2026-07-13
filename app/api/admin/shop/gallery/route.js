@@ -1,24 +1,18 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { rateLimit, getIp } from "@/lib/rateLimit";
 import { uploadShopAsset, deleteShopAsset } from "@/lib/cloudinary";
 import { validateImageDataUrl } from "@/lib/validation";
+import { withRole } from "@/lib/middleware/withRole";
 
-const ALLOWED_ROLES = ["ADMIN", "SUPER_ADMIN"];
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
 const GALLERY_MAX = 12;
 
-function guard(payload) {
-  if (!payload) return { error: unauthorized() };
-  if (!ALLOWED_ROLES.includes(payload.role)) return { error: forbidden() };
-  if (payload.role === "SUPER_ADMIN") return { shopId: null };
-  if (!payload.shopId) return { error: forbidden() };
-  return { shopId: payload.shopId };
-}
-
-async function resolveShopId(request, g) {
-  return g.shopId ?? new URL(request.url).searchParams.get("shopId");
+function resolveShopId(payload, request) {
+  return payload.role === "SUPER_ADMIN"
+    ? new URL(request.url).searchParams.get("shopId")
+    : payload.shopId;
 }
 
 // The public shop page is ISR-cached (`revalidate = 300`). Without this call,
@@ -30,18 +24,14 @@ function revalidateShopPage(slug) {
 }
 
 // POST { dataUrl } — appends one image to gallery (max 12)
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  const g = guard(payload);
-  if (g.error) return g.error;
-
+export const POST = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
   const ip = getIp(request);
   const rl = await rateLimit(`shop-gallery:${ip}`, { limit: 30, windowMs: 5 * 60_000 });
   if (!rl.ok) {
     return NextResponse.json({ error: "Çok fazla istek" }, { status: 429 });
   }
 
-  const shopId = await resolveShopId(request, g);
+  const shopId = resolveShopId(payload, request);
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
 
   const { dataUrl } = await request.json().catch(() => ({}));
@@ -66,16 +56,12 @@ export async function POST(request) {
   });
   revalidateShopPage(current?.slug);
   return NextResponse.json(updated);
-}
+});
 
 // PUT { order: string[] } — reorder gallery. Must be a permutation of the
 // existing URLs (no add/remove here, just sort).
-export async function PUT(request) {
-  const payload = await requireAuth(request);
-  const g = guard(payload);
-  if (g.error) return g.error;
-
-  const shopId = await resolveShopId(request, g);
+export const PUT = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  const shopId = resolveShopId(payload, request);
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
 
   const { order } = await request.json().catch(() => ({}));
@@ -97,15 +83,11 @@ export async function PUT(request) {
   });
   revalidateShopPage(current?.slug);
   return NextResponse.json(updated);
-}
+});
 
 // DELETE { index } — removes one image by index (so we don't need an extra row id)
-export async function DELETE(request) {
-  const payload = await requireAuth(request);
-  const g = guard(payload);
-  if (g.error) return g.error;
-
-  const shopId = await resolveShopId(request, g);
+export const DELETE = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  const shopId = resolveShopId(payload, request);
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
 
   const { index } = await request.json().catch(() => ({}));
@@ -129,4 +111,4 @@ export async function DELETE(request) {
   if (removed) await deleteShopAsset(removed).catch(() => {});
   revalidateShopPage(current?.slug);
   return NextResponse.json(updated);
-}
+});

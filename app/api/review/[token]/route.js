@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, getIp } from "@/lib/rateLimit";
+import { logger } from "@/lib/logger";
+import { ok, err, notFound, conflict, tooManyRequests, serverError } from "@/lib/apiResponse";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request, { params }) {
   const { token } = await params;
   if (!token || !/^[a-zA-Z0-9_-]{8,128}$/.test(token)) {
-    return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
+    return notFound("Bulunamadı");
   }
 
   const rr = await prisma.reviewRequest.findUnique({
@@ -27,15 +28,15 @@ export async function GET(request, { params }) {
     },
   });
 
-  if (!rr) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
+  if (!rr) return notFound("Bulunamadı");
   if (rr.appointment?.reviewed || rr.status === "REVIEWED") {
-    return NextResponse.json({ alreadyReviewed: true });
+    return ok({ alreadyReviewed: true });
   }
   if (rr.appointment?.status !== "COMPLETED") {
-    return NextResponse.json({ error: "Randevu henüz tamamlanmadı" }, { status: 409 });
+    return conflict("Randevu henüz tamamlanmadı");
   }
 
-  return NextResponse.json({
+  return ok({
     customerName: rr.customerName,
     barber:       rr.barber,
     appointment:  rr.appointment,
@@ -45,24 +46,25 @@ export async function GET(request, { params }) {
 
 // POST /api/review/:token — submit review (shopRating + barberRating)
 export async function POST(request, { params }) {
+  const log = logger(request);
   // 3 attempts per IP per 5 minutes
   const ip = getIp(request);
   const rl = await rateLimit(`review:${ip}`, { limit: 3, windowMs: 5 * 60 * 1000 });
   if (!rl.ok) {
-    return NextResponse.json({ error: "Çok fazla istek. Lütfen bekleyin." }, { status: 429 });
+    return tooManyRequests(rl.retryAfter);
   }
 
   const { token } = await params;
   if (!token || !/^[a-zA-Z0-9_-]{8,128}$/.test(token)) {
-    return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
+    return notFound("Bulunamadı");
   }
   const body = await request.json().catch(() => ({}));
   const { shopRating, barberRating, comment } = body;
 
   const shopR   = Math.floor(Number(shopRating));
   const barberR = Math.floor(Number(barberRating));
-  if (!shopR   || shopR   < 1 || shopR   > 5) return NextResponse.json({ error: "Geçersiz salon puanı" }, { status: 400 });
-  if (!barberR || barberR < 1 || barberR > 5) return NextResponse.json({ error: "Geçersiz berber puanı" }, { status: 400 });
+  if (!shopR   || shopR   < 1 || shopR   > 5) return err("Geçersiz salon puanı");
+  if (!barberR || barberR < 1 || barberR > 5) return err("Geçersiz berber puanı");
 
   const rr = await prisma.reviewRequest.findUnique({
     where: { token },
@@ -71,12 +73,12 @@ export async function POST(request, { params }) {
       shop:        { select: { googleReviewUrl: true } },
     },
   });
-  if (!rr) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
+  if (!rr) return notFound("Bulunamadı");
   if (rr.appointment.reviewed || rr.status === "REVIEWED") {
-    return NextResponse.json({ error: "Zaten değerlendirildi" }, { status: 409 });
+    return conflict("Zaten değerlendirildi");
   }
   if (rr.appointment.status !== "COMPLETED") {
-    return NextResponse.json({ error: "Randevu henüz tamamlanmadı" }, { status: 409 });
+    return conflict("Randevu henüz tamamlanmadı");
   }
 
   const cleanComment = comment?.trim().slice(0, 1000) || null;
@@ -134,19 +136,19 @@ export async function POST(request, { params }) {
           rating:      Math.round(barberAvgNew * 10) / 10,
         },
       });
-    });
-  } catch (err) {
-    if (err.code === "P2002") {
-      return NextResponse.json({ error: "Zaten değerlendirildi" }, { status: 409 });
+    }, { isolationLevel: "Serializable" });
+  } catch (e) {
+    if (e.code === "P2002") {
+      return conflict("Zaten değerlendirildi");
     }
-    console.error("[review submit]", err);
-    return NextResponse.json({ error: "Kaydedilemedi" }, { status: 500 });
+    log.error("review submit failed", { token }, e);
+    return serverError("Kaydedilemedi");
   }
 
   // Google CTA only when shop saved a direct review URL AND rating >= 4.
   const googleUrl = shopR >= 4 ? (rr.shop?.googleReviewUrl || null) : null;
 
-  return NextResponse.json({
+  return ok({
     ok: true,
     shopRating:      shopR,
     barberRating:    barberR,

@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { todayStr } from "@/lib/utils";
 import { validateBookingWindow } from "@/lib/booking";
+import { ok, err, notFound, conflict, forbidden } from "@/lib/apiResponse";
+import { withAuth } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +15,7 @@ function canAccess(payload, appt) {
 }
 
 // GET /api/appointments/:id
-export async function GET(request, { params }) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const GET = withAuth(async (request, { params }, payload) => {
 
   const { id } = await params;
 
@@ -30,21 +28,19 @@ export async function GET(request, { params }) {
     },
   });
 
-  if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
+  if (!appt) return notFound("Randevu bulunamadı");
   if (!canAccess(payload, appt)) return forbidden();
 
-  return NextResponse.json(appt);
-}
+  return ok(appt);
+});
 
 // PATCH /api/appointments/:id — update notes, reschedule
-export async function PATCH(request, { params }) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const PATCH = withAuth(async (request, { params }, payload) => {
 
   const { id } = await params;
 
   const appt = await prisma.appointment.findUnique({ where: { id } });
-  if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
+  if (!appt) return notFound("Randevu bulunamadı");
   if (!canAccess(payload, appt)) return forbidden();
 
   const body = await request.json();
@@ -57,7 +53,7 @@ export async function PATCH(request, { params }) {
     } else {
       priceVal = Number(price);
       if (!Number.isFinite(priceVal) || priceVal < 0 || priceVal > 100000) {
-        return NextResponse.json({ error: "Fiyat 0–100000 ₺ arasında olmalı" }, { status: 400 });
+        return err("Fiyat 0–100000 ₺ arasında olmalı");
       }
     }
   }
@@ -68,13 +64,13 @@ export async function PATCH(request, { params }) {
     const newTime = time ?? appt.time;
 
     if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return NextResponse.json({ error: "Geçersiz tarih formatı." }, { status: 400 });
+      return err("Geçersiz tarih formatı.");
     }
     if (time && !/^\d{2}:\d{2}$/.test(time)) {
-      return NextResponse.json({ error: "Geçersiz saat formatı." }, { status: 400 });
+      return err("Geçersiz saat formatı.");
     }
     if (newDate < todayStr()) {
-      return NextResponse.json({ error: "Geçmiş bir tarihe taşınamaz." }, { status: 400 });
+      return err("Geçmiş bir tarihe taşınamaz.");
     }
 
     const [h, m]  = newTime.split(":").map(Number);
@@ -88,7 +84,7 @@ export async function PATCH(request, { params }) {
         shopId: appt.shopId, barberId: appt.barberId, date: newDate,
         startMin, durationMin: appt.duration,
       });
-      if (!window.ok) return NextResponse.json({ error: window.error }, { status: window.status });
+      if (!window.ok) return err(window.error, window.status);
     }
 
     // ponytail: Serializable tx so the conflict check and update are atomic —
@@ -124,12 +120,12 @@ export async function PATCH(request, { params }) {
         });
       }, { isolationLevel: "Serializable" });
 
-      return NextResponse.json(updated);
-    } catch (err) {
-      if (err.message === "SLOT_TAKEN") {
-        return NextResponse.json({ error: "Bu saat dilimi dolu" }, { status: 409 });
+      return ok(updated);
+    } catch (e) {
+      if (e.message === "SLOT_TAKEN") {
+        return conflict("Bu saat dilimi dolu");
       }
-      throw err;
+      throw e;
     }
   }
 
@@ -141,23 +137,21 @@ export async function PATCH(request, { params }) {
     },
   });
 
-  return NextResponse.json(updated);
-}
+  return ok(updated);
+});
 
 // DELETE /api/appointments/:id — admin only
-export async function DELETE(request, { params }) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const DELETE = withAuth(async (request, { params }, payload) => {
   if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN") return forbidden();
 
   const { id } = await params;
 
   const appt = await prisma.appointment.findUnique({ where: { id } });
-  if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
+  if (!appt) return notFound("Randevu bulunamadı");
   if (!canAccess(payload, appt)) return forbidden();
 
   // Defense-in-depth: scope delete by shopId even though canAccess already checked.
   const { count } = await prisma.appointment.deleteMany({ where: { id: appt.id, shopId: appt.shopId } });
-  if (!count) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
-  return NextResponse.json({ ok: true });
-}
+  if (!count) return notFound("Randevu bulunamadı");
+  return ok({ ok: true });
+});

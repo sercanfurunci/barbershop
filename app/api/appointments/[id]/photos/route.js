@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
+import { withAuth } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +20,7 @@ function canAccess(payload, appt) {
 // Accepts multipart/form-data with field "photo" (image file).
 // Uploads to Cloudinary if configured, otherwise stores data URL (dev only).
 // Returns updated photoUrls array.
-export async function POST(request, { params }) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const POST = withAuth(async (request, { params }, payload) => {
 
   const { id } = await params;
 
@@ -92,12 +91,10 @@ export async function POST(request, { params }) {
   });
 
   return NextResponse.json({ photoUrls: updated.photoUrls }, { status: 201 });
-}
+});
 
 // DELETE /api/appointments/[id]/photos?url=...
-export async function DELETE(request, { params }) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const DELETE = withAuth(async (request, { params }, payload) => {
 
   const { id } = await params;
   const photoUrl = new URL(request.url).searchParams.get("url");
@@ -113,4 +110,4 @@ export async function DELETE(request, { params }) {
   });
 
   return NextResponse.json({ ok: true });
-}
+});

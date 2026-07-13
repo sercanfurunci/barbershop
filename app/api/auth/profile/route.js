@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized } from "@/lib/auth";
+import { withAuth } from "@/lib/middleware/withRole";
 
-export async function PATCH(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const PATCH = withAuth(async (request, _ctx, payload) => {
 
   const { username, displayName } = await request.json();
 
@@ -41,4 +39,4 @@ export async function PATCH(request) {
     }
     throw e;
   }
-}
+});

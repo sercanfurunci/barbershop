@@ -4,6 +4,7 @@ import { signToken } from "@/lib/auth";
 import { rateLimit, getIp } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import bcrypt from "bcryptjs";
+import { err, tooManyRequests, serverError } from "@/lib/apiResponse";
 
 export async function POST(request) {
   const log = logger(request);
@@ -12,16 +13,13 @@ export async function POST(request) {
     const ip  = getIp(request);
     const rl  = await rateLimit(`login:${ip}`, { limit: 10, windowMs: 15 * 60 * 1000 });
     if (!rl.ok) {
-      return NextResponse.json(
-        { error: "Çok fazla giriş denemesi. Lütfen bekleyin." },
-        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
-      );
+      return tooManyRequests(rl.retryAfter);
     }
 
     const { email, password, expectedRole } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Email ve şifre gerekli" }, { status: 400 });
+      return err("Email ve şifre gerekli");
     }
 
     const identifier = email.toLowerCase().trim();
@@ -38,25 +36,25 @@ export async function POST(request) {
 
     if (!user) {
       log.warn("login failed — user not found", { identifier });
-      return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
+      return err("Geçersiz kullanıcı adı veya şifre", 401);
     }
 
     // Block logins to suspended shops before revealing whether the password is
     // correct — prevents confirming valid credentials for suspended accounts.
     if (user.shop && user.shop.status === "SUSPENDED") {
-      return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
+      return err("Geçersiz kullanıcı adı veya şifre", 401);
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       log.warn("login failed — wrong password", { userId: user.id });
-      return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
+      return err("Geçersiz kullanıcı adı veya şifre", 401);
     }
 
     // Role guard: if caller declares expected role, reject mismatches before issuing token.
     if (expectedRole && user.role !== expectedRole) {
       log.warn("login failed — role mismatch", { userId: user.id, role: user.role, expectedRole });
-      return NextResponse.json({ error: "Geçersiz kullanıcı adı veya şifre" }, { status: 401 });
+      return err("Geçersiz kullanıcı adı veya şifre", 401);
     }
 
     const token = await signToken({
@@ -90,8 +88,8 @@ export async function POST(request) {
     });
 
     return response;
-  } catch (err) {
-    log.error("login error", {}, err);
-    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
+  } catch (e) {
+    log.error("login error", {}, e);
+    return serverError();
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +20,10 @@ function minsToHHMM(m) {
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
+const BARBER_ROLES = ["BARBER", "ADMIN", "SUPER_ADMIN"];
+
 // POST — start an instant break: { minutes: number, label?: string }
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const POST = withRole(BARBER_ROLES, async (request, _ctx, payload) => {
   if (!payload.barberId) return forbidden();
 
   let body;
@@ -42,12 +43,10 @@ export async function POST(request) {
     select: { id: true, date: true, start: true, end: true, label: true },
   });
   return NextResponse.json(brk);
-}
+});
 
 // DELETE — cancel today's one-off breaks for this barber
-export async function DELETE(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const DELETE = withRole(BARBER_ROLES, async (request, _ctx, payload) => {
   if (!payload.barberId) return forbidden();
 
   const { date } = nowIstanbul();
@@ -55,4 +54,4 @@ export async function DELETE(request) {
     where: { barberId: payload.barberId, date },
   });
   return NextResponse.json({ deleted: count });
-}
+});

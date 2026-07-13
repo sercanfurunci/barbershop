@@ -1,20 +1,18 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { ok, notFound } from "@/lib/apiResponse";
+import { withAuth } from "@/lib/middleware/withRole";
 
 // GET /api/customer/appointments
 // Authenticated appointment history for CUSTOMER accounts.
 // Falls back to phone-based lookup if clientId is set on the user.
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAuth(async (request, _ctx, payload) => {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
     select: { clientId: true, phone: true },
   });
 
-  if (!user) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
+  if (!user) return notFound("Bulunamadı");
 
   // Find all appointments linked to this customer's Client records.
   // Use endsWith(last-10) consistent with stats/reviews to avoid partial matches.
@@ -25,7 +23,7 @@ export async function GET(request) {
       ? { client: { phone: { endsWith: phone10 } } }
       : null;
 
-  if (!clientFilter) return NextResponse.json([]);
+  if (!clientFilter) return ok([]);
 
   const appointments = await prisma.appointment.findMany({
     where: { ...clientFilter, status: { not: "IN_PROGRESS" } },
@@ -51,8 +49,8 @@ export async function GET(request) {
     },
   });
 
-  return NextResponse.json(appointments);
-}
+  return ok(appointments);
+});
 
 // PATCH /api/customer/appointments/:id/cancel  (handled in separate route)
 // DELETE /api/customer/appointments/:id — customer cancel

@@ -1,27 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { withRole } from "@/lib/middleware/withRole";
 
 const VALID_CATEGORIES = ["CUTS", "BEARD", "COMBO", "PREMIUM"];
-
-function guard(payload) {
-  if (!payload) return { error: unauthorized() };
-  if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN") return { error: forbidden() };
-  if (payload.role === "SUPER_ADMIN") return { shopId: null };
-  if (!payload.shopId) return { error: forbidden() };
-  return { shopId: payload.shopId };
-}
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
 
 // GET /api/admin/services — all services for this shop (including inactive)
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  const g = guard(payload);
-  if (g.error) return g.error;
-
+export const GET = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("q")?.toLowerCase() ?? "";
 
-  const shopId = g.shopId ?? searchParams.get("shopId");
+  const shopId = payload.role === "SUPER_ADMIN"
+    ? searchParams.get("shopId")
+    : payload.shopId;
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
   const where = { shopId };
   const services = await prisma.service.findMany({
@@ -37,16 +28,14 @@ export async function GET(request) {
     : services;
 
   return NextResponse.json(filtered);
-}
+});
 
 // POST /api/admin/services
 // body: { nameTr, nameEn?, descTr?, descEn?, duration, price, icon?, category, popular?, active?, sortOrder? }
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  const g = guard(payload);
-  if (g.error) return g.error;
-
-  const shopId = g.shopId;
+export const POST = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  const shopId = payload.role === "SUPER_ADMIN"
+    ? new URL(request.url).searchParams.get("shopId")
+    : payload.shopId;
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
 
   const body = await request.json();
@@ -85,4 +74,4 @@ export async function POST(request) {
   });
 
   return NextResponse.json(service, { status: 201 });
-}
+});

@@ -1,23 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
-function shopGuard(payload) {
-  if (!payload) return { error: unauthorized() };
-  if (payload.role === "SUPER_ADMIN") return { shopFilter: {} };
-  if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST") return { error: forbidden() };
-  if (!payload.shopId) return { error: forbidden() };
-  return { shopId: payload.shopId };
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "RECEPTIONIST"];
+
+function resolveShopId(payload, request) {
+  if (payload.role === "SUPER_ADMIN") return null; // will be passed via ?shopId or body
+  return payload.shopId;
 }
 
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  const guard   = shopGuard(payload);
-  if (guard.error) return guard.error;
-
-  const shopId = guard.shopId ?? new URL(request.url).searchParams.get("shopId");
+export const GET = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  const shopId = payload.role === "SUPER_ADMIN"
+    ? new URL(request.url).searchParams.get("shopId")
+    : payload.shopId;
   if (!shopId) return NextResponse.json({}, { status: 400 });
 
   const settings = await prisma.notificationSettings.findUnique({ where: { shopId } });
@@ -25,15 +23,13 @@ export async function GET(request) {
   // Redact stored credential — client only needs to know "is it set?"
   const { netgsmPassword, ...rest } = settings;
   return NextResponse.json({ ...rest, netgsmPasswordSet: !!netgsmPassword });
-}
+});
 
-export async function PATCH(request) {
-  const payload = await requireAuth(request);
-  const guard   = shopGuard(payload);
-  if (guard.error) return guard.error;
-
+export const PATCH = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
   const body   = await request.json();
-  const shopId = guard.shopId ?? body.shopId;
+  const shopId = payload.role === "SUPER_ADMIN"
+    ? body.shopId
+    : payload.shopId;
   if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
 
   // Allowed fields
@@ -52,5 +48,6 @@ export async function PATCH(request) {
     ? await prisma.notificationSettings.update({ where: { shopId }, data })
     : await prisma.notificationSettings.create({ data: { shopId, ...data } });
 
-  return NextResponse.json(settings);
-}
+  const { netgsmPassword, ...rest } = settings;
+  return NextResponse.json({ ...rest, netgsmPasswordSet: !!netgsmPassword });
+});

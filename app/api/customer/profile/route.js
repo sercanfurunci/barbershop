@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { ok, err, notFound, conflict } from "@/lib/apiResponse";
+import { withAuth } from "@/lib/middleware/withRole";
 
 const CUSTOMER_SELECT = {
   id: true,
@@ -18,21 +18,21 @@ const CUSTOMER_SELECT = {
 // GET /api/customer/profile
 export async function GET(request) {
   const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!payload) return unauthorized();
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
     select: CUSTOMER_SELECT,
   });
 
-  if (!user) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
-  return NextResponse.json(user);
+  if (!user) return notFound("Bulunamadı");
+  return ok(user);
 }
 
 // DELETE /api/customer/profile — anonymises and marks deleted
 export async function DELETE(request) {
   const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!payload) return unauthorized();
 
   // Anonymise: bump tokenVersion to invalidate all sessions, wipe PII
   await prisma.user.update({
@@ -46,13 +46,13 @@ export async function DELETE(request) {
     },
   });
 
-  return NextResponse.json({ ok: true });
+  return ok({ ok: true });
 }
 
 // PATCH /api/customer/profile
 export async function PATCH(request) {
   const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!payload) return unauthorized();
 
   const body = await request.json();
   const allowed = ["displayName", "phone", "birthday", "gender", "avatarUrl", "notifAppt", "notifReminder", "notifPromo"];
@@ -67,39 +67,39 @@ export async function PATCH(request) {
   }
 
   if (Object.keys(data).length === 0) {
-    return NextResponse.json({ error: "Güncellenecek alan yok" }, { status: 400 });
+    return err("Güncellenecek alan yok");
   }
 
   if (data.displayName !== undefined && data.displayName !== null) {
     if (typeof data.displayName !== "string" || data.displayName.trim().length > 100) {
-      return NextResponse.json({ error: "Görünen ad en fazla 100 karakter olabilir" }, { status: 400 });
+      return err("Görünen ad en fazla 100 karakter olabilir");
     }
     data.displayName = data.displayName.trim() || null;
   }
 
   if (data.gender !== undefined && data.gender !== null) {
     if (!["male", "female", "other"].includes(data.gender)) {
-      return NextResponse.json({ error: "Geçersiz cinsiyet değeri" }, { status: 400 });
+      return err("Geçersiz cinsiyet değeri");
     }
   }
 
   if (data.avatarUrl !== undefined && data.avatarUrl !== null) {
     if (typeof data.avatarUrl !== "string" || data.avatarUrl.length > 500 ||
         !/^https:\/\/res\.cloudinary\.com\//.test(data.avatarUrl)) {
-      return NextResponse.json({ error: "Geçersiz avatar URL" }, { status: 400 });
+      return err("Geçersiz avatar URL");
     }
   }
 
   if (data.phone) {
     const phone10 = data.phone.replace(/\D/g, "").slice(-10);
     if (phone10.length < 10) {
-      return NextResponse.json({ error: "Geçersiz telefon numarası" }, { status: 400 });
+      return err("Geçersiz telefon numarası");
     }
     const phoneTaken = await prisma.user.findFirst({
       where: { phone: { endsWith: phone10 }, NOT: { id: payload.userId } },
     });
     if (phoneTaken) {
-      return NextResponse.json({ error: "Bu telefon numarası zaten başka bir hesaba kayıtlı" }, { status: 409 });
+      return conflict("Bu telefon numarası zaten başka bir hesaba kayıtlı");
     }
   }
 
@@ -109,5 +109,5 @@ export async function PATCH(request) {
     select: CUSTOMER_SELECT,
   });
 
-  return NextResponse.json(user);
+  return ok(user);
 }

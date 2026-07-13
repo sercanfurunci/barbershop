@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
 import { uploadBarberPhoto, deleteBarberPhoto } from "@/lib/cloudinary";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
+
 // POST /api/admin/barbers/:id/photo
 // Body: { photo: "data:image/jpeg;base64,..." }
-export async function POST(request, { params }) {
+export const POST = withRole(ADMIN_ROLES, async (request, { params }, payload) => {
   try {
-    const payload = await requireAuth(request);
-    if (!payload) return unauthorized();
-    if (!["ADMIN", "SUPER_ADMIN"].includes(payload.role)) return forbidden();
-
     const { id } = await params;
 
     let photo;
@@ -47,15 +46,11 @@ export async function POST(request, { params }) {
     console.error("[POST /api/admin/barbers/photo]", err);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
-}
+});
 
 // DELETE /api/admin/barbers/:id/photo
-export async function DELETE(request, { params }) {
+export const DELETE = withRole(ADMIN_ROLES, async (request, { params }, payload) => {
   try {
-    const payload = await requireAuth(request);
-    if (!payload) return unauthorized();
-    if (!["ADMIN", "SUPER_ADMIN"].includes(payload.role)) return forbidden();
-
     const { id } = await params;
     const barber = await prisma.barber.findUnique({ where: { id } });
     if (!barber) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
@@ -68,4 +63,4 @@ export async function DELETE(request, { params }) {
     console.error("[DELETE /api/admin/barbers/photo]", err);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
-}
+});

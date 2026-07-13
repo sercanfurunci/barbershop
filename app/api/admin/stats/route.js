@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { ok, badRequest } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
+
+const STATS_ROLES = ["ADMIN", "SUPER_ADMIN", "RECEPTIONIST", "BARBER"];
 
 function pctChange(current, prev) {
   if (!prev) return 0;
@@ -29,17 +31,13 @@ async function metricSum(shopId, from, to) {
   );
 }
 
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (!["ADMIN", "SUPER_ADMIN", "RECEPTIONIST", "BARBER"].includes(payload.role)) return forbidden();
-
+export const GET = withRole(STATS_ROLES, async (request, _ctx, payload) => {
   const url = new URL(request.url);
   const shopId = payload.role === "SUPER_ADMIN"
     ? url.searchParams.get("shopId")
     : payload.shopId;
 
-  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+  if (!shopId) return badRequest("shopId gerekli");
 
   const requestedBarberId = url.searchParams.get("barberId") || undefined;
   const barberId = payload.role === "BARBER" ? payload.barberId : requestedBarberId;
@@ -67,7 +65,7 @@ export async function GET(request) {
       prisma.client.count({ where: { shopId } }),
       prisma.client.count({ where: { shopId, createdAt: { gte: new Date(thisMonthStart + "T00:00:00.000Z") } } }),
       prisma.client.count({ where: { shopId, createdAt: { gte: new Date(lastMonthStart + "T00:00:00.000Z"), lte: new Date(lastMonthEndStr + "T23:59:59.999Z") } } }),
-      prisma.barber.findMany({ where: { shopId, available: true }, select: { rating: true } }),
+      prisma.barber.aggregate({ where: { shopId, available: true }, _avg: { rating: true }, _count: { id: true } }),
       prisma.appointment.groupBy({
         by: ["serviceId"],
         where: { shopId, status: "COMPLETED", date: { gte: thisMonthStart } },
@@ -87,19 +85,22 @@ export async function GET(request) {
 
       let topService = null;
       if (topServiceRows.length > 0) {
-        const svc = await prisma.service.findUnique({ where: { id: topServiceRows[0].serviceId }, select: { nameTr: true } });
+        const serviceIds = topServiceRows.map((r) => r.serviceId);
+        const services = await prisma.service.findMany({ where: { id: { in: serviceIds } }, select: { id: true, nameTr: true } });
+        const svcMap = new Map(services.map((s) => [s.id, s]));
+        const svc = svcMap.get(topServiceRows[0].serviceId);
         if (svc) topService = { name: svc.nameTr, count: topServiceRows[0]._count._all };
       }
 
-      const avgRating = barbers.length > 0
-        ? Math.round((barbers.reduce((s, b) => s + (b.rating ?? 5), 0) / barbers.length) * 100) / 100
+      const avgRating = barbers._count.id > 0
+        ? Math.round((barbers._avg.rating ?? 5) * 100) / 100
         : 5.0;
 
       const walkInRate = mThis.completedCount > 0
         ? Math.round((mThis.walkInCount / mThis.completedCount) * 100)
         : 0;
 
-      return NextResponse.json({
+      return ok({
         totalRevenue:          totalRev._sum.grossAmount ?? totalRev._sum.price ?? 0,
         thisMonthRevenue:      mThis.revenue,
         lastMonthRevenue:      mLast.revenue,
@@ -146,7 +147,7 @@ export async function GET(request) {
     prisma.client.count({ where: { shopId } }),
     prisma.client.count({ where: { shopId, createdAt: { gte: new Date(thisMonthStart + "T00:00:00.000Z") } } }),
     prisma.client.count({ where: { shopId, createdAt: { gte: new Date(lastMonthStart + "T00:00:00.000Z"), lte: new Date(lastMonthEndStr + "T23:59:59.999Z") } } }),
-    prisma.barber.findMany({ where: { shopId, available: true }, select: { rating: true } }),
+    prisma.barber.aggregate({ where: { shopId, available: true }, _avg: { rating: true }, _count: { id: true } }),
     prisma.appointment.count({ where: { ...completedThis, isWalkIn: true } }),
     prisma.appointment.groupBy({
       by: ["serviceId"],
@@ -159,7 +160,10 @@ export async function GET(request) {
 
   let topService = null;
   if (topServiceRows.length > 0) {
-    const svc = await prisma.service.findUnique({ where: { id: topServiceRows[0].serviceId }, select: { nameTr: true } });
+    const serviceIds = topServiceRows.map((r) => r.serviceId);
+    const services = await prisma.service.findMany({ where: { id: { in: serviceIds } }, select: { id: true, nameTr: true } });
+    const svcMap = new Map(services.map((s) => [s.id, s]));
+    const svc = svcMap.get(topServiceRows[0].serviceId);
     if (svc) topService = { name: svc.nameTr, count: topServiceRows[0]._count._all };
   }
 
@@ -171,11 +175,11 @@ export async function GET(request) {
   const barberLast = lastMonthRev._sum.barberAmount ?? 0;
 
   const walkInRate = thisMonthAppts > 0 ? Math.round((thisMonthWalkIns / thisMonthAppts) * 100) : 0;
-  const avgRating  = barbers.length > 0
-    ? Math.round((barbers.reduce((s, b) => s + (b.rating ?? 5), 0) / barbers.length) * 100) / 100
+  const avgRating  = barbers._count.id > 0
+    ? Math.round((barbers._avg.rating ?? 5) * 100) / 100
     : 5.0;
 
-  return NextResponse.json({
+  return ok({
     totalRevenue:          totalRev._sum.grossAmount ?? totalRev._sum.price ?? 0,
     thisMonthRevenue:      grossThis,
     lastMonthRevenue:      grossLast,
@@ -199,4 +203,4 @@ export async function GET(request) {
     avgRating,
     ratingChange: 0,
   });
-}
+});

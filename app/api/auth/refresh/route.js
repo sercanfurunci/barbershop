@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireAuth, signToken, unauthorized } from "@/lib/auth";
+import { signToken } from "@/lib/auth";
+import { withAuth } from "@/lib/middleware/withRole";
 
 // POST /api/auth/refresh — issue a fresh 7-day token to a still-valid session.
 // Mobile clients call this on app open. Web calls it opportunistically.
 // If the current token has expired or its tokenVersion is stale, requireAuth
 // returns null and we 401 — the client must fall back to /api/auth/login.
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const POST = withAuth(async (request, _ctx, payload) => {
 
   const token = await signToken({
     userId:       payload.userId,
@@ -26,4 +25,4 @@ export async function POST(request) {
     path: "/",
   });
   return response;
-}
+});

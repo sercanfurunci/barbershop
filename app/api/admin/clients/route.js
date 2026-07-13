@@ -1,16 +1,13 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { ok } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/admin/clients?search=&barberId=&limit=200&offset=0
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN" &&
-      payload.role !== "RECEPTIONIST" && payload.role !== "BARBER") return forbidden();
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "RECEPTIONIST", "BARBER"];
 
+// GET /api/admin/clients?search=&barberId=&limit=200&offset=0
+export const GET = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
   const { searchParams } = new URL(request.url);
   const search   = searchParams.get("search") ?? "";
   const barberId = searchParams.get("barberId");
@@ -21,7 +18,11 @@ export async function GET(request) {
     ? searchParams.get("shopId")
     : payload.shopId;
 
-  if (!shopId) return NextResponse.json({ clients: [], total: 0 });
+  if (!shopId) return ok({ clients: [], total: 0 });
+
+  const barberFilter = barberId
+    ? barberId
+    : payload.role === "BARBER" ? payload.barberId : null;
 
   const where = {
     shopId,
@@ -31,9 +32,8 @@ export async function GET(request) {
         { phone: { contains: search } },
       ],
     }),
-    // If filtered by barber, only return clients who have an appointment with that barber
-    ...(barberId && {
-      appointments: { some: { barberId } },
+    ...(barberFilter && {
+      appointments: { some: { barberId: barberFilter } },
     }),
   };
 
@@ -43,33 +43,26 @@ export async function GET(request) {
       orderBy: { createdAt: "desc" },
       take: limit,
       skip: offset,
-      include: {
-        appointments: {
-          where:   { status: { notIn: ["CANCELLED"] } },
-          select:  { date: true, price: true, status: true, barberId: true },
-          orderBy: { date: "desc" },
-        },
+      select: {
+        id: true, name: true, phone: true, email: true,
+        blocked: true, noShowCount: true,
+        totalSpent: true, visitCount: true, lastVisitAt: true,
       },
     }),
     prisma.client.count({ where }),
   ]);
 
-  const clients = rawClients.map(c => {
-    const appts     = c.appointments;
-    const completed = appts.filter(a => a.status === "COMPLETED");
-    const lastVisit = completed[0]?.date ?? appts[0]?.date ?? null;
-    return {
-      id:          c.id,
-      name:        c.name,
-      phone:       c.phone,
-      email:       c.email,
-      blocked:     c.blocked,
-      noShows:     c.noShowCount,
-      visits:      appts.length,
-      totalSpent:  completed.reduce((s, a) => s + (a.price ?? 0), 0),
-      lastVisit,
-    };
-  });
+  const clients = rawClients.map(c => ({
+    id:         c.id,
+    name:       c.name,
+    phone:      c.phone,
+    email:      c.email,
+    blocked:    c.blocked,
+    noShows:    c.noShowCount,
+    visits:     c.visitCount,
+    totalSpent: c.totalSpent,
+    lastVisit:  c.lastVisitAt ? c.lastVisitAt.toISOString().slice(0, 10) : null,
+  }));
 
-  return NextResponse.json({ clients, total });
-}
+  return ok({ clients, total });
+});

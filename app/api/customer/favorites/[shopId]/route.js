@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { withAuth } from "@/lib/middleware/withRole";
 
 // DELETE /api/customer/favorites/:shopId — remove a favorite
-export async function DELETE(request, { params }) {
-  const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const DELETE = withAuth(async (request, { params }, payload) => {
 
   const { shopId } = await params;
 
@@ -14,4 +12,4 @@ export async function DELETE(request, { params }) {
   });
 
   return NextResponse.json({ ok: true });
-}
+});

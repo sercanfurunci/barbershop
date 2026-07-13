@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { withAuth } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
@@ -8,9 +8,7 @@ export const dynamic = "force-dynamic";
 const POINTS_PER_APPOINTMENT = 10;
 
 // GET /api/customer/loyalty?shopId=xxx — balance + recent events
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAuth(async (request, _ctx, payload) => {
 
   const shopId = new URL(request.url).searchParams.get("shopId");
 
@@ -30,7 +28,7 @@ export async function GET(request) {
     balance: points._sum.points ?? 0,
     events,
   });
-}
+});
 
 // Called internally when an appointment is COMPLETED — not a public endpoint.
 // Usage: awardLoyaltyPoints(userId, shopId, appointmentId)

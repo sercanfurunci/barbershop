@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN" && payload.role !== "RECEPTIONIST") return forbidden();
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "RECEPTIONIST"];
 
+export const GET = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
   const { searchParams } = new URL(request.url);
   const shopId = payload.role === "SUPER_ADMIN"
     ? (searchParams.get("shopId") ?? null)
@@ -43,4 +41,4 @@ export async function GET(request) {
   ]);
 
   return NextResponse.json({ jobs, total });
-}
+});

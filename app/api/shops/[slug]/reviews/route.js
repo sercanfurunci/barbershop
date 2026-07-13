@@ -33,9 +33,7 @@ export async function GET(request, { params }) {
 
   const where = {
     shopId: shop.id,
-    ...(stars    !== null ? { barberRating: stars } : {}),
-    ...(barberId          ? { barberId }              : {}),
-    // Only show reviews that have meaningful barber content
+    ...(barberId ? { barberId } : {}),
     barberRating: stars !== null ? stars : { gt: 0 },
   };
 

@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { withAuth } from "@/lib/middleware/withRole";
 
 // POST /api/customer/appointments/:id/cancel
 // Customers can only cancel PENDING or CONFIRMED appointments they own.
-export async function POST(request, { params }) {
-  const payload = await requireAuth(request);
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withAuth(async (request, { params }, payload) => {
 
   const { id } = await params;
 
@@ -46,4 +44,4 @@ export async function POST(request, { params }) {
   });
 
   return NextResponse.json({ ok: true });
-}
+});

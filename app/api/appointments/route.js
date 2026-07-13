@@ -1,19 +1,18 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { withAuth } from "@/lib/middleware/withRole";
 import { rateLimit, getIp } from "@/lib/rateLimit";
 import { queueNotifications } from "@/lib/notifications";
-import { todayStr, nowMinutes } from "@/lib/utils";
-import { canAcceptPublicBookings } from "@/lib/subscription";
-import { validateBookingWindow } from "@/lib/booking";
+import { createBooking, BookingError } from "@/lib/services/BookingService";
+import { ok, created, err, tooManyRequests, serverError } from "@/lib/apiResponse";
 
 export const dynamic = "force-dynamic";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Input helpers (HTTP-layer only) ─────────────────────────────────────────
 
 function normalizePhone(raw) {
-  const digits = String(raw).replace(/\D/g, "");
+  const digits = String(raw ?? "").replace(/\D/g, "");
   if (digits.startsWith("90") && digits.length === 12) return digits.slice(2);
   if (digits.startsWith("0")  && digits.length === 11) return digits.slice(1);
   if (digits.length === 10) return digits;
@@ -24,20 +23,8 @@ function isValidPhone(phone) { return /^5[0-9]{9}$/.test(phone); }
 function isValidName(name)   { return typeof name === "string" && name.trim().length >= 2 && name.trim().length <= 100; }
 function isValidEmail(email) { return !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
 
-const ALLOWED_SOURCES = new Set(["ONLINE", "WALK_IN", "MANUAL"]);
-// Legacy aliases accepted from older clients; normalized to current names.
-const SOURCE_ALIASES = { PHONE: "MANUAL", ADMIN: "MANUAL", WALKIN: "WALK_IN" };
-function normalizeSource(s) {
-  if (!s) return "ONLINE";
-  const up = String(s).toUpperCase();
-  const mapped = SOURCE_ALIASES[up] ?? up;
-  return ALLOWED_SOURCES.has(mapped) ? mapped : "ONLINE";
-}
-
 // GET /api/appointments?date=2026-06-10&barberId=brb-1&status=PENDING
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const GET = withAuth(async (request, _ctx, payload) => {
 
   const { searchParams } = new URL(request.url);
   const date     = searchParams.get("date");
@@ -53,7 +40,7 @@ export async function GET(request) {
       ? (searchParams.get("shopId") ?? null)
       : payload.shopId;
 
-  if (!shopId) return NextResponse.json([]);
+  if (!shopId) return ok([]);
 
   const effectiveBarberId =
     payload.role === "BARBER" ? payload.barberId : (barberId ?? undefined);
@@ -77,8 +64,8 @@ export async function GET(request) {
     take: limit,
   });
 
-  return NextResponse.json(appointments);
-}
+  return ok(appointments);
+});
 
 // POST /api/appointments — public booking endpoint
 export async function POST(request) {
@@ -88,218 +75,55 @@ export async function POST(request) {
     const ip = getIp(request);
     const rl = await rateLimit(`booking:${ip}`, { limit: 5, windowMs: 10 * 60 * 1000 });
     if (!rl.ok) {
-      return NextResponse.json(
-        { error: "Çok fazla istek gönderdiniz. Lütfen 10 dakika bekleyin." },
-        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
-      );
+      return err("Çok fazla istek gönderdiniz. Lütfen 10 dakika bekleyin.", 429);
     }
 
-    // Optional auth — used to bind bookedByUserId safely from the JWT, not the body.
-    const authPayload = await requireAuth(request).catch(() => null);
-
-    const body = await request.json();
-    const { name, phone: rawPhone, email, serviceId, barberId, date, time, notes, source, shopId,
-            bookedByName } = body;
-    // Always derive bookedByUserId from the verified JWT, never from the request body.
+    // Optional auth — bookedByUserId comes from JWT only, never the body.
+    const authPayload  = await requireAuth(request).catch(() => null);
     const bookedByUserId = authPayload?.userId ?? null;
 
-    // ── Guest phone-account check ────────────────────────────────────────────
-    // If caller is not logged in but phone belongs to a User account, reject —
-    // prevents ghost bookings that bypass account identity.
-    if (!bookedByUserId && rawPhone) {
-      const phone10check = String(rawPhone).replace(/\D/g, "").slice(-10);
-      if (phone10check.length >= 10) {
-        const ownerUser = await prisma.user.findFirst({
-          where: { phone: { endsWith: phone10check } },
-          select: { id: true },
-        });
-        if (ownerUser) {
-          return NextResponse.json(
-            { error: "Bu telefon numarası kayıtlı bir müşteri hesabına ait. Devam etmek için lütfen giriş yapın.", code: "PHONE_HAS_ACCOUNT" },
-            { status: 409 }
-          );
-        }
-      }
-    }
+    const body = await request.json();
+    const { name, phone: rawPhone, email, serviceId, barberId, date, time, notes, source, shopId, bookedByName } = body;
 
     // ── Field presence ───────────────────────────────────────────────────────
     if (!shopId || !name || !rawPhone || !serviceId || !barberId || !date || !time) {
-      return NextResponse.json({ error: "Eksik alanlar var" }, { status: 400 });
+      return err("Eksik alanlar var");
     }
-
-    // ── Name ─────────────────────────────────────────────────────────────────
     if (!isValidName(name)) {
-      return NextResponse.json({ error: "İsim en az 2 karakter olmalıdır." }, { status: 400 });
+      return err("İsim en az 2 karakter olmalıdır.");
     }
-
-    // ── Phone ─────────────────────────────────────────────────────────────────
     const phone = normalizePhone(rawPhone);
     if (!phone || !isValidPhone(phone)) {
-      return NextResponse.json(
-        { error: "Geçerli bir Türkiye telefon numarası girin (örn: 532 123 45 67)." },
-        { status: 400 }
-      );
+      return err("Geçerli bir Türkiye telefon numarası girin (örn: 532 123 45 67).");
     }
-
-    // ── Email (optional) ──────────────────────────────────────────────────────
     if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Geçerli bir e-posta adresi girin." }, { status: 400 });
+      return err("Geçerli bir e-posta adresi girin.");
     }
-
-    // ── Date format & not in past ─────────────────────────────────────────────
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return NextResponse.json({ error: "Geçersiz tarih formatı." }, { status: 400 });
+      return err("Geçersiz tarih formatı.");
     }
-    const today = todayStr(); // Istanbul-aware: avoids UTC midnight vs 00:00-03:00 Istanbul gap
-    if (date < today) {
-      return NextResponse.json({ error: "Geçmiş bir tarihe randevu oluşturulamaz." }, { status: 400 });
-    }
-
-    // ── Time format ───────────────────────────────────────────────────────────
     if (!/^\d{2}:\d{2}$/.test(time)) {
-      return NextResponse.json({ error: "Geçersiz saat formatı." }, { status: 400 });
+      return err("Geçersiz saat formatı.");
     }
 
-    // ── Same-day past-time block ──────────────────────────────────────────────
-    if (date === today) {
-      const [hh, mm] = time.split(":").map(Number);
-      if (hh * 60 + mm <= nowMinutes()) {
-        return NextResponse.json({ error: "Geçmiş bir saate randevu oluşturulamaz." }, { status: 400 });
-      }
-    }
-
-    // Fetch service, barber, junction, existing client in parallel.
-    // ponytail: BarberService is an opt-in restriction list. If the barber has
-    // ZERO junction rows, treat it as "offers everything" — no admin UI maintains
-    // the junction yet, so every shop would otherwise hit a 409.
-    const [shop, service, barber, barberOffersService, barberServiceCount, existingClient] = await Promise.all([
-      prisma.shop.findUnique({
-        where: { id: shopId },
-        select: { id: true, status: true, subscriptionStatus: true, trialEndsAt: true, deletedAt: true, autoConfirmBookings: true },
-      }),
-      prisma.service.findFirst({ where: { id: serviceId, shopId } }),
-      prisma.barber.findFirst({ where: { id: barberId, shopId } }),
-      prisma.barberService.findUnique({ where: { barberId_serviceId: { barberId, serviceId } } }),
-      prisma.barberService.count({ where: { barberId } }),
-      prisma.client.findUnique({
-        where: { shopId_phone: { shopId, phone } },
-        select: { id: true, blocked: true },
-      }),
-    ]);
-
-    if (!shop || shop.deletedAt) return NextResponse.json({ error: "Salon bulunamadı" }, { status: 404 });
-    if (!canAcceptPublicBookings(shop)) {
-      return NextResponse.json({ error: "Bu salon şu an çevrimiçi randevu almıyor." }, { status: 403 });
-    }
-    if (!service) return NextResponse.json({ error: "Hizmet bulunamadı" }, { status: 404 });
-    if (!barber)  return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
-    if (!barber.available) return NextResponse.json({ error: "Bu berber şu an randevu kabul etmiyor." }, { status: 409 });
-    if (barberServiceCount > 0 && !barberOffersService) {
-      return NextResponse.json({ error: "Seçilen berber bu hizmeti vermiyor." }, { status: 409 });
-    }
-
-    // ── Phone-based spam guard: max 2 active upcoming appointments per phone ──
-    if (existingClient?.blocked) {
-      return NextResponse.json({ error: "Bu numara ile randevu oluşturulamaz." }, { status: 403 });
-    }
-    if (existingClient) {
-      const upcomingCount = await prisma.appointment.count({
-        where: {
-          shopId,
-          clientId: existingClient.id,
-          date:     { gte: today },
-          status:   { notIn: ["CANCELLED", "NOSHOW"] },
-        },
-      });
-      if (upcomingCount >= 2) {
-        return NextResponse.json(
-          { error: "Bu telefon numarasıyla zaten 2 aktif randevunuz bulunmaktadır." },
-          { status: 429 }
-        );
-      }
-    }
-
-    const [h, m] = time.split(":").map(Number);
-    const startMin = h * 60 + m;
-    const endMin   = startMin + service.duration;
-
-    // ── Working hours / break / holiday gate (TOCTOU-tolerant: rules change rarely) ──
-    const window = await validateBookingWindow({
-      shopId, barberId, date, startMin, durationMin: service.duration,
+    const appointment = await createBooking({
+      shopId, name, phone, email, serviceId, barberId, date, time,
+      notes, source, bookedByUserId, bookedByName,
     });
-    if (!window.ok) return NextResponse.json({ error: window.error }, { status: window.status });
-
-    // Serializable transaction: re-check slot conflicts and create atomically.
-    // ponytail: Serializable retries on conflict — fine for ~5 bookings/sec.
-    // Upgrade to advisory locks if throughput becomes an issue.
-    let appointment;
-    try {
-      appointment = await prisma.$transaction(async (tx) => {
-        const slotConflicts = await tx.appointment.findMany({
-          where: { shopId, barberId, date, status: { notIn: ["CANCELLED", "NOSHOW"] } },
-          select: { time: true, duration: true },
-        });
-        const conflict = slotConflicts.some(a => {
-          const aStart = parseInt(a.time.split(":")[0]) * 60 + parseInt(a.time.split(":")[1]);
-          const aEnd   = aStart + a.duration;
-          return startMin < aEnd && endMin > aStart;
-        });
-        if (conflict) throw new Error("SLOT_TAKEN");
-
-        const client = existingClient
-          ? await tx.client.update({
-              where: { id: existingClient.id },
-              data: { name: name.trim(), ...(email && { email }) },
-            })
-          : await tx.client.create({
-              data: { shopId, name: name.trim(), phone, email: email || null },
-            });
-
-        // If a logged-in CUSTOMER hasn't been linked to a Client yet, do it now.
-        // This ensures future review lookups via User.clientId work across all shops.
-        if (bookedByUserId && !existingClient) {
-          await tx.user.updateMany({
-            where: { id: bookedByUserId, clientId: null },
-            data:  { clientId: client.id },
-          }).catch(() => {}); // ignore unique constraint if already set by a race
-        }
-
-        return tx.appointment.create({
-          data: {
-            shopId,
-            clientId:  client.id,
-            barberId,
-            serviceId,
-            date,
-            time,
-            duration:  service.duration,
-            price:     service.price,
-            status:    shop.autoConfirmBookings ? "CONFIRMED" : "PENDING",
-            source:    normalizeSource(source),
-            notes:     notes?.trim().slice(0, 500) ?? null,
-            bookedByUserId: bookedByUserId ?? null,
-            bookedByName:   bookedByName?.trim().slice(0, 100) ?? null,
-          },
-          include: { shop: { select: { name: true, address: true, phone: true } } },
-        });
-      }, { isolationLevel: "Serializable" });
-    } catch (e) {
-      if (e.message === "SLOT_TAKEN") {
-        return NextResponse.json({ error: "Bu saat dilimi dolu. Lütfen başka bir saat seçin." }, { status: 409 });
-      }
-      throw e;
-    }
 
     log.info("booking created", { appointmentId: appointment.id, shopId, barberId, date, time });
 
-    // Queue notifications (non-blocking — don't let this fail the response)
+    // Queue notifications (non-blocking)
     queueNotifications(appointment.id, "CREATED").catch(err =>
       log.error("notification queue error", { appointmentId: appointment.id }, err)
     );
 
-    return NextResponse.json(appointment, { status: 201 });
-  } catch (err) {
-    log.error("booking error", {}, err);
-    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
+    return created(appointment);
+  } catch (e) {
+    if (e instanceof BookingError) {
+      return err(e.message, e.status, e.code);
+    }
+    log.error("booking error", {}, e);
+    return serverError();
   }
 }

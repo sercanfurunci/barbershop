@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
 import { queueNotifications, cancelPendingJobs } from "@/lib/notifications";
 import { createReviewRequest } from "@/lib/reviews";
 import { splitRevenue } from "@/lib/revenue";
+import { withAuth } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,7 @@ const TRANSITIONS = {
   NOSHOW:      new Set(["PENDING","CONFIRMED"]),
 };
 
-export async function PATCH(request, { params }) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const PATCH = withAuth(async (request, { params }, payload) => {
 
   const { id } = await params;
   const body = await request.json();
@@ -101,7 +100,7 @@ export async function PATCH(request, { params }) {
           completedAt:  now,
         },
       });
-      if (claimed.count === 0) return { raced: true };
+      if (claimed.count === 0) return { raced: true, updated: null };
 
       await tx.client.update({
         where: { id: appt.clientId },
@@ -119,10 +118,13 @@ export async function PATCH(request, { params }) {
           data: { noShowCount: { decrement: 1 } },
         });
       }
-      return { raced: false };
+
+      // Fetch the updated record inside the tx — avoids a second round-trip.
+      const updated = await tx.appointment.findUnique({ where: { id } });
+      return { raced: false, updated };
     });
 
-    const updated = await prisma.appointment.findUnique({ where: { id } });
+    const updated = result.updated ?? await prisma.appointment.findUnique({ where: { id } });
     if (!result.raced) {
       createReviewRequest(id).catch(() => {});
       writeAudit({ status: "COMPLETED", finalPrice, tipAmount, paymentMethod, barberAmount, shopAmount });
@@ -207,4 +209,4 @@ export async function PATCH(request, { params }) {
   if (status === "CONFIRMED") queueNotifications(id, "CONFIRMED").catch(() => {});
   writeAudit({ status });
   return NextResponse.json(updated);
-}
+});

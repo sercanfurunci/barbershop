@@ -1,23 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
 const DAYS = ["mon","tue","wed","thu","fri","sat","sun"];
-
-// Shop-scoped: only barbers in the caller's shop are visible/editable.
-function shopGuard(payload) {
-  if (!payload) return { error: unauthorized() };
-  if (payload.role === "SUPER_ADMIN") return { shopFilter: {} }; // platform-wide
-  if (payload.role !== "ADMIN" && payload.role !== "RECEPTIONIST") return { error: forbidden() };
-  if (!payload.shopId) return { error: forbidden() };
-  return { shopFilter: { shopId: payload.shopId } };
-}
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "RECEPTIONIST"];
 
 // GET /api/admin/working-hours?barberId=brb-1
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  const guard = shopGuard(payload);
-  if (guard.error) return guard.error;
+export const GET = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  const shopFilter = payload.role === "SUPER_ADMIN" ? {} : { shopId: payload.shopId };
 
   const { searchParams } = new URL(request.url);
   const barberId = searchParams.get("barberId");
@@ -25,7 +16,7 @@ export async function GET(request) {
   if (barberId) {
     // Verify the barber belongs to the caller's shop
     const barber = await prisma.barber.findFirst({
-      where: { id: barberId, ...guard.shopFilter },
+      where: { id: barberId, ...shopFilter },
       select: { id: true },
     });
     if (!barber) return NextResponse.json({}, { status: 404 });
@@ -34,19 +25,17 @@ export async function GET(request) {
   }
 
   const barbers = await prisma.barber.findMany({
-    where: guard.shopFilter,
+    where: shopFilter,
     include: { workingHours: true, breaks: true },
     orderBy: { createdAt: "asc" },
   });
   return NextResponse.json(barbers);
-}
+});
 
 // PATCH /api/admin/working-hours
 // body: { barberId, mon: { start: 540, end: 1080 }, ... }
-export async function PATCH(request) {
-  const payload = await requireAuth(request);
-  const guard = shopGuard(payload);
-  if (guard.error) return guard.error;
+export const PATCH = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  const shopFilter = payload.role === "SUPER_ADMIN" ? {} : { shopId: payload.shopId };
 
   const body = await request.json();
   const { barberId, ...days } = body;
@@ -55,7 +44,7 @@ export async function PATCH(request) {
 
   // Verify barber belongs to caller's shop before mutating
   const barber = await prisma.barber.findFirst({
-    where: { id: barberId, ...guard.shopFilter },
+    where: { id: barberId, ...shopFilter },
     select: { id: true },
   });
   if (!barber) return forbidden();
@@ -68,10 +57,11 @@ export async function PATCH(request) {
     }
   }
 
-  const existing = await prisma.workingHours.findUnique({ where: { barberId } });
-  const wh = existing
-    ? await prisma.workingHours.update({ where: { barberId }, data })
-    : await prisma.workingHours.create({ data: { barberId, ...data } });
+  const wh = await prisma.workingHours.upsert({
+    where:  { barberId },
+    update: data,
+    create: { barberId, ...data },
+  });
 
   return NextResponse.json(wh);
-}
+});

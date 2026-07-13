@@ -22,7 +22,19 @@ export async function GET(request) {
 
   const shops = await prisma.shop.findMany({
     orderBy: { createdAt: "desc" },
-    include: {
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      address: true,
+      phone: true,
+      email: true,
+      status: true,
+      planTier: true,
+      subscriptionStatus: true,
+      trialEndsAt: true,
+      currentPeriodEndsAt: true,
+      createdAt: true,
       _count: { select: { barbers: true, services: true, appointments: true, users: true } },
     },
   });

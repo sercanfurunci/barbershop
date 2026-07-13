@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
+
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "RECEPTIONIST"];
 
 // GET /api/admin/reviews?stars=4&limit=100
 // Barber review stats for admin dashboard.
 // stars filters on barberRating (the only rating that matters now).
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (!["ADMIN", "SUPER_ADMIN", "RECEPTIONIST"].includes(payload.role)) return forbidden();
-
+export const GET = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
   const { searchParams } = new URL(request.url);
   const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 200);
   const stars = (() => {
@@ -92,4 +91,4 @@ export async function GET(request) {
       pipeline:     pipelineMap,
     },
   });
-}
+});

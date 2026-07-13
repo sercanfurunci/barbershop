@@ -1,78 +1,69 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
 import { canCreateBarber } from "@/lib/subscription";
 import bcrypt from "bcryptjs";
+import { ok, created, badRequest, conflict } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
-function guard(payload) {
-  if (!payload) return { error: unauthorized() };
-  if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN") return { error: forbidden() };
-  if (payload.role === "SUPER_ADMIN") return { shopId: null };
-  if (!payload.shopId) return { error: forbidden() };
-  return { shopId: payload.shopId };
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
+
+function resolveShopId(payload, request) {
+  return payload.role === "SUPER_ADMIN"
+    ? new URL(request.url).searchParams.get("shopId")
+    : payload.shopId;
 }
 
 // GET /api/admin/barbers
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  const g = guard(payload);
-  if (g.error) return g.error;
+export const GET = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  const shopId = resolveShopId(payload, request);
+  if (!shopId) return badRequest("shopId gerekli");
 
-  const shopId = g.shopId ?? new URL(request.url).searchParams.get("shopId");
-  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
-  const where = { shopId };
   const barbers = await prisma.barber.findMany({
-    where,
+    where: { shopId },
     include: { workingHours: true, breaks: true },
     orderBy: { createdAt: "asc" },
   });
 
-  return NextResponse.json(barbers);
-}
+  return ok(barbers);
+});
 
 // POST /api/admin/barbers
 // body: { slug, nameTr, nameEn?, titleTr, titleEn?, bioTr?, bioEn?, avatar, yearsExp?, specialties?, color? }
-export async function POST(request) {
-  const payload = await requireAuth(request);
-  const g = guard(payload);
-  if (g.error) return g.error;
-
-  const shopId = g.shopId;
-  if (!shopId) return NextResponse.json({ error: "shopId gerekli" }, { status: 400 });
+export const POST = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  const shopId = payload.role === "SUPER_ADMIN"
+    ? new URL(request.url).searchParams.get("shopId")
+    : payload.shopId;
+  if (!shopId) return badRequest("shopId gerekli");
 
   const body = await request.json();
   const { slug, nameTr, nameEn, titleTr, titleEn, bioTr, bioEn, avatar, yearsExp, specialties, color, password, email,
           paymentType, commissionRate, fixedSalary } = body;
 
   if (!slug || !nameTr || !titleTr || !avatar) {
-    return NextResponse.json({ error: "slug, nameTr, titleTr ve avatar zorunlu" }, { status: 400 });
+    return badRequest("slug, nameTr, titleTr ve avatar zorunlu");
   }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: "Geçerli bir e-posta adresi gerekli" }, { status: 400 });
+    return badRequest("Geçerli bir e-posta adresi gerekli");
   }
   if (!password || password.length < 8) {
-    return NextResponse.json({ error: "Şifre en az 8 karakter olmalı" }, { status: 400 });
+    return badRequest("Şifre en az 8 karakter olmalı");
   }
   if (!/^[a-z0-9-]{2,40}$/.test(slug)) {
-    return NextResponse.json({ error: "Slug sadece küçük harf, rakam ve tire içerebilir (2-40 karakter)" }, { status: 400 });
+    return badRequest("Slug sadece küçük harf, rakam ve tire içerebilir (2-40 karakter)");
   }
 
   const dupe = await prisma.barber.findFirst({ where: { shopId, slug } });
-  if (dupe) return NextResponse.json({ error: "Bu slug zaten kullanılıyor" }, { status: 409 });
+  if (dupe) return conflict("Bu slug zaten kullanılıyor");
 
   // Plan limit gate. 402 Payment Required is the conventional status for
   // "this is a billing limit, not a permission issue".
   const limit = await canCreateBarber(shopId);
   if (!limit.ok) {
-    return NextResponse.json(
-      { error: limit.reason, limit: limit.limit, current: limit.current },
-      { status: 402 }
-    );
+    return ok({ error: limit.reason, limit: limit.limit, current: limit.current }, 402);
   }
 
   const normalizedEmail = email.toLowerCase().trim();
   const userDupe = await prisma.user.findFirst({ where: { email: normalizedEmail } });
-  if (userDupe) return NextResponse.json({ error: "Bu e-posta adresi zaten kullanılıyor" }, { status: 409 });
+  if (userDupe) return conflict("Bu e-posta adresi zaten kullanılıyor");
 
   // Commission settings — default to shop's defaultCommissionRate when admin
   // leaves the field blank, so a freshly-created barber inherits the house split.
@@ -85,7 +76,7 @@ export async function POST(request) {
     } else {
       cr = Number(commissionRate);
       if (!Number.isFinite(cr) || cr < 0 || cr > 100) {
-        return NextResponse.json({ error: "Komisyon oranı 0-100 arasında olmalı" }, { status: 400 });
+        return badRequest("Komisyon oranı 0-100 arasında olmalı");
       }
     }
   } else {
@@ -95,7 +86,7 @@ export async function POST(request) {
   if (pt === "FIXED") {
     fs = fixedSalary == null || fixedSalary === "" ? null : Number(fixedSalary);
     if (fs != null && (!Number.isFinite(fs) || fs < 0 || fs > 10_000_000)) {
-      return NextResponse.json({ error: "Maaş 0-10.000.000 arasında olmalı" }, { status: 400 });
+      return badRequest("Maaş 0-10.000.000 arasında olmalı");
     }
   }
 
@@ -139,12 +130,12 @@ export async function POST(request) {
 
     return [b];
   });
-  } catch (err) {
-    if (err.code === "P2002") {
-      return NextResponse.json({ error: "Bu slug veya e-posta zaten kullanılıyor" }, { status: 409 });
+  } catch (e) {
+    if (e.code === "P2002") {
+      return conflict("Bu slug veya e-posta zaten kullanılıyor");
     }
-    throw err;
+    throw e;
   }
 
-  return NextResponse.json(barber, { status: 201 });
-}
+  return created(barber);
+});

@@ -1,32 +1,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { forbidden } from "@/lib/apiResponse";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
 const COVER_STYLES = new Set(["auto", "custom", "gallery_hero", "logo_hero", "no_hero"]);
 
 // GET /api/admin/shop/mobile-settings
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN") return forbidden();
-  if (!payload.shopId) return forbidden();
+export const GET = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  // SUPER_ADMIN must pass ?shopId= since they have no default shopId
+  const shopId = payload.shopId;
+  if (!shopId) return forbidden();
 
   const shop = await prisma.shop.findUnique({
-    where: { id: payload.shopId },
+    where: { id: shopId },
     select: { mobileSettings: true, featuredImage: true, gallery: true, coverImage: true, logo: true },
   });
   return NextResponse.json(shop);
-}
+});
 
 // PATCH /api/admin/shop/mobile-settings
 // body: { mobileSettings?, featuredImage? }
-export async function PATCH(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (payload.role !== "ADMIN" && payload.role !== "SUPER_ADMIN") return forbidden();
-  if (!payload.shopId) return forbidden();
+export const PATCH = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
+  const shopId = payload.shopId;
+  if (!shopId) return forbidden();
 
   const body = await request.json();
   const data = {};
@@ -38,7 +37,7 @@ export async function PATCH(request) {
   if (body.mobileSettings !== undefined) {
     // Fetch current to merge (patch semantics)
     const current = await prisma.shop.findUnique({
-      where: { id: payload.shopId },
+      where: { id: shopId },
       select: { mobileSettings: true },
     });
     const existing = (current?.mobileSettings ?? {});
@@ -57,9 +56,9 @@ export async function PATCH(request) {
   }
 
   const updated = await prisma.shop.update({
-    where: { id: payload.shopId },
+    where: { id: shopId },
     data,
     select: { mobileSettings: true, featuredImage: true },
   });
   return NextResponse.json(updated);
-}
+});

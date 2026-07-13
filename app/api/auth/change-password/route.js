@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, signToken, unauthorized } from "@/lib/auth";
+import { signToken } from "@/lib/auth";
 import { rateLimit } from "@/lib/rateLimit";
+import { unauthorized } from "@/lib/apiResponse";
+import { withAuth } from "@/lib/middleware/withRole";
 import bcrypt from "bcryptjs";
 
-export async function PATCH(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
+export const PATCH = withAuth(async (request, _ctx, payload) => {
 
   // Rate-limit on userId so IP rotation doesn't help brute-force current password
   const rl = await rateLimit(`chpw:${payload.userId}`, { limit: 5, windowMs: 15 * 60 * 1000 });
@@ -59,4 +59,4 @@ export async function PATCH(request) {
     path: "/",
   });
   return response;
-}
+});

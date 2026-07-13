@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, unauthorized, forbidden } from "@/lib/auth";
+import { withRole } from "@/lib/middleware/withRole";
 
 export const dynamic = "force-dynamic";
 
+const STATS_ROLES = ["ADMIN", "SUPER_ADMIN", "RECEPTIONIST", "BARBER"];
+
 // GET /api/admin/revenue?range=30d|7d&barberId=
 // Returns daily completed appointment revenue for the given range
-export async function GET(request) {
-  const payload = await requireAuth(request);
-  if (!payload) return unauthorized();
-  if (!["ADMIN", "SUPER_ADMIN", "RECEPTIONIST", "BARBER"].includes(payload.role)) return forbidden();
-
+export const GET = withRole(STATS_ROLES, async (request, _ctx, payload) => {
   const { searchParams } = new URL(request.url);
   const range    = searchParams.get("range") ?? "30d";
   const barberId = searchParams.get("barberId") ?? null;
@@ -67,4 +65,4 @@ export async function GET(request) {
   const avg = nonZero > 0 ? Math.round(total / nonZero) : 0;
 
   return NextResponse.json({ data, total, avg });
-}
+});
