@@ -172,6 +172,95 @@ describe.skipIf(!HAS_DB)("BookingService integration", () => {
     expect(client).not.toBeNull();
     expect(appt.clientId).toBe(client.id);
   });
+
+  it("prevents double-booking when slots overlap due to service duration", async () => {
+    // First booking at 09:00 with a 30-min service; 09:15 overlaps within that window
+    const nextWednesday = getNextWeekday(3);
+
+    await createBooking({
+      shopId,
+      barberId,
+      serviceId,
+      name:  "Early Bird",
+      phone: "5550001111",
+      date:  nextWednesday,
+      time:  "09:00",
+    });
+
+    // 09:15 starts inside the 09:00–09:30 window — must be rejected
+    await expect(
+      createBooking({
+        shopId,
+        barberId,
+        serviceId,
+        name:  "Overlapper",
+        phone: "5550002222",
+        date:  nextWednesday,
+        time:  "09:15",
+      })
+    ).rejects.toMatchObject({ code: "SLOT_TAKEN" });
+  });
+
+  it("throws BARBER_NOT_FOUND for a barberId that does not belong to the shop", async () => {
+    const nextMonday = getNextWeekday(1);
+
+    await expect(
+      createBooking({
+        shopId,
+        barberId:  "00000000-0000-0000-0000-000000000000", // non-existent
+        serviceId,
+        name:  "Ghost Barber",
+        phone: "5550003333",
+        date:  nextMonday,
+        time:  "15:00",
+      })
+    ).rejects.toMatchObject({ code: "BARBER_NOT_FOUND" });
+  });
+
+  it("throws SLOT_UNAVAILABLE when booking is outside barber working hours", async () => {
+    // The barber's working hours end at 18:00 (1080 min); 20:00 is outside
+    const nextMonday = getNextWeekday(1);
+
+    await expect(
+      createBooking({
+        shopId,
+        barberId,
+        serviceId,
+        name:  "Night Owl",
+        phone: "5550004444",
+        date:  nextMonday,
+        time:  "20:00",
+      })
+    ).rejects.toMatchObject({ code: "SLOT_UNAVAILABLE" });
+  });
+
+  it("allows the same phone to book two different slots on the same day", async () => {
+    const nextThursday = getNextWeekday(4);
+
+    const appt1 = await createBooking({
+      shopId,
+      barberId,
+      serviceId,
+      name:  "Multi Booker",
+      phone: "5550005555",
+      date:  nextThursday,
+      time:  "08:00",
+    });
+
+    const appt2 = await createBooking({
+      shopId,
+      barberId,
+      serviceId,
+      name:  "Multi Booker",
+      phone: "5550005555",
+      date:  nextThursday,
+      time:  "09:00",
+    });
+
+    expect(appt1.id).not.toBe(appt2.id);
+    expect(appt1.status).toBe("CONFIRMED");
+    expect(appt2.status).toBe("CONFIRMED");
+  });
 });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
