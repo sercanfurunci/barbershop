@@ -140,7 +140,7 @@ export default function KPICards() {
 
   if (!stats) {
     return (
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {SKELETON_CARDS.map((s, i) => (
           <motion.div
             key={s.key}
@@ -209,7 +209,7 @@ export default function KPICards() {
   ];
 
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {CARDS.map((card, i) => (
         <KPICard key={card.key} card={card} delay={i * 0.07} vsLabel={card.vs ?? kpi.vsLastMonth} />
       ))}

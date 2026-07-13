@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { todayStr, toDateStr } from "@/lib/utils";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
-import { toTelHref } from "@/lib/validation";
 import ManualBookingModal from "@/components/admin/ManualBookingModal";
 import WalkInModal from "@/components/admin/WalkInModal";
 import ImageCropModal from "@/components/shared/ImageCropModal";
@@ -19,343 +18,35 @@ import { useLang } from "@/contexts/LanguageContext";
 import Link from "next/link";
 import {
   Plus, LogOut, ChevronLeft, ChevronRight, ExternalLink,
-  Phone, UserCheck, Clock, CheckCircle, XCircle, AlertCircle, ArrowRight,
-  CalendarDays, List, User, X, LayoutDashboard, Users, MoreHorizontal,
+  Clock, AlertCircle,
+  CalendarDays, List, X, LayoutDashboard, Users, MoreHorizontal,
   Settings, Eye, EyeOff, Save, Loader2, AtSign, Star, Camera, Trash2, MessageSquare,
 } from "lucide-react";
 
 import { C, SHADOW } from "@/lib/adminTheme";
+import { DSPageLoader, DSEmptyState } from "@/components/ds";
 
-// Simple 3-action flow: confirm arrival → done, or mark no-show
-export const FLOW = [
-  { key: "confirmed",  label: "Onaylandı",  shortLabel: "Onay",   color: "#15803D", bg: "rgba(34,197,94,0.12)"  },
-  { key: "completed",  label: "Tamamlandı", shortLabel: "Tamam",  color: "#57514B", bg: "rgba(107,104,112,0.12)" },
-  { key: "noshow",     label: "Gelmedi",    shortLabel: "Gelmedi",color: "#111111", bg: "rgba(17,17,17,0.12)"  },
-];
+// Re-export constants and utilities from their canonical locations so that
+// existing import paths (e.g. AdminDashboard.js) continue to work unchanged.
+export { FLOW, ALL_STATUS } from "@/components/admin/barber/statusConstants";
+export { addDays, isToday, formatDateLong, nowTimeStr } from "@/lib/adminDateUtils";
 
-export const ALL_STATUS = {
-  pending:     { label: "Bekleniyor",  color: "#B45309", bg: "rgba(245,158,11,0.1)"  },
-  confirmed:   { label: "Onaylandı",   color: "#15803D", bg: "rgba(34,197,94,0.1)"   },
-  completed:   { label: "Tamamlandı",  color: "#57514B", bg: "rgba(107,104,112,0.1)" },
-  noshow:      { label: "Gelmedi",     color: "#111111", bg: "rgba(17,17,17,0.1)"   },
-  cancelled:   { label: "İptal",       color: "#52525b", bg: "rgba(82,82,91,0.1)"    },
-  "in-progress": { label: "Devam",     color: "#2563EB", bg: "rgba(96,165,250,0.1)"  },
-};
+// Re-export extracted sub-components so external importers keep working.
+export { NextAppointmentCard } from "@/components/admin/barber/NextAppointmentCard";
+export { TimelineItem }        from "@/components/admin/barber/TimelineItem";
+export { BarberDayView }       from "@/components/admin/barber/BarberDayView";
+export { BarberAppointmentsList } from "@/components/admin/barber/BarberAppointmentsList";
+export { BarberCustomersView } from "@/components/admin/barber/BarberCustomersView";
 
-function timeToMin(t) {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
+// Local imports for use inside this file
+import { FLOW, ALL_STATUS } from "@/components/admin/barber/statusConstants";
+import { addDays, isToday, formatDateLong, nowTimeStr } from "@/lib/adminDateUtils";
+import { NextAppointmentCard } from "@/components/admin/barber/NextAppointmentCard";
+import { TimelineItem }        from "@/components/admin/barber/TimelineItem";
+import { BarberAppointmentsList } from "@/components/admin/barber/BarberAppointmentsList";
+import { BarberCustomersView } from "@/components/admin/barber/BarberCustomersView";
 
-export function addDays(dateStr, n) {
-  const d = new Date(dateStr + "T12:00:00");
-  d.setDate(d.getDate() + n);
-  return toDateStr(d);
-}
-
-export function isToday(dateStr) {
-  return dateStr === todayStr();
-}
-
-export function formatDateLong(dateStr) {
-  return new Date(dateStr + "T12:00:00").toLocaleDateString("tr-TR", {
-    weekday: "long", day: "numeric", month: "long",
-  });
-}
-
-export function nowTimeStr() {
-  const n = new Date();
-  return `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`;
-}
-
-// ─── Next Appointment Card ────────────────────────────────────────────────────
-export function NextAppointmentCard({ appt, onAction }) {
-  if (!appt) {
-    return (
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px 24px", display: "flex", alignItems: "center", gap: "16px", boxShadow: SHADOW.card }}>
-        <div style={{ width: "46px", height: "46px", background: C.surface, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", opacity: 0.45 }}>✂</div>
-        <div>
-          <div style={{ fontSize: "13.5px", color: C.secondary, fontWeight: 500 }}>Sonraki randevu yok</div>
-          <div style={{ fontSize: "11.5px", color: C.muted, marginTop: "3px" }}>Bugün geri kalan süre için müsaitsiniz</div>
-        </div>
-      </div>
-    );
-  }
-
-  const sc = ALL_STATUS[appt.status] ?? ALL_STATUS.pending;
-  const isActive = false;
-
-  return (
-    <motion.div
-      layout
-      style={{
-        background: isActive ? "#EFF4FD" : C.card,
-        border: `1px solid ${isActive ? "rgba(96,165,250,0.25)" : sc.color + "33"}`,
-        borderRadius: "14px",
-        padding: "18px 20px",
-        position: "relative",
-        overflow: "hidden",
-        boxShadow: SHADOW.card,
-      }}
-    >
-      {isActive && (
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, #2563EB, transparent)", opacity: 0.6 }} />
-      )}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
-        <div style={{ textAlign: "center", flexShrink: 0 }}>
-          <div className="font-mono-custom" style={{ fontSize: "24px", color: sc.color, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.02em" }}>{appt.time}</div>
-          <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, marginTop: "4px", letterSpacing: "0.06em", textTransform: "uppercase" }}>{appt.duration} DK</div>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: "16px", color: C.primary, fontWeight: 600, marginBottom: "3px", letterSpacing: "-0.01em" }}>{appt.client}</div>
-          <div style={{ fontSize: "13px", color: C.secondary, marginBottom: appt.phone ? "3px" : 0 }}>{appt.service}</div>
-          {appt.phone && (
-            <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-              <Phone size={10} style={{ color: C.muted }} />
-              <span className="font-mono-custom" style={{ fontSize: "11px", color: C.muted }}>{appt.phone}</span>
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0, alignItems: "flex-end" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", padding: "4px 9px", borderRadius: "999px", background: sc.bg, fontSize: "10.5px", color: sc.color, fontWeight: 600, letterSpacing: "0.01em" }}>
-            {sc.label}
-          </div>
-          <div className="font-mono-custom" style={{ fontSize: "15px", color: C.primary, fontWeight: 700, textAlign: "right" }}>
-            {appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick action buttons */}
-      <div style={{ display: "flex", gap: "6px", marginTop: "14px", paddingTop: "14px", borderTop: `1px solid ${C.border}` }}>
-        {FLOW.filter(f => f.key !== appt.status).map(f => (
-          <button
-            key={f.key}
-            onClick={() => onAction(appt.id, f.key)}
-            style={{
-              flex: 1, minHeight: "44px", borderRadius: "8px",
-              background: "none", border: `1px solid ${C.border}`,
-              fontSize: "12px", color: C.secondary, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = f.bg; e.currentTarget.style.borderColor = f.color + "40"; e.currentTarget.style.color = f.color; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.secondary; }}
-          >
-            {f.shortLabel}
-          </button>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Timeline Item ────────────────────────────────────────────────────────────
-export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
-  const [expanded, setExpanded] = useState(false);
-  const sc    = ALL_STATUS[appt.status] ?? ALL_STATUS.pending;
-  const isDone = ["completed", "noshow", "cancelled"].includes(appt.status);
-  // Primary next-action: one-tap shortcut so phones don't need to expand the row.
-  const primary = appt.status === "pending"
-    ? FLOW.find(f => f.key === "confirmed")
-    : appt.status === "confirmed"
-      ? FLOW.find(f => f.key === "completed")
-      : null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.04 }}
-    >
-      <div
-        onClick={() => !isDone && setExpanded(v => !v)}
-        style={{
-          background: isNext ? C.cardHi : C.card,
-          border: `1px solid ${isNext ? sc.color + "44" : C.border}`,
-          borderRadius: "12px",
-          padding: "14px 16px",
-          cursor: isDone ? "default" : "pointer",
-          opacity: isPast && isDone ? 0.55 : 1,
-          transition: "border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease",
-          position: "relative",
-          boxShadow: SHADOW.card,
-        }}
-        onMouseEnter={e => { if (!isDone) { e.currentTarget.style.borderColor = sc.color + "55"; e.currentTarget.style.background = C.cardHi; e.currentTarget.style.boxShadow = SHADOW.elevated; }}}
-        onMouseLeave={e => { if (!isDone) { e.currentTarget.style.borderColor = isNext ? sc.color + "44" : C.border; e.currentTarget.style.background = isNext ? C.cardHi : C.card; e.currentTarget.style.boxShadow = SHADOW.card; }}}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          {/* Time */}
-          <div style={{ textAlign: "center", minWidth: "46px", flexShrink: 0 }}>
-            <div className="font-mono-custom" style={{ fontSize: "15px", color: isNext ? sc.color : C.primary, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.01em" }}>
-              {appt.time}
-            </div>
-            <div className="font-mono-custom" style={{ fontSize: "9px", color: C.muted, marginTop: "3px", letterSpacing: "0.06em", textTransform: "uppercase" }}>{appt.duration}DK</div>
-          </div>
-
-          <div style={{ width: "1px", height: "36px", background: C.border, flexShrink: 0 }} />
-
-          {/* Client + service */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "13.5px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.005em" }}>
-              {appt.client}
-              {appt.source === "manual" && (
-                <span className="font-mono-custom" style={{ marginLeft: "8px", fontSize: "8.5px", padding: "1.5px 6px", borderRadius: "999px", background: "rgba(96,165,250,0.1)", color: "#2563EB", border: "1px solid rgba(96,165,250,0.2)", fontWeight: 600, letterSpacing: "0.06em", verticalAlign: "middle" }}>TEL</span>
-              )}
-            </div>
-            <div style={{ fontSize: "11.5px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "2px" }}>
-              {appt.service}
-              {appt.phone && <span className="font-mono-custom" style={{ marginLeft: "8px", color: C.muted }}>· {appt.phone}</span>}
-            </div>
-          </div>
-
-          {/* Price */}
-          <div className="font-mono-custom" style={{ fontSize: "14px", color: isDone ? C.secondary : C.primary, fontWeight: 600, flexShrink: 0 }}>
-            {appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}
-          </div>
-
-          {/* Status badge */}
-          <div style={{ display: "inline-flex", alignItems: "center", padding: "4px 9px", borderRadius: "999px", background: sc.bg, fontSize: "10.5px", color: sc.color, fontWeight: 600, flexShrink: 0, minWidth: "66px", justifyContent: "center" }}>
-            {sc.label}
-          </div>
-
-          {/* Inline primary action — one-tap shortcut, avoids the expand step on mobile */}
-          {primary && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onAction(appt.id, primary.key); }}
-              style={{
-                minHeight: "36px",
-                padding: "0 12px",
-                borderRadius: "8px",
-                background: primary.bg,
-                border: `1px solid ${primary.color}40`,
-                fontSize: "12px",
-                color: primary.color,
-                fontWeight: 600,
-                cursor: "pointer",
-                flexShrink: 0,
-                transition: "background 0.15s, border-color 0.15s",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = primary.color; e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = primary.color; }}
-              onMouseLeave={e => { e.currentTarget.style.background = primary.bg; e.currentTarget.style.color = primary.color; e.currentTarget.style.borderColor = primary.color + "40"; }}
-            >
-              {primary.shortLabel}
-            </button>
-          )}
-        </div>
-
-        {/* Quick actions (expanded) */}
-        <AnimatePresence>
-          {expanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.18 }}
-              style={{ overflow: "hidden" }}
-            >
-              <div style={{ display: "flex", gap: "6px", marginTop: "12px", paddingTop: "12px", borderTop: `1px solid ${C.border}` }}>
-                {FLOW.map(f => (
-                  <button
-                    key={f.key}
-                    onClick={(e) => { e.stopPropagation(); onAction(appt.id, f.key); setExpanded(false); }}
-                    style={{
-                      flex: 1, minHeight: "44px", borderRadius: "8px",
-                      background: appt.status === f.key ? f.bg : "none",
-                      border: `1px solid ${appt.status === f.key ? f.color + "50" : C.border}`,
-                      fontSize: "12px", color: appt.status === f.key ? f.color : C.secondary,
-                      cursor: "pointer", fontWeight: appt.status === f.key ? 600 : 400,
-                    }}
-                    onMouseEnter={e => { if (appt.status !== f.key) { e.currentTarget.style.background = f.bg; e.currentTarget.style.color = f.color; }}}
-                    onMouseLeave={e => { if (appt.status !== f.key) { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.secondary; }}}
-                  >
-                    {f.shortLabel}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Barber Day View (shared / embeddable) ────────────────────────────────────
-export function BarberDayView({ barberId, date, appointments, updateStatus }) {
-  const now        = nowTimeStr();
-  const isToday_   = isToday(date);
-  const dayAppts   = appointments
-    .filter(a => a.barberId === barberId && a.date === date && a.status !== "cancelled")
-    .sort((a, b) => a.time.localeCompare(b.time));
-  const pending    = dayAppts.filter(a => a.status === "pending").length;
-  const confirmed  = dayAppts.filter(a => a.status === "confirmed").length;
-  const completed  = dayAppts.filter(a => a.status === "completed").length;
-  // Barber's own earnings (their commission share). Legacy rows without
-  // barberAmount fall back to the gross price so historic totals don't go to 0.
-  const revenue    = dayAppts
-    .filter(a => a.status === "completed")
-    .reduce((s, a) => s + ((a.barberAmount ?? a.price) || 0) + (a.tipAmount || 0), 0);
-  const nextAppt   = isToday_ ? dayAppts.find(a => a.time >= now && ["pending", "confirmed"].includes(a.status)) : null;
-  const displayNext = nextAppt;
-
-  return (
-    <>
-      {/* Stats strip */}
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2" style={{ marginBottom: "18px" }}>
-        {[
-          { label: "Toplam",   value: dayAppts.length,    color: C.primary,   span: false },
-          { label: "Onaylı",   value: confirmed,           color: "#15803D",   span: false },
-          { label: "Bekliyor", value: pending,             color: "#B45309",   span: false },
-          { label: "Tamam",    value: completed,           color: C.secondary, span: false },
-          { label: "Kasa",     value: `₺${revenue.toLocaleString()}`, color: C.primary, span: true },
-        ].map((s, i) => (
-          <div key={i} className={s.span ? "col-span-2 sm:col-span-1" : ""} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "12px 14px", textAlign: "center", boxShadow: SHADOW.card }}>
-            <div className="font-mono-custom" style={{ fontSize: "17px", color: s.color, fontWeight: 700, lineHeight: 1, marginBottom: "5px", letterSpacing: "-0.02em" }}>{s.value}</div>
-            <div className="font-mono-custom" style={{ fontSize: "9px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Next / active appointment */}
-      {isToday_ && (
-        <div style={{ marginBottom: "14px" }}>
-          <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "8px" }}>
-            {"Sonraki Randevu"}
-          </div>
-          <NextAppointmentCard appt={displayNext} onAction={updateStatus} />
-        </div>
-      )}
-
-      {/* Pending banner */}
-      {pending > 0 && isToday_ && (
-        <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-          <AlertCircle size={14} style={{ color: "#B45309", flexShrink: 0 }} />
-          <span style={{ fontSize: "12px", color: "#B45309", fontWeight: 500 }}>{pending} randevu onay bekliyor</span>
-        </div>
-      )}
-
-      {/* Timeline */}
-      <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "10px" }}>
-        {isToday_ ? "Bugünün Programı" : "Günün Programı"} · {dayAppts.length} randevu
-      </div>
-      {dayAppts.length === 0 ? (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "40px 24px", textAlign: "center" }}>
-          <div style={{ fontSize: "24px", opacity: 0.2, marginBottom: "8px" }}>✂</div>
-          <div style={{ fontSize: "13px", color: C.secondary }}>Bu gün için randevu yok</div>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          {dayAppts.map((appt, i) => {
-            const isPast = isToday_ && appt.time < now;
-            const isNext = appt.id === displayNext?.id;
-            return <TimelineItem key={appt.id} appt={appt} isNext={isNext} isPast={isPast} onAction={updateStatus} index={i} />;
-          })}
-        </div>
-      )}
-    </>
-  );
-}
+// Extracted sub-components are now imported above and re-exported for backward compat.
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: shopSlugProp }) {
@@ -709,7 +400,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
         />
 
         {/* Today summary strip — mobile only; one-glance daily status */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-2" style={{ borderBottom: `1px solid ${C.border}`, background: `${C.surface}80`, fontSize: "11px", color: C.secondary, letterSpacing: "0.01em" }}>
+        <div className="lg:hidden flex items-center gap-3 px-4 py-2 overflow-x-auto" style={{ borderBottom: `1px solid ${C.border}`, background: `${C.surface}80`, fontSize: "11px", color: C.secondary, letterSpacing: "0.01em", scrollbarWidth: "none" }}>
           <span><strong style={{ color: C.primary, fontWeight: 600 }}>₺{revenue.toLocaleString("tr-TR")}</strong> bugün</span>
           <span style={{ opacity: 0.4 }}>·</span>
           <span><strong style={{ color: C.primary, fontWeight: 600 }}>{remainingToday}</strong> randevu kaldı</span>
@@ -768,13 +459,13 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
           <div style={{ minWidth: 0, flex: 1 }}>
             {(view === "dashboard" || view === "schedule") && (
               <>
-                <h1 className="font-display" style={{ fontSize: "28px", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "4px" }}>
+                <h1 className="font-display" style={{ fontSize: "clamp(20px, 5vw, 28px)", color: C.primary, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {view === "dashboard" ? formatDateLong(today) : formatDateLong(viewing)}
                   {(view === "dashboard" || isViewingToday) && (
                     <span className="font-mono-custom" style={{ marginLeft: "12px", fontSize: "10px", color: C.primary, fontWeight: 600, letterSpacing: "0.16em", verticalAlign: "middle", textTransform: "uppercase" }}>Bugün</span>
                   )}
                 </h1>
-                <p className="font-mono-custom" style={{ fontSize: "11px", color: C.muted, marginTop: "4px", letterSpacing: "0.06em", textTransform: "uppercase" }}>{String(Math.floor(wh.start/60)).padStart(2,"0")}:{String(wh.start%60).padStart(2,"0")} – {String(Math.floor(wh.end/60)).padStart(2,"0")}:{String(wh.end%60).padStart(2,"0")} · {dayAppts.length} randevu</p>
+                <p className="font-mono-custom" style={{ fontSize: "11px", color: C.muted, marginTop: "4px", letterSpacing: "0.06em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{String(Math.floor(wh.start/60)).padStart(2,"0")}:{String(wh.start%60).padStart(2,"0")} – {String(Math.floor(wh.end/60)).padStart(2,"0")}:{String(wh.end%60).padStart(2,"0")} · {dayAppts.length} randevu</p>
               </>
             )}
             {view === "appointments" && (
@@ -877,7 +568,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
                       <AlertCircle size={15} style={{ color: "#B45309" }} />
                       <span style={{ fontSize: "13px", color: "#B45309", fontWeight: 600, letterSpacing: "-0.005em" }}>{pending} randevu onay bekliyor</span>
                     </div>
-                    <span className="font-mono-custom" style={{ fontSize: "10px", color: "#92400E", letterSpacing: "0.12em", textTransform: "uppercase" }}>Aşağıdan güncelleyin</span>
+                    <span className="font-mono-custom hidden sm:inline" style={{ fontSize: "10px", color: "#92400E", letterSpacing: "0.12em", textTransform: "uppercase" }}>Aşağıdan güncelleyin</span>
                   </motion.div>
                 )}
 
@@ -1345,18 +1036,21 @@ function ProfileTab() {
 function BarberReviewsTab() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
 
   useEffect(() => {
     apiFetch("/api/barber/reviews")
       .then(d => setData(d))
-      .catch(() => {})
+      .catch(err => setError(err.message || "Yorumlar yüklenemedi"))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
+  if (loading) return <DSPageLoader />;
+
+  if (error) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-        <Loader2 size={18} style={{ color: C.muted }} className="animate-spin" />
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 24px" }}>
+        <p style={{ fontSize: 13, color: "#991B1B" }}>{error}</p>
       </div>
     );
   }
@@ -1400,10 +1094,12 @@ function BarberReviewsTab() {
 
       {/* Reviews list */}
       {reviews.length === 0 ? (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "32px 24px", textAlign: "center" }}>
-          <MessageSquare size={28} style={{ color: C.dim, marginBottom: 8 }} />
-          <p style={{ fontSize: 13, color: C.muted }}>Henüz yorum yok</p>
-        </div>
+        <DSEmptyState
+          icon={MessageSquare}
+          title="Henüz yorum yok"
+          sub="Tamamlanan randevulardan gelen değerlendirmeler burada görünür."
+          compact
+        />
       ) : (
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
           {reviews.map((r, i) => (
@@ -1442,453 +1138,6 @@ function formatRelBd(dateStr) {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}s`;
   return `${Math.floor(h / 24)}g`;
-}
-
-function resizeImageBarber(file, maxDim = 300) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/jpeg", 0.85));
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-
-/* ─── Barber Bottom Navigation ───────────────────────────────────────────── */
-
-const BARBER_NAV = [
-  { id: "dashboard",    label: "Dashboard",  icon: LayoutDashboard },
-  { id: "schedule",     label: "Program",    icon: CalendarDays    },
-  { id: "appointments", label: "Randevular", icon: List            },
-  { id: "customers",    label: "Müşteriler", icon: Users           },
-  { id: "more",         label: "Daha Fazla", icon: MoreHorizontal  },
-];
-
-function BarberBottomNav({ view, setView, moreOpen, setMoreOpen, barber, onLogout }) {
-  const handleSelect = (id) => {
-    if (id === "more") { setMoreOpen(v => !v); return; }
-    setView(id);
-    setMoreOpen(false);
-  };
-
-  return (
-    <>
-      {/* More sheet backdrop */}
-      <AnimatePresence>
-        {moreOpen && (
-          <motion.div
-            key="more-bd"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-40"
-            style={{ background: "rgba(17,17,17,0.35)", backdropFilter: "blur(3px)" }}
-            onClick={() => setMoreOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* More bottom sheet */}
-      <AnimatePresence>
-        {moreOpen && (
-          <motion.div
-            key="more-sheet"
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-            className="fixed left-0 right-0 z-50"
-            style={{
-              bottom: "calc(64px + env(safe-area-inset-bottom))",
-              background: C.card,
-              borderTop: `1px solid ${C.border}`,
-              borderRadius: "20px 20px 0 0",
-              boxShadow: "0 -8px 40px rgba(17,17,17,0.15)",
-            }}
-          >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-2">
-              <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: C.dim }} />
-            </div>
-
-            {/* Barber mini card */}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 20px 16px", borderBottom: `1px solid ${C.border}` }}>
-              <div style={{
-                width: "44px", height: "44px", flexShrink: 0,
-                background: `linear-gradient(135deg, ${C.primary}, #111111)`,
-                borderRadius: "12px", display: "flex", alignItems: "center",
-                justifyContent: "center", fontSize: "16px", fontWeight: 700, color: "#fff",
-              }}>
-                {barber?.avatar}
-              </div>
-              <div>
-                <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{barber?.nameTr ?? barber?.name}</div>
-                <div style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: "2px" }}>{barber?.titleTr ?? barber?.title?.tr}</div>
-              </div>
-            </div>
-
-            {/* Menu items */}
-            <div style={{ padding: "8px 12px 12px" }}>
-              {[
-                {
-                  icon: ExternalLink,
-                  label: "Siteyi Görüntüle",
-                  sublabel: "Müşteri sayfasına git",
-                  href: "/",
-                  danger: false,
-                },
-              ].map(({ icon: Icon, label, sublabel, href }) => (
-                <Link key={label} href={href} onClick={() => setMoreOpen(false)}
-                  style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 8px", borderRadius: "10px", textDecoration: "none" }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.surface}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}
-                >
-                  <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: C.surface, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon size={16} style={{ color: C.secondary }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{label}</div>
-                    <div style={{ fontSize: "11px", color: C.muted, marginTop: "1px" }}>{sublabel}</div>
-                  </div>
-                </Link>
-              ))}
-
-              <button
-                onClick={() => { setMoreOpen(false); onLogout(); }}
-                style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 8px", borderRadius: "10px", width: "100%", background: "none", border: "none", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(248,113,113,0.06)"}
-                onMouseLeave={e => e.currentTarget.style.background = "none"}
-              >
-                <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <LogOut size={16} style={{ color: "#111111" }} />
-                </div>
-                <div style={{ textAlign: "left" }}>
-                  <div style={{ fontSize: "13px", color: "#111111", fontWeight: 500 }}>Çıkış Yap</div>
-                  <div style={{ fontSize: "11px", color: C.muted, marginTop: "1px" }}>Oturumu kapat</div>
-                </div>
-              </button>
-            </div>
-
-            {/* Safe area spacer */}
-            <div style={{ height: "4px" }} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Nav bar */}
-      <div
-        className="fixed left-0 right-0 z-40"
-        style={{
-          bottom: 0,
-          height: "calc(64px + env(safe-area-inset-bottom))",
-          background: `${C.card}f8`,
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderTop: `1px solid ${C.border}`,
-          display: "flex",
-          alignItems: "flex-start",
-          paddingTop: "4px",
-          paddingBottom: "env(safe-area-inset-bottom)",
-        }}
-      >
-        {BARBER_NAV.map(({ id, label, icon: Icon }) => {
-          const isMore  = id === "more";
-          const active  = isMore ? moreOpen : (view === id && !moreOpen);
-
-          return (
-            <button
-              key={id}
-              onClick={() => handleSelect(id)}
-              style={{
-                flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
-                justifyContent: "center", gap: "4px", minHeight: "56px",
-                background: "none", border: "none", cursor: "pointer", padding: "4px 2px",
-              }}
-            >
-              <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {active && (
-                  <motion.div
-                    layoutId="barber-nav-pill"
-                    style={{ position: "absolute", inset: "-6px -10px", background: `${C.primary}18`, borderRadius: "10px" }}
-                    transition={{ type: "spring", damping: 28, stiffness: 380 }}
-                  />
-                )}
-                <motion.div animate={{ rotate: isMore && moreOpen ? 90 : 0 }} transition={{ duration: 0.2 }} style={{ position: "relative", zIndex: 1, display: "flex" }}>
-                  <Icon size={20} style={{ color: active ? C.primary : C.muted, transition: "color 0.15s" }} />
-                </motion.div>
-              </div>
-              <span style={{ fontSize: "9px", color: active ? C.primary : C.muted, fontWeight: active ? 600 : 400, letterSpacing: "0.02em", transition: "color 0.15s" }}>
-                {label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </>
-  );
-}
-
-/* ─── Appointments List View ─────────────────────────────────────────────── */
-
-export function BarberAppointmentsList({ barberId, appointments, onAction, onNewBooking }) {
-  const today = todayStr();
-  const upcoming = appointments
-    .filter(a => a.barberId === barberId && a.status !== "cancelled" && a.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
-
-  const byDate = upcoming.reduce((acc, a) => {
-    if (!acc[a.date]) acc[a.date] = [];
-    acc[a.date].push(a);
-    return acc;
-  }, {});
-
-  const dateGroups = Object.entries(byDate);
-
-  if (dateGroups.length === 0) {
-    return (
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "48px 24px", textAlign: "center" }}>
-        <div style={{ fontSize: "28px", marginBottom: "10px", opacity: 0.2 }}>✂</div>
-        <div style={{ fontSize: "13px", color: C.secondary, marginBottom: "16px" }}>Yaklaşan randevu yok</div>
-        <button
-          onClick={onNewBooking}
-          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: C.primary, border: "none", borderRadius: "8px", padding: "10px 18px", fontSize: "13px", color: "#fff", cursor: "pointer", fontWeight: 600 }}
-        >
-          <Plus size={14} /> Randevu Ekle
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-        <span style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.15em", textTransform: "uppercase" }}>
-          Yaklaşan Randevular · {upcoming.length}
-        </span>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        {dateGroups.map(([dateStr, appts]) => {
-          const label = dateStr === today ? "Bugün" : new Date(dateStr + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" });
-          return (
-            <div key={dateStr}>
-              <div style={{ fontSize: "11px", color: dateStr === today ? C.primary : C.secondary, fontWeight: 600, letterSpacing: "0.05em", marginBottom: "8px", textTransform: dateStr === today ? "uppercase" : "none" }}>
-                {label}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {appts.map((appt) => {
-                  const sc = ALL_STATUS[appt.status] ?? ALL_STATUS.pending;
-                  return (
-                    <div key={appt.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "12px 16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <div style={{ textAlign: "center", minWidth: "40px", flexShrink: 0 }}>
-                          <div style={{ fontSize: "14px", color: C.primary, fontWeight: 700, fontFamily: "'DM Mono', monospace", lineHeight: 1 }}>{appt.time}</div>
-                          <div style={{ fontSize: "9px", color: C.muted, marginTop: "2px" }}>{appt.duration}dk</div>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
-                          <div style={{ fontSize: "11px", color: C.secondary, marginTop: "1px" }}>{appt.service}</div>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
-                          <span style={{ fontSize: "13px", color: C.primary, fontWeight: 600 }}>{appt.price == null ? "Sorulur" : `₺${appt.price.toLocaleString()}`}</span>
-                          <span style={{ fontSize: "9px", padding: "2px 7px", borderRadius: "4px", background: sc.bg, color: sc.color, fontWeight: 600 }}>{sc.label}</span>
-                        </div>
-                      </div>
-                      {!["completed", "cancelled", "noshow"].includes(appt.status) && (
-                        <div style={{ display: "flex", gap: "6px", marginTop: "10px", paddingTop: "10px", borderTop: `1px solid ${C.border}` }}>
-                          {FLOW.filter(f => f.key !== appt.status).slice(0, 3).map(f => (
-                            <button
-                              key={f.key}
-                              onClick={() => onAction(appt.id, f.key)}
-                              style={{ flex: 1, minHeight: "36px", borderRadius: "7px", background: "none", border: `1px solid ${C.border}`, fontSize: "11px", color: C.secondary, cursor: "pointer" }}
-                              onMouseEnter={e => { e.currentTarget.style.background = f.bg; e.currentTarget.style.color = f.color; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.secondary; }}
-                            >
-                              {f.shortLabel}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Floating Action Button ─────────────────────────────────────────────── */
-
-function BarberFAB({ onNewBooking }) {
-  return (
-    <motion.button
-      whileTap={{ scale: 0.9 }}
-      whileHover={{ scale: 1.05 }}
-      onClick={onNewBooking}
-      className="fixed z-35"
-      style={{
-        bottom: "calc(76px + env(safe-area-inset-bottom))",
-        right: "16px",
-        width: "56px", height: "56px",
-        background: `linear-gradient(135deg, ${C.primary} 0%, #111111 100%)`,
-        border: "none", borderRadius: "18px",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        cursor: "pointer",
-        boxShadow: "0 4px 24px rgba(17,17,17,0.35), 0 2px 8px rgba(17,17,17,0.15)",
-        zIndex: 35,
-      }}
-      aria-label="Yeni randevu ekle"
-    >
-      <Plus size={24} style={{ color: "#fff" }} />
-    </motion.button>
-  );
-}
-
-/* ─── Customers View ─────────────────────────────────────────────────────── */
-
-export function BarberCustomersView({ barberId, appointments, onNewBooking }) {
-  const [search, setSearch] = useState("");
-
-  const customerMap = appointments
-    .filter(a => a.barberId === barberId && a.status !== "cancelled")
-    .reduce((acc, a) => {
-      const key = a.client;
-      if (!acc[key]) acc[key] = { name: a.client, phone: a.phone || "", visits: [], totalSpent: 0 };
-      acc[key].visits.push(a);
-      if (a.status === "completed") acc[key].totalSpent += a.price || 0;
-      return acc;
-    }, {});
-
-  const customers = Object.values(customerMap)
-    .map(c => ({
-      ...c,
-      lastVisit: [...c.visits].sort((a, b) => b.date.localeCompare(a.date))[0],
-      completedCount: c.visits.filter(v => v.status === "completed").length,
-    }))
-    .sort((a, b) => (b.lastVisit?.date || "").localeCompare(a.lastVisit?.date || ""))
-    .filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search));
-
-  const initials = (name) => name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
-  const hue      = (name) => name.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
-  const today    = todayStr();
-
-  return (
-    <div>
-      {/* Header + search */}
-      <div style={{ marginBottom: "16px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-          <span style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.15em", textTransform: "uppercase" }}>
-            Müşteriler · {Object.keys(customerMap).length}
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "0 12px", height: "44px" }}>
-          <Users size={13} style={{ color: C.muted, flexShrink: 0 }} />
-          <input
-            placeholder="İsim veya telefon ara…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: "13px", color: C.primary, caretColor: C.primary }}
-          />
-          {search && (
-            <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex" }}>
-              <X size={14} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {customers.length === 0 && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "48px 24px", textAlign: "center" }}>
-          <div style={{ fontSize: "28px", marginBottom: "10px", opacity: 0.2 }}>👤</div>
-          <div style={{ fontSize: "13px", color: C.secondary }}>
-            {search ? "Eşleşen müşteri bulunamadı" : "Henüz müşteri yok"}
-          </div>
-        </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {customers.map((c) => {
-          const h = hue(c.name);
-          const lastAppt = c.lastVisit;
-          const isRegular = c.completedCount >= 3;
-          const isNew = lastAppt && lastAppt.date >= today;
-          return (
-            <div
-              key={c.name}
-              style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "14px 16px" }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                {/* Avatar */}
-                <div style={{
-                  width: "44px", height: "44px", borderRadius: "12px", flexShrink: 0,
-                  background: `hsl(${h}, 28%, 18%)`,
-                  border: `1px solid hsl(${h}, 28%, 26%)`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "14px", fontWeight: 700, color: `hsl(${h}, 60%, 68%)`,
-                }}>
-                  {initials(c.name)}
-                </div>
-
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
-                    <span style={{ fontSize: "14px", color: C.primary, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {c.name}
-                    </span>
-                    {isRegular && (
-                      <span style={{ fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: "rgba(34,197,94,0.12)", color: "#15803D", border: "1px solid rgba(34,197,94,0.2)", fontWeight: 700, flexShrink: 0 }}>
-                        SADIK
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    {c.phone && (
-                      <span style={{ fontSize: "11px", color: C.secondary, fontFamily: "'DM Mono', monospace" }}>{c.phone}</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: "14px", color: C.primary, fontWeight: 700 }}>₺{c.totalSpent.toLocaleString()}</div>
-                  <div style={{ fontSize: "10px", color: C.muted, marginTop: "2px" }}>{c.completedCount} ziyaret</div>
-                </div>
-              </div>
-
-              {/* Last appointment + quick call */}
-              {lastAppt && (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px", paddingTop: "10px", borderTop: `1px solid ${C.border}` }}>
-                  <div>
-                    <span style={{ fontSize: "10px", color: C.muted }}>Son ziyaret: </span>
-                    <span style={{ fontSize: "10px", color: C.secondary }}>
-                      {lastAppt.date} · {lastAppt.service}
-                    </span>
-                  </div>
-                  {toTelHref(c.phone) && (
-                    <a
-                      href={toTelHref(c.phone)}
-                      style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 10px", borderRadius: "7px", background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.2)", fontSize: "11px", color: "#2563EB", textDecoration: "none", fontWeight: 600 }}
-                    >
-                      <Phone size={11} /> Ara
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 /* ─── Bottom Navigation (mobile only) ───────────────────────────────────── */

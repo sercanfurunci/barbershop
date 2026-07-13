@@ -320,12 +320,13 @@ export default function BookingCard({
                   onClick={() => setSelectedDate(active ? null : i)}
                   suppressHydrationWarning={i === 2}
                   style={{
-                    padding: "10px 0", textAlign: "center", borderRadius: 7, cursor: "pointer",
+                    padding: "0", minHeight: "44px", textAlign: "center", borderRadius: 7, cursor: "pointer",
                     background: active ? "rgba(17,17,17,0.08)" : C.surface2,
                     border: `1px solid ${active ? "rgba(17,17,17,0.35)" : C.border}`,
                     fontSize: 11, fontWeight: active ? 600 : 400,
                     color: active ? C.primary : C.secondary,
                     transition: "all 0.15s",
+                    display: "flex", alignItems: "center", justifyContent: "center",
                   }}
                 >
                   {label}

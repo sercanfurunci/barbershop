@@ -1,33 +1,26 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import Logo from "@/components/common/Logo";
 import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
+import Link from "next/link";
 import {
   LayoutDashboard, Calendar, Users, Settings,
   Bell, Search, ExternalLink, Plus, CalendarDays, LogOut, Scissors,
   UserCheck, TrendingUp, User, MoreHorizontal, X, Check,
   ChevronLeft, ChevronRight, Activity, Clock, Star, CreditCard,
+  UserX,
 } from "lucide-react";
+import { DSPageLoader, DSEmptyState } from "@/components/ds";
 import {
   BarberDayView, BarberAppointmentsList, BarberCustomersView,
   addDays, formatDateLong, isToday as isTodayDate, nowTimeStr,
 } from "@/components/admin/BarberDashboardClient";
-import KPICards from "./KPICards";
 import AppointmentsList from "./AppointmentsList";
-import BarbersManagement from "./BarbersManagement";
-import AreaChart from "./AreaChart";
-import CalendarView from "./CalendarView";
-import ManualBookingModal from "./ManualBookingModal";
-import WalkInModal from "./WalkInModal";
-import SettingsPage from "./SettingsPage";
-import ServicesManagement from "./ServicesManagement";
-import NotificationsPage from "@/components/admin/NotificationsPage";
-import ReviewsPage from "@/components/admin/ReviewsPage";
-import BillingPage from "@/components/admin/BillingPage";
 import SubscriptionBanner from "@/components/admin/SubscriptionBanner";
 import LandingAnalyticsPanel from "@/components/admin/LandingAnalyticsPanel";
 import DashboardTopbar from "@/components/admin/DashboardTopbar";
-import Link from "next/link";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +31,20 @@ import { apiFetch, setPreviewShopId } from "@/lib/api";
 import { useShop } from "@/contexts/ShopContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { C, SHADOW } from "@/lib/adminTheme";
+
+// Heavy tab components — loaded only when the tab is first visited
+const TabSpinner = () => <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Yükleniyor…</div>;
+const KPICards           = dynamic(() => import("./KPICards"),                             { loading: TabSpinner });
+const BarbersManagement  = dynamic(() => import("./BarbersManagement"),                    { loading: TabSpinner });
+const AreaChart          = dynamic(() => import("./AreaChart"),                            { loading: TabSpinner });
+const CalendarView       = dynamic(() => import("./CalendarView"),                         { loading: TabSpinner });
+const ManualBookingModal = dynamic(() => import("./ManualBookingModal"),                   { loading: () => null });
+const WalkInModal        = dynamic(() => import("./WalkInModal"),                          { loading: () => null });
+const SettingsPage       = dynamic(() => import("./SettingsPage"),                         { loading: TabSpinner });
+const ServicesManagement = dynamic(() => import("./ServicesManagement"),                   { loading: TabSpinner });
+const NotificationsPage  = dynamic(() => import("@/components/admin/NotificationsPage"),   { loading: TabSpinner });
+const ReviewsPage        = dynamic(() => import("@/components/admin/ReviewsPage"),         { loading: TabSpinner });
+const BillingPage        = dynamic(() => import("@/components/admin/BillingPage"),         { loading: TabSpinner });
 
 const NAV_SECTIONS = (lang) => [
   {
@@ -640,14 +647,14 @@ function BarberOpsPage({ barberId }) {
             <div style={{ display: "flex", gap: 6 }}>
               <button
                 onClick={() => setShowWalkIn(true)}
-                style={{ display: "flex", alignItems: "center", gap: 6, background: C.surface, color: C.primary, border: `1px solid ${C.border}`, borderRadius: 7, padding: "0 12px", height: 36, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                style={{ display: "flex", alignItems: "center", gap: 6, background: C.surface, color: C.primary, border: `1px solid ${C.border}`, borderRadius: 7, padding: "0 12px", minHeight: 44, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
                 title="Şimdi gelen müşteriyi kaydet"
               >
                 <Plus size={13} /> Walk-in
               </button>
               <button
                 onClick={() => setShowBooking(true)}
-                style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "7px", padding: "0 14px", height: "36px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+                style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "7px", padding: "0 14px", minHeight: "44px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
               >
                 <Plus size={13} /> Randevu Ekle
               </button>
@@ -762,42 +769,46 @@ function BarberScheduleSection({ barberId, date, setDate, appointments, updateSt
 function BarberPerformanceView({ barberId, appointments }) {
   const today      = todayStr();
   const thisMonth  = today.slice(0, 7);
-  const barberAppts = appointments.filter(a => a.barberId === barberId);
-  const monthAppts  = barberAppts.filter(a => a.date.startsWith(thisMonth));
-  const completed   = monthAppts.filter(a => a.status === "completed");
-  const noShows     = monthAppts.filter(a => a.status === "noshow");
-  const cancelled   = monthAppts.filter(a => a.status === "cancelled");
-  const monthRev    = completed.reduce((s, a) => s + (a.price || 0), 0);
-  const valid       = monthAppts.filter(a => a.status !== "cancelled").length;
-  const compRate    = valid > 0 ? Math.round((completed.length / valid) * 100) : 0;
-  const avgRev      = completed.length > 0 ? Math.round(monthRev / completed.length) : 0;
+
+  const stats = useMemo(() => {
+    const barberAppts = appointments.filter(a => a.barberId === barberId);
+    const monthAppts  = barberAppts.filter(a => a.date.startsWith(thisMonth));
+    const completed   = monthAppts.filter(a => a.status === "completed");
+    const noShows     = monthAppts.filter(a => a.status === "noshow");
+    const cancelled   = monthAppts.filter(a => a.status === "cancelled");
+    const monthRev    = completed.reduce((s, a) => s + (a.price || 0), 0);
+    const valid       = monthAppts.filter(a => a.status !== "cancelled").length;
+    const compRate    = valid > 0 ? Math.round((completed.length / valid) * 100) : 0;
+    const avgRev      = completed.length > 0 ? Math.round(monthRev / completed.length) : 0;
+
+    const last7 = Array.from({ length: 7 }, (_, i) => {
+      const d  = new Date(today + "T12:00:00");
+      d.setDate(d.getDate() - (6 - i));
+      const ds = toDateStr(d);
+      const da = barberAppts.filter(a => a.date === ds);
+      return {
+        date: ds,
+        label: d.toLocaleDateString("tr-TR", { weekday: "short" }),
+        revenue: da.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0),
+        count: da.filter(a => a.status !== "cancelled").length,
+      };
+    });
+    const maxRev = Math.max(...last7.map(d => d.revenue), 1);
+
+    const svcMap     = completed.reduce((acc, a) => { acc[a.service] = (acc[a.service] || 0) + 1; return acc; }, {});
+    const topSvc     = Object.entries(svcMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const maxSvc     = topSvc[0]?.[1] || 1;
+
+    const uniqueClients = [...new Set(completed.map(a => a.client))];
+    const allDone       = barberAppts.filter(a => a.status === "completed");
+    const returning     = uniqueClients.filter(n => allDone.filter(a => a.client === n).length > 1).length;
+    const retention     = uniqueClients.length > 0 ? Math.round((returning / uniqueClients.length) * 100) : 0;
+
+    return { monthAppts, completed, noShows, cancelled, monthRev, compRate, avgRev, last7, maxRev, topSvc, maxSvc, retention };
+  }, [appointments, barberId, thisMonth, today]);
+
+  const { monthAppts, completed, noShows, cancelled, monthRev, compRate, avgRev, last7, maxRev, topSvc, maxSvc, retention } = stats;
   const monthLabel  = new Date().toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
-
-  // Last 7 days
-  const last7 = Array.from({ length: 7 }, (_, i) => {
-    const d  = new Date(today + "T12:00:00");
-    d.setDate(d.getDate() - (6 - i));
-    const ds = toDateStr(d);
-    const da = barberAppts.filter(a => a.date === ds);
-    return {
-      date: ds,
-      label: d.toLocaleDateString("tr-TR", { weekday: "short" }),
-      revenue: da.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0),
-      count: da.filter(a => a.status !== "cancelled").length,
-    };
-  });
-  const maxRev = Math.max(...last7.map(d => d.revenue), 1);
-
-  // Service breakdown
-  const svcMap     = completed.reduce((acc, a) => { acc[a.service] = (acc[a.service] || 0) + 1; return acc; }, {});
-  const topSvc     = Object.entries(svcMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const maxSvc     = topSvc[0]?.[1] || 1;
-
-  // Customer retention
-  const uniqueClients = [...new Set(completed.map(a => a.client))];
-  const allDone       = barberAppts.filter(a => a.status === "completed");
-  const returning     = uniqueClients.filter(n => allDone.filter(a => a.client === n).length > 1).length;
-  const retention     = uniqueClients.length > 0 ? Math.round((returning / uniqueClients.length) * 100) : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -950,9 +961,7 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, us
           onMouseEnter={(e) => { e.currentTarget.querySelector("span.name").style.color = C.primary; }}
           onMouseLeave={(e) => { e.currentTarget.querySelector("span.name").style.color = C.primary; }}
         >
-          <div className="w-6 h-6 flex items-center justify-center" style={{ background: C.primary, borderRadius: "4px", transition: "transform 0.15s", flexShrink: 0 }}>
-            <span className="font-bold text-white" style={{ fontSize: "10px" }}>{(user?.shop?.name ?? "M")[0].toUpperCase()}</span>
-          </div>
+          <Logo variant="dark" size={22} showWordmark={false} />
           <span className="name font-display" style={{ fontSize: "13px", letterSpacing: "0.05em", color: C.primary, textTransform: "uppercase", transition: "color 0.15s", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {user?.shop?.name ?? "Makas"}
           </span>
@@ -1028,21 +1037,24 @@ function BusinessKPIs({ barberId, activeBarberCount = 0 }) {
   const { appointments } = useAppointments();
   const today = todayStr();
 
-  const todayAppts  = appointments.filter(a => a.date === today && a.status !== "cancelled" && (!barberId || a.barberId === barberId));
-  const completed   = todayAppts.filter(a => a.status === "completed");
-  const noshows     = todayAppts.filter(a => a.status === "noshow");
-  const pending     = todayAppts.filter(a => a.status === "pending");
-  const walkIns     = todayAppts.filter(a => a.isWalkIn);
-  // Today's cash = sum of gross (price) on completed visits. Tips are tracked
-  // separately under tipAmount but excluded from the till so they go straight
-  // to the barber and not into "shop revenue today".
-  const todayRevenue = completed.reduce((s, a) => s + ((a.grossAmount ?? a.price) || 0), 0);
-  const noShowRate   = todayAppts.length > 0 ? Math.round((noshows.length / todayAppts.length) * 100) : 0;
-  const TOTAL_SLOTS  = 24;
-  const effectiveBarbers = activeBarberCount || Math.max(new Set(todayAppts.map(a => a.barberId)).size, 1);
-  const totalCap     = effectiveBarbers * TOTAL_SLOTS;
-  const usedSlots    = todayAppts.reduce((s, a) => s + Math.ceil((a.duration || 30) / 30), 0);
-  const chairOcc     = Math.round((usedSlots / totalCap) * 100);
+  const { todayAppts, completed, noshows, pending, walkIns, todayRevenue, noShowRate, effectiveBarbers, totalCap, usedSlots, chairOcc } = useMemo(() => {
+    const TOTAL_SLOTS = 24;
+    const todayAppts  = appointments.filter(a => a.date === today && a.status !== "cancelled" && (!barberId || a.barberId === barberId));
+    const completed   = todayAppts.filter(a => a.status === "completed");
+    const noshows     = todayAppts.filter(a => a.status === "noshow");
+    const pending     = todayAppts.filter(a => a.status === "pending");
+    const walkIns     = todayAppts.filter(a => a.isWalkIn);
+    // Today's cash = sum of gross (price) on completed visits. Tips are tracked
+    // separately under tipAmount but excluded from the till so they go straight
+    // to the barber and not into "shop revenue today".
+    const todayRevenue = completed.reduce((s, a) => s + ((a.grossAmount ?? a.price) || 0), 0);
+    const noShowRate   = todayAppts.length > 0 ? Math.round((noshows.length / todayAppts.length) * 100) : 0;
+    const effectiveBarbers = activeBarberCount || Math.max(new Set(todayAppts.map(a => a.barberId)).size, 1);
+    const totalCap     = effectiveBarbers * TOTAL_SLOTS;
+    const usedSlots    = todayAppts.reduce((s, a) => s + Math.ceil((a.duration || 30) / 30), 0);
+    const chairOcc     = Math.round((usedSlots / totalCap) * 100);
+    return { todayAppts, completed, noshows, pending, walkIns, todayRevenue, noShowRate, effectiveBarbers, totalCap, usedSlots, chairOcc };
+  }, [appointments, today, barberId, activeBarberCount]);
 
   const cards = [
     { label: "Bugün Kasa",     value: `₺${todayRevenue.toLocaleString()}`, sub: `${completed.length} işlem tamamlandı`, hero: true },
@@ -1105,10 +1117,7 @@ function StaffPerformance({ barberId, realBarbers = [] }) {
         <span className="text-[12px] font-semibold text-foreground">Berber Performansı</span>
         <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Bugün</span>
       </div>
-      <div
-        className="p-3 grid gap-2"
-        style={{ gridTemplateColumns: barberId ? "1fr" : "1fr 1fr" }}
-      >
+      <div className={`p-3 grid gap-2 ${barberId ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
         {visibleBarbers.map(b => {
           const bAppts      = todayAppts.filter(a => a.barberId === b.id);
           const bCompleted  = bAppts.filter(a => a.status === "completed");
@@ -1365,15 +1374,20 @@ function TodaySchedule({ onNewBooking, barberId }) {
         <span className="text-[11px] text-muted-foreground">{todayAppts.length} randevu</span>
       </div>
       {todayAppts.length === 0 ? (
-        <div className="flex flex-col items-center py-8 gap-2">
-          <p className="text-[11px] text-muted-foreground">Bugün randevu yok</p>
-          <button
-            onClick={onNewBooking}
-            className="text-[11px] font-medium px-3 py-1.5 rounded-[7px] border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors bg-transparent"
-          >
-            + Yeni Randevu
-          </button>
-        </div>
+        <DSEmptyState
+          icon={Calendar}
+          title="Bugün randevu yok"
+          sub="İlk randevuyu eklemek için aşağıdaki butona tıkla."
+          compact
+          action={
+            <button
+              onClick={onNewBooking}
+              className="text-[11px] font-medium px-3 py-1.5 rounded-[7px] border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors bg-transparent"
+            >
+              + Yeni Randevu
+            </button>
+          }
+        />
       ) : (
         <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))" }}>
           {todayAppts.map((appt) => {
@@ -1495,7 +1509,7 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, onWalkIn, barberId, real
           {onWalkIn && (
             <button
               onClick={onWalkIn}
-              className="flex items-center gap-1.5 px-3 h-9 rounded-[10px] border border-border bg-secondary text-[12px] font-semibold text-foreground hover:bg-secondary/70 transition-colors"
+              className="flex items-center gap-1.5 px-3 min-h-[44px] rounded-[10px] border border-border bg-secondary text-[12px] font-semibold text-foreground hover:bg-secondary/70 transition-colors"
               title="Şimdi gelen müşteriyi kaydet"
             >
               <Plus size={13} />
@@ -1504,7 +1518,7 @@ function OverviewPage({ setTab, tx, lang, onNewBooking, onWalkIn, barberId, real
           )}
           <button
             onClick={onNewBooking}
-            className="flex items-center gap-1.5 px-3 h-9 rounded-[10px] bg-foreground text-background text-[12px] font-semibold hover:opacity-90 transition-opacity"
+            className="flex items-center gap-1.5 px-3 min-h-[44px] rounded-[10px] bg-foreground text-background text-[12px] font-semibold hover:opacity-90 transition-opacity"
           >
             <Plus size={13} />
             <span className="hidden sm:inline">Yeni Randevu</span>
@@ -1583,6 +1597,7 @@ function CustomersPage({ barberId }) {
   const [clients, setClients]   = useState([]);
   const [total, setTotal]       = useState(0);
   const [loading, setLoading]   = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   // Debounce search input
@@ -1593,12 +1608,13 @@ function CustomersPage({ barberId }) {
 
   useEffect(() => {
     setLoading(true);
+    setFetchError(null);
     const params = new URLSearchParams({ limit: "200" });
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (barberId) params.set("barberId", barberId);
     apiFetch(`/api/admin/clients?${params}`)
       .then(data => { setClients(data.clients ?? []); setTotal(data.total ?? 0); })
-      .catch(() => {})
+      .catch(err => setFetchError(err.message || "Müşteri listesi yüklenemedi"))
       .finally(() => setLoading(false));
   }, [debouncedSearch, barberId]);
 
@@ -1620,12 +1636,21 @@ function CustomersPage({ barberId }) {
         }
       />
 
-      {loading ? (
-        <div className="flex justify-center py-12 text-muted-foreground text-[13px]">Yükleniyor…</div>
-      ) : clients.length === 0 ? (
-        <div className="flex justify-center py-12 text-muted-foreground text-[13px]">
-          {search ? "Arama sonucu bulunamadı." : "Henüz müşteri kaydı yok."}
+      {fetchError && (
+        <div className="flex items-center gap-2 rounded-[10px] bg-red-50 border border-red-200 px-4 py-3 mb-4 text-[13px] text-red-700">
+          {fetchError}
         </div>
+      )}
+
+      {loading ? (
+        <DSPageLoader />
+      ) : clients.length === 0 ? (
+        <DSEmptyState
+          icon={UserX}
+          title={search ? "Sonuç bulunamadı" : "Henüz müşteri yok"}
+          sub={search ? `"${search}" için kayıt bulunamadı.` : "İlk randevu tamamlandığında müşteri kaydı otomatik oluşur."}
+          compact
+        />
       ) : (
         <>
           {/* Desktop table */}

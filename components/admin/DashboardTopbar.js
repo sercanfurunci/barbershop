@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Logo from "@/components/common/Logo";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Bell } from "lucide-react";
@@ -37,9 +38,7 @@ export default function DashboardTopbar({
           className="flex lg:hidden items-center gap-2.5 no-underline min-w-0"
           aria-label="Ana sayfaya git"
         >
-          <div className="w-9 h-9 flex items-center justify-center shrink-0 bg-foreground rounded-[8px] text-background font-bold text-[13px] tracking-[-0.02em]">
-            {brand.initial}
-          </div>
+          <Logo variant="dark" size={36} showWordmark={false} />
           <span className="font-display text-[17px] font-semibold text-foreground tracking-[-0.01em] truncate">
             {brand.label}
           </span>
@@ -50,7 +49,7 @@ export default function DashboardTopbar({
         {onLangToggle && (
           <button
             onClick={onLangToggle}
-            className="font-mono-custom h-9 px-2.5 text-[11px] tracking-[0.16em] text-muted-foreground hover:text-foreground hover:bg-secondary rounded-[8px] transition-colors"
+            className="font-mono-custom h-11 px-2.5 text-[11px] tracking-[0.16em] text-muted-foreground hover:text-foreground hover:bg-secondary rounded-[8px] transition-colors"
           >
             {lang === "tr" ? "EN" : "TR"}
           </button>
@@ -61,7 +60,7 @@ export default function DashboardTopbar({
             onClick={notifications.onClick}
             title={notifications.title}
             aria-label={notifications.title ?? "Bildirimler"}
-            className="relative w-9 h-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="relative w-11 h-11 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             <Bell size={16} />
             {notifications.badge === "dot" && (
@@ -86,7 +85,7 @@ export default function DashboardTopbar({
               onClick={() => setOpen((v) => !v)}
               aria-label="Kullanıcı menüsü"
               aria-expanded={open}
-              className="relative w-9 h-9 bg-foreground text-background rounded-[9px] flex items-center justify-center text-[11px] font-bold tracking-[0.02em]"
+              className="relative w-11 h-11 bg-foreground text-background rounded-[9px] flex items-center justify-center text-[11px] font-bold tracking-[0.02em]"
               style={{ boxShadow: "var(--shadow-card)" }}
             >
               {userMenu.initials}

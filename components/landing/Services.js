@@ -142,7 +142,7 @@ export default function Services({ services = [] }) {
                   aria-label={`${service.name[lang]} — ${tx.services.cta}`}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 6,
-                    padding: "10px 18px",
+                    padding: "0 18px",
                     borderRadius: 8,
                     border: `1px solid ${C.border}`,
                     background: "transparent",
@@ -150,7 +150,8 @@ export default function Services({ services = [] }) {
                     fontSize: 13, fontWeight: 600,
                     textDecoration: "none",
                     flexShrink: 0,
-                    minHeight: 40,
+                    minHeight: 44,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {tx.services.cta}
