@@ -34,7 +34,7 @@ export const options = {
     { duration: "30s", target: 0   },
   ],
   thresholds: {
-    http_req_duration:   ["p(95)<2000"],
+    http_req_duration:   ["p(95)<3500"], // serverless + Neon; tighten after pgBouncer Pro
     errors:              ["rate<0.05"],  // 5% — rate limiter will fire under full load
     booking_duration_ms: ["p(95)<3000"],
   },
@@ -83,14 +83,15 @@ export default function () {
   const bookRes = http.post(
     `${BASE_URL}/api/appointments`,
     JSON.stringify({
-      shopSlug:    SHOP_SLUG,
-      serviceId:   SERVICE_ID,
-      barberId:    BARBER_ID,
+      shopId:    SHOP_ID,
+      serviceId: SERVICE_ID,
+      barberId:  BARBER_ID,
       date,
-      startTime:   "10:00",
-      clientName:  "Load Test",
-      clientPhone: randomPhone(),
-      source:      "ONLINE",
+      time:      "10:00",
+      name:      "Load Test",
+      phone:     randomPhone(),
+      email:     "loadtest@makas.test",
+      source:    "ONLINE",
     }),
     { headers, tags: { name: "book_appointment" } }
   );
