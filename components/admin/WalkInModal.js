@@ -154,7 +154,7 @@ export default function WalkInModal({ onClose, defaultBarberId = "" }) {
               </h2>
             </div>
             <button onClick={onClose} aria-label="Kapat" style={{
-              width: 32, height: 32, background: C.surface, border: `1px solid ${C.border}`,
+              width: 32, height: 32, cursor: "pointer", background: C.surface, border: `1px solid ${C.border}`,
               borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
               cursor: "pointer", color: C.secondary,
             }}>

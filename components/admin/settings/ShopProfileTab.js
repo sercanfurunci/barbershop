@@ -658,7 +658,7 @@ export default function ShopProfileTab() {
 
   if (!loaded) return <div style={{ padding: "40px 0", textAlign: "center", color: C.muted, fontSize: 13 }}>Yükleniyor…</div>;
 
-  const fi = { width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", padding: "8px 12px", fontSize: "13px", color: C.primary, outline: "none", boxSizing: "border-box" };
+  const fi = { width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "9px 14px", fontSize: "13px", color: C.primary, outline: "none", boxSizing: "border-box" };
   const aboutLen = (form.about ?? "").length;
 
   // Content completeness — % of meaningful profile fields filled. Drives empty-state nudging.

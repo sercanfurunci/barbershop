@@ -67,7 +67,7 @@ export default function RulesTab() {
               </div>
               <div style={{ position: "relative", flexShrink: 0 }}>
                 <select value={rules[f.key]} onChange={e => setRules(prev => ({ ...prev, [f.key]: Number(e.target.value) }))}
-                  style={{ appearance: "none", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", padding: "7px 32px 7px 12px", fontSize: "13px", color: C.primary, cursor: "pointer", outline: "none", fontFamily: "'DM Mono', monospace" }}
+                  style={{ appearance: "none", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "9px 32px 9px 14px", fontSize: "13px", color: C.primary, cursor: "pointer", outline: "none", fontFamily: "'DM Mono', monospace" }}
                 >
                   {f.options.map(o => <option key={o} value={o}>{o} {f.unit}</option>)}
                 </select>

@@ -654,7 +654,7 @@ function BarberOpsPage({ barberId }) {
               </button>
               <button
                 onClick={() => setShowBooking(true)}
-                style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "7px", padding: "0 14px", minHeight: "44px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+                style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "10px", padding: "0 14px", minHeight: "44px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
               >
                 <Plus size={13} /> Randevu Ekle
               </button>
@@ -745,15 +745,15 @@ function BarberScheduleSection({ barberId, date, setDate, appointments, updateSt
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-          <button onClick={() => setDate(d => addDays(d, -1))} style={{ width: "44px", height: "44px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+          <button onClick={() => setDate(d => addDays(d, -1))} style={{ width: "44px", height: "44px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
             <ChevronLeft size={15} />
           </button>
           {!isViewingToday && (
-            <button onClick={() => setDate(today)} style={{ height: "44px", padding: "0 14px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>
+            <button onClick={() => setDate(today)} style={{ height: "44px", padding: "0 14px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", fontSize: "12px", color: C.secondary, cursor: "pointer" }}>
               Bugün
             </button>
           )}
-          <button onClick={() => setDate(d => addDays(d, 1))} style={{ width: "44px", height: "44px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+          <button onClick={() => setDate(d => addDays(d, 1))} style={{ width: "44px", height: "44px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
             <ChevronRight size={15} />
           </button>
         </div>

@@ -110,7 +110,7 @@ export default function AreaChart({ barberId }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 p-1" style={{ background: C.surface, borderRadius: "7px" }}>
+        <div className="flex items-center gap-1 p-1" style={{ background: C.surface, borderRadius: "10px" }}>
           {PERIODS.map((p) => (
             <button
               key={p.key}

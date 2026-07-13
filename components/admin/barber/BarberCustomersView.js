@@ -137,7 +137,7 @@ export function BarberCustomersView({ barberId, appointments, onNewBooking }) {
                   {toTelHref(c.phone) && (
                     <a
                       href={toTelHref(c.phone)}
-                      style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 10px", borderRadius: "7px", background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.2)", fontSize: "11px", color: "#2563EB", textDecoration: "none", fontWeight: 600 }}
+                      style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 10px", borderRadius: "10px", background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.2)", fontSize: "11px", color: "#2563EB", textDecoration: "none", fontWeight: 600 }}
                     >
                       <Phone size={11} /> Ara
                     </a>

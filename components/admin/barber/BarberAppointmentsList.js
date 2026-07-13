@@ -78,7 +78,7 @@ export function BarberAppointmentsList({ barberId, appointments, onAction, onNew
                             <button
                               key={f.key}
                               onClick={() => onAction(appt.id, f.key)}
-                              style={{ flex: 1, minHeight: "36px", borderRadius: "7px", background: "none", border: `1px solid ${C.border}`, fontSize: "11px", color: C.secondary, cursor: "pointer" }}
+                              style={{ flex: 1, minHeight: "36px", borderRadius: "10px", background: "none", border: `1px solid ${C.border}`, fontSize: "11px", color: C.secondary, cursor: "pointer" }}
                               onMouseEnter={e => { e.currentTarget.style.background = f.bg; e.currentTarget.style.color = f.color; }}
                               onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.secondary; }}
                             >

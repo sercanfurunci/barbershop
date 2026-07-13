@@ -169,7 +169,7 @@ export default function CalendarWidget() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
                 className="flex items-center gap-3"
-                style={{ padding: "8px 10px", background: C.surface, borderRadius: "7px" }}
+                style={{ padding: "8px 10px", background: C.surface, borderRadius: "10px" }}
               >
                 <span style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", color: C.secondary, minWidth: "36px" }}>
                   {appt.time}

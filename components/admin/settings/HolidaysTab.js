@@ -150,7 +150,7 @@ export default function HolidaysTab() {
           <Field label="Tarih">
             <input type="date" value={date} onChange={e => setDate(e.target.value)} required
               min={today}
-              style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", padding: "8px 12px", fontSize: "13px", color: C.primary, outline: "none", colorScheme: "dark", boxSizing: "border-box" }}
+              style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "9px 14px", fontSize: "13px", color: C.primary, outline: "none", colorScheme: "dark", boxSizing: "border-box" }}
               onFocus={e => e.target.style.borderColor = `${C.primary}60`}
               onBlur={e => e.target.style.borderColor = C.border}
             />
@@ -158,7 +158,7 @@ export default function HolidaysTab() {
 
           <Field label="Açıklama">
             <input type="text" placeholder="Örn: Kurban Bayramı" value={label} onChange={e => setLabel(e.target.value)}
-              style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", padding: "8px 12px", fontSize: "13px", color: C.primary, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "9px 14px", fontSize: "13px", color: C.primary, outline: "none", boxSizing: "border-box" }}
               onFocus={e => e.target.style.borderColor = `${C.primary}60`}
               onBlur={e => e.target.style.borderColor = C.border}
             />
@@ -167,7 +167,7 @@ export default function HolidaysTab() {
           <Field label="Berber (boş = tüm dükkan)">
             <div style={{ position: "relative" }}>
               <select value={barberId} onChange={e => setBarberId(e.target.value)}
-                style={{ width: "100%", appearance: "none", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "7px", padding: "8px 32px 8px 12px", fontSize: "13px", color: C.primary, outline: "none", cursor: "pointer", boxSizing: "border-box" }}
+                style={{ width: "100%", appearance: "none", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "9px 32px 9px 14px", fontSize: "13px", color: C.primary, outline: "none", cursor: "pointer", boxSizing: "border-box" }}
               >
                 <option value="">Tüm Dükkan</option>
                 {barbers.map(b => <option key={b.id} value={b.id}>{b.nameTr}</option>)}

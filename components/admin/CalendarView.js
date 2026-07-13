@@ -746,7 +746,7 @@ export default function CalendarView() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div style={{ width: "30px", height: "30px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                    <div style={{ width: "30px", height: "30px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                       {barber.avatar}
                     </div>
                     <div>
