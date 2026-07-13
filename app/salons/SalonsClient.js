@@ -294,7 +294,7 @@ export default function SalonsClient({
   const [selectedShopId, setSelectedShopId] = useState(null);
   const [hoveredShopId, setHoveredShopId] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileSnap, setMobileSnap] = useState(0.45);
+  const [mobileSnap, setMobileSnap] = useState(0.25);
   const [showMapFilters, setShowMapFilters] = useState(false);
 
   const [recentSearches, setRecentSearches] = useState([]);
@@ -364,7 +364,7 @@ export default function SalonsClient({
   const handleSalonSelect = useCallback((salon) => {
     setSelectedShopId(salon.id);
     // Collapsed sheet hides the cards — pop to half so the selected card shows
-    setMobileSnap((s) => (s <= 0.1 ? 0.45 : s));
+    setMobileSnap((s) => (s <= 0.25 ? 0.55 : s));
   }, []);
 
   const handleUserLocate = useCallback((loc) => setUserLoc(loc), []);
@@ -932,7 +932,7 @@ export default function SalonsClient({
                     onUserLocate={handleUserLocate}
                     onSearchArea={handleSearchArea}
                     fitToken={fitToken}
-                    padBottomFraction={0.45}
+                    padBottomFraction={0.25}
                   />
                   <button
                     onClick={() => setViewMode("list")}
@@ -1053,7 +1053,7 @@ export default function SalonsClient({
                     </p>
                   }
                 >
-                  {mobileSnap <= 0.1 ? null : displayShops.length === 0 ? (
+                  {displayShops.length === 0 ? (
                     <div className="flex-1 overflow-y-auto overscroll-contain pt-10 pb-4 px-4 flex flex-col items-center text-center">
                       <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
                         <Scissors size={26} className="text-muted-foreground/40" />

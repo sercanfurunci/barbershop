@@ -4,12 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, MoreVertical, Pencil, Trash2, ToggleLeft, ToggleRight,
-  Search, X, Check, AlertTriangle,
+  Search, X, AlertTriangle,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
-
-import { C, SHADOW } from "@/lib/adminTheme";
+import { AdminPageHeader, DSEmptyState, DSChip, DSPageLoader } from "@/components/ds";
 
 const CATEGORY_OPTIONS = [
   { value: "CUTS",    label: "Kesim"   },
@@ -25,26 +24,12 @@ const CATEGORY_COLORS = {
   PREMIUM: "#6D28D9",
 };
 
-const inputStyle = {
-  width: "100%", height: "40px",
-  background: C.surface,
-  border: `1px solid ${C.border}`,
-  borderRadius: "8px",
-  padding: "0 12px",
-  fontSize: "13px",
-  color: C.primary,
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const selectStyle = { ...inputStyle, cursor: "pointer", appearance: "none" };
+const inp = "w-full h-10 px-3 rounded-[8px] border border-border bg-card text-[13px] text-foreground outline-none focus:border-foreground/30 transition-colors";
 
 function Field({ label, children, half }) {
   return (
-    <div style={half ? { flex: 1, minWidth: 0 } : {}}>
-      <label style={{ display: "block", fontSize: "11px", color: C.secondary, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px", fontWeight: 500 }}>
-        {label}
-      </label>
+    <div className={half ? "flex-1 min-w-0" : ""}>
+      <label className="block text-[11px] text-secondary-foreground uppercase tracking-[0.06em] mb-1.5 font-medium">{label}</label>
       {children}
     </div>
   );
@@ -60,23 +45,19 @@ const EMPTY_FORM = {
 function ServiceModal({ service, onClose, onSaved }) {
   useBodyScrollLock();
   const isEdit = !!service;
-  const [form, setForm] = useState(
-    isEdit
-      ? {
-          nameTr:    service.nameTr    ?? "",
-          nameEn:    service.nameEn    ?? "",
-          descTr:    service.descTr    ?? "",
-          descEn:    service.descEn    ?? "",
-          duration:  String(service.duration),
-          price:     service.price == null ? "" : String(service.price),
-          icon:      service.icon      ?? "✂️",
-          category:  service.category  ?? "CUTS",
-          popular:   service.popular   ?? false,
-          active:    service.active    ?? true,
-          sortOrder: String(service.sortOrder ?? 0),
-        }
-      : { ...EMPTY_FORM }
-  );
+  const [form, setForm] = useState(isEdit ? {
+    nameTr:    service.nameTr    ?? "",
+    nameEn:    service.nameEn    ?? "",
+    descTr:    service.descTr    ?? "",
+    descEn:    service.descEn    ?? "",
+    duration:  String(service.duration),
+    price:     service.price == null ? "" : String(service.price),
+    icon:      service.icon      ?? "✂️",
+    category:  service.category  ?? "CUTS",
+    popular:   service.popular   ?? false,
+    active:    service.active    ?? true,
+    sortOrder: String(service.sortOrder ?? 0),
+  } : { ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -88,22 +69,16 @@ function ServiceModal({ service, onClose, onSaved }) {
     if (!form.duration || Number(form.duration) < 5) { setError("Süre en az 5 dk olmalı"); return; }
     if (form.price !== "" && Number(form.price) < 0) { setError("Geçerli bir fiyat girin"); return; }
 
-    setSaving(true);
-    setError("");
-    const body = {
-      nameTr:    form.nameTr.trim(),
-      nameEn:    form.nameEn.trim() || form.nameTr.trim(),
-      descTr:    form.descTr.trim(),
-      descEn:    form.descEn.trim(),
-      duration:  Number(form.duration),
-      price:     form.price === "" ? null : Number(form.price),
-      icon:      form.icon || "✂️",
-      category:  form.category,
-      popular:   form.popular,
-      active:    form.active,
-      sortOrder: Number(form.sortOrder) || 0,
-    };
+    setSaving(true); setError("");
     try {
+      const body = {
+        nameTr: form.nameTr.trim(), nameEn: form.nameEn.trim() || form.nameTr.trim(),
+        descTr: form.descTr.trim(), descEn: form.descEn.trim(),
+        duration: Number(form.duration), price: form.price === "" ? null : Number(form.price),
+        icon: form.icon || "✂️", category: form.category,
+        popular: form.popular, active: form.active,
+        sortOrder: Number(form.sortOrder) || 0,
+      };
       if (isEdit) {
         await apiFetch(`/api/admin/services/${service.id}`, { method: "PATCH", body: JSON.stringify(body) });
       } else {
@@ -121,7 +96,8 @@ function ServiceModal({ service, onClose, onSaved }) {
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 80, overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))" }}
+        className="fixed inset-0 z-80 flex items-center justify-center overflow-y-auto overscroll-contain"
+        style={{ background: "rgba(17,17,17,0.4)", padding: "20px max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))" }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
@@ -129,84 +105,77 @@ function ServiceModal({ service, onClose, onSaved }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.97 }}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "16px", width: "100%", maxWidth: "520px", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
+          className="bg-card border border-border rounded-[16px] w-full max-w-[520px] max-h-[90dvh] overflow-y-auto overscroll-contain"
         >
-          <div style={{ padding: "20px 24px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div className="px-6 py-5 border-b border-border flex items-center justify-between">
             <div>
-              <div style={{ fontSize: "11px", color: C.primary, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 500, marginBottom: "3px" }}>
+              <p className="text-[11px] text-foreground uppercase tracking-[0.15em] font-medium mb-1">
                 {isEdit ? "Hizmeti Düzenle" : "Yeni Hizmet"}
-              </div>
-              <h2 style={{ fontSize: "18px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>
+              </p>
+              <h2 className="text-[18px] text-foreground font-semibold tracking-[-0.01em]">
                 {isEdit ? service.nameTr : "Hizmet Ekle"}
               </h2>
             </div>
-            <button onClick={onClose} style={{ width: "32px", height: "32px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+            <button onClick={onClose} className="w-8 h-8 bg-secondary border border-border rounded-[8px] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
               <X size={15} />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ display: "flex", gap: "12px" }}>
+          <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+            <div className="flex gap-3">
               <Field label="Hizmet Adı (TR)" half>
-                <input value={form.nameTr} onChange={e => set("nameTr", e.target.value)} placeholder="Saç Kesimi" style={inputStyle} />
+                <input value={form.nameTr} onChange={e => set("nameTr", e.target.value)} placeholder="Saç Kesimi" className={inp} />
               </Field>
               <Field label="Hizmet Adı (EN)" half>
-                <input value={form.nameEn} onChange={e => set("nameEn", e.target.value)} placeholder="Haircut" style={inputStyle} />
+                <input value={form.nameEn} onChange={e => set("nameEn", e.target.value)} placeholder="Haircut" className={inp} />
               </Field>
             </div>
 
             <Field label="Açıklama (TR)">
-              <textarea value={form.descTr} onChange={e => set("descTr", e.target.value)} placeholder="Kısa açıklama..." style={{ ...inputStyle, height: "64px", padding: "10px 12px", resize: "none", lineHeight: 1.5 }} />
+              <textarea value={form.descTr} onChange={e => set("descTr", e.target.value)} placeholder="Kısa açıklama..." rows={2} className="w-full px-3 py-2 rounded-[8px] border border-border bg-card text-[13px] text-foreground outline-none resize-none leading-relaxed focus:border-foreground/30 transition-colors" />
             </Field>
 
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div className="flex gap-3">
               <Field label="Süre (dk)" half>
-                <input type="number" min="5" step="5" value={form.duration} onChange={e => set("duration", e.target.value)} placeholder="45" style={inputStyle} />
+                <input type="number" min="5" step="5" value={form.duration} onChange={e => set("duration", e.target.value)} placeholder="45" className={inp} />
               </Field>
               <Field label="Fiyat (₺)" half>
-                <input type="number" min="0" step="10" value={form.price} onChange={e => set("price", e.target.value)} placeholder="Boş bırak → Sorulur" style={inputStyle} />
+                <input type="number" min="0" step="10" value={form.price} onChange={e => set("price", e.target.value)} placeholder="Boş bırak → Sorulur" className={inp} />
               </Field>
             </div>
 
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div className="flex gap-3">
               <Field label="Kategori" half>
-                <select value={form.category} onChange={e => set("category", e.target.value)} style={selectStyle}>
-                  {CATEGORY_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
+                <select value={form.category} onChange={e => set("category", e.target.value)} className={inp + " cursor-pointer"}>
+                  {CATEGORY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </Field>
               <Field label="İkon" half>
-                <input value={form.icon} onChange={e => set("icon", e.target.value)} placeholder="✂️" style={inputStyle} />
+                <input value={form.icon} onChange={e => set("icon", e.target.value)} placeholder="✂️" className={inp} />
               </Field>
             </div>
 
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div className="flex gap-3">
               <Field label="Sıra" half>
-                <input type="number" min="0" value={form.sortOrder} onChange={e => set("sortOrder", e.target.value)} placeholder="0" style={inputStyle} />
+                <input type="number" min="0" value={form.sortOrder} onChange={e => set("sortOrder", e.target.value)} placeholder="0" className={inp} />
               </Field>
-              <div style={{ flex: 1, display: "flex", gap: "16px", alignItems: "flex-end", paddingBottom: "2px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "13px", color: C.secondary }}>
-                  <input type="checkbox" checked={form.popular} onChange={e => set("popular", e.target.checked)} />
-                  Popüler
+              <div className="flex-1 flex gap-4 items-end pb-0.5">
+                <label className="flex items-center gap-1.5 cursor-pointer text-[13px] text-secondary-foreground">
+                  <input type="checkbox" checked={form.popular} onChange={e => set("popular", e.target.checked)} /> Popüler
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "13px", color: C.secondary }}>
-                  <input type="checkbox" checked={form.active} onChange={e => set("active", e.target.checked)} />
-                  Aktif
+                <label className="flex items-center gap-1.5 cursor-pointer text-[13px] text-secondary-foreground">
+                  <input type="checkbox" checked={form.active} onChange={e => set("active", e.target.checked)} /> Aktif
                 </label>
               </div>
             </div>
 
             {error && (
-              <div style={{ fontSize: "12px", color: C.primary, padding: "8px 12px", background: "rgba(17,17,17,0.08)", borderRadius: "6px", border: "1px solid rgba(17,17,17,0.2)" }}>
-                {error}
-              </div>
+              <div className="text-[12px] text-foreground px-3 py-2 bg-secondary rounded-[6px] border border-border">{error}</div>
             )}
 
             <button
-              type="submit"
-              disabled={saving}
-              style={{ width: "100%", height: "44px", background: C.primary, color: "#fff", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, letterSpacing: "0.03em" }}
+              type="submit" disabled={saving}
+              className="w-full h-11 bg-foreground text-background rounded-[10px] text-[13px] font-semibold tracking-[0.03em] disabled:opacity-60 transition-opacity"
             >
               {saving ? "Kaydediliyor..." : isEdit ? "Değişiklikleri Kaydet" : "Hizmet Ekle"}
             </button>
@@ -227,35 +196,32 @@ function DeleteModal({ service, onClose, onDeleted }) {
     try {
       await apiFetch(`/api/admin/services/${service.id}`, { method: "DELETE" });
       onDeleted();
-    } catch {
-      setDeleting(false);
-    }
+    } catch { setDeleting(false); }
   };
 
   return (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.4)", zIndex: 80, overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))" }}
+        className="fixed inset-0 z-80 flex items-center justify-center overflow-y-auto"
+        style={{ background: "rgba(17,17,17,0.4)", padding: "20px" }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", width: "100%", maxWidth: "360px", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", padding: "28px 24px", textAlign: "center" }}
+          className="bg-card border border-border rounded-[14px] w-full max-w-[360px] p-7 text-center"
         >
-          <div style={{ width: "48px", height: "48px", background: "rgba(17,17,17,0.1)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <AlertTriangle size={22} color={C.primary} />
+          <div className="w-12 h-12 bg-secondary rounded-[12px] flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle size={22} className="text-foreground" />
           </div>
-          <div style={{ fontSize: "16px", color: C.primary, fontWeight: 500, marginBottom: "8px" }}>Hizmeti Sil</div>
-          <div style={{ fontSize: "13px", color: C.secondary, marginBottom: "24px" }}>
+          <p className="text-[16px] text-foreground font-medium mb-2">Hizmeti Sil</p>
+          <p className="text-[13px] text-secondary-foreground mb-6">
             <strong>{service.nameTr}</strong> kalıcı olarak silinecek. Bu işlem geri alınamaz.
-          </div>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button onClick={onClose} style={{ flex: 1, height: "40px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "13px", color: C.secondary, cursor: "pointer" }}>
-              İptal
-            </button>
-            <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, height: "40px", background: C.primary, border: "none", borderRadius: "8px", fontSize: "13px", color: "#fff", fontWeight: 600, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}>
+          </p>
+          <div className="flex gap-2.5">
+            <button onClick={onClose} className="flex-1 h-10 bg-secondary border border-border rounded-[8px] text-[13px] text-secondary-foreground hover:bg-secondary/70 transition-colors">İptal</button>
+            <button onClick={handleDelete} disabled={deleting} className="flex-1 h-10 bg-foreground text-background rounded-[8px] text-[13px] font-semibold disabled:opacity-60">
               {deleting ? "Siliniyor..." : "Sil"}
             </button>
           </div>
@@ -268,35 +234,31 @@ function DeleteModal({ service, onClose, onDeleted }) {
 /* ─── Row Dropdown ─── */
 function ServiceMenu({ service, onEdit, onToggle, onDelete }) {
   const [open, setOpen] = useState(false);
-
   return (
-    <div style={{ position: "relative" }}>
-      <button onClick={() => setOpen(o => !o)} style={{ width: "30px", height: "30px", background: "transparent", border: "none", borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.muted }}>
+    <div className="relative">
+      <button onClick={() => setOpen(o => !o)} className="w-8 h-8 flex items-center justify-center rounded-[6px] text-muted-foreground hover:bg-secondary transition-colors">
         <MoreVertical size={15} />
       </button>
       <AnimatePresence>
         {open && (
           <>
-            <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setOpen(false)} />
+            <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -4 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -4 }}
               transition={{ duration: 0.12 }}
-              style={{ position: "absolute", right: 0, top: "36px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "4px", zIndex: 20, minWidth: "160px", boxShadow: "0 8px 24px rgba(0,0,0,0.1)" }}
+              className="absolute right-0 top-9 bg-card border border-border rounded-[10px] p-1 z-20 min-w-[160px]"
+              style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.1)" }}
             >
               {[
-                { label: "Düzenle",              icon: Pencil,      action: onEdit,   color: C.secondary },
-                { label: service.active ? "Pasif Yap" : "Aktif Yap", icon: service.active ? ToggleLeft : ToggleRight, action: onToggle, color: C.secondary },
-                { label: "Hizmeti Sil",          icon: Trash2,      action: onDelete, color: C.primary },
+                { label: "Düzenle",          icon: Pencil,      action: onEdit,   danger: false },
+                { label: service.active ? "Pasif Yap" : "Aktif Yap", icon: service.active ? ToggleLeft : ToggleRight, action: onToggle, danger: false },
+                { label: "Hizmeti Sil",      icon: Trash2,      action: onDelete, danger: true },
               ].map(item => (
                 <button key={item.label} onClick={() => { setOpen(false); item.action(); }}
-                  style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "8px 10px", background: "none", border: "none", borderRadius: "7px", cursor: "pointer", fontSize: "13px", color: item.color, textAlign: "left" }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.surface}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}
-                >
-                  <item.icon size={13} />
-                  {item.label}
+                  className={`flex items-center gap-2 w-full px-2.5 py-2 rounded-[7px] text-[13px] hover:bg-secondary transition-colors text-left ${item.danger ? "text-destructive" : "text-secondary-foreground"}`}>
+                  <item.icon size={13} /> {item.label}
                 </button>
               ))}
             </motion.div>
@@ -334,79 +296,59 @@ export default function ServicesManagement() {
 
   const handleToggle = async (service) => {
     try {
-      await apiFetch(`/api/admin/services/${service.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ active: !service.active }),
-      });
+      await apiFetch(`/api/admin/services/${service.id}`, { method: "PATCH", body: JSON.stringify({ active: !service.active }) });
       load();
     } catch {}
   };
 
-  const visible = catFilter === "ALL"
-    ? services
-    : services.filter(s => s.category === catFilter);
+  const visible = catFilter === "ALL" ? services : services.filter(s => s.category === catFilter);
 
   return (
     <div>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
-        <div>
-          <h1 style={{ fontSize: "22px", color: C.primary, fontWeight: 300, letterSpacing: "-0.01em" }}>Hizmetler</h1>
-          <p style={{ fontSize: "12px", color: C.secondary, marginTop: "2px" }}>{services.length} hizmet</p>
-        </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          style={{ display: "flex", alignItems: "center", gap: "6px", height: "36px", padding: "0 14px", background: C.primary, color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 500, cursor: "pointer", flexShrink: 0 }}
-        >
-          <Plus size={14} />
-          Hizmet Ekle
-        </button>
-      </div>
+      <AdminPageHeader
+        title="Hizmetler"
+        sub={`${services.length} hizmet`}
+        actions={
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-1.5 h-9 px-3.5 bg-foreground text-background rounded-[8px] text-[13px] font-medium"
+          >
+            <Plus size={14} /> Hizmet Ekle
+          </button>
+        }
+      />
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-        {/* Search */}
-        <div style={{ position: "relative", flex: 1, minWidth: "180px", maxWidth: "280px" }}>
-          <Search size={13} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: C.muted, pointerEvents: "none" }} />
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <div className="relative flex-1 min-w-[180px] max-w-[280px]">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Hizmet ara..."
-            style={{ ...inputStyle, paddingLeft: "30px", height: "36px", fontSize: "12px" }}
+            className="w-full h-9 pl-[30px] pr-3 rounded-[8px] border border-border bg-card text-[12px] text-foreground outline-none focus:border-foreground/30 transition-colors"
           />
         </div>
-        {/* Category tabs */}
-        <div style={{ display: "flex", gap: "4px" }}>
+        <div className="flex gap-1">
           {[{ value: "ALL", label: "Tümü" }, ...CATEGORY_OPTIONS].map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => setCatFilter(opt.value)}
-              style={{
-                height: "36px", padding: "0 12px",
-                background: catFilter === opt.value ? C.primary : C.card,
-                color: catFilter === opt.value ? "#fff" : C.secondary,
-                border: `1px solid ${catFilter === opt.value ? C.primary : C.border}`,
-                borderRadius: "8px", fontSize: "12px", cursor: "pointer", fontWeight: catFilter === opt.value ? 500 : 400,
-              }}
-            >
+            <DSChip key={opt.value} active={catFilter === opt.value} onClick={() => setCatFilter(opt.value)}>
               {opt.label}
-            </button>
+            </DSChip>
           ))}
         </div>
       </div>
 
-      {/* Table — desktop */}
-      <div className="hidden md:block" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-        {loading ? (
-          <div style={{ padding: "48px", textAlign: "center", color: C.muted, fontSize: "13px" }}>Yükleniyor...</div>
-        ) : visible.length === 0 ? (
-          <div style={{ padding: "48px", textAlign: "center", color: C.muted, fontSize: "13px" }}>Hizmet bulunamadı</div>
+      {/* Desktop table */}
+      <div className="hidden md:block bg-card border border-border rounded-[14px] overflow-hidden">
+        {loading ? <DSPageLoader /> : visible.length === 0 ? (
+          <DSEmptyState icon={Search} title="Hizmet bulunamadı" compact />
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="w-full border-collapse">
             <thead>
-              <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                {["Hizmet", "Kategori", "Süre", "Fiyat", "Durum", ""].map(h => (
-                  <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: C.muted, fontWeight: 400 }}>{h}</th>
+              <tr className="border-b border-border">
+                {["Hizmet","Kategori","Süre","Fiyat","Durum",""].map(h => (
+                  <th key={h} className="px-4 py-2.5 text-left text-[10px] uppercase tracking-[0.1em] text-muted-foreground font-normal">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -414,38 +356,38 @@ export default function ServicesManagement() {
               {visible.map((s, i) => (
                 <tr
                   key={s.id}
-                  style={{ borderBottom: i < visible.length - 1 ? `1px solid ${C.border}` : "none", opacity: s.active ? 1 : 0.5 }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.surface + "80"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  className="border-b border-border last:border-0 hover:bg-secondary/40 transition-colors"
+                  style={{ opacity: s.active ? 1 : 0.5 }}
                 >
-                  <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span style={{ fontSize: "18px" }}>{s.icon}</span>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[18px]">{s.icon}</span>
                       <div>
-                        <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{s.nameTr}</div>
-                        {s.popular && <span style={{ fontSize: "9px", color: C.primary, letterSpacing: "0.06em", fontWeight: 600 }}>POPÜLER</span>}
+                        <p className="text-[13px] text-foreground font-medium">{s.nameTr}</p>
+                        {s.popular && <span className="text-[9px] text-foreground font-semibold tracking-[0.06em]">POPÜLER</span>}
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "4px", background: `${CATEGORY_COLORS[s.category] ?? "#888"}18`, color: CATEGORY_COLORS[s.category] ?? "#888", border: `1px solid ${CATEGORY_COLORS[s.category] ?? "#888"}30` }}>
+                  <td className="px-4 py-3">
+                    <span className="text-[11px] px-2 py-0.5 rounded-[4px] border"
+                      style={{ background: `${CATEGORY_COLORS[s.category] ?? "#888"}18`, color: CATEGORY_COLORS[s.category] ?? "#888", borderColor: `${CATEGORY_COLORS[s.category] ?? "#888"}30` }}>
                       {CATEGORY_OPTIONS.find(c => c.value === s.category)?.label ?? s.category}
                     </span>
                   </td>
-                  <td style={{ padding: "12px 16px" }}><span style={{ fontSize: "12px", color: C.secondary }}>{s.duration} dk</span></td>
-                  <td style={{ padding: "12px 16px" }}><span style={{ fontSize: "15px", color: C.primary, fontWeight: 600, letterSpacing: "-0.01em" }}>{s.price == null ? "Sorulur" : `₺${s.price.toLocaleString()}`}</span></td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "4px", background: s.active ? "rgba(22,163,74,0.1)" : "rgba(156,163,175,0.15)", color: s.active ? "#16a34a" : C.muted }}>
+                  <td className="px-4 py-3 text-[12px] text-secondary-foreground">{s.duration} dk</td>
+                  <td className="px-4 py-3">
+                    <span className="font-display font-semibold text-[15px] text-foreground">
+                      {s.price == null ? "Sorulur" : `₺${s.price.toLocaleString()}`}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-[11px] px-2 py-0.5 rounded-[4px]"
+                      style={{ background: s.active ? "rgba(22,163,74,0.1)" : "rgba(156,163,175,0.15)", color: s.active ? "#16a34a" : "#6B7280" }}>
                       {s.active ? "Aktif" : "Pasif"}
                     </span>
                   </td>
-                  <td style={{ padding: "12px 8px", textAlign: "right" }}>
-                    <ServiceMenu
-                      service={s}
-                      onEdit={() => setEditService(s)}
-                      onToggle={() => handleToggle(s)}
-                      onDelete={() => setDeleteService(s)}
-                    />
+                  <td className="px-2 py-3 text-right">
+                    <ServiceMenu service={s} onEdit={() => setEditService(s)} onToggle={() => handleToggle(s)} onDelete={() => setDeleteService(s)} />
                   </td>
                 </tr>
               ))}
@@ -454,55 +396,40 @@ export default function ServicesManagement() {
         )}
       </div>
 
-      {/* Card list — mobile */}
-      <div className="md:hidden" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-        {loading ? (
-          <div style={{ padding: "40px", textAlign: "center", color: C.muted, fontSize: "13px" }}>Yükleniyor...</div>
-        ) : visible.length === 0 ? (
-          <div style={{ padding: "40px", textAlign: "center", color: C.muted, fontSize: "13px" }}>Hizmet bulunamadı</div>
-        ) : (
-          visible.map((s, i) => (
-            <div key={s.id} style={{ padding: "14px 16px", borderBottom: i < visible.length - 1 ? `1px solid ${C.border}` : "none", display: "flex", alignItems: "center", gap: "12px", opacity: s.active ? 1 : 0.5 }}>
-              <div style={{ width: "40px", height: "40px", background: C.surface, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>
-                {s.icon}
+      {/* Mobile card list */}
+      <div className="md:hidden bg-card border border-border rounded-[14px] overflow-hidden">
+        {loading ? <DSPageLoader /> : visible.length === 0 ? (
+          <DSEmptyState icon={Search} title="Hizmet bulunamadı" compact />
+        ) : visible.map((s, i) => (
+          <div key={s.id}
+            className="flex items-center gap-3 px-4 py-3.5"
+            style={{ borderBottom: i < visible.length - 1 ? "1px solid var(--makas-border)" : "none", opacity: s.active ? 1 : 0.5 }}>
+            <div className="w-10 h-10 bg-secondary rounded-[8px] flex items-center justify-center text-[18px] shrink-0">{s.icon}</div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <p className="text-[13px] text-foreground font-medium">{s.nameTr}</p>
+                {s.popular && <span className="text-[8px] text-foreground font-semibold tracking-[0.06em]">POPÜLER</span>}
+                {!s.active && <span className="text-[8px] text-muted-foreground tracking-[0.06em]">PASİF</span>}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
-                  <div style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>{s.nameTr}</div>
-                  {s.popular && <span style={{ fontSize: "8px", color: C.primary, letterSpacing: "0.06em", fontWeight: 600 }}>POPÜLER</span>}
-                  {!s.active && <span style={{ fontSize: "8px", color: C.muted, letterSpacing: "0.06em" }}>PASİF</span>}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "4px", background: `${CATEGORY_COLORS[s.category] ?? "#888"}18`, color: CATEGORY_COLORS[s.category] ?? "#888" }}>
-                    {CATEGORY_OPTIONS.find(c => c.value === s.category)?.label ?? s.category}
-                  </span>
-                  <span style={{ fontSize: "11px", color: C.muted }}>{s.duration} dk</span>
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                <span style={{ fontSize: "16px", color: C.primary, fontWeight: 600 }}>{s.price == null ? "Sorulur" : `₺${s.price.toLocaleString()}`}</span>
-                <ServiceMenu
-                  service={s}
-                  onEdit={() => setEditService(s)}
-                  onToggle={() => handleToggle(s)}
-                  onDelete={() => setDeleteService(s)}
-                />
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] px-1.5 py-0.5 rounded-[4px]"
+                  style={{ background: `${CATEGORY_COLORS[s.category] ?? "#888"}18`, color: CATEGORY_COLORS[s.category] ?? "#888" }}>
+                  {CATEGORY_OPTIONS.find(c => c.value === s.category)?.label ?? s.category}
+                </span>
+                <span className="text-[11px] text-muted-foreground">{s.duration} dk</span>
               </div>
             </div>
-          ))
-        )}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="font-display font-semibold text-[16px] text-foreground">{s.price == null ? "Sorulur" : `₺${s.price.toLocaleString()}`}</span>
+              <ServiceMenu service={s} onEdit={() => setEditService(s)} onToggle={() => handleToggle(s)} onDelete={() => setDeleteService(s)} />
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Modals */}
-      {createOpen && (
-        <ServiceModal onClose={() => setCreateOpen(false)} onSaved={() => { setCreateOpen(false); load(); }} />
-      )}
-      {editService && (
-        <ServiceModal service={editService} onClose={() => setEditService(null)} onSaved={() => { setEditService(null); load(); }} />
-      )}
-      {deleteService && (
-        <DeleteModal service={deleteService} onClose={() => setDeleteService(null)} onDeleted={() => { setDeleteService(null); load(); }} />
-      )}
+      {createOpen && <ServiceModal onClose={() => setCreateOpen(false)} onSaved={() => { setCreateOpen(false); load(); }} />}
+      {editService && <ServiceModal service={editService} onClose={() => setEditService(null)} onSaved={() => { setEditService(null); load(); }} />}
+      {deleteService && <DeleteModal service={deleteService} onClose={() => setDeleteService(null)} onDeleted={() => { setDeleteService(null); load(); }} />}
     </div>
   );
 }

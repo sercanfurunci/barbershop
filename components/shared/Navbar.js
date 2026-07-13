@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Logo from "@/components/common/Logo";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -124,18 +125,7 @@ export default function Navbar() {
               href={shopSlug ? `/${shopSlug}` : "/"}
               className="flex items-center gap-3 group min-w-0 flex-1 md:flex-initial md:max-w-[420px]"
             >
-              <div
-                className="flex items-center justify-center transition-all duration-200 group-hover:opacity-90 shrink-0"
-                style={{
-                  width: "42px", height: "42px",
-                  background: logoMarkBg, borderRadius: "8px",
-                  border: logoMarkBorder,
-                }}
-              >
-                <span className="font-display font-bold" style={{ fontSize: "18px", color: "#fff" }}>
-                  {(shop?.name ?? "M")[0].toUpperCase()}
-                </span>
-              </div>
+              <Logo variant={isHero ? "light" : "dark"} size={36} showWordmark={false} className="transition-opacity duration-200 group-hover:opacity-90 shrink-0" />
               <div className="min-w-0 flex-1" style={{ display: "flex", flexDirection: "column" }}>
                 <span
                   className="font-display font-light uppercase text-[12px] sm:text-[14px] line-clamp-2 md:truncate"

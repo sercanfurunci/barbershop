@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 
 const AuthContext = createContext(null);
@@ -18,37 +18,44 @@ export function AuthProvider({ children }) {
   }, []);
 
   // role helpers — keep compatible with existing code
-  const role = user?.role === "SUPER_ADMIN" ? "superadmin"
+  const role = useMemo(() =>
+    user?.role === "SUPER_ADMIN" ? "superadmin"
     : user?.role === "ADMIN" ? "admin"
     : user?.role === "BARBER" ? (user.barber?.slug ?? "barber")
-    : null;
+    : null,
+  [user?.role, user?.barber?.slug]);
 
-  const shopId = user?.shopId ?? user?.shop?.id ?? null;
+  const shopId = useMemo(() => user?.shopId ?? user?.shop?.id ?? null, [user?.shopId, user?.shop?.id]);
 
-  const login = async (email, password, expectedRole) => {
+  const login = useCallback(async (email, password, expectedRole) => {
     const data = await apiFetch("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password, ...(expectedRole ? { expectedRole } : {}) }),
     });
     setUser(data.user);
     return data.user;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await apiFetch("/api/auth/me", { method: "DELETE" }).catch(() => {});
     setUser(null);
-  };
+  }, []);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     const u = await apiFetch("/api/auth/me").catch(() => null);
     if (u) setUser(u);
     return u;
-  };
+  }, []);
 
-  const updateUser = (patch) => setUser(prev => prev ? { ...prev, ...patch } : prev);
+  const updateUser = useCallback((patch) => setUser(prev => prev ? { ...prev, ...patch } : prev), []);
+
+  const value = useMemo(
+    () => ({ user, role, shopId, loaded, login, logout, refreshUser, updateUser }),
+    [user, role, shopId, loaded, login, logout, refreshUser, updateUser]
+  );
 
   return (
-    <AuthContext.Provider value={{ user, role, shopId, loaded, login, logout, refreshUser, updateUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

@@ -8,7 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useDragControls } from "framer-motion";
 import { OVERLAY_TRANSITION, OVERLAY_SHADOW } from "@/lib/overlay";
 
-export const SNAPS = [0.1, 0.45, 0.9];
+// 25% = collapsed peek (~200px), 55% = half carousel, 90% = full list
+export const SNAPS = [0.25, 0.55, 0.9];
 const MAX_SNAP = SNAPS[SNAPS.length - 1];
 
 export default function MapBottomSheet({ snap, onSnapChange, header, children }) {

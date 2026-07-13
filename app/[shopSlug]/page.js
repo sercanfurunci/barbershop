@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveShopBySlug } from "@/lib/shop";
 import { getGoogleReviews } from "@/lib/googleReviews";
 import { todayStr, nowMinutes, toDateStr } from "@/lib/utils";
+import { captureException } from "@/lib/observability";
 import { notFound } from "next/navigation";
 import dynamic from "next/dynamic";
 import Navbar from "@/components/shared/Navbar";
@@ -246,7 +247,7 @@ export default async function ShopHome({ params }) {
       };
     });
   } catch (err) {
-    console.error(`[ShopHome:${shopSlug}] DB error:`, err.message);
+    captureException(err, { tags: { page: "ShopHome", shopSlug } });
   }
 
   const localBusinessLd = buildLocalBusinessLd(shop, googleReviews, hours);

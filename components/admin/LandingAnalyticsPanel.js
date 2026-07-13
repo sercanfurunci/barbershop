@@ -3,10 +3,8 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Eye, Calendar, Phone, MessageCircle, MapPin, Scissors, User, CheckCircle2 } from "lucide-react";
+import { DSCard } from "@/components/ds";
 
-import { C, SHADOW } from "@/lib/adminTheme";
-
-// label/icon per analytics event. Keep in sync with EVENT_TYPES in lib/analytics.js.
 const ROWS_TR = [
   { key: "page_view",        label: "Sayfa Görüntüleme", Icon: Eye },
   { key: "book_click",       label: "Randevu Tıklama",   Icon: Calendar },
@@ -23,64 +21,46 @@ export default function LandingAnalyticsPanel() {
   const [err, setErr]   = useState(false);
 
   useEffect(() => {
-    apiFetch("/api/admin/analytics")
-      .then(setData)
-      .catch(() => setErr(true));
+    apiFetch("/api/admin/analytics").then(setData).catch(() => setErr(true));
   }, []);
 
-  const totalViews = data?.counts?.page_view ?? 0;
+  const totalViews     = data?.counts?.page_view ?? 0;
   const totalBookClicks = data?.counts?.book_click ?? 0;
   const conv = totalViews > 0 ? Math.round((totalBookClicks / totalViews) * 1000) / 10 : null;
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
-        <h3 style={{ fontSize: 13, fontWeight: 600, color: C.primary, letterSpacing: "0.01em" }}>
-          Web Sitesi Etkileşimi
-        </h3>
-        <span style={{ fontSize: 10, color: C.muted, letterSpacing: "0.04em", textTransform: "uppercase" }}>Son 30 gün</span>
+    <DSCard className="p-4">
+      <div className="flex items-baseline justify-between mb-3">
+        <h3 className="text-[13px] font-semibold text-foreground tracking-[0.01em]">Web Sitesi Etkileşimi</h3>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-[0.04em]">Son 30 gün</span>
       </div>
 
-      {err && (
-        <div style={{ fontSize: 12, color: C.muted, padding: "12px 0" }}>Yüklenemedi.</div>
-      )}
-
-      {!err && !data && (
-        <div style={{ fontSize: 12, color: C.muted, padding: "12px 0" }}>Yükleniyor…</div>
-      )}
+      {err && <p className="text-[12px] text-muted-foreground py-3">Yüklenemedi.</p>}
+      {!err && !data && <p className="text-[12px] text-muted-foreground py-3">Yükleniyor…</p>}
 
       {data && (
         <>
           {conv != null && (
-            <div style={{
-              marginBottom: 12, padding: "10px 12px",
-              background: "#F7F4EE", border: `1px solid ${C.border}`, borderRadius: 8,
-              fontSize: 12, color: C.secondary,
-            }}>
-              <span style={{ color: C.primary, fontWeight: 600 }}>{conv}%</span>{" "}
+            <div className="mb-3 px-3 py-2.5 bg-secondary border border-border rounded-[8px] text-[12px] text-secondary-foreground">
+              <span className="text-foreground font-semibold">{conv}%</span>{" "}
               ziyaretçi Randevu Al butonuna tıkladı.
             </div>
           )}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
+          <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
             {ROWS_TR.map(({ key, label, Icon }) => (
-              <div key={key} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8,
-              }}>
-                <Icon size={14} style={{ color: C.muted, flexShrink: 0 }} />
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: C.primary, lineHeight: 1 }}>
+              <div key={key} className="flex items-center gap-2.5 px-3 py-2.5 border border-border rounded-[8px]">
+                <Icon size={14} className="text-muted-foreground shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[15px] font-semibold text-foreground leading-none">
                     {(data.counts?.[key] ?? 0).toLocaleString("tr-TR")}
-                  </div>
-                  <div style={{ fontSize: 10, color: C.muted, letterSpacing: "0.02em", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {label}
-                  </div>
+                  </p>
+                  <p className="text-[10px] text-muted-foreground tracking-[0.02em] mt-0.5 truncate">{label}</p>
                 </div>
               </div>
             ))}
           </div>
         </>
       )}
-    </div>
+    </DSCard>
   );
 }

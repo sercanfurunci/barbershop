@@ -384,35 +384,6 @@ export function DSDivider({ className }) {
   return <hr className={cn("border-0 border-t border-border", className)} />;
 }
 
-// ─── Brand mark ───────────────────────────────────────────────────────────────
-
-/**
- * MAKAS SVG logo mark. variant: "dark" (for light bg) | "light" (for dark bg).
- * Single source of truth — replaces all local MakasMark copies.
- */
-export function BrandMark({ variant = "dark", size = 40, className }) {
-  const src = variant === "dark" ? "/logo-dark.svg" : "/logo-light.svg";
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="MAKAS" width={size} height={size} className={cn("block shrink-0", className)} />;
-}
-
-/** Full horizontal brand lockup: mark + wordmark. */
-export function BrandLogo({ variant = "dark", size = 40, className, wordmarkClass }) {
-  const textColor = variant === "dark" ? "text-foreground" : "text-background";
-  const fs = Math.round(size * 0.6);
-  return (
-    <div className={cn("flex items-center", className)}>
-      <BrandMark variant={variant} size={size} />
-      <span
-        className={cn("font-display font-extrabold leading-none tracking-[-0.02em]", textColor, wordmarkClass)}
-        style={{ fontSize: `${fs}px`, marginLeft: Math.round(size * 0.35) }}
-      >
-        MAKAS
-      </span>
-    </div>
-  );
-}
-
 // ─── Star rating ─────────────────────────────────────────────────────────────
 
 /** Read-only star row. Replaces StarRow / StarRating local copies across pages. */

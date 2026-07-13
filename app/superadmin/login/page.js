@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import Logo from "@/components/common/Logo";
 
 const C = { bg: "#F7F4EE", bgSoft: "#FDFBF7", card: "#FFFFFF", border: "#E5DED3", surface: "#EFEAE2", primary: "#111111", secondary: "#4A4A4A", muted: "#8A8480" };
 
@@ -45,7 +46,9 @@ export default function SuperAdminLogin() {
     <div className="min-h-screen flex items-center justify-center px-6" style={{ background: C.bg }}>
       <div style={{ width: "100%", maxWidth: "360px" }}>
         <div style={{ marginBottom: "40px", textAlign: "center" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.3em", color: C.primary, textTransform: "uppercase", fontWeight: 600, marginBottom: "12px" }}>MAKAS</div>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+            <Logo variant="dark" size={36} />
+          </div>
           <h1 style={{ fontSize: "24px", color: C.primary, fontWeight: 300, letterSpacing: "-0.02em" }}>Platform Girişi</h1>
         </div>
 

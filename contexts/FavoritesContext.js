@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
+import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 const FavoritesContext = createContext(null);
@@ -10,25 +11,28 @@ export function FavoritesProvider({ children }) {
   const [shopIds, setShopIds] = useState(new Set());
   const [loaded, setLoaded] = useState(false);
 
-  const fetch_ = useCallback(async () => {
+  const refetch = useCallback(async () => {
     if (!user || user.role !== "CUSTOMER") { setShopIds(new Set()); setLoaded(true); return; }
     try {
-      const res = await fetch("/api/customer/favorites");
-      if (!res.ok) return;
-      const list = await res.json();
+      const list = await apiFetch("/api/customer/favorites");
       setShopIds(new Set(Array.isArray(list) ? list.map(f => f.shopId) : []));
     } catch { /* ignore */ }
     finally { setLoaded(true); }
-  }, [user]);
+  }, [user?.id, user?.role]);
 
-  useEffect(() => { fetch_(); }, [fetch_]);
+  useEffect(() => { refetch(); }, [refetch]);
 
-  const add = useCallback((shopId) => setShopIds(s => { const n = new Set(s); n.add(shopId); return n; }), []);
+  const add    = useCallback((shopId) => setShopIds(s => { const n = new Set(s); n.add(shopId);    return n; }), []);
   const remove = useCallback((shopId) => setShopIds(s => { const n = new Set(s); n.delete(shopId); return n; }), []);
   const isFavorite = useCallback((shopId) => shopIds.has(shopId), [shopIds]);
 
+  const value = useMemo(
+    () => ({ shopIds, loaded, isFavorite, add, remove, refetch }),
+    [shopIds, loaded, isFavorite, add, remove, refetch]
+  );
+
   return (
-    <FavoritesContext.Provider value={{ shopIds, loaded, isFavorite, add, remove, refetch: fetch_ }}>
+    <FavoritesContext.Provider value={value}>
       {children}
     </FavoritesContext.Provider>
   );

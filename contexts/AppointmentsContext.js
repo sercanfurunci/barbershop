@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { apiFetch, normalizeAppointment } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import CompleteAppointmentModal from "@/components/admin/CompleteAppointmentModal";
@@ -145,13 +145,15 @@ export function AppointmentsProvider({ children }) {
     [appointments]
   );
 
+  const value = useMemo(() => ({
+    appointments, loaded,
+    addAppointment, updateStatus, updateAppointment,
+    deleteAppointment, getByDate, getByBarberDate,
+    refresh: fetchAll,
+  }), [appointments, loaded, addAppointment, updateStatus, updateAppointment, deleteAppointment, getByDate, getByBarberDate, fetchAll]);
+
   return (
-    <AppointmentsContext.Provider value={{
-      appointments, loaded,
-      addAppointment, updateStatus, updateAppointment,
-      deleteAppointment, getByDate, getByBarberDate,
-      refresh: fetchAll,
-    }}>
+    <AppointmentsContext.Provider value={value}>
       {children}
       {completing && (
         <CompleteAppointmentModal

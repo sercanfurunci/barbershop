@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Scissors, Eye, EyeOff, AlertCircle, User } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, User } from "lucide-react";
+import Logo from "@/components/common/Logo";
+import { DSButton, DSInput } from "@/components/ds";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
 
@@ -66,10 +68,7 @@ export default function CustomerLoginPage() {
   return (
     <div className="min-h-dvh bg-background flex flex-col">
       <header className="flex items-center justify-between px-6 py-5 border-b border-border">
-        <Link href="/" className="flex items-center gap-2.5 no-underline">
-          <Scissors size={20} className="text-foreground" />
-          <span className="font-display font-extrabold text-[20px] tracking-[-0.02em] text-foreground">MAKAS</span>
-        </Link>
+        <Logo href="/" variant="dark" size={28} />
         <Link href="/business/login" className="text-[13px] text-muted-foreground hover:text-foreground transition-colors">
           İşletme Girişi →
         </Link>
@@ -109,28 +108,26 @@ export default function CustomerLoginPage() {
             {tab === "register" && (
               <div>
                 <label className="block text-[13px] font-medium text-foreground mb-1.5">Ad Soyad</label>
-                <input
+                <DSInput
                   type="text"
                   autoComplete="name"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Adınız Soyadınız"
-                  className="w-full rounded-[12px] border border-border bg-card px-4 py-3 text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/50 transition-colors"
                 />
               </div>
             )}
 
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-1.5">E-posta</label>
-              <input
+              <DSInput
                 type="email"
                 autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="siz@example.com"
-                className="w-full rounded-[12px] border border-border bg-card px-4 py-3 text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/50 transition-colors"
               />
             </div>
 
@@ -144,7 +141,7 @@ export default function CustomerLoginPage() {
                 )}
               </div>
               <div className="relative">
-                <input
+                <DSInput
                   type={showPw ? "text" : "password"}
                   autoComplete={tab === "login" ? "current-password" : "new-password"}
                   required
@@ -152,7 +149,7 @@ export default function CustomerLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-[12px] border border-border bg-card px-4 py-3 pr-11 text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/50 transition-colors"
+                  className="pr-11"
                 />
                 <button
                   type="button"
@@ -175,15 +172,15 @@ export default function CustomerLoginPage() {
               </div>
             )}
 
-            <button
+            <DSButton
               type="submit"
-              disabled={loading}
-              className="w-full rounded-[12px] bg-foreground text-background font-semibold text-[15px] py-3.5 hover:bg-foreground/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              className="w-full rounded-[12px]"
             >
-              {loading
-                ? (tab === "login" ? "Giriş yapılıyor…" : "Hesap oluşturuluyor…")
-                : (tab === "login" ? "Giriş Yap" : "Kayıt Ol")}
-            </button>
+              {tab === "login" ? "Giriş Yap" : "Kayıt Ol"}
+            </DSButton>
           </form>
 
           <p className="mt-8 text-center text-[13px] text-muted-foreground">

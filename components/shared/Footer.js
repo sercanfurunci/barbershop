@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Logo from "@/components/common/Logo";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useShop } from "@/contexts/ShopContext";
@@ -73,9 +74,7 @@ export default function Footer() {
           <div className="grid grid-cols-2 gap-10 pb-10" style={{ borderBottom: "1px solid #1E1E1E" }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                <div style={{ width: "32px", height: "32px", background: "var(--makas-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontFamily: "var(--font-display, serif)", fontSize: "14px", fontWeight: 700, color: "#fff" }}>{shopName[0].toUpperCase()}</span>
-                </div>
+                <Logo variant="light" size={28} showWordmark={false} />
                 <div style={{ fontSize: "11px", letterSpacing: "0.2em", color: "var(--makas-bg)", textTransform: "uppercase", fontWeight: 600, lineHeight: 1 }}>{shopName}</div>
               </div>
               <p style={{ fontSize: "12px", color: "#888582", lineHeight: 1.8, marginBottom: "24px" }}>{ft.tagline}</p>
@@ -131,9 +130,7 @@ export default function Footer() {
 
           {/* Brand */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-            <div style={{ width: "28px", height: "28px", background: "var(--makas-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ fontFamily: "var(--font-display, serif)", fontSize: "12px", fontWeight: 700, color: "#fff" }}>{shopName[0].toUpperCase()}</span>
-            </div>
+            <Logo variant="light" size={24} showWordmark={false} />
             <span style={{ fontSize: "11px", letterSpacing: "0.18em", color: "var(--makas-bg)", textTransform: "uppercase", fontWeight: 600 }}>{shopName}</span>
           </div>
           <p style={{ fontSize: "11.5px", color: "#888582", lineHeight: 1.6, marginBottom: socialLinks.length > 0 ? "12px" : "0" }}>{ft.tagline}</p>

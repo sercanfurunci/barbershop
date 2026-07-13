@@ -3,7 +3,7 @@ import PillButton from "@/components/shared/PillButton";
 import AuthNav from "@/components/landing/AuthNav";
 import DemoButton from "@/components/landing/DemoButton";
 import MobileNav from "@/components/landing/MobileNav";
-import { BrandMark } from "@/components/ds";
+import Logo from "@/components/common/Logo";
 
 export default function LandingNavbar() {
   return (
@@ -16,12 +16,7 @@ export default function LandingNavbar() {
       }}
     >
       <nav className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-3.5 no-underline">
-          <BrandMark variant="dark" size={40} />
-          <span className="font-display text-[24px] font-extrabold leading-none tracking-[-0.02em] text-foreground">
-            MAKAS
-          </span>
-        </Link>
+        <Logo href="/" variant="dark" size={40} />
         <div className="hidden md:flex items-center gap-1">
           <Link
             href="/salons"

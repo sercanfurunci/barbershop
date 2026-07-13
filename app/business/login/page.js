@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Scissors, Eye, EyeOff, AlertCircle, Building2 } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Building2 } from "lucide-react";
+import Logo from "@/components/common/Logo";
+import { DSButton, DSInput } from "@/components/ds";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function BusinessLoginPage() {
@@ -56,10 +58,7 @@ export default function BusinessLoginPage() {
     <div className="min-h-dvh bg-background flex flex-col">
       {/* Minimal top bar */}
       <header className="flex items-center justify-between px-6 py-5 border-b border-border">
-        <Link href="/" className="flex items-center gap-2.5 no-underline">
-          <Scissors size={20} className="text-foreground" />
-          <span className="font-display font-extrabold text-[20px] tracking-[-0.02em] text-foreground">MAKAS</span>
-        </Link>
+        <Logo href="/" variant="dark" size={28} />
         <Link href="/login" className="text-[13px] text-muted-foreground hover:text-foreground transition-colors">
           Müşteri Girişi →
         </Link>
@@ -81,14 +80,13 @@ export default function BusinessLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-1.5">E-posta</label>
-              <input
+              <DSInput
                 type="email"
                 autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="salon@example.com"
-                className="w-full rounded-[12px] border border-border bg-card px-4 py-3 text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/50 transition-colors"
               />
             </div>
 
@@ -100,14 +98,14 @@ export default function BusinessLoginPage() {
                 </Link>
               </div>
               <div className="relative">
-                <input
+                <DSInput
                   type={showPw ? "text" : "password"}
                   autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-[12px] border border-border bg-card px-4 py-3 pr-11 text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/50 transition-colors"
+                  className="pr-11"
                 />
                 <button
                   type="button"
@@ -127,13 +125,15 @@ export default function BusinessLoginPage() {
               </div>
             )}
 
-            <button
+            <DSButton
               type="submit"
-              disabled={loading}
-              className="w-full rounded-[12px] bg-foreground text-background font-semibold text-[15px] py-3.5 hover:bg-foreground/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              className="w-full rounded-[12px]"
             >
-              {loading ? "Giriş yapılıyor…" : "Giriş Yap"}
-            </button>
+              Giriş Yap
+            </DSButton>
           </form>
 
           {/* Demo shortcut */}
@@ -175,13 +175,15 @@ function DemoLoginButton() {
 
   return (
     <div>
-      <button
+      <DSButton
+        variant="outline"
+        size="sm"
+        loading={loading}
         onClick={handleDemo}
-        disabled={loading}
-        className="rounded-full border border-border bg-card px-5 py-2 text-[13px] font-medium text-foreground hover:border-foreground/40 transition-colors disabled:opacity-50"
+        className="rounded-full"
       >
-        {loading ? "Yükleniyor…" : "Demo hesabıyla giriş yap"}
-      </button>
+        Demo hesabıyla giriş yap
+      </DSButton>
       {error && <p className="mt-2 text-[12px] text-red-600">{error}</p>}
     </div>
   );

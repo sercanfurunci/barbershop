@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BrandMark } from "@/components/ds";
+import Logo from "@/components/common/Logo";
 
 const NAV = [
   { label: "Özellikler", href: "/#explore" },
@@ -18,12 +18,7 @@ export default function LandingFooter() {
         style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
       >
         <div className="lg:col-span-2">
-          <Link href="/" className="mb-3 flex items-center gap-3.5 no-underline">
-            <BrandMark variant="light" size={40} />
-            <span className="font-display text-[24px] font-extrabold leading-none tracking-[-0.02em]">
-              MAKAS
-            </span>
-          </Link>
+          <div className="mb-3"><Logo href="/" variant="light" size={40} /></div>
           <p className="text-[14px] leading-relaxed text-background/60 max-w-xs">
             Türkiye'nin berber ve kuaförleri için premium randevu ve yönetim platformu.
           </p>
@@ -69,12 +64,7 @@ export default function LandingFooter() {
       <div className="md:hidden mx-auto max-w-[1200px] mb-6">
         {/* Brand */}
         <div className="mb-5">
-          <Link href="/" className="mb-2 flex items-center gap-3 no-underline">
-            <BrandMark variant="light" size={34} />
-            <span className="font-display text-[20px] font-extrabold leading-none tracking-[-0.02em]">
-              MAKAS
-            </span>
-          </Link>
+          <div className="mb-2"><Logo href="/" variant="light" size={34} /></div>
           <p className="text-[13px] leading-relaxed text-background/60">
             Türkiye'nin berber ve kuaförleri için premium randevu ve yönetim platformu.
           </p>
