@@ -149,7 +149,7 @@ export default async function ShopHome({ params }) {
   const shop = await resolveShopBySlug(shopSlug);
   if (!shop || shop.status !== "ACTIVE") notFound();
 
-  let services = [], barbers = [], last24h = 0, hours = null, googleReviews = null;
+  let services = [], barbers = [], last24h = 0, hours = null, googleReviews = null, todayIsHoliday = false;
   try {
     const now = new Date();
     const since = new Date(now.getTime() - 86_400_000);
@@ -221,6 +221,7 @@ export default async function ShopHome({ params }) {
 
     last24h = count24h;
     hours = aggregateHours(dbBarbers.filter(b => b.available && b.workingHours).map(b => b.workingHours));
+    todayIsHoliday = shopHolidays.some(h => h.date === todayDateStr);
     googleReviews = gReviews;
 
     services = dbServices.map((s) => ({
@@ -331,9 +332,11 @@ export default async function ShopHome({ params }) {
         <ChatWidgetLoader
           shopSlug={shopSlug}
           widgetConfig={{
-            aiName: shop.name,
+            aiName:      shop.name,
             welcomeMessage: `Merhaba! Ben ${shop.name} asistanıyım. Size nasıl yardımcı olabilirim?`,
-            avatarUrl: shop.logo || null,
+            avatarUrl:   shop.logo || null,
+            hours:       hours,
+            isHoliday:   todayIsHoliday,
           }}
         />
       )}

@@ -65,9 +65,10 @@ export default function StickyActionBar({ shop }) {
               <span>{label}</span>
             </div>
           );
+          const linkStyle = { textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "44px", minHeight: "44px" };
           return external
-            ? <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }} onClick={onClick}>{inner}</a>
-            : <Link key={label} href={href} style={{ textDecoration: "none" }} onClick={onClick}>{inner}</Link>;
+            ? <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={linkStyle} onClick={onClick}>{inner}</a>
+            : <Link key={label} href={href} style={linkStyle} onClick={onClick}>{inner}</Link>;
         })}
 
         <Link

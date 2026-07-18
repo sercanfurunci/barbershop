@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, memo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { MessageCircle, X, Send, Square, Wrench, Trash2, Scissors, Sparkles } from "lucide-react";
 import { useVisitorId } from "@/hooks/useVisitorId";
 import { useChat }      from "@/hooks/useChat";
@@ -38,14 +38,24 @@ const STYLES = `
 @media (max-width: 639px) {
   .mw-panel, .mw-panel--left {
     bottom: 0; left: 0; right: 0;
-    width: 100%; height: 90dvh; max-height: 90dvh;
-    border-radius: 20px 20px 0 0;
+    width: 100%; height: 75dvh; max-height: 75dvh;
+    border-radius: 24px 24px 0 0;
     box-shadow: 0 -4px 40px rgba(0,0,0,0.14);
     animation: mw-sheet 0.32s cubic-bezier(0.22, 1, 0.36, 1);
     transform-origin: bottom center;
   }
-  .mw-launcher-wrap { bottom: 20px !important; right: 16px !important; }
-  .mw-launcher-wrap--left { right: auto !important; left: 16px !important; }
+}
+/* ── FAB above sticky bottom nav on mobile (md:hidden = <768px) ── */
+@media (max-width: 767px) {
+  .mw-launcher-wrap {
+    bottom: calc(64px + env(safe-area-inset-bottom) + 16px) !important;
+    right: 16px !important;
+  }
+  .mw-launcher-wrap--left {
+    bottom: calc(64px + env(safe-area-inset-bottom) + 16px) !important;
+    left: 16px !important; right: auto !important;
+  }
+  .mw-proactive { max-width: 320px; }
 }
 
 @keyframes mw-open {
@@ -308,14 +318,31 @@ const DEFAULTS = {
   aiName:         "MAKAS AI",
   welcomeMessage: "Merhaba! Size nasıl yardımcı olabilirim?",
   position:       "bottom-right",
+  hours:          null,
+  isHoliday:      false,
 };
+
+const DAY_KEYS = ["sun","mon","tue","wed","thu","fri","sat"];
+
+function computeStatus(hours, isHoliday) {
+  if (isHoliday) return { dot: "#ef4444", label: "Bugün kapalı" };
+  if (!hours)    return { dot: "#22c55e", label: "Çevrimiçi" };
+  const tr   = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const day  = DAY_KEYS[tr.getUTCDay()];
+  const mins = tr.getUTCHours() * 60 + tr.getUTCMinutes();
+  const h    = hours.find(x => x.day === day);
+  if (!h || h.start == null || h.end == null) return { dot: "#ef4444", label: "Bugün kapalı" };
+  if (mins < h.start || mins >= h.end)        return { dot: "#ef4444", label: "Şu anda kapalı" };
+  return { dot: "#22c55e", label: "Çevrimiçi" };
+}
 
 // ── Widget ────────────────────────────────────────────────────────────────────
 
 export default function ChatWidget({ shopSlug, widgetConfig = {}, embedded = false, sdk = false }) {
-  const config   = { ...DEFAULTS, ...widgetConfig };
-  const isLeft   = config.position === "bottom-left";
-  const isMobile = useIsMobile();
+  const config       = { ...DEFAULTS, ...widgetConfig };
+  const isLeft       = config.position === "bottom-left";
+  const isMobile     = useIsMobile();
+  const onlineStatus = useMemo(() => computeStatus(config.hours, config.isHoliday), [config.hours, config.isHoliday]);
 
   const [open,       setOpen]       = useState(embedded);
   const [input,      setInput]      = useState("");
@@ -431,42 +458,68 @@ export default function ChatWidget({ shopSlug, widgetConfig = {}, embedded = fal
         >
           {/* Premium welcome card */}
           {proactive && unread === 0 && (
-            <div className="mw-proactive" onClick={openChat} role="button" aria-label="Sohbeti Aç">
-              {/* Header */}
-              <div className="mw-proactive-header">
-                <div className="mw-proactive-avatar">
-                  {config.avatarUrl
-                    ? <img src={config.avatarUrl} alt={config.aiName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <Sparkles size={16} color="var(--sidebar-foreground)" strokeWidth={2.5} />
-                  }
-                </div>
-                <div className="mw-proactive-meta">
-                  <div className="mw-proactive-name">{config.aiName}</div>
-                  <div className="mw-proactive-status">
-                    <span className="mw-proactive-dot" />
-                    <span className="mw-proactive-status-text">Şu anda çevrimiçi</span>
+            isMobile ? (
+              /* ── Compact mobile card ── */
+              <div className="mw-proactive" onClick={openChat} role="button" aria-label="Sohbeti Aç">
+                <div className="mw-proactive-header" style={{ padding: "12px 14px 10px", borderBottom: "none" }}>
+                  <div className="mw-proactive-avatar" style={{ width: "34px", height: "34px", borderRadius: "10px" }}>
+                    {config.avatarUrl
+                      ? <img src={config.avatarUrl} alt={config.aiName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      : <Sparkles size={14} color="var(--sidebar-foreground)" strokeWidth={2.5} />
+                    }
                   </div>
+                  <div className="mw-proactive-meta">
+                    <div className="mw-proactive-name">{config.aiName}</div>
+                    <div className="mw-proactive-status">
+                      <span className="mw-proactive-dot" style={{ background: onlineStatus.dot, boxShadow: `0 0 0 2px ${onlineStatus.dot}33` }} />
+                      <span className="mw-proactive-status-text">{onlineStatus.label}</span>
+                    </div>
+                  </div>
+                  <button className="mw-proactive-close" onClick={dismissProactive} aria-label="Kapat" style={{ width: "36px", height: "36px" }}>✕</button>
                 </div>
-                <span className="mw-proactive-badge">AI Asistan</span>
-                <button className="mw-proactive-close" onClick={dismissProactive} aria-label="Kapat">✕</button>
+                <div style={{ padding: "0 14px 10px", fontSize: "13px", lineHeight: 1.5, color: "var(--foreground)" }}>
+                  Randevu almak veya soru sormak için dokunun.
+                </div>
+                <div style={{ padding: "0 14px 14px" }}>
+                  <button className="mw-proactive-cta" onClick={openChat} style={{ padding: "11px 14px", borderRadius: "10px", fontSize: "13px" }}>
+                    Sohbet Başlat
+                  </button>
+                </div>
               </div>
-
-              {/* Body */}
-              <div className="mw-proactive-body">
-                <strong style={{ display: "block", marginBottom: "4px" }}>👋 Merhaba!</strong>
-                Randevu almak, fiyat öğrenmek veya uygun saatleri görmek için bana yazabilirsiniz.
+            ) : (
+              /* ── Full desktop card ── */
+              <div className="mw-proactive" onClick={openChat} role="button" aria-label="Sohbeti Aç">
+                <div className="mw-proactive-header">
+                  <div className="mw-proactive-avatar">
+                    {config.avatarUrl
+                      ? <img src={config.avatarUrl} alt={config.aiName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      : <Sparkles size={16} color="var(--sidebar-foreground)" strokeWidth={2.5} />
+                    }
+                  </div>
+                  <div className="mw-proactive-meta">
+                    <div className="mw-proactive-name">{config.aiName}</div>
+                    <div className="mw-proactive-status">
+                      <span className="mw-proactive-dot" style={{ background: onlineStatus.dot, boxShadow: `0 0 0 2px ${onlineStatus.dot}33` }} />
+                      <span className="mw-proactive-status-text">{onlineStatus.label}</span>
+                    </div>
+                  </div>
+                  <span className="mw-proactive-badge">AI Asistan</span>
+                  <button className="mw-proactive-close" onClick={dismissProactive} aria-label="Kapat">✕</button>
+                </div>
+                <div className="mw-proactive-body">
+                  <strong style={{ display: "block", marginBottom: "4px" }}>👋 Merhaba!</strong>
+                  Randevu almak, fiyat öğrenmek veya uygun saatleri görmek için bana yazabilirsiniz.
+                </div>
+                <div className="mw-proactive-footer">
+                  <button className="mw-proactive-cta" onClick={openChat}>
+                    Randevu Planla <span style={{ opacity: 0.7 }}>→</span>
+                  </button>
+                  <button className="mw-proactive-secondary" onClick={openChat}>
+                    Ya da sadece soru sor
+                  </button>
+                </div>
               </div>
-
-              {/* Footer */}
-              <div className="mw-proactive-footer">
-                <button className="mw-proactive-cta" onClick={openChat}>
-                  Randevu Planla <span style={{ opacity: 0.7 }}>→</span>
-                </button>
-                <button className="mw-proactive-secondary" onClick={openChat}>
-                  Ya da sadece soru sor
-                </button>
-              </div>
-            </div>
+            )
           )}
           {/* Arrow caret connecting card to launcher */}
           {proactive && unread === 0 && <div className="mw-proactive-arrow" />}
