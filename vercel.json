@@ -1,24 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/appointments",
+      "path": "/api/cron/master",
       "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/notifications",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/billing",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/cleanup-photos",
-      "schedule": "0 4 * * 0"
-    },
-    {
-      "path": "/api/cron/shop-metrics",
-      "schedule": "0 0 * * *"
     }
   ]
 }
