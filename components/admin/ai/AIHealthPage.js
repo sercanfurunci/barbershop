@@ -53,7 +53,11 @@ export default function AIHealthPage() {
                 <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: status.color }} />
                 <span style={{ fontSize: "14px", fontWeight: 600, color: C.primary }}>{data.provider} · {data.model}</span>
               </div>
-              <div style={{ fontSize: "12px", color: C.muted }}>Önbellek: {data.cacheStatus === "ok" ? "Sağlıklı" : "Kesildi"}</div>
+              <div style={{ fontSize: "12px", color: C.muted }}>
+                Önbellek: {data.cacheStatus === "idle" ? "Bugün trafik yok"
+                  : data.cacheHitRate != null ? `%${(data.cacheHitRate * 100).toFixed(1)} isabet${data.cacheStatus === "cold" ? " (düşük)" : ""}`
+                  : "—"}
+              </div>
             </div>
             <span style={{ padding: "4px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, background: status.bg, color: status.color }}>
               {status.label}

@@ -208,6 +208,23 @@ function ConversationDetail({ convSummary, onBack }) {
   const [reply,   setReply]   = useState("");
   const [sending, setSending] = useState(false);
   const [error,   setError]   = useState(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+
+  async function loadOlder() {
+    if (!conv?.messages?.length) return;
+    setLoadingOlder(true);
+    try {
+      const older = await apiFetch(
+        `/api/admin/conversations/${conv.id}?before=${encodeURIComponent(conv.messages[0].createdAt)}`
+      );
+      setConv(c => ({
+        ...c,
+        messages: [...older.messages, ...c.messages],
+        hasMoreMessages: older.hasMoreMessages,
+      }));
+    } catch (e) { setError(e.message); }
+    finally { setLoadingOlder(false); }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -270,7 +287,7 @@ function ConversationDetail({ convSummary, onBack }) {
             {conv?.client?.name ?? convSummary.externalId?.slice(-8) ?? "Anonim"}
           </div>
           <div style={{ fontSize: "12px", color: C.muted }}>
-            {CHANNEL_LABEL[conv?.channel ?? convSummary.channel] ?? conv?.channel} · {conv?.messages?.length ?? 0} mesaj
+            {CHANNEL_LABEL[conv?.channel ?? convSummary.channel] ?? conv?.channel} · {conv?.messageCount ?? conv?.messages?.length ?? 0} mesaj
           </div>
         </div>
         {conv && (
@@ -313,6 +330,17 @@ function ConversationDetail({ convSummary, onBack }) {
         <>
           {/* Message timeline */}
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px", maxHeight: "480px", overflowY: "auto", boxShadow: SHADOW.card, marginBottom: "12px" }}>
+            {conv?.hasMoreMessages && (
+              <div style={{ textAlign: "center", marginBottom: "10px" }}>
+                <button
+                  onClick={loadOlder}
+                  disabled={loadingOlder}
+                  style={{ padding: "6px 14px", borderRadius: "8px", border: `1px solid ${C.border}`, background: "transparent", color: C.secondary, fontSize: "12px", cursor: loadingOlder ? "wait" : "pointer" }}
+                >
+                  {loadingOlder ? "Yükleniyor…" : "Daha eski mesajları yükle"}
+                </button>
+              </div>
+            )}
             {conv?.messages?.map(msg => {
               const isBot   = msg.senderType === "BOT";
               const isAgent = msg.senderType === "AGENT";

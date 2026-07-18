@@ -26,14 +26,17 @@ import { getRulesForPrompt } from "@/lib/services/AiRuleService";
 import { getMemory, formatMemoryForPrompt } from "@/lib/services/CustomerMemoryService";
 import { buildCustomerContext } from "@/lib/ai/customerContext";
 import { buildDynamicContext } from "@/lib/ai/dynamicContext";
-import { buildSystemPrompt } from "@/lib/ai/prompt";
+import { buildSystemPromptParts } from "@/lib/ai/prompt";
 import { loadConversationContext, refreshSummary } from "@/lib/ai/memoryService";
 import { logUsage } from "@/lib/ai/usageLogger";
 import { AI_TOOLS, AI_TOOLS_MAP } from "@/lib/ai/tools";
 import { dispatch } from "@/lib/ai/handlers";
 import { getProvider } from "@/lib/ai/providers/index";
 import { getState, setState, addMessage, freshState } from "@/lib/ai/intentParser";
-import { detectIntent, filterDynamicContext, SKIP_CUSTOMER_CONTEXT } from "@/lib/ai/intentDetector";
+import { detectIntent, filterDynamicContext, filterKnowledgeSections, toolsForIntent, SKIP_CUSTOMER_CONTEXT } from "@/lib/ai/intentDetector";
+import { buildPlan, refineTools } from "@/lib/ai/planner";
+import { reviewReply, REGEN_NOTE } from "@/lib/ai/selfReview";
+import { computeQualityScore } from "@/lib/ai/qualityScore";
 import { rateLimit, getIp } from "@/lib/rateLimit";
 
 const _shopSelect = {
@@ -154,10 +157,10 @@ export async function POST(request) {
         buildDynamicContext(shop.id).catch(() => null),
       ]);
 
-      const systemPrompt = buildSystemPrompt({
+      const { stable, dynamic } = buildSystemPromptParts({
         shop, settings, customer,
         memory:           formatMemoryForPrompt(memory),
-        knowledgeSections,
+        knowledgeSections: filterKnowledgeSections(knowledgeSections, intent),
         rules,
         dynamicContext:   filterDynamicContext(dynamicContext, intent),
         now: new Date(),
@@ -168,9 +171,21 @@ export async function POST(request) {
         ? memCtx.messages
         : state.messages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
 
-      const effectiveSystem = memCtx.summary
-        ? `${systemPrompt}\n\nKONUŞMA ÖZETİ (önceki mesajlar):\n${memCtx.summary}`
-        : systemPrompt;
+      const plan = buildPlan(message.trim(), intent, customer, dynamicContext);
+      const dynamicFull = [
+        dynamic,
+        memCtx.summary ? `KONUŞMA ÖZETİ (önceki mesajlar):\n${memCtx.summary}` : null,
+        plan,
+      ].filter(Boolean).join("\n\n");
+
+      // Anthropic: split system into a cached stable prefix + uncached dynamic suffix.
+      // Other providers get the plain concatenated string.
+      const effectiveSystem = provider.name === "anthropic"
+        ? [
+            { type: "text", text: stable, cache_control: { type: "ephemeral" } },
+            ...(dynamicFull ? [{ type: "text", text: dynamicFull }] : []),
+          ]
+        : [stable, dynamicFull].filter(Boolean).join("\n\n");
 
       const messages = [...historyMessages, { role: "user", content: message.trim() }];
 
@@ -180,6 +195,24 @@ export async function POST(request) {
       let toolCallCount = 0;
       let inputTokens   = 0;
       let outputTokens  = 0;
+      let cacheRead     = 0;
+      let cacheWrite    = 0;
+      let rounds        = 1;
+      let review        = null;
+
+      const toolLog     = [];
+      const activeTools = refineTools(toolsForIntent(AI_TOOLS, intent), intent, customer);
+      const onToolCall  = async (name, input) => {
+        write({ type: "tool", name, status: "running" });
+        toolCallCount++;
+        const toolDef = AI_TOOLS_MAP[name];
+        if (!toolDef?.handler) throw new Error(`Unknown tool: ${name}`);
+        const tt0 = Date.now();
+        const output = await dispatch(toolDef.handler, input, { customer });
+        toolLog.push({ name, ms: Date.now() - tt0, ok: !output?.error && output?.ok !== false });
+        write({ type: "tool", name, status: "done" });
+        return output;
+      };
 
       try {
         // Use streaming if the provider supports it; otherwise buffer and stream manually
@@ -188,44 +221,52 @@ export async function POST(request) {
           await provider.agenticStream({
             systemPrompt: effectiveSystem,
             messages,
-            tools:   AI_TOOLS,
+            tools:   activeTools,
             config,
             onDelta: (text) => {
               fullReply += text;
               write({ type: "delta", text });
             },
-            onToolCall: async (name, input) => {
-              write({ type: "tool", name, status: "running" });
-              toolCallCount++;
-              const toolDef = AI_TOOLS_MAP[name];
-              if (!toolDef?.handler) throw new Error(`Unknown tool: ${name}`);
-              const output = await dispatch(toolDef.handler, input);
-              write({ type: "tool", name, status: "done" });
-              return output;
-            },
+            onToolCall,
             onUsage: (u) => { inputTokens = u.inputTokens; outputTokens = u.outputTokens; },
           });
         } else {
           // Non-streaming provider: buffer full reply, then stream it character by character
-          const result = await provider.agentic({
+          let result = await provider.agentic({
             systemPrompt: effectiveSystem,
             messages,
-            tools:   AI_TOOLS,
+            tools:   activeTools,
             config,
-            onToolCall: async (name, input) => {
-              write({ type: "tool", name, status: "running" });
-              toolCallCount++;
-              const toolDef = AI_TOOLS_MAP[name];
-              if (!toolDef?.handler) throw new Error(`Unknown tool: ${name}`);
-              const output = await dispatch(toolDef.handler, input);
-              write({ type: "tool", name, status: "done" });
-              return output;
-            },
+            onToolCall,
             onRound: () => {},
           });
+
+          // Self-review: strip leaked IDs; regenerate once on hallucinated booking claim
+          review = reviewReply(result.text, toolLog);
+          if (review.ok) {
+            result.text = review.text;
+          } else {
+            const correctiveSystem = typeof effectiveSystem === "string"
+              ? `${effectiveSystem}\n\n${REGEN_NOTE}`
+              : [...effectiveSystem, { type: "text", text: REGEN_NOTE }];
+            const retry = await provider.agentic({
+              systemPrompt: correctiveSystem,
+              messages, tools: activeTools, config, onToolCall, onRound: () => {},
+            });
+            retry.usage.inputTokens      += result.usage?.inputTokens  ?? 0;
+            retry.usage.outputTokens     += result.usage?.outputTokens ?? 0;
+            retry.usage.cacheReadTokens  = (retry.usage.cacheReadTokens  ?? 0) + (result.usage?.cacheReadTokens  ?? 0);
+            retry.usage.cacheWriteTokens = (retry.usage.cacheWriteTokens ?? 0) + (result.usage?.cacheWriteTokens ?? 0);
+            retry.text = reviewReply(retry.text, toolLog).text;
+            result = retry;
+          }
+
           fullReply    = result.text;
           inputTokens  = result.usage?.inputTokens  ?? 0;
           outputTokens = result.usage?.outputTokens ?? 0;
+          cacheRead    = result.usage?.cacheReadTokens  ?? 0;
+          cacheWrite   = result.usage?.cacheWriteTokens ?? 0;
+          rounds       = result.rounds ?? 1;
           // Simulate streaming for consistent client experience
           const chunkSize = 4;
           for (let i = 0; i < fullReply.length; i += chunkSize) {
@@ -249,8 +290,18 @@ export async function POST(request) {
       logUsage({
         shopId: shop.id, conversationId: conv.id, channel: "WEBSITE",
         provider: settings.provider, model,
-        usage:    { inputTokens, outputTokens, totalTokens: inputTokens + outputTokens },
-        latencyMs, toolCallCount, rounds: 1, success, error: errorMsg,
+        usage:    { inputTokens, outputTokens, cacheReadTokens: cacheRead, cacheWriteTokens: cacheWrite },
+        latencyMs, toolCallCount, rounds, success, error: errorMsg,
+        intent,
+        qualityScore: computeQualityScore({ success, review, toolLog, rounds, planUsed: !!plan }),
+        debug: {
+          message: message.trim().slice(0, 500),
+          plan,
+          toolLog,
+          review: review ? { ok: review.ok, reason: review.reason ?? null } : null,
+          reply:  fullReply.slice(0, 1000),
+          promptSizes: { stable: stable?.length ?? 0, dynamic: dynamicFull?.length ?? 0 },
+        },
       }).catch(() => {});
 
       if (memCtx.needsSummaryRegen) {

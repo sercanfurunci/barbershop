@@ -1094,6 +1094,12 @@ model AiUsageLog {
   rounds           Int      @default(1)
   success          Boolean  @default(true)
   error            String?  @db.Text
+  // Observability (AI Phase 4)
+  intent           String?  // detected intent (BOOKING, LOCATION, ...)
+  cacheReadTokens  Int      @default(0)
+  cacheWriteTokens Int      @default(0)
+  qualityScore     Int?     // 0-100, deterministic — never shown to customers
+  debug            Json?    // { plan, toolLog: [{name,ms,ok}], review, promptSizes }
   createdAt        DateTime @default(now())
 
   @@index([shopId, createdAt])
@@ -1211,6 +1217,7 @@ model CustomerMemory {
 
   @@unique([shopId, senderPhone])
   @@index([shopId])
+  @@index([shopId, updatedAt])
   @@index([expiresAt])
 }
 

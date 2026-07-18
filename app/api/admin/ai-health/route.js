@@ -34,7 +34,10 @@ export const GET = withRole(ROLES, async (request, _ctx, payload) => {
         select: {
           totalTokens: true, estimatedCostUsd: true,
           latencyMs: true, success: true,
+          inputTokens: true, cacheReadTokens: true,
         },
+        orderBy: { createdAt: "desc" },
+        take: 2000,
       }),
       prisma.aiUsageLog.aggregate({
         where: { shopId: sid, createdAt: { gte: startOfMonth } },
@@ -50,13 +53,18 @@ export const GET = withRole(ROLES, async (request, _ctx, payload) => {
     ]);
 
     let todayLatency = 0, todayTokens = 0, todayCost = 0, todayErrors = 0;
+    let todayInput = 0, todayCacheRead = 0;
     for (const l of todayLogs) {
-      todayLatency += l.latencyMs ?? 0;
-      todayTokens  += l.totalTokens ?? 0;
-      todayCost    += l.estimatedCostUsd ?? 0;
+      todayLatency   += l.latencyMs ?? 0;
+      todayTokens    += l.totalTokens ?? 0;
+      todayCost      += l.estimatedCostUsd ?? 0;
+      todayInput     += l.inputTokens ?? 0;
+      todayCacheRead += l.cacheReadTokens ?? 0;
       if (!l.success) todayErrors += 1;
     }
     const requests = todayLogs.length;
+    const promptable   = todayInput + todayCacheRead;
+    const cacheHitRate = promptable ? +(todayCacheRead / promptable).toFixed(4) : null;
 
     // Simple status heuristic: has an error in the last hour → degraded
     let status = "ok";
@@ -84,7 +92,9 @@ export const GET = withRole(ROLES, async (request, _ctx, payload) => {
         costUsd: +(monthLogs._sum.estimatedCostUsd ?? 0).toFixed(6),
         tokens:  monthLogs._sum.totalTokens ?? 0,
       },
-      cacheStatus: "ok",
+      // Derived from real usage: no traffic → idle, otherwise hit rate decides
+      cacheStatus: cacheHitRate === null ? "idle" : cacheHitRate >= 0.3 ? "ok" : "cold",
+      cacheHitRate,
       knowledgeCount: kbCount,
       rulesCount,
     });

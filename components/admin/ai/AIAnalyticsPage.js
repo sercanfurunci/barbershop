@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { MessageSquare, Zap, Coins, Clock, BarChart2 } from "lucide-react";
+import { MessageSquare, Zap, Coins, Clock, BarChart2, Database, Gauge, Wrench, AlertTriangle, Lightbulb, ChevronDown, ChevronRight } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { C, SHADOW } from "@/lib/adminTheme";
 import { AdminPageHeader } from "@/components/ds";
@@ -20,6 +20,55 @@ function Stat({ icon: Icon, label, value, sub }) {
       </div>
       <div style={{ fontSize: "22px", fontWeight: 600, color: C.primary }}>{value}</div>
       {sub && <div style={{ fontSize: "11px", color: C.muted, marginTop: "3px" }}>{sub}</div>}
+    </div>
+  );
+}
+
+function Card({ title, icon: Icon, children, style }) {
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "16px", boxShadow: SHADOW.card, ...style }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: C.muted, fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "12px" }}>
+        {Icon && <Icon size={12} />} {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ReplayRow({ r }) {
+  const [open, setOpen] = useState(false);
+  const Chevron = open ? ChevronDown : ChevronRight;
+  return (
+    <div style={{ borderBottom: `1px solid ${C.border}` }}>
+      <div onClick={() => setOpen(!open)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 4px", cursor: "pointer", fontSize: "12px" }}>
+        <Chevron size={12} style={{ color: C.muted, flexShrink: 0 }} />
+        <span style={{ color: C.muted, flexShrink: 0 }}>{new Date(r.createdAt).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+        <span style={{ color: C.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{r.message ?? "—"}</span>
+        {r.intent && <span style={{ color: C.muted, fontSize: "10px", flexShrink: 0 }}>{r.intent}</span>}
+        {r.qualityScore != null && (
+          <span style={{ fontSize: "10px", fontWeight: 600, flexShrink: 0, color: r.qualityScore >= 80 ? C.green : r.qualityScore >= 50 ? C.yellow : "#DC2626" }}>
+            {r.qualityScore}
+          </span>
+        )}
+      </div>
+      {open && (
+        <div style={{ padding: "4px 4px 12px 24px", fontSize: "11px", color: C.secondary, display: "flex", flexDirection: "column", gap: "8px" }}>
+          {r.plan && <pre style={{ margin: 0, whiteSpace: "pre-wrap", background: C.surface, padding: "8px", borderRadius: "6px", fontSize: "10px" }}>{r.plan}</pre>}
+          {r.toolLog?.length > 0 && (
+            <div>
+              {r.toolLog.map((t, i) => (
+                <div key={i} style={{ color: t.ok ? C.green : "#DC2626" }}>
+                  {t.ok ? "✓" : "✗"} {t.name} · {t.ms}ms
+                </div>
+              ))}
+            </div>
+          )}
+          {r.review && r.review.ok === false && (
+            <div style={{ color: "#DC2626" }}>Self-review düzeltti: {r.review.reason}</div>
+          )}
+          {r.reply && <div style={{ background: C.surface, padding: "8px", borderRadius: "6px" }}>{r.reply}</div>}
+        </div>
+      )}
     </div>
   );
 }
@@ -80,7 +129,35 @@ export default function AIAnalyticsPage() {
             <Stat icon={Clock}         label="Ort. Gecikme"   value={`${data.totals.avgLatencyMs} ms`} />
             <Stat icon={Zap}           label="Ort. Token"     value={data.totals.avgTokens} />
             <Stat icon={Coins}         label="Toplam Maliyet" value={`$${(data.totals.totalCostUsd ?? 0).toFixed(4)}`} sub={`~$${(data.totals.avgCostUsd ?? 0).toFixed(5)}/istek`} />
+            <Stat icon={Clock}    label="P95 Gecikme" value={`${data.totals.p95LatencyMs ?? 0} ms`} />
+            <Stat icon={Database} label="Cache Hit"   value={`%${((data.totals.cacheHitRate ?? 0) * 100).toFixed(1)}`} sub={`~$${(data.totals.cacheSavingsUsd ?? 0).toFixed(4)} tasarruf`} />
+            <Stat icon={Wrench}   label="Ort. Araç"   value={data.totals.avgToolCalls ?? 0} sub={data.costPerBookingUsd != null ? `~$${data.costPerBookingUsd.toFixed(5)}/randevu` : undefined} />
+            <Stat icon={Gauge}    label="Kalite Skoru" value={data.totals.avgQualityScore ?? "—"} sub={data.hallucinationCount > 0 ? `${data.hallucinationCount} düzeltme` : "halüsinasyon yok"} />
           </div>
+
+          {/* Recommendations + insights */}
+          {(data.recommendations?.length > 0 || data.insights?.length > 0) && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
+              {data.recommendations?.map((r, i) => (
+                <div key={`rec-${i}`} style={{ display: "flex", gap: "8px", alignItems: "flex-start", padding: "10px 14px", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "8px", fontSize: "12px", color: "#92400E" }}>
+                  <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: "1px" }} /> {r}
+                </div>
+              ))}
+              {data.insights?.map((ins, i) => (
+                <div key={`ins-${i}`} style={{ padding: "10px 14px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "12px" }}>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", fontWeight: 600, color: C.primary }}>
+                    <Lightbulb size={14} /> {ins.title}
+                  </div>
+                  <div style={{ color: C.muted, marginTop: "4px" }}>{ins.detail}</div>
+                  {ins.customers?.length > 0 && (
+                    <div style={{ marginTop: "6px", color: C.secondary }}>
+                      {ins.customers.slice(0, 5).map(c => `${c.name} (${c.daysSince} gün)`).join(" · ")}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Daily conversations chart (div-based bars) */}
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "16px", boxShadow: SHADOW.card, marginBottom: "16px" }}>
@@ -137,6 +214,39 @@ export default function AIAnalyticsPage() {
               </div>
             </div>
           </div>
+
+          {/* Tool analytics */}
+          {data.tools?.length > 0 && (
+            <Card title="Araç Analitiği" icon={Wrench} style={{ marginTop: "16px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <thead>
+                  <tr style={{ color: C.muted, textAlign: "left" }}>
+                    <th style={{ padding: "4px" }}>Araç</th>
+                    <th style={{ padding: "4px", textAlign: "right" }}>Çağrı</th>
+                    <th style={{ padding: "4px", textAlign: "right" }}>Hata</th>
+                    <th style={{ padding: "4px", textAlign: "right" }}>Ort. Süre</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.tools.map(t => (
+                    <tr key={t.name} style={{ borderTop: `1px solid ${C.border}` }}>
+                      <td style={{ padding: "6px 4px", color: C.primary }}>{t.name}</td>
+                      <td style={{ padding: "6px 4px", textAlign: "right", color: C.secondary }}>{t.calls}</td>
+                      <td style={{ padding: "6px 4px", textAlign: "right", color: t.failureRate > 0.3 ? "#DC2626" : C.muted }}>%{(t.failureRate * 100).toFixed(0)}</td>
+                      <td style={{ padding: "6px 4px", textAlign: "right", color: C.muted }}>{t.avgMs} ms</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+
+          {/* Conversation replay */}
+          {data.replays?.length > 0 && (
+            <Card title="Konuşma İzleme (Replay)" icon={MessageSquare} style={{ marginTop: "16px" }}>
+              {data.replays.map(r => <ReplayRow key={r.id} r={r} />)}
+            </Card>
+          )}
         </>
       )}
     </div>

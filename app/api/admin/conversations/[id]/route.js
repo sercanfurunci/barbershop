@@ -10,10 +10,17 @@ function shopId(payload, request) {
     : payload.shopId;
 }
 
-// GET /api/admin/conversations/[id]
+const MESSAGE_PAGE = 100;
+
+// GET /api/admin/conversations/[id]?before=<ISO date>
+// Returns the newest MESSAGE_PAGE messages (ascending); pass `before` to load older ones.
 export const GET = withRole(ROLES, async (request, { params }, payload) => {
   const sid = shopId(payload, request);
   if (!sid) return badRequest("shopId gerekli");
+
+  const before = new URL(request.url).searchParams.get("before");
+  const beforeDate = before ? new Date(before) : null;
+  if (beforeDate && isNaN(beforeDate)) return badRequest("Geçersiz before parametresi");
 
   const conversation = await prisma.conversation.findFirst({
     where: { id: params.id, shopId: sid },
@@ -22,8 +29,11 @@ export const GET = withRole(ROLES, async (request, { params }, payload) => {
       assignedUserId: true, handoffAt: true, externalId: true,
       createdAt: true, updatedAt: true,
       client: { select: { id: true, name: true, phone: true, notes: true } },
+      _count: { select: { messages: true } },
       messages: {
-        orderBy: { createdAt: "asc" },
+        where: beforeDate ? { createdAt: { lt: beforeDate } } : undefined,
+        orderBy: { createdAt: "desc" },
+        take: MESSAGE_PAGE + 1,
         select: {
           id: true, direction: true, senderType: true, contentType: true,
           content: true, metadata: true, status: true, createdAt: true,
@@ -33,7 +43,11 @@ export const GET = withRole(ROLES, async (request, { params }, payload) => {
   });
 
   if (!conversation) return notFound("Konuşma bulunamadı");
-  return ok(conversation);
+
+  const hasMoreMessages = conversation.messages.length > MESSAGE_PAGE;
+  const messages = conversation.messages.slice(0, MESSAGE_PAGE).reverse();
+  const { _count, ...rest } = conversation;
+  return ok({ ...rest, messages, hasMoreMessages, messageCount: _count.messages });
 });
 
 // PATCH /api/admin/conversations/[id] — status updates (resolve, abandon)
