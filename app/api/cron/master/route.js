@@ -15,6 +15,29 @@ cloudinary.config({
   secure:     true,
 });
 
+const LOCK_KEY    = "master-lock";
+const LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+async function acquireLock() {
+  // Atomically insert/update the lock row only if absent or expired.
+  // Returns the row if we acquired the lock, empty array otherwise.
+  const rows = await prisma.$queryRaw`
+    INSERT INTO "ProcessedWebhookEvent" (provider, "eventId", "processedAt")
+    VALUES ('cron', ${LOCK_KEY}, NOW())
+    ON CONFLICT (provider, "eventId") DO UPDATE
+      SET "processedAt" = NOW()
+      WHERE "ProcessedWebhookEvent"."processedAt" < NOW() - ${LOCK_TTL_MS} * INTERVAL '1 millisecond'
+    RETURNING "eventId"
+  `;
+  return rows.length > 0;
+}
+
+async function releaseLock() {
+  await prisma.$executeRaw`
+    DELETE FROM "ProcessedWebhookEvent" WHERE provider = 'cron' AND "eventId" = ${LOCK_KEY}
+  `;
+}
+
 export async function GET(request) {
   const secret = process.env.CRON_SECRET;
   const auth   = request.headers.get("authorization");
@@ -24,55 +47,79 @@ export async function GET(request) {
     : !!secret && auth !== `Bearer ${secret}`;
   if (unauthorized) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const now    = new Date();
-  const hour   = now.getUTCHours();
-  const minute = now.getUTCMinutes();
-  const day    = now.getUTCDay(); // 0 = Sunday
+  // Distributed lock — prevent overlapping executions
+  const locked = await acquireLock();
+  if (!locked) {
+    return NextResponse.json({ skipped: true, reason: "Master cron already running" });
+  }
+
+  const totalStart = Date.now();
+
+  // TR time (UTC+3) for shop-local scheduling guards
+  const trNow    = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const hour     = trNow.getUTCHours();
+  const minute   = trNow.getUTCMinutes();
 
   const results = {};
 
-  // Every minute: appointment lifecycle
-  results.appointments = await run("appointments", () => AppointmentLifecycleService.run());
-
-  // Every minute: notification + review queues
-  results.notifications = await run("notifications", async () => {
-    const [notif, reviews] = await Promise.all([processQueue(20), processReviewQueue(20)]);
-    return { notif, reviews };
-  });
-
-  // Hourly (at :00): shop metrics for yesterday
-  if (minute === 0) {
-    results.shopMetrics = await run("shop-metrics", runShopMetrics);
-  }
-
-  // Daily 03:00 UTC: billing
-  if (hour === 3 && minute === 0) {
-    results.billing = await run("billing", async () => {
-      const [expired, suspended] = await Promise.all([expireTrials(), suspendPastDue()]);
-      return { expired, suspended };
+  try {
+    // ── Every minute ──────────────────────────────────────────────────────────
+    results.appointments  = await run("appointments",  () => AppointmentLifecycleService.run());
+    results.notifications = await run("notifications", async () => {
+      const [notif, reviews] = await Promise.all([processQueue(20), processReviewQueue(20)]);
+      return { notif, reviews };
     });
+
+    // ── Every 15 minutes ─────────────────────────────────────────────────────
+    if (minute % 15 === 0) {
+      results.metrics = await run("shop-metrics", runShopMetrics);
+    } else {
+      results.metrics = "SKIPPED";
+    }
+
+    // ── Daily 03:00 TR — billing ──────────────────────────────────────────────
+    if (hour === 3 && minute === 0) {
+      results.billing = await run("billing", async () => {
+        const [expired, suspended] = await Promise.all([expireTrials(), suspendPastDue()]);
+        return { expired, suspended };
+      });
+    } else {
+      results.billing = "SKIPPED";
+    }
+
+    // ── Daily 00:05 TR — birthdays ────────────────────────────────────────────
+    if (hour === 0 && minute === 5) {
+      results.birthdays = await run("birthdays", runBirthdays);
+    } else {
+      results.birthdays = "SKIPPED";
+    }
+
+    // ── Daily 04:00 TR — cleanup-photos ──────────────────────────────────────
+    if (hour === 4 && minute === 0) {
+      results.cleanup = await run("cleanup-photos", runCleanupPhotos);
+    } else {
+      results.cleanup = "SKIPPED";
+    }
+  } finally {
+    await releaseLock();
   }
 
-  // Daily 05:00 UTC (08:00 TR): birthdays
-  if (hour === 5 && minute === 0) {
-    results.birthdays = await run("birthdays", runBirthdays);
-  }
-
-  // Weekly Sunday 04:00 UTC: cloudinary orphan cleanup
-  if (day === 0 && hour === 4 && minute === 0) {
-    results.cleanupPhotos = await run("cleanup-photos", runCleanupPhotos);
-  }
-
-  return NextResponse.json({ ok: true, ts: now.toISOString(), ...results });
+  results.total = `${Date.now() - totalStart}ms`;
+  return NextResponse.json({ ok: true, ts: trNow.toISOString(), ...results });
 }
 
-// Wraps a job so one failure doesn't abort the others.
+// Wraps a job with per-job try/catch and execution timing.
 async function run(name, fn) {
+  const t0 = Date.now();
   try {
-    return await fn();
+    const result = await fn();
+    const ms = Date.now() - t0;
+    console.info(`[cron/master] ${name} OK (${ms}ms)`, result);
+    return `OK (${ms}ms)`;
   } catch (err) {
-    console.error(`[cron/master] ${name}`, err);
-    return { error: err.message };
+    const ms = Date.now() - t0;
+    console.error(`[cron/master] ${name} ERROR (${ms}ms)`, err);
+    return `ERROR: ${err.message}`;
   }
 }
 
@@ -105,8 +152,8 @@ async function runShopMetrics() {
     }),
   ]);
 
-  const cancelledMap   = Object.fromEntries(cancelledGroups.map(r => [r.shopId, r._count._all]));
-  const newClientMap   = Object.fromEntries(newClientGroups.map(r => [r.shopId, r._count._all]));
+  const cancelledMap    = Object.fromEntries(cancelledGroups.map(r => [r.shopId, r._count._all]));
+  const newClientMap    = Object.fromEntries(newClientGroups.map(r => [r.shopId, r._count._all]));
   const completedByShop = {};
   for (const row of completedRows) {
     (completedByShop[row.shopId] ??= []).push(row);
