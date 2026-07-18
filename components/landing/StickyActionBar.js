@@ -41,10 +41,10 @@ export default function StickyActionBar({ shop }) {
         position: "fixed",
         left: 0, right: 0, bottom: 0,
         zIndex: 40,
-        background: "rgba(255,255,255,0.92)",
+        background: "var(--card)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
-        borderTop: "1px solid rgba(0,0,0,0.08)",
+        borderTop: "1px solid var(--makas-border)",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
