@@ -73,8 +73,6 @@ export default function IdentityBlock({ shop, hours, googleReviews }) {
       .catch(() => {});
   }, [shop?.latitude, shop?.longitude]);
 
-  if (!shop) return null;
-
   const share = async () => {
     const url = window.location.href;
     if (navigator.share) {

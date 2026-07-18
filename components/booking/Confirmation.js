@@ -619,7 +619,6 @@ function FormField({ label, placeholder, value, onChange, onBlur, type = "text",
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
           className="bg-card text-foreground"
           style={{
             width: "100%",

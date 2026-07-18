@@ -30,7 +30,6 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
   const tx = useT(lang);
   const shop = useShop();
   const bookHref = shop?.slug ? `/${shop.slug}/book` : "/book";
-  if (!barbers.length) return null;
 
   // Lazy-fetch CDN-cached profile photos. Not in SSR payload to keep HTML small.
   useEffect(() => {
@@ -44,6 +43,8 @@ export default function Barbers({ barbers: initialBarbers = [] }) {
       })
       .catch(() => {});
   }, [shop?.id]);
+
+  if (!barbers.length) return null;
 
   return (
     <section id="barbers" style={{ background: C.bg, position: "relative" }}>

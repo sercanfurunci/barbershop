@@ -56,7 +56,6 @@ export default function Navbar() {
   // mode is "hero"; otherwise "default". Pages without a hero stay "default" forever.
   useEffect(() => {
     const el = typeof document !== "undefined" && document.querySelector("[data-hero]");
-    // eslint-disable-next-line react-compiler/react-compiler
     if (!el) { setMode("default"); return; }
     setMode("hero"); // avoid flash: hero is at top of layout, assume visible on mount
     const io = new IntersectionObserver(

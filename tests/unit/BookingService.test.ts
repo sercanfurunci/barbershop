@@ -347,7 +347,7 @@ describe("createBooking", () => {
     expect(result.date).toBe("2026-07-13");
     expect(result.time).toBe("11:00");
     expect(result.status).toBe("CONFIRMED");
-    expect(result.shop).toMatchObject({ name: "Test Shop" });
+    expect((result as any).shop).toMatchObject({ name: "Test Shop" });
   });
 
   it("happy path: status is PENDING when autoConfirmBookings is false", async () => {
