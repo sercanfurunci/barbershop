@@ -153,7 +153,7 @@ function ContextSummaryCard({ counts, estimatedTokens, warnings }) {
         </div>
       </div>
       <div style={{ fontSize: "11px", color: C.muted }}>
-        Veriler 5 dakikada bir yenilenir. Anlık değişiklikler için sayfayı yenileyin.
+        Veriler 60 saniyede bir yenilenir. Anlık değişiklikler için sayfayı yenileyin.
       </div>
     </div>
   );

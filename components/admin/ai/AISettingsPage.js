@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Save, Plus, Trash2, GripVertical, Eye, CheckCircle2, AlertTriangle, RotateCcw, History } from "lucide-react";
+import { Save, Plus, Trash2, Eye, CheckCircle2, AlertTriangle, RotateCcw, History } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { C, SHADOW } from "@/lib/adminTheme";
 import { AdminPageHeader, DSTabBar } from "@/components/ds";
@@ -149,7 +149,7 @@ function HistoryTab() {
           <div style={{ fontSize: "11px", marginTop: "4px" }}>Ayarları kaydettiğinizde otomatik oluşacak.</div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             {rows.map(r => (
               <div key={r.id} style={{ background: C.card, border: `1px solid ${selected === r.id ? C.primary : C.border}`, borderRadius: "10px", padding: "10px 12px", boxShadow: SHADOW.card, cursor: "pointer" }} onClick={() => view(r)}>
@@ -271,7 +271,7 @@ function PersonalityTab() {
       </div>
 
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "24px", boxShadow: SHADOW.card }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
           <F label="Kişilik Stili">
             <S name="personality" options={[
               { value: "professional", label: "Profesyonel" },
@@ -441,7 +441,6 @@ function RulesTab() {
                 key={rule.id}
                 style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", background: C.bg, borderRadius: "8px", opacity: rule.enabled ? 1 : 0.5 }}
               >
-                <GripVertical size={14} style={{ color: C.dim, flexShrink: 0 }} />
                 <span style={{ fontSize: "11px", fontWeight: 600, color: C.muted, width: "20px", flexShrink: 0 }}>{idx + 1}</span>
                 {rule.type === "negative" && (
                   <span style={{ fontSize: "10px", fontWeight: 600, color: "#DC2626", background: "#FEF2F2", padding: "1px 6px", borderRadius: "4px", flexShrink: 0 }}>ASLA</span>

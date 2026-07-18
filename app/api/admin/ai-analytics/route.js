@@ -264,11 +264,15 @@ export const GET = withRole(ROLES, async (request, _ctx, payload) => {
       .sort((a, b) => b.costUsd - a.costUsd)
       .map(m => ({ ...m, costUsd: +m.costUsd.toFixed(6) }));
 
+    // ponytail: raw prompt/replay internals only for super-admin; shop admins get aggregates
+    const internal = payload.role === "SUPER_ADMIN" ? { promptSizes, replays } : {};
+
     return ok({
       totals, daily, channels, errors, period,
-      tools, models, promptSizes,
+      tools, models,
       hallucinationCount, bookingsInSample: bookings, costPerBookingUsd: bookingCost,
-      recommendations, insights, replays,
+      recommendations, insights,
+      ...internal,
     });
   } catch (e) {
     return err(e.message, 500);

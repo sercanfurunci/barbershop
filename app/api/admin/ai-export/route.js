@@ -78,18 +78,14 @@ export const POST = withRole(ROLES, async (request, _ctx, payload) => {
       if (replace) {
         await prisma.aiRule.deleteMany({ where: { shopId: sid } });
       }
-      for (const r of body.rules) {
-        if (!r?.rule) continue;
-        await prisma.aiRule.create({
-          data: {
-            shopId:   sid,
-            rule:     String(r.rule).trim(),
-            type:     ["positive", "negative"].includes(r.type) ? r.type : "positive",
-            priority: Number(r.priority ?? 100),
-            enabled:  r.enabled !== false,
-          },
-        });
-      }
+      const ruleRows = body.rules.filter(r => r?.rule).map(r => ({
+        shopId:   sid,
+        rule:     String(r.rule).trim(),
+        type:     ["positive", "negative"].includes(r.type) ? r.type : "positive",
+        priority: Number(r.priority ?? 100),
+        enabled:  r.enabled !== false,
+      }));
+      if (ruleRows.length) await prisma.aiRule.createMany({ data: ruleRows });
     }
 
     // 3. Knowledge
@@ -97,20 +93,16 @@ export const POST = withRole(ROLES, async (request, _ctx, payload) => {
       if (replace) {
         await prisma.knowledgeEntry.deleteMany({ where: { shopId: sid } });
       }
-      for (const k of body.knowledge) {
-        if (!k?.title || !k?.content || !k?.category) continue;
-        await prisma.knowledgeEntry.create({
-          data: {
-            shopId:    sid,
-            category:  k.category,
-            title:     String(k.title).trim(),
-            content:   String(k.content).trim(),
-            tags:      Array.isArray(k.tags) ? k.tags : [],
-            enabled:   k.enabled !== false,
-            sortOrder: Number(k.sortOrder ?? 0),
-          },
-        });
-      }
+      const kbRows = body.knowledge.filter(k => k?.title && k?.content && k?.category).map(k => ({
+        shopId:    sid,
+        category:  k.category,
+        title:     String(k.title).trim(),
+        content:   String(k.content).trim(),
+        tags:      Array.isArray(k.tags) ? k.tags : [],
+        enabled:   k.enabled !== false,
+        sortOrder: Number(k.sortOrder ?? 0),
+      }));
+      if (kbRows.length) await prisma.knowledgeEntry.createMany({ data: kbRows });
     }
 
     return ok({ imported: true, replace });

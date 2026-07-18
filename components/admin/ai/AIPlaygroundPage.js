@@ -166,10 +166,10 @@ export default function AIPlaygroundPage() {
       />
       {preview && <PromptPreviewModal onClose={() => setPreview(false)} />}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "16px", maxHeight: "calc(100vh - 200px)" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", maxHeight: "calc(100vh - 200px)" }}>
 
         {/* Chat panel */}
-        <div style={{ display: "flex", flexDirection: "column", background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", boxShadow: SHADOW.card, overflow: "hidden" }}>
+        <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", boxShadow: SHADOW.card, overflow: "hidden" }}>
 
           {/* Messages */}
           <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -229,7 +229,7 @@ export default function AIPlaygroundPage() {
         </div>
 
         {/* Trace panel */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflowY: "auto" }}>
+        <div style={{ flex: "1 1 340px", maxWidth: "340px", display: "flex", flexDirection: "column", gap: "12px", overflowY: "auto" }}>
 
           {/* Metrics */}
           {lastTrace && (
