@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [{ source: "/customer/login", destination: "/login", permanent: true }];
+  },
+
   serverExternalPackages: ["pg", "@prisma/client", "@prisma/adapter-pg", "cloudinary"],
 
   images: {
