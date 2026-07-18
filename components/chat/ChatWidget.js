@@ -104,32 +104,104 @@ const STYLES = `
 .mw-launcher-wrap {
   display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
 }
-/* ── Proactive bubble ── */
+/* ── Premium Welcome Card ── */
 .mw-proactive {
   position: relative;
   background: var(--card);
   border: 1px solid var(--makas-border);
-  border-radius: 16px 16px 4px 16px;
-  padding: 12px 14px;
-  max-width: 220px;
-  box-shadow: 0 4px 24px var(--makas-ink-18);
+  border-radius: 22px;
+  width: 340px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05);
   cursor: pointer;
-  animation: mw-label-in 0.36s cubic-bezier(0.22, 1, 0.36, 1);
-  transition: box-shadow 0.18s;
+  overflow: hidden;
+  animation: mw-card-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: box-shadow 0.22s, transform 0.22s;
 }
-.mw-proactive:hover { box-shadow: 0 6px 28px var(--makas-ink-30); }
-.mw-proactive-close {
-  position: absolute; top: -7px; right: -7px;
-  width: 20px; height: 20px; border-radius: 50%;
-  background: var(--card); border: 1px solid var(--makas-border);
+.mw-proactive:hover {
+  box-shadow: 0 14px 48px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.07);
+  transform: translateY(-2px);
+}
+/* Arrow caret below card */
+.mw-proactive-arrow {
+  width: 0; height: 0;
+  align-self: flex-end;
+  margin-right: 18px;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid var(--makas-border);
+  position: relative;
+}
+.mw-proactive-arrow::after {
+  content: "";
+  position: absolute;
+  top: -10px; left: -8px;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid var(--card);
+}
+@keyframes mw-card-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.mw-proactive-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid var(--makas-border);
+}
+.mw-proactive-avatar {
+  width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+  background: var(--sidebar);
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; font-size: 11px; color: var(--muted-foreground);
-  transition: background 0.15s;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
 }
-.mw-proactive-close:hover { background: var(--secondary); }
-@keyframes mw-label-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+.mw-proactive-meta { flex: 1; min-width: 0; }
+.mw-proactive-name {
+  font-weight: 600; font-size: 13px; color: var(--foreground);
+  line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mw-proactive-status { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
+.mw-proactive-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,0.25);
+}
+.mw-proactive-status-text { font-size: 11px; color: var(--muted-foreground); }
+.mw-proactive-badge {
+  font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 99px;
+  background: var(--makas-surface2); border: 1px solid var(--makas-border);
+  color: var(--muted-foreground); letter-spacing: 0.02em; white-space: nowrap; flex-shrink: 0;
+}
+.mw-proactive-close {
+  width: 26px; height: 26px; border-radius: 8px; border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--muted-foreground); font-size: 12px; flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.mw-proactive-close:hover { background: var(--secondary); color: var(--foreground); }
+.mw-proactive-body {
+  padding: 14px 16px; font-size: 13.5px; line-height: 1.65; color: var(--foreground);
+}
+.mw-proactive-footer { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+.mw-proactive-cta {
+  width: 100%; padding: 11px 16px; border-radius: 12px; border: none; cursor: pointer;
+  background: var(--foreground); color: var(--background);
+  font-size: 13.5px; font-weight: 600; font-family: inherit;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.mw-proactive-cta:hover { opacity: 0.88; transform: translateY(-1px); }
+.mw-proactive-cta:active { transform: scale(0.97); transition-duration: 0.08s; }
+.mw-proactive-secondary {
+  background: none; border: none; cursor: pointer;
+  font-size: 12.5px; color: var(--muted-foreground); font-family: inherit;
+  text-align: center; padding: 4px;
+  text-decoration: underline; text-underline-offset: 2px;
+  text-decoration-color: transparent;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+.mw-proactive-secondary:hover { color: var(--foreground); text-decoration-color: var(--makas-border); }
+@media (max-width: 639px) {
+  .mw-proactive { width: calc(100vw - 32px); }
 }
 .mw-launcher {
   width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer;
@@ -284,13 +356,26 @@ export default function ChatWidget({ shopSlug, widgetConfig = {}, embedded = fal
     }
   }, [messages, open]);
 
-  // Proactive bubble: show after 6 s if not previously dismissed
+  // Proactive card: show after 6s; suppress for 7 days after dismiss
   useEffect(() => {
     if (embedded || open) return;
-    try { if (localStorage.getItem("mw-proactive-dismissed")) return; } catch {}
+    try {
+      const ts = localStorage.getItem("mw-proactive-ts");
+      if (ts && Date.now() - parseInt(ts, 10) < 7 * 24 * 60 * 60 * 1000) return;
+    } catch {}
     const t = setTimeout(() => setProactive(true), 6000);
     return () => clearTimeout(t);
   }, [embedded, open]);
+
+  // Auto-hide after 9s if user doesn't interact
+  useEffect(() => {
+    if (!proactive) return;
+    const t = setTimeout(() => {
+      setProactive(false);
+      try { localStorage.setItem("mw-proactive-ts", Date.now().toString()); } catch {}
+    }, 9000);
+    return () => clearTimeout(t);
+  }, [proactive]);
 
   // Auto-scroll
   useEffect(() => {
@@ -327,7 +412,7 @@ export default function ChatWidget({ shopSlug, widgetConfig = {}, embedded = fal
   const dismissProactive = (e) => {
     e?.stopPropagation();
     setProactive(false);
-    try { localStorage.setItem("mw-proactive-dismissed", "1"); } catch {}
+    try { localStorage.setItem("mw-proactive-ts", Date.now().toString()); } catch {}
   };
 
   const openChat = () => { setOpen(true); setUnread(0); setProactive(false); };
@@ -344,25 +429,47 @@ export default function ChatWidget({ shopSlug, widgetConfig = {}, embedded = fal
             [isLeft ? "left" : "right"]: "24px",
           }}
         >
-          {/* Proactive bubble */}
+          {/* Premium welcome card */}
           {proactive && unread === 0 && (
             <div className="mw-proactive" onClick={openChat} role="button" aria-label="Sohbeti Aç">
-              <button className="mw-proactive-close" onClick={dismissProactive} aria-label="Kapat">✕</button>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                <div style={{
-                  width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0,
-                  background: config.primaryColor,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <Sparkles size={12} color="var(--sidebar-foreground)" strokeWidth={2.5} />
+              {/* Header */}
+              <div className="mw-proactive-header">
+                <div className="mw-proactive-avatar">
+                  {config.avatarUrl
+                    ? <img src={config.avatarUrl} alt={config.aiName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <Sparkles size={16} color="var(--sidebar-foreground)" strokeWidth={2.5} />
+                  }
                 </div>
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--foreground)" }}>{config.aiName}</span>
+                <div className="mw-proactive-meta">
+                  <div className="mw-proactive-name">{config.aiName}</div>
+                  <div className="mw-proactive-status">
+                    <span className="mw-proactive-dot" />
+                    <span className="mw-proactive-status-text">Şu anda çevrimiçi</span>
+                  </div>
+                </div>
+                <span className="mw-proactive-badge">AI Asistan</span>
+                <button className="mw-proactive-close" onClick={dismissProactive} aria-label="Kapat">✕</button>
               </div>
-              <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.55, color: "var(--foreground)" }}>
-                👋 Merhaba! Randevu almak veya bir şey sormak ister misiniz?
-              </p>
+
+              {/* Body */}
+              <div className="mw-proactive-body">
+                <strong style={{ display: "block", marginBottom: "4px" }}>👋 Merhaba!</strong>
+                Randevu almak, fiyat öğrenmek veya uygun saatleri görmek için bana yazabilirsiniz.
+              </div>
+
+              {/* Footer */}
+              <div className="mw-proactive-footer">
+                <button className="mw-proactive-cta" onClick={openChat}>
+                  Randevu Planla <span style={{ opacity: 0.7 }}>→</span>
+                </button>
+                <button className="mw-proactive-secondary" onClick={openChat}>
+                  Ya da sadece soru sor
+                </button>
+              </div>
             </div>
           )}
+          {/* Arrow caret connecting card to launcher */}
+          {proactive && unread === 0 && <div className="mw-proactive-arrow" />}
 
           {/* Launcher button */}
           <button
