@@ -38,7 +38,7 @@ export default function Error({ error, reset }) {
       <button
         onClick={reset}
         className="inline-flex h-11 items-center px-6 rounded-full text-[14px] font-semibold transition-opacity hover:opacity-90"
-        style={{ background: "var(--makas-ink)", color: "#fff" }}
+        style={{ background: "var(--makas-ink)", color: "var(--makas-bg)" }}
       >
         Sayfayı Yenile
       </button>

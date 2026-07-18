@@ -610,7 +610,7 @@ function Discovery() {
   const showCTA     = geoState === "idle" || geoState === "locating";
 
   const bg1 = "var(--makas-bg)";
-  const bg2 = "white";
+  const bg2 = "var(--makas-surface)";
   const bg3 = "var(--makas-bg)";
 
   return (
@@ -707,7 +707,7 @@ function Discovery() {
 function PlatformSection() {
   return (
     <section
-      className="bg-foreground text-background"
+      className="theme-invert bg-foreground text-background"
       style={{ padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
     >
       <div className="mx-auto max-w-[1200px]">
@@ -839,7 +839,7 @@ function SocialProofStrip() {
 function WhyDifferent() {
   return (
     <section
-      style={{ background: "white", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
+      style={{ background: "var(--makas-bg)", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
     >
       <div className="mx-auto max-w-[820px]">
         <SectionHead
@@ -856,7 +856,7 @@ function WhyDifferent() {
 
 function TestimonialBand() {
   return (
-    <section className="bg-foreground text-background relative overflow-hidden">
+    <section className="theme-invert bg-foreground text-background relative overflow-hidden">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
@@ -1035,7 +1035,7 @@ function MobileAppSection() {
     { icon: <Star size={18} />,     title: "Değerlendirme", desc: "Randevu sonrası salon ve berber puanla." },
   ];
   return (
-    <section style={{ background: "white", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
+    <section style={{ background: "var(--makas-bg)", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
       <div className="mx-auto max-w-[1200px]">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <div>
@@ -1175,7 +1175,7 @@ const DEMOS = [
 
 function DemoShowcase() {
   return (
-    <section id="demo" style={{ background: "white", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
+    <section id="demo" style={{ background: "var(--makas-bg)", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
       <div className="mx-auto max-w-[1100px]">
         <SectionHead
           eyebrow="Canlı örnekler"
@@ -1310,7 +1310,7 @@ function FAQItem({ q, a, isOpen, onToggle }) {
 function FAQ() {
   const [open, setOpen] = useState(-1); // all collapsed on load
   return (
-    <section id="faq" style={{ background: "white", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
+    <section id="faq" style={{ background: "var(--makas-bg)", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
       <div className="mx-auto max-w-[820px]">
         <SectionHead eyebrow="SSS" title="Aklındaki sorulara cevap." />
         <div className="mt-12">

@@ -6,6 +6,7 @@ import { createReviewRequest } from "@/lib/reviews";
 import { validateBookingWindow } from "@/lib/booking";
 import { splitRevenue } from "@/lib/revenue";
 import { withAuth } from "@/lib/middleware/withRole";
+import { invalidateCustomerContext } from "@/lib/ai/customerContext";
 
 export const dynamic = "force-dynamic";
 
@@ -210,6 +211,7 @@ export const POST = withAuth(async (request, _ctx, payload) => {
     // walk-ins whose phone is a `wi-…` placeholder — Netgsm would reject it.
     if (!phoneKey.startsWith("wi-")) {
       createReviewRequest(appointment.id).catch(() => {});
+      invalidateCustomerContext(shopId, phoneKey);
     }
 
     // Audit price tampering: catalog services only. Custom services have no

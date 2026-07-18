@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { forbidden } from "@/lib/apiResponse";
 import { withRole } from "@/lib/middleware/withRole";
+import { cacheInvalidate } from "@/lib/ai/cache";
 
 const DAYS = ["mon","tue","wed","thu","fri","sat","sun"];
 const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "RECEPTIONIST"];
@@ -45,7 +46,7 @@ export const PATCH = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
   // Verify barber belongs to caller's shop before mutating
   const barber = await prisma.barber.findFirst({
     where: { id: barberId, ...shopFilter },
-    select: { id: true },
+    select: { id: true, shopId: true },
   });
   if (!barber) return forbidden();
 
@@ -63,5 +64,6 @@ export const PATCH = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
     create: { barberId, ...data },
   });
 
+  cacheInvalidate(`dynctx:${barber.shopId}`);
   return NextResponse.json(wh);
 });

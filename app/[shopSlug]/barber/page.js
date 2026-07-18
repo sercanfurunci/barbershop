@@ -7,18 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useShop } from "@/contexts/ShopContext";
 import { apiFetch } from "@/lib/api";
 import { ShieldCheck, ArrowRight, Loader2, Eye, EyeOff, ChevronLeft } from "lucide-react";
-
-const C = {
-  bg:       "#F7F4EE",
-  bgSoft:   "#FDFBF7",
-  surface:  "#EFEAE2",
-  card:     "#FFFFFF",
-  border:   "#E5DED3",
-  primary:  "#111111",
-  secondary:"#4A4A4A",
-  muted:    "#8A8480",
-  dim:      "#C5BEB5",
-};
+import { C } from "@/lib/adminTheme";
 
 export default function BarberLoginPage() {
   const { login, user, role, loaded } = useAuth();
@@ -114,7 +103,7 @@ export default function BarberLoginPage() {
                   onClick={() => handleSelect({ identifier: admin.username ?? admin.email, label: admin.displayName ?? admin.username, role: admin.role })}
                   className="w-full text-left flex items-center gap-5 mb-3"
                   style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px 24px", cursor: "pointer", transition: "all 0.2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(17,17,17,0.4)"; e.currentTarget.style.background = "#FBF7F0"; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(17,17,17,0.4)"; e.currentTarget.style.background = "var(--makas-surface2)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
                 >
                   <div className="flex items-center justify-center shrink-0" style={{ width: "48px", height: "48px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "12px" }}>
@@ -147,10 +136,10 @@ export default function BarberLoginPage() {
                     onClick={() => handleSelect({ identifier: `${barber.slug}@makas.com`, label: barber.nameTr, avatar: barber.avatar })}
                     className="text-left flex items-center gap-4"
                     style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 18px", cursor: "pointer", transition: "all 0.2s" }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(17,17,17,0.3)"; e.currentTarget.style.background = "#FBF7F0"; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(17,17,17,0.3)"; e.currentTarget.style.background = "var(--makas-surface2)"; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
                   >
-                    <div className="flex items-center justify-center font-bold text-white shrink-0" style={{ width: "38px", height: "38px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "10px", fontSize: "11px" }}>
+                    <div className="flex items-center justify-center font-bold text-[var(--makas-bg)] shrink-0" style={{ width: "38px", height: "38px", background: C.primary, borderRadius: "10px", fontSize: "11px" }}>
                       {barber.avatar}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -213,7 +202,7 @@ export default function BarberLoginPage() {
                   type="submit"
                   disabled={loading || !password}
                   className="w-full flex items-center justify-center gap-2"
-                  style={{ background: loading || !password ? C.dim : C.primary, color: "#fff", border: "none", borderRadius: "10px", padding: "14px", fontSize: "14px", fontWeight: 600, cursor: loading || !password ? "not-allowed" : "pointer", transition: "background 0.2s", letterSpacing: "0.02em" }}
+                  style={{ background: loading || !password ? C.dim : C.primary, color: "var(--makas-bg)", border: "none", borderRadius: "10px", padding: "14px", fontSize: "14px", fontWeight: 600, cursor: loading || !password ? "not-allowed" : "pointer", transition: "background 0.2s", letterSpacing: "0.02em" }}
                 >
                   {loading ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : null}
                   {loading ? "Giriş yapılıyor…" : "Giriş Yap"}

@@ -273,7 +273,7 @@ export default function SalonInfo({ shop, hours, googleReviews }) {
                 display: "inline-flex", alignItems: "center", gap: "10px",
                 alignSelf: "flex-start",
                 padding: "14px 24px",
-                background: "#fff", color: "var(--makas-ink)",
+                background: "var(--makas-surface)", color: "var(--makas-ink)", border: "1px solid var(--makas-border)",
                 fontSize: "13px", fontWeight: 700,
                 letterSpacing: "0.04em", textTransform: "uppercase",
                 borderRadius: "100px",

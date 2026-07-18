@@ -11,7 +11,7 @@ const NAV = [
 
 export default function LandingFooter() {
   return (
-    <footer className="bg-foreground text-background px-6 pt-8 pb-5 md:pt-14 md:pb-8">
+    <footer className="theme-invert bg-foreground text-background px-6 pt-8 pb-5 md:pt-14 md:pb-8">
       {/* ── Desktop grid (unchanged) ── */}
       <div
         className="hidden md:grid mx-auto mb-10 max-w-[1200px] gap-8"

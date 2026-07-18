@@ -4,7 +4,8 @@ import Link from "next/link";
 import Logo from "@/components/common/Logo";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell } from "lucide-react";
+import { Bell, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 /**
  * Unified dashboard header. Same component for Admin and Barber.
@@ -29,6 +30,8 @@ export default function DashboardTopbar({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && matchMedia("(prefers-color-scheme: dark)").matches);
 
   return (
     <header className="h-[68px] flex items-center gap-3 px-5 lg:px-8 sticky top-0 z-30 bg-background/86 backdrop-blur-[12px] border-b border-border">
@@ -54,6 +57,14 @@ export default function DashboardTopbar({
             {lang === "tr" ? "EN" : "TR"}
           </button>
         )}
+
+        <button
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          aria-label="Tema değiştir"
+          className="w-11 h-11 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+        >
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
 
         {notifications && (
           <button

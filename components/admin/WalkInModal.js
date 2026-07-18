@@ -170,7 +170,7 @@ export default function WalkInModal({ onClose, defaultBarberId = "" }) {
                   borderRadius: "50%", display: "flex", alignItems: "center",
                   justifyContent: "center", margin: "0 auto 16px",
                 }}>
-                  <Check size={24} color="#fff" />
+                  <Check size={24} color="var(--makas-bg)" />
                 </div>
                 <div style={{ fontSize: 16, color: C.primary, fontWeight: 500 }}>
                   Kaydedildi
@@ -279,7 +279,7 @@ export default function WalkInModal({ onClose, defaultBarberId = "" }) {
 
                 <button type="submit" disabled={busy} style={{
                   width: "100%", height: 44,
-                  background: C.primary, color: "#fff",
+                  background: C.primary, color: "var(--makas-bg)",
                   border: "none", borderRadius: 10,
                   fontSize: 13, fontWeight: 600, letterSpacing: "0.03em",
                   cursor: busy ? "wait" : "pointer", marginTop: 4,

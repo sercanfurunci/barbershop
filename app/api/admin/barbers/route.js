@@ -3,6 +3,7 @@ import { canCreateBarber } from "@/lib/subscription";
 import bcrypt from "bcryptjs";
 import { ok, created, badRequest, conflict } from "@/lib/apiResponse";
 import { withRole } from "@/lib/middleware/withRole";
+import { toLocal10 } from "@/lib/validation";
 
 const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
 
@@ -36,7 +37,7 @@ export const POST = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
 
   const body = await request.json();
   const { slug, nameTr, nameEn, titleTr, titleEn, bioTr, bioEn, avatar, yearsExp, specialties, color, password, email,
-          paymentType, commissionRate, fixedSalary } = body;
+          paymentType, commissionRate, fixedSalary, phone: rawPhone } = body;
 
   if (!slug || !nameTr || !titleTr || !avatar) {
     return badRequest("slug, nameTr, titleTr ve avatar zorunlu");
@@ -90,6 +91,13 @@ export const POST = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
     }
   }
 
+  // Normalize barber phone (optional)
+  let barberPhone = null;
+  if (rawPhone && String(rawPhone).trim()) {
+    barberPhone = toLocal10(rawPhone);
+    if (!barberPhone) return badRequest("Geçersiz telefon numarası. Türk cep numarası giriniz (5xxxxxxxxx).");
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
 
   // Create barber + user account in one transaction
@@ -110,6 +118,7 @@ export const POST = withRole(ADMIN_ROLES, async (request, _ctx, payload) => {
         yearsExp:    yearsExp    ?? 1,
         specialties: specialties ?? [],
         color:       color       || "#111111",
+        phone:       barberPhone,
         paymentType: pt,
         commissionRate: cr,
         fixedSalary: fs,

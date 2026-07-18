@@ -34,7 +34,7 @@ export default function SectionNav({ sections }) {
         position: "sticky",
         top: "88px", // sit below the fixed Navbar
         zIndex: 30,
-        background: stuck ? "rgba(245,241,235,0.92)" : "transparent",
+        background: stuck ? "var(--nav-bg-default)" : "transparent",
         backdropFilter: stuck ? "saturate(140%) blur(8px)" : "none",
         WebkitBackdropFilter: stuck ? "saturate(140%) blur(8px)" : "none",
         borderBottom: stuck ? "1px solid var(--makas-border)" : "1px solid transparent",

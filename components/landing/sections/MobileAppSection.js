@@ -21,7 +21,7 @@ const APP_FEATURES = [
 
 export default function MobileAppSection() {
   return (
-    <section style={{ background: "white", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
+    <section style={{ background: "var(--makas-bg)", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
       <div className="mx-auto max-w-[1200px]">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <div>

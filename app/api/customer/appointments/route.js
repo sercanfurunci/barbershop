@@ -26,7 +26,7 @@ export const GET = withAuth(async (request, _ctx, payload) => {
   if (!clientFilter) return ok([]);
 
   const appointments = await prisma.appointment.findMany({
-    where: { ...clientFilter, status: { not: "IN_PROGRESS" } },
+    where: { ...clientFilter, status: { notIn: ["IN_PROGRESS", "ARRIVAL_CHECK"] } },
     orderBy: [{ date: "asc" }, { time: "asc" }],
     select: {
       id: true,

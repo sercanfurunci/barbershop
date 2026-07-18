@@ -8,14 +8,14 @@ import { Star, X } from "lucide-react";
 
 const C = {
   bg:       "var(--makas-bg)",
-  bgSoft:   "#FDFBF7",
+  bgSoft:   "var(--makas-surface)",
   surface:  "var(--makas-surface2)",
   card:     "var(--makas-surface)",
   border:   "var(--makas-border)",
   primary:  "var(--makas-ink)",
   secondary:"var(--makas-ink-secondary)",
   muted:    "var(--makas-ink-muted)",
-  dim:      "#C5BEB5",
+  dim:      "var(--makas-thumb)",
 };
 
 const GoogleIcon = () => (
@@ -232,7 +232,7 @@ export default function Testimonials({ googleReviews = null, googleReviewUrl = n
               style={{
                 display: "inline-flex", alignItems: "center", gap: 10,
                 padding: "13px 24px",
-                background: C.primary, color: "#fff",
+                background: C.primary, color: "var(--makas-bg)",
                 borderRadius: 999,
                 fontSize: 13, fontWeight: 700, letterSpacing: "0.04em",
                 textDecoration: "none",
@@ -329,7 +329,7 @@ export default function Testimonials({ googleReviews = null, googleReviewUrl = n
                   width: 36, height: 36, borderRadius: "50%",
                   background: C.primary, flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 12, fontWeight: 700, color: "#fff",
+                  fontSize: 12, fontWeight: 700, color: "var(--makas-bg)",
                 }}>
                   {active.avatar || active.name?.[0]}
                 </div>
@@ -471,7 +471,7 @@ function TestimonialCard({ i, item, lang, isGoogle, text, role, onOpen }) {
               width: "34px", height: "34px", borderRadius: "50%",
               background: C_.primary, flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "12px", fontWeight: 700, color: "#fff",
+              fontSize: "12px", fontWeight: 700, color: "var(--makas-bg)",
             }}>
               {item.avatar || item.name?.[0]}
             </div>

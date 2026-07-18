@@ -21,7 +21,7 @@ const C = {
   primary:  "var(--makas-ink)",
   secondary:"var(--makas-ink-secondary)",
   muted:    "var(--makas-ink-muted)",
-  dim:      "#C5BEB5",
+  dim:      "var(--makas-thumb)",
 };
 
 const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
@@ -342,7 +342,7 @@ export default function BookingCard({
           className="makas-cta makas-cta-dark"
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            background: C.primary, color: "#fff",
+            background: C.primary, color: "var(--makas-bg)",
             padding: "16px 24px", borderRadius: 10,
             fontSize: 14.5, fontWeight: 700, letterSpacing: "0.03em",
             textDecoration: "none",
@@ -374,7 +374,7 @@ function Step({ n, label, done, children }) {
           width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
           background: done ? C.primary : C.dim,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 9, fontWeight: 700, color: "#fff",
+          fontSize: 9, fontWeight: 700, color: done ? "var(--makas-bg)" : "#fff",
         }}>
           {done ? <Check size={9} /> : n}
         </div>

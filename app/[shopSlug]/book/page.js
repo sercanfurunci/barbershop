@@ -40,7 +40,7 @@ export default async function BookPage({ params, searchParams }) {
               href={telHref(shop.phone)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: "8px",
-                background: "#111", color: "#fff", padding: "12px 20px",
+                background: "var(--makas-ink)", color: "var(--makas-bg)", padding: "12px 20px",
                 borderRadius: "8px", textDecoration: "none", fontWeight: 600,
                 fontSize: "14px", minHeight: "44px",
               }}
@@ -110,7 +110,7 @@ export default async function BookPage({ params, searchParams }) {
               href={telHref(shop.phone)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: "8px",
-                background: "#111", color: "#fff", padding: "12px 20px",
+                background: "var(--makas-ink)", color: "var(--makas-bg)", padding: "12px 20px",
                 borderRadius: "8px", textDecoration: "none", fontWeight: 600,
                 fontSize: "14px", minHeight: "44px",
               }}

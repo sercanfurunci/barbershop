@@ -77,7 +77,7 @@ export default function StickyActionBar({ shop }) {
             flex: 1, marginLeft: secondaryActions.length ? "4px" : "0",
             display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
             height: "44px", borderRadius: "100px",
-            background: C.primary, color: "#fff",
+            background: C.primary, color: "var(--makas-bg)",
             fontSize: "14px", fontWeight: 700, letterSpacing: "0.01em",
             textDecoration: "none",
           }}

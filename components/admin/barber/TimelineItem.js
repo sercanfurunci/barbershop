@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { UserCheck, UserX } from "lucide-react";
 import { C, SHADOW } from "@/lib/adminTheme";
 import { ALL_STATUS, FLOW } from "./statusConstants";
 
@@ -9,12 +10,13 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
   const [expanded, setExpanded] = useState(false);
   const sc    = ALL_STATUS[appt.status] ?? ALL_STATUS.pending;
   const isDone = ["completed", "noshow", "cancelled"].includes(appt.status);
-  // Primary next-action: one-tap shortcut so phones don't need to expand the row.
+  const isArrivalCheck = appt.status === "arrival-check";
+
+  // Primary next-action: one-tap shortcut for pending confirmation only.
+  // arrival-check uses dedicated inline buttons; other statuses flow via cron.
   const primary = appt.status === "pending"
     ? FLOW.find(f => f.key === "confirmed")
-    : appt.status === "confirmed"
-      ? FLOW.find(f => f.key === "completed")
-      : null;
+    : null;
 
   return (
     <motion.div
@@ -25,8 +27,8 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
       <div
         onClick={() => !isDone && setExpanded(v => !v)}
         style={{
-          background: isNext ? C.cardHi : C.card,
-          border: `1px solid ${isNext ? sc.color + "44" : C.border}`,
+          background: isArrivalCheck ? "rgba(124,58,237,0.04)" : isNext ? C.cardHi : C.card,
+          border: `1px solid ${isArrivalCheck ? "#7C3AED44" : isNext ? sc.color + "44" : C.border}`,
           borderRadius: "12px",
           padding: "14px 16px",
           cursor: isDone ? "default" : "pointer",
@@ -35,14 +37,14 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
           position: "relative",
           boxShadow: SHADOW.card,
         }}
-        onMouseEnter={e => { if (!isDone) { e.currentTarget.style.borderColor = sc.color + "55"; e.currentTarget.style.background = C.cardHi; e.currentTarget.style.boxShadow = SHADOW.elevated; }}}
-        onMouseLeave={e => { if (!isDone) { e.currentTarget.style.borderColor = isNext ? sc.color + "44" : C.border; e.currentTarget.style.background = isNext ? C.cardHi : C.card; e.currentTarget.style.boxShadow = SHADOW.card; }}}
+        onMouseEnter={e => { if (!isDone) { e.currentTarget.style.borderColor = sc.color + "55"; e.currentTarget.style.boxShadow = SHADOW.elevated; }}}
+        onMouseLeave={e => { if (!isDone) { e.currentTarget.style.borderColor = isArrivalCheck ? "#7C3AED44" : isNext ? sc.color + "44" : C.border; e.currentTarget.style.boxShadow = SHADOW.card; }}}
       >
-        {/* Top row: time + client/service + primary action */}
+        {/* Top row: time + client/service + action */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {/* Time */}
           <div style={{ textAlign: "center", minWidth: "46px", flexShrink: 0 }}>
-            <div className="font-mono-custom" style={{ fontSize: "15px", color: isNext ? sc.color : C.primary, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.01em" }}>
+            <div className="font-mono-custom" style={{ fontSize: "15px", color: isArrivalCheck ? "#7C3AED" : isNext ? sc.color : C.primary, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.01em" }}>
               {appt.time}
             </div>
             <div className="font-mono-custom" style={{ fontSize: "9px", color: C.muted, marginTop: "3px", letterSpacing: "0.06em", textTransform: "uppercase" }}>{appt.duration}DK</div>
@@ -74,7 +76,29 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
             {sc.label}
           </div>
 
-          {/* Inline primary action — one-tap shortcut (44px touch target) */}
+          {/* Arrival check: inline Geldi / Gelmedi buttons */}
+          {isArrivalCheck && (
+            <div style={{ display: "flex", gap: "5px", flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => onAction(appt.id, "in-progress")}
+                style={{ display: "flex", alignItems: "center", gap: "4px", minHeight: "44px", padding: "0 10px", borderRadius: "8px", background: "rgba(21,128,61,0.1)", border: "1px solid rgba(21,128,61,0.3)", fontSize: "12px", color: "#15803D", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#15803D"; e.currentTarget.style.color = "#fff"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(21,128,61,0.1)"; e.currentTarget.style.color = "#15803D"; }}
+              >
+                <UserCheck size={12} /> <span className="hidden sm:inline">Geldi</span>
+              </button>
+              <button
+                onClick={() => onAction(appt.id, "noshow")}
+                style={{ display: "flex", alignItems: "center", gap: "4px", minHeight: "44px", padding: "0 10px", borderRadius: "8px", background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.2)", fontSize: "12px", color: "#DC2626", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#DC2626"; e.currentTarget.style.color = "#fff"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(220,38,38,0.08)"; e.currentTarget.style.color = "#DC2626"; }}
+              >
+                <UserX size={12} /> <span className="hidden sm:inline">Gelmedi</span>
+              </button>
+            </div>
+          )}
+
+          {/* Standard primary action for other statuses */}
           {primary && (
             <button
               onClick={(e) => { e.stopPropagation(); onAction(appt.id, primary.key); }}
@@ -106,7 +130,7 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
           </div>
         </div>
 
-        {/* Quick actions (expanded) */}
+        {/* Quick actions (expanded) — available for non-terminal statuses */}
         <AnimatePresence>
           {expanded && (
             <motion.div
@@ -117,23 +141,44 @@ export function TimelineItem({ appt, isNext, isPast, onAction, index }) {
               style={{ overflow: "hidden" }}
             >
               <div style={{ display: "flex", gap: "6px", marginTop: "12px", paddingTop: "12px", borderTop: `1px solid ${C.border}` }}>
-                {FLOW.map(f => (
-                  <button
-                    key={f.key}
-                    onClick={(e) => { e.stopPropagation(); onAction(appt.id, f.key); setExpanded(false); }}
-                    style={{
-                      flex: 1, minHeight: "44px", borderRadius: "8px",
-                      background: appt.status === f.key ? f.bg : "none",
-                      border: `1px solid ${appt.status === f.key ? f.color + "50" : C.border}`,
-                      fontSize: "12px", color: appt.status === f.key ? f.color : C.secondary,
-                      cursor: "pointer", fontWeight: appt.status === f.key ? 600 : 400,
-                    }}
-                    onMouseEnter={e => { if (appt.status !== f.key) { e.currentTarget.style.background = f.bg; e.currentTarget.style.color = f.color; }}}
-                    onMouseLeave={e => { if (appt.status !== f.key) { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.secondary; }}}
-                  >
-                    {f.shortLabel}
-                  </button>
-                ))}
+                {isArrivalCheck ? (
+                  // Arrival-check: only offer IN_PROGRESS or cancel (can't go to completed directly)
+                  <>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onAction(appt.id, "in-progress"); setExpanded(false); }}
+                      style={{ flex: 1, minHeight: "44px", borderRadius: "8px", background: "rgba(21,128,61,0.1)", border: "1px solid rgba(21,128,61,0.3)", fontSize: "12px", color: "#15803D", cursor: "pointer", fontWeight: 600 }}>
+                      Müşteri Geldi → Başlat
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onAction(appt.id, "noshow"); setExpanded(false); }}
+                      style={{ flex: 1, minHeight: "44px", borderRadius: "8px", background: "rgba(17,17,17,0.06)", border: "1px solid rgba(17,17,17,0.15)", fontSize: "12px", color: "#111111", cursor: "pointer", fontWeight: 600 }}>
+                      Müşteri Gelmedi
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onAction(appt.id, "cancelled"); setExpanded(false); }}
+                      style={{ flex: 1, minHeight: "44px", borderRadius: "8px", background: "none", border: "1px solid rgba(82,82,91,0.3)", fontSize: "12px", color: "#52525b", cursor: "pointer", fontWeight: 400 }}>
+                      İptal Et
+                    </button>
+                  </>
+                ) : (
+                  FLOW.map(f => (
+                    <button
+                      key={f.key}
+                      onClick={(e) => { e.stopPropagation(); onAction(appt.id, f.key); setExpanded(false); }}
+                      style={{
+                        flex: 1, minHeight: "44px", borderRadius: "8px",
+                        background: appt.status === f.key ? f.bg : "none",
+                        border: `1px solid ${appt.status === f.key ? f.color + "50" : C.border}`,
+                        fontSize: "12px", color: appt.status === f.key ? f.color : C.secondary,
+                        cursor: "pointer", fontWeight: appt.status === f.key ? 600 : 400,
+                      }}
+                      onMouseEnter={e => { if (appt.status !== f.key) { e.currentTarget.style.background = f.bg; e.currentTarget.style.color = f.color; }}}
+                      onMouseLeave={e => { if (appt.status !== f.key) { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.secondary; }}}
+                    >
+                      {f.shortLabel}
+                    </button>
+                  ))
+                )}
               </div>
             </motion.div>
           )}

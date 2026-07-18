@@ -13,12 +13,13 @@ import { DSAvatar, DSEmptyState } from "@/components/ds";
 
 function getStatusStyle(status) {
   const map = {
-    confirmed:     { dot: "#2563EB", bg: "rgba(59,130,246,0.1)",  text: "#2563EB" },
-    "in-progress": { dot: "#111111", bg: "rgba(17,17,17,0.12)", text: "#111111", pulse: true },
-    pending:       { dot: "#B45309", bg: "rgba(245,158,11,0.1)",  text: "#B45309" },
-    completed:     { dot: "#15803D", bg: "rgba(34,197,94,0.1)",   text: "#15803D" },
-    cancelled:     { dot: "#52525b", bg: "rgba(82,82,91,0.15)",   text: "#71717a" },
-    noshow:        { dot: "#111111", bg: "rgba(17,17,17,0.1)",   text: "#111111" },
+    confirmed:       { dot: "#2563EB", bg: "rgba(59,130,246,0.1)",    text: "#2563EB" },
+    "arrival-check": { dot: "#7C3AED", bg: "rgba(124,58,237,0.1)",    text: "#7C3AED", pulse: true },
+    "in-progress":   { dot: "#2563EB", bg: "rgba(37,99,235,0.12)",    text: "#2563EB", pulse: true },
+    pending:         { dot: "#B45309", bg: "rgba(245,158,11,0.1)",    text: "#B45309" },
+    completed:       { dot: "#15803D", bg: "rgba(34,197,94,0.1)",     text: "#15803D" },
+    cancelled:       { dot: "#52525b", bg: "rgba(82,82,91,0.15)",     text: "#71717a" },
+    noshow:          { dot: "#111111", bg: "rgba(17,17,17,0.1)",      text: "#111111" },
   };
   return map[status] || map.pending;
 }
@@ -97,6 +98,7 @@ export default function AppointmentsList({ limit, onViewAll, barberId }) {
               >
                 <option value="all">{apptTx.allStatus}</option>
                 <option value="confirmed">{apptTx.status.confirmed}</option>
+                <option value="arrival-check">{apptTx.status["arrival-check"]}</option>
                 <option value="in-progress">{apptTx.status["in-progress"]}</option>
                 <option value="pending">{apptTx.status.pending}</option>
                 <option value="completed">{apptTx.status.completed}</option>

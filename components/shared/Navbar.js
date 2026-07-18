@@ -5,22 +5,22 @@ import Logo from "@/components/common/Logo";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, User, LogOut, Calendar, Store, Heart, Clock, MessageSquare, Settings } from "lucide-react";
+import { Menu, X, ChevronDown, User, LogOut, Calendar, Store, Heart, Clock, MessageSquare, Settings, Sun, Moon } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useShop } from "@/contexts/ShopContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const C = {
   bg:       "var(--makas-bg)",
-  bgSoft:   "#FDFBF7",
   surface:  "var(--makas-surface2)",
   card:     "var(--makas-surface)",
   border:   "var(--makas-border)",
   primary:  "var(--makas-ink)",
   secondary:"var(--makas-ink-secondary)",
   muted:    "var(--makas-ink-muted)",
-  dim:      "#C5BEB5",
+  dim:      "var(--makas-thumb)",
 };
 
 export default function Navbar() {
@@ -36,6 +36,8 @@ export default function Navbar() {
   const router = useRouter();
   const shop = useShop();
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && matchMedia("(prefers-color-scheme: dark)").matches);
   const isCustomer = user?.role === "CUSTOMER";
   const shopSlug = shop?.slug ?? "";
   const isBookPage  = pathname?.includes("/book");
@@ -67,20 +69,20 @@ export default function Navbar() {
 
   const isHero = mode === "hero";
 
-  // Color tokens per mode. Hero = glassy dark over media; default = glassy cream over content.
-  const navBg          = isHero ? "rgba(15,15,15,0.55)"        : "rgba(247,244,238,0.92)";
-  const navBorder      = isHero ? "rgba(255,255,255,0.08)"     : "rgba(0,0,0,0.06)";
+  // Color tokens per mode. Hero = glassy dark over media; default = uses CSS vars for dark mode support.
+  const navBg          = isHero ? "rgba(15,15,15,0.55)"        : "var(--nav-bg-default)";
+  const navBorder      = isHero ? "rgba(255,255,255,0.08)"     : "var(--nav-border-default)";
   const navText        = isHero ? "#fff"                       : C.primary;
-  const navTextMuted   = isHero ? "rgba(255,255,255,0.78)"     : "#666";
+  const navTextMuted   = isHero ? "rgba(255,255,255,0.78)"     : "var(--nav-text-muted)";
   const navButtonBorder= isHero ? "rgba(255,255,255,0.22)"     : C.border;
-  // Primary CTA: stays dark in default; inverts to white-on-dark over hero.
+  // Primary CTA: hero = white btn dark text; default = ink bg, bg-colored text (adapts to dark mode).
   const ctaBg          = isHero ? "#fff"                       : C.primary;
-  const ctaText        = isHero ? "#111"                       : "#fff";
+  const ctaText        = isHero ? "#111"                       : "var(--makas-bg)";
   // Logo mark: light variant doesn't exist yet — use glassy/transparent mark + white letter over hero.
   const logoMarkBg     = isHero ? "rgba(255,255,255,0.10)"     : C.primary;
   const logoMarkBorder = isHero ? "1px solid rgba(255,255,255,0.22)" : "none";
   // Mobile menu colors inherit current navbar mode.
-  const menuBg         = isHero ? "rgba(15,15,15,0.92)"        : "rgba(247,244,238,0.98)";
+  const menuBg         = isHero ? "rgba(15,15,15,0.92)"        : "var(--nav-menu-bg)";
   const menuBorder     = isHero ? "rgba(255,255,255,0.08)"     : C.border;
 
   // Close login dropdown on outside click
@@ -125,7 +127,7 @@ export default function Navbar() {
               href={shopSlug ? `/${shopSlug}` : "/"}
               className="flex items-center gap-3 group min-w-0 flex-1 md:flex-initial md:max-w-[420px]"
             >
-              <Logo variant={isHero ? "light" : "dark"} size={36} showWordmark={false} className="transition-opacity duration-200 group-hover:opacity-90 shrink-0" />
+              <Logo variant={isHero || isDark ? "light" : "dark"} size={36} showWordmark={false} className="transition-opacity duration-200 group-hover:opacity-90 shrink-0" />
               <div className="min-w-0 flex-1" style={{ display: "flex", flexDirection: "column" }}>
                 <span
                   className="font-display font-light uppercase text-[12px] sm:text-[14px] line-clamp-2 md:truncate"
@@ -161,6 +163,18 @@ export default function Navbar() {
 
             {/* Right side */}
             <div className="hidden md:flex items-center gap-2">
+              {/* Theme toggle */}
+              <button
+                onClick={() => setTheme(isDark ? "light" : "dark")}
+                className="flex items-center justify-center w-9 h-9 rounded-md transition-all"
+                style={{ border: `1px solid ${navButtonBorder}`, color: navTextMuted, background: "none" }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = navText; e.currentTarget.style.borderColor = navText; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = navTextMuted; e.currentTarget.style.borderColor = navButtonBorder; }}
+                aria-label="Tema değiştir"
+              >
+                {isDark ? <Sun size={15} /> : <Moon size={15} />}
+              </button>
+
               {/* Language toggle */}
               <button
                 onClick={() => setLang(lang === "tr" ? "en" : "tr")}
@@ -438,7 +452,7 @@ export default function Navbar() {
       {!isBookPage && !isStaffPage && !isAccountPage && !shop && <div
         className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
         style={{
-          background: "rgba(247,244,238,0.97)",
+          background: "var(--nav-book-bar-bg)",
           backdropFilter: "blur(20px)",
           borderTop: `1px solid ${C.border}`,
           padding: "10px 16px",
@@ -449,7 +463,7 @@ export default function Navbar() {
           href={shopSlug ? `/${shopSlug}/book` : "/book"}
           className="flex items-center justify-center gap-2 w-full transition-all"
           style={{
-            background: C.primary, color: "#fff",
+            background: C.primary, color: "var(--makas-bg)",
             borderRadius: "10px", minHeight: "52px",
             fontSize: "15px", fontWeight: 600, letterSpacing: "0.02em",
           }}

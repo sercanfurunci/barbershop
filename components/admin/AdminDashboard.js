@@ -10,7 +10,7 @@ import {
   Bell, Search, ExternalLink, Plus, CalendarDays, LogOut, Scissors,
   UserCheck, TrendingUp, User, MoreHorizontal, X, Check,
   ChevronLeft, ChevronRight, Activity, Clock, Star, CreditCard,
-  UserX,
+  UserX, Bot, Sun, Moon,
 } from "lucide-react";
 import { DSPageLoader, DSEmptyState, DSSkeleton } from "@/components/ds";
 import {
@@ -24,13 +24,15 @@ import DashboardTopbar from "@/components/admin/DashboardTopbar";
 import { useLang } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/translations";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter, useParams } from "next/navigation";
 import { todayStr, toDateStr } from "@/lib/utils";
 import { useAppointments } from "@/contexts/AppointmentsContext";
 import { apiFetch, setPreviewShopId } from "@/lib/api";
 import { useShop } from "@/contexts/ShopContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
-import { C, SHADOW } from "@/lib/adminTheme";
+import { C, CA, SHADOW } from "@/lib/adminTheme";
+import { AdminTabContext } from "@/contexts/AdminTabContext";
 
 // Heavy tab components — loaded only when the tab is first visited
 const TabSpinner = () => (
@@ -55,6 +57,7 @@ const ServicesManagement = dynamic(() => import("./ServicesManagement"),        
 const NotificationsPage  = dynamic(() => import("@/components/admin/NotificationsPage"),   { loading: TabSpinner });
 const ReviewsPage        = dynamic(() => import("@/components/admin/ReviewsPage"),         { loading: TabSpinner });
 const BillingPage        = dynamic(() => import("@/components/admin/BillingPage"),         { loading: TabSpinner });
+const AIPlatformPage     = dynamic(() => import("@/components/admin/AIPlatformPage"),      { loading: TabSpinner });
 
 const NAV_SECTIONS = (lang) => [
   {
@@ -84,10 +87,17 @@ const NAV_SECTIONS = (lang) => [
       { id: "settings",      label: "Ayarlar",      icon: Settings        },
     ],
   },
+  {
+    label: lang === "tr" ? "AI PLATFORM" : "AI PLATFORM",
+    items: [
+      { id: "ai-platform", label: "AI Platform", icon: Bot },
+    ],
+  },
 ];
 
 export default function AdminDashboard() {
   const [tab, setTab]               = useState("overview");
+  const [settingsTab, setSettingsTab] = useState(null); // sub-tab hint for SettingsPage
   const [moreOpen, setMoreOpen]     = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [showWalkIn, setShowWalkIn]   = useState(false);
@@ -147,6 +157,7 @@ export default function AdminDashboard() {
   if (role !== "admin" && role !== "superadmin") return null;
 
   return (
+    <AdminTabContext.Provider value={{ setTab, settingsTab, setSettingsTab }}>
     <div className="flex min-h-screen" style={{ background: C.bg, fontFamily: "'Outfit', sans-serif" }}>
 
       {/* Desktop sidebar */}
@@ -190,10 +201,10 @@ export default function AdminDashboard() {
               className="hidden md:flex items-center gap-1.5"
               style={{
                 height: "32px", padding: "0 10px",
-                border: `1px solid ${tab === "barber-ops" ? `${C.primary}50` : C.border}`,
+                border: `1px solid ${tab === "barber-ops" ? CA.ink50 : C.border}`,
                 borderRadius: "6px", fontSize: "11px",
                 color: tab === "barber-ops" ? C.primary : C.secondary,
-                background: tab === "barber-ops" ? `${C.primary}10` : "transparent",
+                background: tab === "barber-ops" ? CA.ink10 : "transparent",
                 cursor: "pointer", letterSpacing: "0.02em",
                 transition: "all 0.15s",
               }}
@@ -218,7 +229,7 @@ export default function AdminDashboard() {
         />
 
         {/* Barber selector bar — mobile only, sticky below header */}
-        <div className="sticky top-16 z-20 lg:hidden" style={{ background: `${C.bg}f0`, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}>
+        <div className="sticky top-16 z-20 lg:hidden" style={{ background: CA.bgf0, backdropFilter: "blur(16px)", borderBottom: `1px solid ${C.border}` }}>
           <BarberSelectorBar globalBarberId={globalBarberId} setGlobalBarberId={setGlobalBarberId} realBarbers={realBarbers} />
         </div>
 
@@ -249,8 +260,9 @@ export default function AdminDashboard() {
                 {tab === "reviews"        && <ReviewsPage />}
                 {tab === "notifications" && <NotificationsPage />}
                 {tab === "billing"        && <BillingPage />}
-                {tab === "settings"      && <SettingsPage />}
+                {tab === "settings"      && <SettingsPage defaultTab={settingsTab} />}
                 {tab === "barber-ops"    && <BarberOpsPage barberId={globalBarberId} />}
+                {tab === "ai-platform"   && <AIPlatformPage />}
               </motion.div>
             </AnimatePresence>
           </main>
@@ -266,6 +278,7 @@ export default function AdminDashboard() {
         <WalkInModal onClose={() => setShowWalkIn(false)} />
       )}
     </div>
+    </AdminTabContext.Provider>
   );
 }
 
@@ -287,7 +300,7 @@ function BarberSelectorBar({ globalBarberId, setGlobalBarberId, realBarbers = []
             style={{
               background: active ? "var(--makas-ink)" : "var(--makas-surface2)",
               borderColor: active ? "var(--makas-ink)" : "var(--makas-border)",
-              color: active ? "#fff" : "var(--makas-ink-secondary)",
+              color: active ? "var(--makas-bg)" : "var(--makas-ink-secondary)",
               fontWeight: active ? 600 : 400,
             }}
           >
@@ -296,8 +309,8 @@ function BarberSelectorBar({ globalBarberId, setGlobalBarberId, realBarbers = []
                 className="flex items-center justify-center shrink-0 rounded-[3px] text-[7px] font-bold"
                 style={{
                   width: "14px", height: "14px",
-                  background: active ? "rgba(255,255,255,0.2)" : "rgba(17,17,17,0.1)",
-                  color: active ? "#fff" : "var(--makas-ink-muted)",
+                  background: active ? "var(--makas-bg-f0)" : "rgba(17,17,17,0.1)",
+                  color: active ? "var(--makas-ink)" : "var(--makas-ink-muted)",
                 }}
               >{avatar}</span>
             )}
@@ -407,8 +420,8 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                       gap: "8px", padding: "16px 8px",
-                      background: active ? `${C.primary}18` : C.surface,
-                      border: `1px solid ${active ? `${C.primary}40` : C.border}`,
+                      background: active ? CA.ink18 : C.surface,
+                      border: `1px solid ${active ? CA.ink40 : C.border}`,
                       borderRadius: "12px", cursor: "pointer",
                       minHeight: "80px",
                     }}
@@ -417,8 +430,8 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                       style={{
                         width: "36px", height: "36px", borderRadius: "10px",
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        background: active ? `${C.primary}22` : `${C.surface}`,
-                        border: `1px solid ${active ? `${C.primary}30` : C.border}`,
+                        background: active ? CA.ink22 : `${C.surface}`,
+                        border: `1px solid ${active ? CA.ink30 : C.border}`,
                       }}
                     >
                       <Icon size={16} style={{ color: active ? C.primary : C.secondary }} />
@@ -437,7 +450,7 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                 onClick={() => { onNewBooking(); setMoreOpen(false); }}
                 style={{
                   width: "100%", minHeight: "48px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                  background: C.primary, color: "#fff", border: "none", borderRadius: "12px",
+                  background: C.primary, color: "var(--makas-bg)", border: "none", borderRadius: "12px",
                   fontSize: "13px", fontWeight: 600, cursor: "pointer", letterSpacing: "0.01em",
                 }}
               >
@@ -455,7 +468,7 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
         style={{
           bottom: 0,
           height: "calc(64px + env(safe-area-inset-bottom))",
-          background: `${C.sidebar}f5`,
+          background: CA.bgf0,
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           borderTop: `1px solid ${C.border}`,
@@ -483,7 +496,7 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                     layoutId="bottom-nav-pill"
                     style={{
                       position: "absolute", inset: "-6px -10px",
-                      background: `${C.primary}18`,
+                      background: CA.ink18,
                       borderRadius: "10px",
                     }}
                     transition={{ type: "spring", damping: 28, stiffness: 380 }}
@@ -516,7 +529,7 @@ function MobileBottomNav({ tab, setTab, moreOpen, setMoreOpen, onNewBooking }) {
                 layoutId="bottom-nav-pill"
                 style={{
                   position: "absolute", inset: "-6px -10px",
-                  background: `${C.primary}18`,
+                  background: CA.ink18,
                   borderRadius: "10px",
                 }}
                 transition={{ type: "spring", damping: 28, stiffness: 380 }}
@@ -612,8 +625,8 @@ function BarberOpsPage({ barberId }) {
                 key={b.id}
                 onClick={() => { setSelectedId(b.id); setOpsView("schedule"); }}
                 style={{
-                  background: active ? `${C.primary}12` : C.card,
-                  border: `1px solid ${active ? `${C.primary}50` : C.border}`,
+                  background: active ? CA.ink12 : C.card,
+                  border: `1px solid ${active ? CA.ink50 : C.border}`,
                   borderRadius: "12px", padding: "16px",
                   textAlign: "left", cursor: "pointer",
                   transition: "all 0.15s",
@@ -623,7 +636,7 @@ function BarberOpsPage({ barberId }) {
                 onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; } }}
               >
                 {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: `linear-gradient(90deg, ${C.primary}, #111111, transparent)` }} />}
-                <div style={{ width: "40px", height: "40px", background: active ? C.primary : C.surface, border: `1px solid ${active ? "transparent" : C.border}`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px", fontWeight: 700, color: active ? "#fff" : C.secondary, marginBottom: "12px" }}>
+                <div style={{ width: "40px", height: "40px", background: active ? C.primary : C.surface, border: `1px solid ${active ? "transparent" : C.border}`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px", fontWeight: 700, color: active ? "var(--makas-bg)" : C.secondary, marginBottom: "12px" }}>
                   {b.avatar}
                 </div>
                 <div style={{ fontSize: "13px", color: active ? C.primary : C.secondary, fontWeight: active ? 600 : 400, lineHeight: 1.3, marginBottom: "2px" }}>{b.nameTr}</div>
@@ -646,7 +659,7 @@ function BarberOpsPage({ barberId }) {
           {/* Barber identity bar + add appointment */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", padding: "12px 16px", background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ width: "36px", height: "36px", background: C.primary, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+              <div style={{ width: "36px", height: "36px", background: C.primary, borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: 700, color: "var(--makas-bg)", flexShrink: 0 }}>
                 {selectedBarber.avatar}
               </div>
               <div>
@@ -664,7 +677,7 @@ function BarberOpsPage({ barberId }) {
               </button>
               <button
                 onClick={() => setShowBooking(true)}
-                style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "10px", padding: "0 14px", minHeight: "44px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+                style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "var(--makas-bg)", border: "none", borderRadius: "10px", padding: "0 14px", minHeight: "44px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
               >
                 <Plus size={13} /> Randevu Ekle
               </button>
@@ -851,7 +864,7 @@ function BarberPerformanceView({ barberId, appointments }) {
                 <div style={{
                   width: "100%",
                   height: `${Math.max((day.revenue / maxRev) * 100, day.revenue > 0 ? 5 : 0)}%`,
-                  background: day.date === today ? C.primary : `${C.primary}40`,
+                  background: day.date === today ? C.primary : CA.ink40,
                   borderRadius: "3px 3px 0 0",
                 }} />
               </div>
@@ -947,8 +960,8 @@ function BarberAvailableSlots({ barberId, appointments, barberWH }) {
               style={{
                 padding: "4px 9px", borderRadius: "5px", fontSize: "10px",
                 fontFamily: "'DM Mono', monospace",
-                background: isPast ? "transparent" : isBooked ? `${C.primary}12` : "rgba(34,197,94,0.08)",
-                border: `1px solid ${isPast ? "transparent" : isBooked ? `${C.primary}28` : "rgba(34,197,94,0.2)"}`,
+                background: isPast ? "transparent" : isBooked ? CA.ink12 : "rgba(34,197,94,0.08)",
+                border: `1px solid ${isPast ? "transparent" : isBooked ? CA.ink28 : "rgba(34,197,94,0.2)"}`,
                 color: isPast ? C.muted : isBooked ? "#111111" : "#15803D",
                 opacity: isPast ? 0.35 : 1,
               }}
@@ -963,6 +976,9 @@ function BarberAvailableSlots({ barberId, appointments, barberWH }) {
 }
 
 function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, user }) {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && matchMedia("(prefers-color-scheme: dark)").matches);
+  const cycleTheme = () => setTheme(isDark ? "light" : "dark");
   return (
     <>
       {/* Logo */}
@@ -971,12 +987,12 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, us
           onMouseEnter={(e) => { e.currentTarget.querySelector("span.name").style.color = C.primary; }}
           onMouseLeave={(e) => { e.currentTarget.querySelector("span.name").style.color = C.primary; }}
         >
-          <Logo variant="dark" size={22} showWordmark={false} />
+          <Logo variant={isDark ? "light" : "dark"} size={22} showWordmark={false} />
           <span className="name font-display" style={{ fontSize: "13px", letterSpacing: "0.05em", color: C.primary, textTransform: "uppercase", transition: "color 0.15s", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {user?.shop?.name ?? "Makas"}
           </span>
         </Link>
-        <span className="px-1.5 py-0.5 text-[9px] tracking-widest uppercase" style={{ background: `${C.primary}18`, color: C.primary, borderRadius: "3px", flexShrink: 0 }}>
+        <span className="px-1.5 py-0.5 text-[9px] tracking-widest uppercase" style={{ background: CA.ink18, color: C.primary, borderRadius: "3px", flexShrink: 0 }}>
           Admin
         </span>
       </div>
@@ -1007,7 +1023,7 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, us
                       border: "none",
                       cursor: "pointer",
                     }}
-                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = `${C.surface}80`; }}
+                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = CA.surface80; }}
                     onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                   >
                     {active && (
@@ -1026,7 +1042,7 @@ function Sidebar({ tab, setTab, navSections, tx, lang, setLang, handleLogout, us
       {/* Bottom: user + logout + site link */}
       <div style={{ padding: "10px 12px", borderTop: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "28px", height: "28px", background: C.primary, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+          <div style={{ width: "28px", height: "28px", background: C.primary, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "var(--makas-bg)", flexShrink: 0 }}>
             {(user?.displayName ?? user?.username ?? user?.email ?? "A").split(/[\s@]/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "A"}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1070,7 +1086,7 @@ function BusinessKPIs({ barberId, activeBarberCount = 0 }) {
     { label: "Bugün Kasa",     value: `₺${todayRevenue.toLocaleString()}`, sub: `${completed.length} işlem tamamlandı`, hero: true },
     { label: "Toplam Randevu", value: todayAppts.length,                    sub: walkIns.length > 0 ? `${walkIns.length} walk-in · ${effectiveBarbers} berber` : `${effectiveBarbers} berber aktif` },
     { label: "Koltuk Doluluk", value: `${chairOcc}%`,                       sub: `${usedSlots}/${totalCap} slot`, valueColor: chairOcc > 70 ? "#15803D" : chairOcc > 40 ? "#B45309" : C.primary },
-    { label: "No-Show Oranı",  value: `${noShowRate}%`,                     sub: `${noshows.length} gelmedi`,     valueColor: noShowRate > 15 ? "#111111" : C.primary },
+    { label: "No-Show Oranı",  value: `${noShowRate}%`,                     sub: `${noshows.length} gelmedi`,     valueColor: noShowRate > 15 ? "#DC2626" : C.primary },
     { label: "Onay Bekliyor",  value: pending.length,                       sub: pending.length > 0 ? "hemen işlem yap" : "tümü onaylandı", alert: pending.length > 0 },
   ];
 
@@ -1090,18 +1106,18 @@ function BusinessKPIs({ barberId, activeBarberCount = 0 }) {
             <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
           )}
           <p className="text-[9px] font-semibold uppercase tracking-[0.1em] mb-2"
-            style={{ color: c.hero ? "rgba(255,255,255,0.5)" : "var(--makas-ink-muted)" }}>
+            style={{ color: c.hero ? "var(--makas-bg)" : "var(--makas-ink-muted)", opacity: c.hero ? 0.55 : 1 }}>
             {c.label}
           </p>
           <p className="font-display font-semibold leading-none mb-1"
             style={{
               fontSize: c.hero ? "28px" : "24px",
-              color: c.hero ? "#fff" : (c.valueColor || "var(--makas-ink)"),
+              color: c.hero ? "var(--makas-bg)" : (c.valueColor || "var(--makas-ink)"),
               letterSpacing: "-0.02em",
             }}>
             {c.value}
           </p>
-          <p className="text-[10px]" style={{ color: c.hero ? "rgba(255,255,255,0.4)" : "var(--makas-ink-muted)" }}>
+          <p className="text-[10px]" style={{ color: c.hero ? "var(--makas-bg)" : "var(--makas-ink-muted)", opacity: c.hero ? 0.45 : 1 }}>
             {c.sub}
           </p>
           {c.alert && (
@@ -1141,7 +1157,7 @@ function StaffPerformance({ barberId, realBarbers = [] }) {
             <div key={b.id} className="bg-secondary/40 rounded-[10px] p-3 border border-border">
               <div className="flex items-center gap-2 mb-2.5">
                 <div
-                  className="flex items-center justify-center shrink-0 rounded-[7px] text-[9px] font-bold text-white"
+                  className="flex items-center justify-center shrink-0 rounded-[7px] text-[9px] font-bold text-[var(--makas-bg)]"
                   style={{ width: "28px", height: "28px", background: "var(--makas-ink)" }}
                 >
                   {b.avatar}
@@ -1333,7 +1349,7 @@ function PendingConfirmations({ onNewBooking, barberId }) {
                     style={{ color: isActive ? "#2563EB" : "var(--makas-ink)" }}
                   >{appt.time}</span>
                   <div
-                    className="flex items-center justify-center shrink-0 rounded-[4px] text-[7px] font-bold text-white"
+                    className="flex items-center justify-center shrink-0 rounded-[4px] text-[7px] font-bold text-[var(--makas-bg)]"
                     style={{ width: "18px", height: "18px", background: "var(--makas-ink)" }}
                   >{barberInitials}</div>
                   <div className="flex-1 min-w-0">
@@ -1369,12 +1385,13 @@ function TodaySchedule({ onNewBooking, barberId }) {
     .sort((a, b) => a.time.localeCompare(b.time));
 
   const SC = {
-    pending:       { color: "#B45309" },
-    confirmed:     { color: "#15803D" },
-    "in-progress": { color: "#2563EB" },
-    completed:     { color: "#57514B" },
-    noshow:        { color: "#111111" },
-    cancelled:     { color: "#52525b" },
+    pending:         { color: "#B45309" },
+    confirmed:       { color: "#15803D" },
+    "arrival-check": { color: "#7C3AED" },
+    "in-progress":   { color: "#2563EB" },
+    completed:       { color: "#57514B" },
+    noshow:          { color: "#111111" },
+    cancelled:       { color: "#52525b" },
   };
 
   return (
@@ -1407,7 +1424,7 @@ function TodaySchedule({ onNewBooking, barberId }) {
               <div key={appt.id} className="flex items-center gap-2.5 px-4 py-2.5 border-r border-b border-border">
                 <span className="font-mono-custom text-[11px] font-semibold text-foreground shrink-0 w-10">{appt.time}</span>
                 <div
-                  className="flex items-center justify-center shrink-0 rounded-[5px] text-[7px] font-bold text-white"
+                  className="flex items-center justify-center shrink-0 rounded-[5px] text-[7px] font-bold text-[var(--makas-bg)]"
                   style={{ width: "20px", height: "20px", background: "var(--makas-ink)" }}
                 >{barberInitials}</div>
                 <div className="flex-1 min-w-0">
@@ -1434,16 +1451,17 @@ function RecentActivityFeed() {
     .slice(0, 8);
 
   const STATUS_COLOR = {
-    confirmed:     "#15803D",
-    "in-progress": "#2563EB",
-    pending:       "#B45309",
-    completed:     "#57514B",
-    cancelled:     "#52525b",
-    noshow:        "#111111",
+    confirmed:       "#15803D",
+    "arrival-check": "#7C3AED",
+    "in-progress":   "#2563EB",
+    pending:         "#B45309",
+    completed:       "#57514B",
+    cancelled:       "#52525b",
+    noshow:          "#111111",
   };
   const STATUS_LABEL = {
-    confirmed: "Onaylandı", "in-progress": "Devam", pending: "Bekliyor",
-    completed: "Tamamlandı", cancelled: "İptal", noshow: "Gelmedi",
+    confirmed: "Onaylandı", "arrival-check": "Varış Bekleniyor", "in-progress": "Devam Ediyor",
+    pending: "Bekliyor", completed: "Tamamlandı", cancelled: "İptal", noshow: "Gelmedi",
   };
 
   return (
@@ -1475,7 +1493,7 @@ function RecentActivityFeed() {
                 <p className="text-[10px] text-muted-foreground truncate">{appt.service}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <div
-                    className="flex items-center justify-center shrink-0 rounded-[3px] text-[6px] font-bold text-white"
+                    className="flex items-center justify-center shrink-0 rounded-[3px] text-[6px] font-bold text-[var(--makas-bg)]"
                     style={{ width: "14px", height: "14px", background: "var(--makas-ink)" }}
                   >{barberInitials}</div>
                   <span className="text-[10px] text-muted-foreground">{appt.barber?.split(" ")[0]}</span>
@@ -1609,12 +1627,24 @@ function CustomersPage({ barberId }) {
   const [loading, setLoading]   = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState(null);
+  const [clientDetail, setClientDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   // Debounce search input
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(t);
   }, [search]);
+
+  useEffect(() => {
+    if (!selectedClientId) { setClientDetail(null); return; }
+    setDetailLoading(true);
+    apiFetch(`/api/admin/clients/${selectedClientId}`)
+      .then(data => setClientDetail(data.client ?? null))
+      .catch(() => {})
+      .finally(() => setDetailLoading(false));
+  }, [selectedClientId]);
 
   useEffect(() => {
     setLoading(true);
@@ -1675,9 +1705,10 @@ function CustomersPage({ barberId }) {
               </thead>
               <tbody>
                 {clients.map((c, i) => (
-                  <tr key={c.id} style={{ borderBottom: i < clients.length - 1 ? `1px solid ${C.border}` : "none" }}
+                  <tr key={c.id} style={{ borderBottom: i < clients.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
                     onMouseEnter={e => e.currentTarget.style.background = C.surface + "80"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    onClick={() => setSelectedClientId(c.id)}
                   >
                     <td style={{ padding: "11px 16px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -1698,7 +1729,8 @@ function CustomersPage({ barberId }) {
           {/* Mobile card list */}
           <div className="md:hidden" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
             {clients.map((c, i) => (
-              <div key={c.id} style={{ padding: "14px 16px", borderBottom: i < clients.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              <div key={c.id} style={{ padding: "14px 16px", borderBottom: i < clients.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+                onClick={() => setSelectedClientId(c.id)}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -1721,6 +1753,100 @@ function CustomersPage({ barberId }) {
           </div>
         </>
       )}
+
+      {/* Customer timeline drawer */}
+      <AnimatePresence>
+        {selectedClientId && (
+          <>
+            <motion.div key="cd-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50" style={{ background: "rgba(17,17,17,0.4)", backdropFilter: "blur(4px)" }}
+              onClick={() => setSelectedClientId(null)} />
+            <motion.div key="cd-panel"
+              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+              transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
+              className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-[480px] overflow-y-auto overscroll-contain"
+              style={{ background: C.card, borderLeft: `1px solid ${C.border}`, boxShadow: "-8px 0 32px rgba(17,17,17,0.12)" }}>
+              {/* Drawer header */}
+              <div style={{ padding: "20px 24px 18px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.card, zIndex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                  <h2 style={{ fontSize: "17px", fontWeight: 600, color: C.primary, margin: 0 }}>Müşteri Profili</h2>
+                  <button onClick={() => setSelectedClientId(null)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary }}>
+                    <X size={15} />
+                  </button>
+                </div>
+                {clientDetail ? (
+                  <>
+                    <div style={{ fontSize: "20px", fontWeight: 600, color: C.primary, letterSpacing: "-0.01em", marginBottom: "2px" }}>{clientDetail.name}</div>
+                    <div style={{ fontSize: "12px", color: C.secondary, fontFamily: "monospace" }}>{clientDetail.phone}</div>
+                    {clientDetail.email && <div style={{ fontSize: "12px", color: C.muted, marginTop: "1px" }}>{clientDetail.email}</div>}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginTop: "14px" }}>
+                      {[
+                        { label: "Ziyaret",  value: clientDetail.visitCount },
+                        { label: "Harcama",  value: `₺${(clientDetail.totalSpent ?? 0).toLocaleString()}` },
+                        { label: "No-show",  value: clientDetail.noShowCount ?? 0 },
+                      ].map(s => (
+                        <div key={s.label} style={{ background: C.surface, borderRadius: "10px", padding: "10px 12px" }}>
+                          <div style={{ fontSize: "15px", fontWeight: 600, color: C.primary }}>{s.value}</div>
+                          <div style={{ fontSize: "10px", color: C.muted, marginTop: "2px", letterSpacing: "0.06em", textTransform: "uppercase" }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {clientDetail.notes && (
+                      <div style={{ marginTop: "12px", padding: "10px 12px", background: "rgba(180,83,9,0.06)", borderRadius: "10px", border: "1px solid rgba(180,83,9,0.12)" }}>
+                        <div style={{ fontSize: "10px", color: "#B45309", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "4px" }}>Not</div>
+                        <div style={{ fontSize: "12px", color: C.secondary }}>{clientDetail.notes}</div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "4px" }}>
+                    <DSSkeleton className="h-6 w-48 rounded-md" />
+                    <DSSkeleton className="h-4 w-32 rounded-md" />
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginTop: "6px" }}>
+                      {[1,2,3].map(i => <DSSkeleton key={i} className="h-14 rounded-[10px]" />)}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Appointment timeline */}
+              <div style={{ padding: "20px 24px" }}>
+                <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "14px" }}>Randevu Geçmişi</div>
+                {detailLoading ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {[1,2,3].map(i => <DSSkeleton key={i} className="h-16 rounded-[10px]" />)}
+                  </div>
+                ) : !clientDetail?.appointments?.length ? (
+                  <div style={{ textAlign: "center", padding: "40px 0", color: C.muted, fontSize: "13px" }}>Henüz randevu yok</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {clientDetail.appointments.map(a => {
+                      const STATUS_LABEL = { PENDING: "Bekliyor", CONFIRMED: "Onaylı", ARRIVAL_CHECK: "Varış Bekleniyor", COMPLETED: "Tamam", CANCELLED: "İptal", NOSHOW: "Gelmedi", IN_PROGRESS: "Devam Ediyor" };
+                      const STATUS_COLOR = { PENDING: "#B45309", CONFIRMED: "#1D4ED8", ARRIVAL_CHECK: "#7C3AED", COMPLETED: "#15803D", CANCELLED: "#9CA3AF", NOSHOW: "#6B7280", IN_PROGRESS: "#2563EB" };
+                      const st = (a.status ?? "").toUpperCase();
+                      return (
+                        <div key={a.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "12px 14px" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: "13px", fontWeight: 500, color: C.primary, marginBottom: "3px" }}>{a.service?.nameTr ?? "—"}</div>
+                              <div style={{ fontSize: "11px", color: C.secondary }}>{a.barber?.nameTr ?? "—"}{a.bookedByName ? ` · ${a.bookedByName}` : ""}</div>
+                            </div>
+                            <div style={{ textAlign: "right", flexShrink: 0 }}>
+                              <div style={{ fontSize: "11px", color: STATUS_COLOR[st] ?? C.muted, fontWeight: 600, marginBottom: "3px" }}>{STATUS_LABEL[st] ?? st}</div>
+                              {(a.price ?? 0) > 0 && <div style={{ fontSize: "11px", color: C.muted }}>₺{a.price.toLocaleString()}</div>}
+                            </div>
+                          </div>
+                          <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, marginTop: "6px", letterSpacing: "0.04em" }}>{a.date} {a.time}</div>
+                          {a.cancellationReason && <div style={{ fontSize: "11px", color: "#9CA3AF", marginTop: "4px" }}>İptal: {a.cancellationReason}</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

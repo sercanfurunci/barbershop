@@ -331,7 +331,7 @@ function ReviewCard({ r, lang }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: "auto", paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
         <div style={{
           width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
-          background: C.primary, color: "#fff",
+          background: C.primary, color: "var(--makas-bg)",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 12, fontWeight: 700,
         }}>{initial}</div>

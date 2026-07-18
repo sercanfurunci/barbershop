@@ -179,7 +179,7 @@ export default function CompleteAppointmentModal({ appointment, onSubmit, onClos
               </button>
               <button type="submit" disabled={busy} style={{
                 flex: 1.5, padding: "11px", borderRadius: 8,
-                background: C.primary, color: "#fff", border: "none",
+                background: C.primary, color: "var(--makas-bg)", border: "none",
                 fontSize: 13, fontWeight: 700, cursor: busy ? "wait" : "pointer",
                 minHeight: 44,
               }}>

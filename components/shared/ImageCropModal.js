@@ -73,7 +73,7 @@ export default function ImageCropModal({ file, onConfirm, onCancel }) {
       padding: "16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))",
     }}>
       <div style={{
-        background: "#fff", borderRadius: "20px",
+        background: "var(--makas-surface)", borderRadius: "20px",
         width: "100%", maxWidth: "400px",
         maxHeight: "90dvh",
         boxShadow: "0 40px 100px rgba(0,0,0,0.40)",
@@ -165,7 +165,7 @@ export default function ImageCropModal({ file, onConfirm, onCancel }) {
           <button
             onClick={handleSave}
             disabled={saving}
-            style={{ flex: 1, padding: "12px", background: "#111111", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "7px" }}
+            style={{ flex: 1, padding: "12px", background: "var(--makas-ink)", color: "var(--makas-bg)", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "7px" }}
           >
             <Check size={14} /> {saving ? "Kaydediliyor…" : "Kaydet"}
           </button>

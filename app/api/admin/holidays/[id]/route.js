@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { forbidden } from "@/lib/apiResponse";
 import { withRole } from "@/lib/middleware/withRole";
+import { cacheInvalidate } from "@/lib/ai/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -16,5 +17,6 @@ export const DELETE = withRole(["ADMIN", "RECEPTIONIST", "SUPER_ADMIN"], async (
   if (payload.role !== "SUPER_ADMIN" && holiday.shopId !== payload.shopId) return forbidden();
 
   await prisma.holiday.delete({ where: { id } });
+  cacheInvalidate(`dynctx:${holiday.shopId}`);
   return NextResponse.json({ ok: true });
 });

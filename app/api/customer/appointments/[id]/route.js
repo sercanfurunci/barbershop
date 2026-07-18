@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/middleware/withRole";
+import { invalidateCustomerContext } from "@/lib/ai/customerContext";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export const DELETE = withAuth(async (request, { params }, payload) => {
   const [appt, user] = await Promise.all([
     prisma.appointment.findUnique({
       where: { id },
-      select: { id: true, status: true, date: true, clientId: true, bookedByUserId: true },
+      select: { id: true, status: true, date: true, clientId: true, bookedByUserId: true, shopId: true, client: { select: { phone: true } } },
     }),
     prisma.user.findUnique({
       where: { id: payload.userId },
@@ -35,6 +36,8 @@ export const DELETE = withAuth(async (request, { params }, payload) => {
     where: { id },
     data: { status: "CANCELLED", cancelledAt: new Date(), cancelledBy: "client" },
   });
+
+  invalidateCustomerContext(appt.shopId, appt.client?.phone);
 
   return NextResponse.json({ ok: true });
 });

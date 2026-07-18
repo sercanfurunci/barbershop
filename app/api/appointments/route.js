@@ -30,7 +30,7 @@ export const GET = withAuth(async (request, _ctx, payload) => {
   const date     = searchParams.get("date");
   const barberId = searchParams.get("barberId");
   const rawStatus = searchParams.get("status");
-  const VALID_STATUSES = ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED", "NOSHOW"];
+  const VALID_STATUSES = ["PENDING", "CONFIRMED", "ARRIVAL_CHECK", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NOSHOW"];
   const status = VALID_STATUSES.includes(rawStatus) ? rawStatus : null;
   const limit = Math.min(Math.max(parseInt(searchParams.get("limit") ?? "200") || 200, 1), 500);
   const offset = Math.max(parseInt(searchParams.get("offset") ?? "0") || 0, 0);

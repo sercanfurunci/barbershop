@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { forbidden } from "@/lib/apiResponse";
 import { withRole } from "@/lib/middleware/withRole";
 import { todayStr } from "@/lib/utils";
+import { cacheInvalidate } from "@/lib/ai/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,7 @@ export const POST = withRole(BARBER_ROLES, async (request, _ctx, payload) => {
     skipDuplicates: true,
   });
 
+  cacheInvalidate(`dynctx:${barber.shopId}`);
   return NextResponse.json({ ok: true, count: dates.length }, { status: 201 });
 });
 
@@ -80,15 +82,16 @@ export const DELETE = withRole(BARBER_ROLES, async (request, _ctx, payload) => {
   const today     = todayStr();
 
   if (holidayId) {
-    // Delete specific holiday (only if it belongs to this barber)
     await prisma.holiday.deleteMany({
       where: { id: holidayId, barberId: payload.barberId },
     });
   } else {
-    // Clear all upcoming
     await prisma.holiday.deleteMany({
       where: { barberId: payload.barberId, date: { gte: today } },
     });
   }
+
+  const barber = await prisma.barber.findUnique({ where: { id: payload.barberId }, select: { shopId: true } });
+  if (barber) cacheInvalidate(`dynctx:${barber.shopId}`);
   return NextResponse.json({ ok: true });
 });

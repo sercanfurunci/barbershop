@@ -18,7 +18,7 @@ import { useLang } from "@/contexts/LanguageContext";
 import Link from "next/link";
 import {
   Plus, LogOut, ChevronLeft, ChevronRight, ExternalLink,
-  Clock, AlertCircle,
+  Clock, AlertCircle, UserCheck, UserX,
   CalendarDays, List, X, LayoutDashboard, Users, MoreHorizontal,
   Settings, Eye, EyeOff, Save, Loader2, AtSign, Star, Camera, Trash2, MessageSquare,
 } from "lucide-react";
@@ -66,6 +66,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
   // logged-in barber. Local appointments context only fetches 200 most recent
   // rows so a full-month sum can't be derived client-side reliably.
   const [monthStats, setMonthStats] = useState(null);
+  const [alerts, setAlerts] = useState([]);
   const [tick, setTick]     = useState(0);
   const [mounted, setMounted] = useState(false);
   const loggingOut = useRef(false);
@@ -99,6 +100,17 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
     const id = setInterval(load, 5 * 60_000);
     return () => clearInterval(id);
   }, [authLoaded, user?.barberId]);
+
+  const fetchAlerts = useCallback(() => {
+    if (!authLoaded || !role) return;
+    apiFetch("/api/barber/alerts").then(setAlerts).catch(() => {});
+  }, [authLoaded, role]);
+
+  useEffect(() => {
+    fetchAlerts();
+    const id = setInterval(fetchAlerts, 60_000);
+    return () => clearInterval(id);
+  }, [fetchAlerts]);
 
   useEffect(() => {
     const onVisible = () => { if (document.visibilityState === "visible") { fetchBarberData(); refresh(); } };
@@ -181,6 +193,16 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
     }
   }
 
+  async function dismissAlert(alertId, action) {
+    try {
+      await apiFetch("/api/barber/alerts", { method: "POST", body: JSON.stringify({ alertId, action }) });
+      setAlerts(prev => prev.filter(a => a.id !== alertId));
+      refresh(); // update appointment status in timeline (ARRIVAL_CHECK → IN_PROGRESS or NOSHOW)
+    } catch (err) {
+      alert(err.message || "İşlem tamamlanamadı");
+    }
+  }
+
   async function toggleAvailability() {
     if (!isSelf) return;
     const next = !barber.available;
@@ -241,7 +263,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
         {/* Logo / Barber identity */}
         <div style={{ padding: "22px 22px 18px", borderBottom: `1px solid ${C.border}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: "11px" }}>
-            <div style={{ width: "38px", height: "38px", background: C.primary, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "#fff", flexShrink: 0, boxShadow: SHADOW.card }}>
+            <div style={{ width: "38px", height: "38px", background: C.primary, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "var(--makas-bg)", flexShrink: 0, boxShadow: SHADOW.card }}>
               {barber.avatar}
             </div>
             <div style={{ minWidth: 0 }}>
@@ -324,7 +346,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
               </div>
               {/* Identity */}
               <div style={{ padding: "12px 20px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ width: "38px", height: "38px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>{barber.avatar}</div>
+                <div style={{ width: "38px", height: "38px", background: C.primary, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "var(--makas-bg)", flexShrink: 0 }}>{barber.avatar}</div>
                 <div>
                   <div style={{ fontSize: "14px", color: C.primary, fontWeight: 600 }}>{barber.nameTr ?? barber.name}</div>
                   <div style={{ fontSize: "10px", color: C.primary, letterSpacing: "0.06em", textTransform: "uppercase" }}>{barber.titleTr ?? barber.title?.tr ?? "Berber"}</div>
@@ -515,7 +537,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
                 <button
                   onClick={() => setShowModal(true)}
                   className="transition-transform"
-                  style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", background: C.primary, border: "none", borderRadius: "9px", cursor: "pointer", fontSize: "12.5px", fontWeight: 600, letterSpacing: "-0.005em", color: "#fff", flexShrink: 0, boxShadow: SHADOW.elevated }}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", background: C.primary, border: "none", borderRadius: "9px", cursor: "pointer", fontSize: "12.5px", fontWeight: 600, letterSpacing: "-0.005em", color: "var(--makas-bg)", flexShrink: 0, boxShadow: SHADOW.elevated }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
                 >
@@ -560,6 +582,33 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
 
               {/* Left: timeline */}
               <div>
+                {/* Arrival check alerts */}
+                {alerts.map(alert => (
+                  <motion.div key={alert.id} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                    style={{ background: "rgba(37,99,235,0.07)", border: "1px solid rgba(37,99,235,0.22)", borderRadius: "12px", padding: "14px 18px", marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                      <AlertCircle size={15} style={{ color: "#2563EB", flexShrink: 0 }} />
+                      <div>
+                        <span style={{ fontSize: "13px", color: "#1D4ED8", fontWeight: 600 }}>{alert.appointment?.client?.name}</span>
+                        {alert.appointment?.service?.nameTr && (
+                          <span style={{ fontSize: "12px", color: "#3B82F6", marginLeft: "6px" }}>{alert.appointment.service.nameTr}</span>
+                        )}
+                        <span style={{ fontSize: "11px", color: "#3B82F6", display: "block" }}>Randevu başladı — müşteri geldi mi?</span>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                      <button onClick={() => dismissAlert(alert.id, "arrived")}
+                        style={{ display: "flex", alignItems: "center", gap: "5px", padding: "7px 12px", background: "rgba(21,128,61,0.1)", border: "1px solid rgba(21,128,61,0.3)", borderRadius: "8px", fontSize: "12px", fontWeight: 600, color: "#15803D", cursor: "pointer" }}>
+                        <UserCheck size={13} /> Geldi
+                      </button>
+                      <button onClick={() => dismissAlert(alert.id, "noshow")}
+                        style={{ display: "flex", alignItems: "center", gap: "5px", padding: "7px 12px", background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.2)", borderRadius: "8px", fontSize: "12px", fontWeight: 600, color: "#DC2626", cursor: "pointer" }}>
+                        <UserX size={13} /> Gelmedi
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+
                 {/* Pending banner */}
                 {pending > 0 && isViewingToday && (
                   <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
@@ -586,7 +635,7 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
                         <div className="font-display" style={{ fontSize: "16px", color: C.primary, fontWeight: 500, marginBottom: "6px", letterSpacing: "-0.01em" }}>Bu gün için randevu yok</div>
                         <div style={{ fontSize: "12px", color: C.muted, marginBottom: "18px" }}>İlk randevuyu eklemek için aşağıya tıkla</div>
                         <button onClick={() => setShowModal(true)} className="transition-colors"
-                          style={{ display: "inline-flex", alignItems: "center", gap: "7px", background: C.primary, border: "none", borderRadius: "9px", padding: "10px 18px", fontSize: "12.5px", fontWeight: 600, color: "#fff", cursor: "pointer", boxShadow: SHADOW.card }}>
+                          style={{ display: "inline-flex", alignItems: "center", gap: "7px", background: C.primary, border: "none", borderRadius: "9px", padding: "10px 18px", fontSize: "12.5px", fontWeight: 600, color: "var(--makas-bg)", cursor: "pointer", boxShadow: SHADOW.card }}>
                           <Plus size={13} strokeWidth={2.2} /> Randevu Ekle
                         </button>
                       </div>
@@ -662,12 +711,13 @@ export default function BarberDashboardClient({ barberId: barberSlug, shopSlug: 
                     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "20px", boxShadow: SHADOW.card }}>
                       <div className="font-mono-custom" style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "16px" }}>Gün Özeti</div>
                       {[
-                        { label: "Tamamlanan",  value: completed,                      color: C.secondary },
-                        { label: "Bugün Kazanç",value: `₺${revenue.toLocaleString()}`, color: C.primary   },
-                        { label: "Gelmedi",     value: noshow,   color: noshow > 0 ? "#111111" : C.muted  },
-                        { label: "Tahmini Müsait Slot", value: freeSlots,                color: C.muted     },
+                        { label: "Tamamlanan",       value: completed,                                                                                      color: C.secondary },
+                        { label: "Bugün Kazanç",     value: `₺${revenue.toLocaleString()}`,                                                                 color: C.primary   },
+                        { label: "Gelmedi",          value: noshow,                                                                                          color: noshow > 0 ? "#111111" : C.muted },
+                        { label: "Tahmini Müsait",   value: freeSlots,                                                                                       color: C.muted     },
+                        { label: "Değerlendirme",    value: barberData?.rating ? `${barberData.rating} ★` : "—", color: (barberData?.rating ?? 0) >= 4.5 ? "#15803D" : C.secondary },
                       ].map((s, i) => (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: i > 0 ? "12px" : 0, paddingBottom: i < 3 ? "12px" : 0, borderBottom: i < 3 ? `1px solid ${C.border}` : "none" }}>
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: i > 0 ? "12px" : 0, paddingBottom: i < 4 ? "12px" : 0, borderBottom: i < 4 ? `1px solid ${C.border}` : "none" }}>
                           <span style={{ fontSize: "12.5px", color: C.secondary }}>{s.label}</span>
                           <span className="font-mono-custom" style={{ fontSize: "13px", color: s.color, fontWeight: 600, letterSpacing: "-0.005em" }}>{s.value}</span>
                         </div>
@@ -851,7 +901,7 @@ function ProfileTab() {
                   style={{ objectFit: "cover", objectPosition: "center center" }}
                 />
               ) : (
-                <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${C.primary}, #111111)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: 700, color: "#fff" }}>
+                <div style={{ width: "100%", height: "100%", background: C.primary, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: 700, color: "var(--makas-bg)" }}>
                   {user?.barber?.avatar ?? "A"}
                 </div>
               )}
@@ -915,7 +965,7 @@ function ProfileTab() {
             sizes="40px"
             style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
         ) : (
-          <div style={{ width: "40px", height: "40px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+          <div style={{ width: "40px", height: "40px", background: C.primary, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", fontWeight: 700, color: "var(--makas-bg)", flexShrink: 0 }}>
             {user?.barber?.avatar ?? "A"}
           </div>
         )}
@@ -970,7 +1020,7 @@ function ProfileTab() {
           <button
             type="submit"
             disabled={profileSaving}
-            style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "9px", padding: "11px 20px", fontSize: "13px", fontWeight: 600, cursor: profileSaving ? "not-allowed" : "pointer", opacity: profileSaving ? 0.7 : 1 }}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "var(--makas-bg)", border: "none", borderRadius: "9px", padding: "11px 20px", fontSize: "13px", fontWeight: 600, cursor: profileSaving ? "not-allowed" : "pointer", opacity: profileSaving ? 0.7 : 1 }}
           >
             {profileSaving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}
             Kaydet
@@ -1020,7 +1070,7 @@ function ProfileTab() {
           <button
             type="submit"
             disabled={pwdSaving || !curPwd || !newPwd || !confPwd}
-            style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "#fff", border: "none", borderRadius: "9px", padding: "11px 20px", fontSize: "13px", fontWeight: 600, cursor: (pwdSaving || !curPwd || !newPwd || !confPwd) ? "not-allowed" : "pointer", opacity: (pwdSaving || !curPwd || !newPwd || !confPwd) ? 0.5 : 1 }}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: C.primary, color: "var(--makas-bg)", border: "none", borderRadius: "9px", padding: "11px 20px", fontSize: "13px", fontWeight: 600, cursor: (pwdSaving || !curPwd || !newPwd || !confPwd) ? "not-allowed" : "pointer", opacity: (pwdSaving || !curPwd || !newPwd || !confPwd) ? 0.5 : 1 }}
           >
             {pwdSaving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}
             Şifreyi Değiştir

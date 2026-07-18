@@ -35,23 +35,33 @@ export async function GET(request) {
   const apptFilter = ids.length > 0 ? { clientId: { in: ids } } : { id: "__none__" };
   const reviewOR = [{ userId }, ...(ids.length > 0 ? [{ customerId: { in: ids } }] : [])];
 
-  const [upcoming, completed, favorites, reviewStats] = await Promise.all([
-    prisma.appointment.count({ where: { ...apptFilter, status: { in: ["PENDING", "CONFIRMED"] }, date: { gte: today } } }),
+  const [upcoming, completed, cancelled, favorites, reviewStats, clientStats] = await Promise.all([
+    prisma.appointment.count({ where: { ...apptFilter, status: { in: ["PENDING", "CONFIRMED", "ARRIVAL_CHECK"] }, date: { gte: today } } }),
     prisma.appointment.count({ where: { ...apptFilter, status: "COMPLETED" } }),
+    prisma.appointment.count({ where: { ...apptFilter, status: { in: ["CANCELLED", "NOSHOW"] } } }),
     prisma.customerFavorite.count({ where: { userId } }),
     prisma.review.aggregate({
       where: { OR: reviewOR, barberRating: { gt: 0 } },
       _count: { id: true },
       _avg: { barberRating: true },
     }),
+    ids.length > 0
+      ? prisma.client.aggregate({
+          where: { id: { in: ids } },
+          _sum:  { totalSpent: true, noShowCount: true },
+        })
+      : Promise.resolve({ _sum: { totalSpent: 0, noShowCount: 0 } }),
   ]);
 
   return NextResponse.json({
     upcoming,
     completed,
+    cancelled,
     favorites,
-    reviews: reviewStats._count.id,
-    avgRating: reviewStats._avg.barberRating ? Math.round(reviewStats._avg.barberRating * 10) / 10 : null,
+    reviews:     reviewStats._count.id,
+    avgRating:   reviewStats._avg.barberRating ? Math.round(reviewStats._avg.barberRating * 10) / 10 : null,
+    totalSpent:  clientStats._sum.totalSpent  ?? 0,
+    noShowCount: clientStats._sum.noShowCount ?? 0,
     memberSince: user?.createdAt ?? null,
   });
 }

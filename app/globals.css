@@ -156,6 +156,45 @@
   --pill-h-sm: 40px;
   --pill-h-md: 48px;
   --pill-h-lg: 56px;
+
+  /* Ink alpha scale — used for hover/active overlays instead of ${C.primary}XX */
+  --makas-ink-10: rgba(17,17,17,0.06);
+  --makas-ink-12: rgba(17,17,17,0.07);
+  --makas-ink-18: rgba(17,17,17,0.10);
+  --makas-ink-22: rgba(17,17,17,0.13);
+  --makas-ink-28: rgba(17,17,17,0.16);
+  --makas-ink-30: rgba(17,17,17,0.18);
+  --makas-ink-40: rgba(17,17,17,0.24);
+  --makas-ink-50: rgba(17,17,17,0.30);
+  --makas-ink-60: rgba(17,17,17,0.37);
+  --makas-ink-f0: rgba(17,17,17,0.94);
+  --makas-bg-f0:  rgba(245,241,235,0.94);
+  --makas-surface-80: rgba(255,255,255,0.80);
+  --makas-border-hi: #C5BEB5;
+
+  /* Navbar tokens — JS reads these so dark mode works without theme import */
+  --nav-bg-default:       rgba(247,244,238,0.92);
+  --nav-border-default:   rgba(0,0,0,0.06);
+  --nav-text-muted:       #666666;
+  --nav-menu-bg:          rgba(247,244,238,0.98);
+  --nav-book-bar-bg:      rgba(247,244,238,0.97);
+
+  /* Status semantic colors — light mode */
+  --status-success-bg:     #D1FAE5;
+  --status-success-text:   #065F46;
+  --status-success-border: #A7F3D0;
+  --status-warning-bg:     #FEF3C7;
+  --status-warning-text:   #92400E;
+  --status-warning-border: #FDE68A;
+  --status-danger-bg:      #FEE2E2;
+  --status-danger-text:    #991B1B;
+  --status-danger-border:  #FECACA;
+  --status-info-bg:        #DBEAFE;
+  --status-info-text:      #1E40AF;
+  --status-info-border:    #BFDBFE;
+  --status-purple-bg:      #EDE9FE;
+  --status-purple-text:    #5B21B6;
+  --status-purple-border:  #DDD6FE;
 }
 
 * {
@@ -168,11 +207,14 @@ html {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
   max-width: 100%;
+  /* Smooth theme transitions */
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 body {
   background-color: var(--makas-bg);
   color: var(--makas-ink);
+  transition: background-color 200ms ease, color 200ms ease;
   font-family: var(--font-outfit), 'Outfit', system-ui, sans-serif;
   line-height: 1.6;
   overflow-x: clip;
@@ -199,9 +241,106 @@ body {
   scrollbar-color: var(--makas-thumb) transparent;
 }
 
+/* ── Dark Mode ───────────────────────────────────────────────────────────────
+   Applied via .dark class on <html> (set by ThemeContext + FOUC script).
+   All values are independent — not simply inverted light tokens.
+   Palette: Linear / Vercel / Raycast warm-dark aesthetic.             */
+.dark {
+  /* Shadcn/UI base vars */
+  --background:          #0C0C0D;
+  --foreground:          rgba(255,255,255,0.93);
+  --card:                #161618;
+  --card-foreground:     rgba(255,255,255,0.93);
+  --popover:             #1E1E21;
+  --popover-foreground:  rgba(255,255,255,0.93);
+  --primary:             rgba(255,255,255,0.93);
+  --primary-foreground:  #0C0C0D;
+  --secondary:           #1E1E21;
+  --secondary-foreground:rgba(255,255,255,0.65);
+  --muted:               #1E1E21;
+  --muted-foreground:    rgba(255,255,255,0.40);
+  --accent:              #2A2A2E;
+  --accent-foreground:   rgba(255,255,255,0.93);
+  --destructive:         #EF4444;
+  --border:              rgba(255,255,255,0.09);
+  --input:               #1E1E21;
+  --ring:                rgba(255,255,255,0.18);
+
+  /* Brand tokens */
+  --makas-bg:            #0C0C0D;
+  --makas-surface:       #161618;
+  --makas-surface2:      #1E1E21;
+  --makas-ink:           rgba(255,255,255,0.93);
+  --makas-ink-secondary: rgba(255,255,255,0.65);
+  --makas-ink-muted:     rgba(255,255,255,0.40);
+  --makas-border:        rgba(255,255,255,0.09);
+  --makas-border-hi:     rgba(255,255,255,0.16);
+  --makas-thumb:         rgba(255,255,255,0.12);
+  --makas-thumb-hover:   rgba(255,255,255,0.20);
+  --makas-footer:        #0C0C0D;
+
+  /* Shadows — dark UIs use borders more than elevation */
+  --shadow-card:    0 1px 3px rgba(0,0,0,0.40);
+  --shadow-elevated:0 8px 24px rgba(0,0,0,0.55);
+  --shadow-pop:     0 12px 36px rgba(0,0,0,0.65);
+
+  /* Sidebar — slightly differentiated from main bg */
+  --sidebar:                  #101012;
+  --sidebar-foreground:       rgba(255,255,255,0.88);
+  --sidebar-accent:           #1E1E21;
+  --sidebar-accent-foreground:rgba(255,255,255,0.88);
+  --sidebar-border:           rgba(255,255,255,0.08);
+  --sidebar-ring:             rgba(255,255,255,0.18);
+
+  /* Ink alpha scale — dark mode equivalents */
+  --makas-ink-10: rgba(255,255,255,0.06);
+  --makas-ink-12: rgba(255,255,255,0.07);
+  --makas-ink-18: rgba(255,255,255,0.10);
+  --makas-ink-22: rgba(255,255,255,0.13);
+  --makas-ink-28: rgba(255,255,255,0.16);
+  --makas-ink-30: rgba(255,255,255,0.18);
+  --makas-ink-40: rgba(255,255,255,0.24);
+  --makas-ink-50: rgba(255,255,255,0.30);
+  --makas-ink-60: rgba(255,255,255,0.37);
+  --makas-ink-f0: rgba(255,255,255,0.94);
+  --makas-bg-f0:  rgba(12,12,13,0.94);
+  --makas-surface-80: rgba(22,22,24,0.80);
+
+  /* Navbar tokens — dark equivalents */
+  --nav-bg-default:       rgba(12,12,13,0.88);
+  --nav-border-default:   rgba(255,255,255,0.07);
+  --nav-text-muted:       rgba(255,255,255,0.50);
+  --nav-menu-bg:          rgba(16,16,18,0.98);
+  --nav-book-bar-bg:      rgba(16,16,18,0.97);
+
+  /* Status colors — adapted for dark surfaces */
+  --status-success-bg:     rgba(16,185,129,0.14);
+  --status-success-text:   #34D399;
+  --status-success-border: rgba(16,185,129,0.24);
+  --status-warning-bg:     rgba(245,158,11,0.14);
+  --status-warning-text:   #FBBF24;
+  --status-warning-border: rgba(245,158,11,0.24);
+  --status-danger-bg:      rgba(239,68,68,0.14);
+  --status-danger-text:    #F87171;
+  --status-danger-border:  rgba(239,68,68,0.24);
+  --status-info-bg:        rgba(59,130,246,0.14);
+  --status-info-text:      #60A5FA;
+  --status-info-border:    rgba(59,130,246,0.24);
+  --status-purple-bg:      rgba(139,92,246,0.14);
+  --status-purple-text:    #A78BFA;
+  --status-purple-border:  rgba(139,92,246,0.24);
+}
+
+/* Always-dark zone — footer, dark hero sections. Overrides dark mode CSS vars locally
+   so bg-foreground/text-background tailwind classes keep working correctly. */
+.theme-invert {
+  --background: #F5F1EB;
+  --foreground: #111111;
+}
+
 ::selection {
-  background: #111111;
-  color: #FFFFFF;
+  background: var(--makas-ink);
+  color: var(--makas-bg);
 }
 
 /* Scrollbar utility */
@@ -292,7 +431,7 @@ button, a, [role="button"] {
   background: rgba(17,17,17,0.04);
 }
 .makas-bar-btn.is-primary:active {
-  background: #000;
+  background: var(--makas-ink);
 }
 
 /* Consistent form input — shared by account, booking, login, and admin forms.
@@ -402,7 +541,7 @@ button, [role="button"] {
 /* Modal: centered on desktop, bottom sheet on mobile */
 .sa-modal-backdrop {
   position: fixed; inset: 0; z-index: 80;
-  background: rgba(17,17,17,0.5);
+  background: var(--makas-ink-50);
   display: flex; align-items: center; justify-content: center; padding: 16px;
 }
 .sa-modal-sheet {

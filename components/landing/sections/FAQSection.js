@@ -35,7 +35,7 @@ function FAQItem({ q, a, isOpen, onToggle }) {
 export default function FAQSection() {
   const [open, setOpen] = useState(-1); // all collapsed on load
   return (
-    <section id="faq" style={{ background: "white", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
+    <section id="faq" style={{ background: "var(--makas-bg)", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
       <div className="mx-auto max-w-[820px]">
         <SectionHead eyebrow="SSS" title="Aklındaki sorulara cevap." />
         <div className="mt-12">

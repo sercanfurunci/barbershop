@@ -11,7 +11,7 @@ import { Star, ArrowRight } from "lucide-react";
 
 const C = {
   bg:       "var(--makas-bg)",
-  bgSoft:   "#FDFBF7",
+  bgSoft:   "var(--makas-surface)",
   surface:  "var(--makas-surface2)",
   card:     "var(--makas-surface)",
   border:   "var(--makas-border)",

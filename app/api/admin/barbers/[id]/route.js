@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withRole } from "@/lib/middleware/withRole";
+import { cacheInvalidate } from "@/lib/ai/cache";
+import { toLocal10 } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -40,10 +42,21 @@ export const PATCH = withRole(ADMIN_ROLES, async (request, { params }, payload) 
   const body = await request.json();
   const allowed = ["nameTr","nameEn","titleTr","titleEn","bioTr","bioEn",
                    "avatar","color","yearsExp","specialties","available","slug",
-                   "paymentType","commissionRate","fixedSalary"];
+                   "paymentType","commissionRate","fixedSalary","phone"];
   const data = {};
   for (const key of allowed) {
     if (body[key] !== undefined) data[key] = body[key];
+  }
+
+  // Normalize barber phone: empty string clears it; any non-empty value must be a valid TR mobile
+  if (data.phone !== undefined) {
+    if (data.phone === "" || data.phone === null) {
+      data.phone = null;
+    } else {
+      const normalized = toLocal10(data.phone);
+      if (!normalized) return NextResponse.json({ error: "Geçersiz telefon numarası. Türk cep numarası giriniz (5xxxxxxxxx)." }, { status: 400 });
+      data.phone = normalized;
+    }
   }
 
   if (Object.keys(data).length === 0) {
@@ -87,6 +100,7 @@ export const PATCH = withRole(ADMIN_ROLES, async (request, { params }, payload) 
     data,
     include: { workingHours: true },
   });
+  cacheInvalidate(`dynctx:${barber.shopId}`);
   return NextResponse.json(updated);
 });
 
@@ -99,5 +113,6 @@ export const DELETE = withRole(ADMIN_ROLES, async (request, { params }, payload)
   // Defense-in-depth: scope by shopId in case resolveBarber gets bypassed later.
   const { count } = await prisma.barber.deleteMany({ where: { id: barber.id, shopId: barber.shopId } });
   if (!count) return NextResponse.json({ error: "Berber bulunamadı" }, { status: 404 });
+  cacheInvalidate(`dynctx:${barber.shopId}`);
   return NextResponse.json({ ok: true });
 });

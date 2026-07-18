@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AppointmentsProvider } from "@/contexts/AppointmentsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // ponytail: self-hosted via next/font so no render-blocking @import + CLS
 // is preempted by the font-display: swap default.
@@ -99,27 +100,31 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd).replace(/</g, "\\u003c").replace(/>/g, "\\u003e") }}
         />
+        {/* ponytail: inline FOUC prevention — runs before CSS, sets .dark before paint */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('makas-theme');var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();` }} />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <LanguageProvider>
-          <AuthProvider>
-            <FavoritesProvider>
-            <AppointmentsProvider>
-              {children}
-              <Toaster
-                position="bottom-right"
-                toastOptions={{
-                  style: {
-                    background: '#161616',
-                    border: '1px solid #242424',
-                    color: '#F8F6F1',
-                  },
-                }}
-              />
-            </AppointmentsProvider>
-            </FavoritesProvider>
-          </AuthProvider>
-        </LanguageProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <FavoritesProvider>
+                <AppointmentsProvider>
+                  {children}
+                  <Toaster
+                    position="bottom-right"
+                    toastOptions={{
+                      style: {
+                        background: "var(--makas-surface)",
+                        border: "1px solid var(--makas-border)",
+                        color: "var(--makas-ink)",
+                      },
+                    }}
+                  />
+                </AppointmentsProvider>
+              </FavoritesProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

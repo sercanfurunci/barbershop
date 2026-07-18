@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Save, CheckCircle, AlertCircle, ChevronDown } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import { C } from "@/lib/adminTheme";
+import { C, CA } from "@/lib/adminTheme";
 import { DAYS, TIME_OPTIONS } from "./_constants";
 
 function TimeSelect({ value, onChange }) {
@@ -115,13 +115,13 @@ export default function WorkingHoursTab() {
           <button key={b.id} onClick={() => selectBarber(b)}
             className="w-full flex items-center gap-3"
             style={{
-              padding: "12px 14px", background: b.id === selectedId ? `${C.primary}12` : "transparent",
+              padding: "12px 14px", background: b.id === selectedId ? CA.ink12 : "transparent",
               border: "none", cursor: "pointer", transition: "all 0.15s", textAlign: "left",
             }}
             onMouseEnter={e => { if (b.id !== selectedId) e.currentTarget.style.background = C.surface; }}
             onMouseLeave={e => { if (b.id !== selectedId) e.currentTarget.style.background = "transparent"; }}
           >
-            <div style={{ width: "32px", height: "32px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+            <div style={{ width: "32px", height: "32px", background: C.primary, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "var(--makas-bg)", flexShrink: 0 }}>
               {b.avatar}
             </div>
             <div>
@@ -195,7 +195,7 @@ export default function WorkingHoursTab() {
           <button onClick={save} disabled={saving}
             className="flex items-center gap-2"
             style={{
-              background: saving ? C.dim : C.primary, color: "#fff", border: "none",
+              background: saving ? C.dim : C.primary, color: "var(--makas-bg)", border: "none",
               borderRadius: "8px", padding: "10px 20px", fontSize: "13px",
               fontWeight: 600, cursor: saving ? "not-allowed" : "pointer",
             }}

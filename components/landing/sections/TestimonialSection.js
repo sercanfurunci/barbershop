@@ -24,7 +24,7 @@ const TESTIMONIALS = [
 
 export default function TestimonialSection() {
   return (
-    <section className="bg-foreground text-background relative overflow-hidden">
+    <section className="theme-invert bg-foreground text-background relative overflow-hidden">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"

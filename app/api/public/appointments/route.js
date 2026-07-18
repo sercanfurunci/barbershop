@@ -42,7 +42,7 @@ export async function GET(request) {
     where: {
       clientId: { in: clients.map((c) => c.id) },
       date:     { gte: todayStr },
-      status:   { in: ["PENDING", "CONFIRMED"] },
+      status:   { in: ["PENDING", "CONFIRMED", "ARRIVAL_CHECK"] },
     },
     include: {
       shop:    { select: { id: true, name: true, slug: true, address: true, phone: true, logo: true } },

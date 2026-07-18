@@ -116,7 +116,7 @@ function FAQItem({ item, isOpen, onToggle, isLast }) {
           color: C.primary,
           transition: "background 0.18s",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(17,17,17,0.025)"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--makas-ink-10)"; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
       >
         <span style={{
@@ -134,7 +134,7 @@ function FAQItem({ item, isOpen, onToggle, isLast }) {
           background: isOpen ? C.primary : "transparent",
           border: `1px solid ${isOpen ? C.primary : C.border}`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          color: isOpen ? "#fff" : C.secondary,
+          color: isOpen ? "var(--makas-bg)" : C.secondary,
           transition: "all 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
           transform: isOpen ? "rotate(45deg)" : "rotate(0deg)",
         }}>

@@ -7,9 +7,11 @@ import { useAppointments } from "@/contexts/AppointmentsContext";
 import { apiFetch } from "@/lib/api";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import ManualBookingModal from "./ManualBookingModal";
+import AppointmentPopup from "./AppointmentPopup";
 import {
-  ChevronLeft, ChevronRight, Plus, Clock, X, Check,
-  Timer, AlertCircle, CheckCircle2, Ban, Filter,
+  ChevronLeft, ChevronRight, Plus, X, Filter,
+  Clock, CheckCircle2, Zap, CheckCheck, UserX, XCircle,
+  Check, Pencil, Trash2, Coffee, AlertCircle,
 } from "lucide-react";
 
 import { C, SHADOW } from "@/lib/adminTheme";
@@ -19,16 +21,20 @@ const DAY_START = 9;
 const DAY_END   = 22;
 const TOTAL_SLOTS = (DAY_END - DAY_START) * 2;
 const TOTAL_H     = TOTAL_SLOTS * SLOT_H;
-const TIME_COL_W  = 52;
-const COL_MIN_W   = 172;
+const TIME_COL_W  = 56;
+const COL_MIN_W   = 180;
 
+// Status config — colors and labels intentionally match spec so the timeline,
+// popup, and mobile agenda all agree. `short` stays around for the legacy
+// mobile filter chips.
 const SC = {
-  pending:       { label: "Bekleniyor",  short: "Bkl",  color: "#B45309", bg: "rgba(245,158,11,0.15)",  icon: Timer        },
-  confirmed:     { label: "Onaylandı",   short: "Ona",  color: "#15803D", bg: "rgba(34,197,94,0.15)",   icon: CheckCircle2 },
-  "in-progress": { label: "Devam Ediyor",short: "Dev",  color: "#2563EB", bg: "rgba(96,165,250,0.15)",  icon: Clock        },
-  completed:     { label: "Tamamlandı",  short: "Tam",  color: "#57514B", bg: "rgba(107,104,112,0.15)", icon: Check        },
-  noshow:        { label: "Gelmedi",     short: "Gel",  color: "#111111", bg: "rgba(17,17,17,0.15)",   icon: AlertCircle  },
-  cancelled:     { label: "İptal",       short: "İpt",  color: "#52525b", bg: "rgba(82,82,91,0.15)",    icon: Ban          },
+  pending:         { label: "Bekleniyor",       short: "Bkl", color: "#B45309", bg: "rgba(180,83,9,0.15)",    icon: Clock         },
+  confirmed:       { label: "Onaylandı",         short: "Ona", color: "#15803D", bg: "rgba(21,128,61,0.15)",   icon: CheckCircle2  },
+  "arrival-check": { label: "Varış Bekleniyor",  short: "Var", color: "#7C3AED", bg: "rgba(124,58,237,0.15)", icon: AlertCircle   },
+  "in-progress":   { label: "Devam Ediyor",      short: "Dev", color: "#2563EB", bg: "rgba(37,99,235,0.15)",   icon: Zap           },
+  completed:       { label: "Tamamlandı",         short: "Tam", color: "#57514B", bg: "rgba(87,81,75,0.15)",   icon: CheckCheck    },
+  noshow:          { label: "Gelmedi",            short: "Gel", color: "#111111", bg: "rgba(17,17,17,0.15)",   icon: UserX         },
+  cancelled:       { label: "İptal",              short: "İpt", color: "#52525b", bg: "rgba(82,82,91,0.15)",   icon: XCircle       },
 };
 
 function timeToMin(t) {
@@ -57,187 +63,228 @@ function fmtCurrency(v) {
   return `₺${v.toLocaleString("tr-TR")}`;
 }
 
-// ─── Appointment block ────────────────────────────────────────────────────────
-function AppointmentBlock({ appt, onStatusChange }) {
-  const [open, setOpen] = useState(false);
+function initialsOf(name) {
+  if (!name) return "?";
+  return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+}
+
+// ─── Appointment block (desktop timeline) ─────────────────────────────────────
+// Redesigned card: subtle gradient + status-colored 2.5px left border, tiny
+// hover quick-action buttons (confirm / edit / delete) in the top-right,
+// staggered mount animation, and a brief "flash" pulse when its status
+// changes so users see feedback. The popup itself is now a separate component
+// controlled by CalendarView; this block only reports clicks upward.
+function AppointmentBlock({ appt, onOpen, onQuickAction, isRecent }) {
   const startMin  = timeToMin(appt.time);
   const topOffset = ((startMin - DAY_START * 60) / 30) * SLOT_H;
   const heightPx  = Math.max((appt.duration / 30) * SLOT_H - 2, SLOT_H - 2);
   const sc        = SC[appt.status] ?? SC.pending;
   const Icon      = sc.icon;
 
-  // Three density tiers
-  const isTiny   = heightPx < SLOT_H * 1.2;          // < ~58px  → one line
-  const isSmall  = heightPx < SLOT_H * 2;             // < ~96px  → two lines
-  // isFull = everything else
+  const isTiny  = heightPx < SLOT_H * 1.15;
+  const isSmall = heightPx < SLOT_H * 1.9;
+
+  const canQuickConfirm = appt.status === "pending";
+  const canQuickComplete = appt.status === "confirmed" || appt.status === "in-progress";
+  const isTerminal = appt.status === "completed" || appt.status === "cancelled" || appt.status === "noshow";
+
+  // Track hover for quick actions — cheaper than a whole framer prop tree.
+  const [hover, setHover] = useState(false);
+
+  // Flash when status changes (isRecent flips true → animate → parent clears).
+  const flashRef = useRef(null);
 
   return (
-    <>
-      <div
-        onClick={() => setOpen(true)}
-        style={{
-          position: "absolute",
-          top:    `${topOffset + 1}px`,
-          height: `${heightPx}px`,
-          left:   "3px",
-          right:  "3px",
-          background: C.card,
-          border:     `1px solid ${sc.color}45`,
-          borderRadius: "6px",
-          overflow: "hidden",
-          cursor: "pointer",
-          zIndex: 10,
-          transition: "border-color 0.12s, background 0.12s",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = `${sc.color}90`;
-          e.currentTarget.style.background  = C.surface;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = `${sc.color}45`;
-          e.currentTarget.style.background  = C.card;
-        }}
-      >
-        <div style={{ padding: isTiny ? "3px 7px" : "6px 8px", height: "100%", display: "flex", flexDirection: "column", gap: "2px" }}>
-          {/* Row 1: time + status dot */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px" }}>
-            <span style={{ fontSize: "10px", color: sc.color, fontWeight: 600, fontFamily: "'DM Mono', monospace", flexShrink: 0 }}>
-              {appt.time}
-            </span>
-            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: sc.color, flexShrink: 0 }} />
-          </div>
-
-          {/* Row 2: client name */}
-          <div style={{ fontSize: "11px", color: C.primary, fontWeight: 600, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {appt.client}
-          </div>
-
-          {/* Row 3: service (small+) */}
-          {!isTiny && (
-            <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {appt.service}
-            </div>
-          )}
-
-          {/* Row 4: price + duration (full) */}
-          {!isSmall && (
-            <>
-              <div style={{ flex: 1 }} />
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "10px", color: C.muted }}>{appt.duration}dk</span>
-                <span style={{ fontSize: "11px", color: C.primary, fontWeight: 600 }}>{fmtCurrency(appt.price)}</span>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Detail panel (centered modal) */}
+    <motion.div
+      layout
+      ref={flashRef}
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.12, ease: "easeOut" }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen(appt, { x: e.clientX, y: e.clientY });
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        position: "absolute",
+        top:    `${topOffset + 1}px`,
+        height: `${heightPx}px`,
+        left:   "3px",
+        right:  "3px",
+        background: `linear-gradient(135deg, ${sc.bg} 0%, rgba(255,255,255,0.02) 100%)`,
+        borderLeft: `2.5px solid ${sc.color}`,
+        border: `1px solid ${sc.color}25`,
+        borderLeftWidth: "2.5px",
+        borderRadius: "8px",
+        overflow: "hidden",
+        cursor: "pointer",
+        zIndex: hover ? 12 : 10,
+        boxShadow: hover ? SHADOW.elevated : "none",
+        transition: "box-shadow 0.14s ease, transform 0.14s ease",
+        transform: hover ? "scale(1.015)" : "scale(1)",
+      }}
+    >
+      {/* Flash overlay when status changes */}
       <AnimatePresence>
-        {open && (
-          <>
-            <div style={{ position: "fixed", inset: 0, zIndex: 70 }} onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 4 }}
-              transition={{ duration: 0.14 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                position: "fixed", top: "50%", left: "50%",
-                transform: "translate(-50%, -50%)",
-                zIndex: 71,
-                background: "#FFFFFF",
-                border: `1px solid ${C.border}`,
-                borderTop: `2px solid ${sc.color}`,
-                borderRadius: "12px",
-                padding: "18px 20px",
-                width: "300px",
-                boxShadow: "0 20px 60px rgba(17,17,17,0.18)",
-              }}
-            >
-              {/* Header */}
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "14px" }}>
-                <div>
-                  <div style={{ fontSize: "15px", color: C.primary, fontWeight: 600, marginBottom: "2px" }}>{appt.client}</div>
-                  {appt.phone
-                    ? <div style={{ fontSize: "11px", color: C.muted }}>{appt.phone}</div>
-                    : <div style={{ fontSize: "11px", color: C.muted }}>{appt.time} · {appt.duration}dk</div>
-                  }
-                </div>
-                <button
-                  onClick={() => setOpen(false)}
-                  aria-label="Kapat"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: C.muted,
-                    width: 32,
-                    height: 32,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: 8,
-                    margin: -6,
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(17,17,17,0.06)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Info rows */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "7px", padding: "12px 0", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, marginBottom: "12px" }}>
-                {[
-                  ["Hizmet",  appt.service],
-                  ["Saat",    `${appt.time} — ${appt.duration}dk`],
-                  ["Ücret",   fmtCurrency(appt.price)],
-                  appt.notes && ["Not", appt.notes],
-                ].filter(Boolean).map(([k, v]) => (
-                  <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                    <span style={{ fontSize: "11px", color: C.secondary, flexShrink: 0 }}>{k}</span>
-                    <span style={{ fontSize: "11px", color: C.primary, textAlign: "right" }}>{v}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Status buttons */}
-              <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>Durum</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                {Object.entries(SC).map(([key, cfg]) => {
-                  const SI = cfg.icon;
-                  const active = appt.status === key;
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => { onStatusChange(appt.id, key); setOpen(false); }}
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: "4px",
-                        padding: "4px 8px", borderRadius: "5px",
-                        background: active ? cfg.bg : C.surface,
-                        border: `1px solid ${active ? cfg.color + "60" : C.border}`,
-                        fontSize: "10px", color: active ? cfg.color : C.secondary,
-                        cursor: "pointer", fontWeight: active ? 600 : 400,
-                        transition: "all 0.1s",
-                      }}
-                    >
-                      <SI size={9} />
-                      {cfg.short}
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </>
+        {isRecent && (
+          <motion.div
+            initial={{ opacity: 0.55 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            style={{
+              position: "absolute", inset: 0,
+              background: sc.color,
+              pointerEvents: "none",
+              mixBlendMode: "overlay",
+            }}
+          />
         )}
       </AnimatePresence>
-    </>
+
+      <div style={{
+        padding: isTiny ? "4px 8px" : "6px 9px",
+        height: "100%",
+        display: "flex", flexDirection: "column", gap: "2px",
+        position: "relative",
+      }}>
+        {/* Row 1: time + status dot */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px" }}>
+          <span style={{
+            fontSize: "10px",
+            color: sc.color,
+            fontWeight: 700,
+            fontFamily: "'DM Mono', monospace",
+            flexShrink: 0,
+            letterSpacing: "0.02em",
+          }}>
+            {appt.time}
+          </span>
+          <div style={{
+            width: "6px", height: "6px",
+            borderRadius: "50%", background: sc.color,
+            flexShrink: 0,
+            boxShadow: `0 0 0 2px ${sc.bg}`,
+          }} />
+        </div>
+
+        {/* Row 2: client name */}
+        <div style={{
+          fontSize: "11px",
+          color: C.primary,
+          fontWeight: 600,
+          lineHeight: 1.2,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}>
+          {appt.client}
+        </div>
+
+        {/* Row 3: service */}
+        {!isTiny && (
+          <div style={{
+            fontSize: "10px",
+            color: C.secondary,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}>
+            {appt.service}
+          </div>
+        )}
+
+        {/* Row 4: duration + price (full only) */}
+        {!isSmall && (
+          <>
+            <div style={{ flex: 1 }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "10px", color: C.muted, fontFamily: "'DM Mono', monospace" }}>
+                {appt.duration}dk
+              </span>
+              <span style={{ fontSize: "11px", color: C.primary, fontWeight: 600 }}>
+                {fmtCurrency(appt.price)}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Hover quick actions — 22px circles top-right, only for non-terminal */}
+      {!isTerminal && (
+        <AnimatePresence>
+          {hover && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: -2 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: -2 }}
+              transition={{ duration: 0.12 }}
+              style={{
+                position: "absolute",
+                top: "4px", right: "4px",
+                display: "flex", gap: "4px",
+                zIndex: 3,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(canQuickConfirm || canQuickComplete) && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onQuickAction("advance", appt);
+                  }}
+                  title={canQuickConfirm ? "Onayla" : "Tamamla"}
+                  style={quickBtnStyle("#15803D")}
+                >
+                  <Check size={11} />
+                </button>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickAction("edit", appt);
+                }}
+                title="Düzenle"
+                style={quickBtnStyle(C.primary)}
+              >
+                <Pencil size={10} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickAction("delete", appt);
+                }}
+                title="Sil"
+                style={quickBtnStyle("#b91c1c")}
+              >
+                <Trash2 size={10} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
+    </motion.div>
   );
 }
 
-// ─── Break block ──────────────────────────────────────────────────────────────
+function quickBtnStyle(fg) {
+  return {
+    width: "22px",
+    height: "22px",
+    borderRadius: "50%",
+    background: "var(--makas-surface)",
+    border: `1px solid ${fg}55`,
+    color: fg,
+    cursor: "pointer",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    padding: 0,
+    boxShadow: "0 1px 3px rgba(17,17,17,0.15)",
+    transition: "transform 0.1s",
+  };
+}
+
+// ─── Break block (unchanged behavior, slightly nicer visual) ─────────────────
 function BreakBlock({ brk }) {
   const startMin  = timeToMin(brk.start);
   const endMin    = timeToMin(brk.end);
@@ -250,22 +297,23 @@ function BreakBlock({ brk }) {
         position: "absolute",
         top: `${topOffset}px`, height: `${heightPx}px`,
         left: "3px", right: "3px",
-        background: "repeating-linear-gradient(45deg, rgba(17,17,17,0.02) 0, rgba(17,17,17,0.02) 2px, transparent 2px, transparent 8px)",
-        border: `1px dashed rgba(17,17,17,0.12)`,
-        borderRadius: "5px",
+        background: "repeating-linear-gradient(45deg, rgba(17,17,17,0.03) 0, rgba(17,17,17,0.03) 2px, transparent 2px, transparent 8px)",
+        border: `1px dashed rgba(17,17,17,0.15)`,
+        borderRadius: "6px",
         display: "flex", alignItems: "center", justifyContent: "center",
+        gap: "5px",
         zIndex: 5, pointerEvents: "none",
       }}
     >
+      <Coffee size={10} color={C.muted} />
       <span style={{ fontSize: "9px", color: C.muted, letterSpacing: "0.06em" }}>{brk.label}</span>
     </div>
   );
 }
 
-// ─── Mobile Agenda View ───────────────────────────────────────────────────────
+// ─── Mobile Agenda View (unchanged) ───────────────────────────────────────────
 function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayRevenue, totalToday, confirmedCnt, pendingCnt, activeBarber, setActiveBarber, statusFilter, setStatusFilter, onNewAppt, updateStatus, barbers }) {
   const [selectedAppt, setSelectedAppt] = useState(null);
-  // Lock background scroll while the detail sheet is open.
   useBodyScrollLock(!!selectedAppt);
 
   const sorted = [...displayAppts].sort((a, b) => a.time.localeCompare(b.time));
@@ -291,14 +339,12 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
         }}
       >
         <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-          {/* Time */}
           <div style={{ flexShrink: 0, width: "38px", paddingTop: "1px" }}>
             <div style={{ fontSize: "13px", color: sc.color, fontWeight: 700, fontFamily: "'DM Mono', monospace", lineHeight: 1.1 }}>
               {appt.time}
             </div>
             <div style={{ fontSize: "9px", color: C.muted, marginTop: "2px" }}>{appt.duration}dk</div>
           </div>
-          {/* Info */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: "13px", color: C.primary, fontWeight: 600, marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {appt.client}
@@ -307,7 +353,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
               {appt.service}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "5px" }}>
-              <div style={{ width: "16px", height: "16px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+              <div style={{ width: "16px", height: "16px", background: C.primary, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "7px", fontWeight: 700, color: "var(--makas-bg)", flexShrink: 0 }}>
                 {barberInitials}
               </div>
               <span style={{ fontSize: "10px", color: C.muted }}>{appt.barber?.split(" ")[0]}</span>
@@ -317,7 +363,6 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
               </span>
             </div>
           </div>
-          {/* Price */}
           <div style={{ flexShrink: 0, textAlign: "right" }}>
             <div style={{ fontSize: "14px", color: C.primary, fontWeight: 700 }}>{fmtCurrency(appt.price)}</div>
           </div>
@@ -328,7 +373,6 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: C.bg, overflow: "hidden" }}>
-      {/* Date nav */}
       <div style={{ flexShrink: 0, background: C.card, borderBottom: `1px solid ${C.border}`, padding: "10px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <button onClick={() => setDate(d => addDays(d, -1))} style={{ width: "32px", height: "32px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.secondary, flexShrink: 0 }}>
@@ -348,12 +392,11 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
               Bugün
             </button>
           )}
-          <button onClick={() => onNewAppt()} style={{ width: "32px", height: "32px", background: C.primary, border: "none", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", flexShrink: 0 }}>
+          <button onClick={() => onNewAppt()} style={{ width: "32px", height: "32px", background: C.primary, border: "none", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--makas-bg)", flexShrink: 0 }}>
             <Plus size={15} />
           </button>
         </div>
 
-        {/* Stats strip */}
         <div style={{ display: "flex", gap: "6px", marginTop: "10px" }}>
           {[
             { label: "Toplam", val: totalToday, color: C.secondary },
@@ -369,7 +412,6 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
         </div>
       </div>
 
-      {/* Barber filter chips */}
       <div style={{ flexShrink: 0, background: C.card, borderBottom: `1px solid ${C.border}`, padding: "8px 16px", display: "flex", gap: "6px", overflowX: "auto", scrollbarWidth: "none" }}>
         {[{ id: "all", label: "Tümü" }, ...barbers.map(b => ({ id: b.id, label: (b.nameTr ?? b.name ?? "").split(" ")[0] }))].map(b => (
           <button key={b.id} onClick={() => setActiveBarber(b.id)} style={{ height: "26px", padding: "0 12px", borderRadius: "13px", background: activeBarber === b.id ? "rgba(17,17,17,0.12)" : "none", border: `1px solid ${activeBarber === b.id ? "rgba(17,17,17,0.4)" : C.border}`, fontSize: "11px", color: activeBarber === b.id ? C.primary : C.secondary, cursor: "pointer", fontWeight: activeBarber === b.id ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0 }}>
@@ -384,7 +426,6 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
         ))}
       </div>
 
-      {/* Agenda list */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
         {sorted.length === 0 ? (
           <div style={{ textAlign: "center", padding: "48px 0" }}>
@@ -409,7 +450,6 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
         )}
       </div>
 
-      {/* Detail bottom sheet */}
       <AnimatePresence>
         {selectedAppt && (() => {
           const appt = selectedAppt;
@@ -422,11 +462,9 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-                style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 90, background: "#FFFFFF", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
+                style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 90, background: "var(--makas-surface)", borderRadius: "16px 16px 0 0", borderTop: `2px solid ${sc.color}`, padding: "20px 20px calc(20px + env(safe-area-inset-bottom))", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
               >
-                {/* Handle */}
                 <div style={{ width: "36px", height: "3px", background: C.border, borderRadius: "2px", margin: "0 auto 16px" }} />
-                {/* Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
                   <div>
                     <div style={{ fontSize: "16px", color: C.primary, fontWeight: 700, marginBottom: "3px" }}>{appt.client}</div>
@@ -436,7 +474,6 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
                     <X size={14} />
                   </button>
                 </div>
-                {/* Info rows */}
                 <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "12px 14px", marginBottom: "14px" }}>
                   {[["Hizmet", appt.service], ["Saat", `${appt.time} — ${appt.duration}dk`], ["Ücret", fmtCurrency(appt.price)], appt.notes && ["Not", appt.notes]].filter(Boolean).map(([k, v]) => (
                     <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: "12px", padding: "5px 0", borderBottom: `1px solid ${C.border}` }}>
@@ -445,7 +482,6 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
                     </div>
                   ))}
                 </div>
-                {/* Status */}
                 <div style={{ fontSize: "10px", color: C.muted, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>Durum</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   {Object.entries(SC).map(([key, cfg]) => {
@@ -468,10 +504,7 @@ function MobileAgendaView({ date, setDate, displayAppts, allDayAppts, todayReven
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
-// WorkingHours is a single 1-1 row with {mon,tue,…}{Start,End} in minutes from
-// midnight. `null` on either side of a day means "closed that day". Returns
-// null when the barber isn't scheduled that day so the caller can skip.
+// ─── Working hours + breaks resolvers (unchanged) ─────────────────────────────
 const DOW_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 function getBarberWH(barber, dateStr) {
   const wh = barber?.workingHours;
@@ -480,11 +513,9 @@ function getBarberWH(barber, dateStr) {
   const s = wh[`${dowKey}Start`];
   const e = wh[`${dowKey}End`];
   if (s == null || e == null) return null;
-  return { start: s / 60, end: e / 60 }; // grid uses hours as unit
+  return { start: s / 60, end: e / 60 };
 }
 
-// BarberBreak stores start/end as "HH:MM" strings. A dated break wins over
-// recurring; otherwise dayOfWeek match or every-day (null) applies.
 function getBarberBreaks(barber, dateStr) {
   if (!barber?.breaks?.length) return [];
   const dow = new Date(dateStr + "T12:00:00").getDay();
@@ -493,21 +524,33 @@ function getBarberBreaks(barber, dateStr) {
     .map(b => ({ start: b.start, end: b.end, label: b.label || "Mola" }));
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function CalendarView() {
-  const { appointments, updateStatus } = useAppointments();
+  const { appointments, updateStatus, deleteAppointment } = useAppointments();
   const [date, setDate]             = useState(todayStr());
   const [showModal, setShowModal]   = useState(false);
   const [modalBarberId, setModalBarberId] = useState("");
+  const [modalEditAppt, setModalEditAppt] = useState(null);
   const [statusFilter, setStatusFilter]   = useState("all");
   const [activeBarber, setActiveBarber]   = useState("all");
   const [listOpen, setListOpen]     = useState(false);
   const [barbers, setBarbers]       = useState([]);
+  const [popup, setPopup]           = useState(null); // { appt, anchor }
+  const [recentStatusId, setRecentStatusId] = useState(null);
+  // Tick every 30s so the "now" line + label stay accurate without a rerender storm.
+  const [nowTick, setNowTick] = useState(0);
   const gridRef = useRef(null);
 
   useEffect(() => {
     apiFetch("/api/admin/barbers")
       .then(list => setBarbers(Array.isArray(list) ? list : []))
       .catch(() => {});
+  }, []);
+
+  // Re-run every 30s so the "now" line stays live.
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(n => n + 1), 30_000);
+    return () => clearInterval(id);
   }, []);
 
   // Scroll to current time on mount / date change
@@ -532,10 +575,9 @@ export default function CalendarView() {
   const totalToday    = allDayAppts.length;
   const confirmedCnt  = allDayAppts.filter(a => a.status === "confirmed").length;
   const pendingCnt    = allDayAppts.filter(a => a.status === "pending").length;
-  const completedCnt  = allDayAppts.filter(a => a.status === "completed").length;
   const todayRevenue  = allDayAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
 
-  // Current time
+  // Current-time indicator (depends on nowTick so it updates on interval).
   const now     = new Date();
   const nowMin  = now.getHours() * 60 + now.getMinutes();
   const nowTop  = ((nowMin - DAY_START * 60) / 30) * SLOT_H;
@@ -549,15 +591,90 @@ export default function CalendarView() {
   }
 
   const openModal = (barberId = "") => {
+    setModalEditAppt(null);
     setModalBarberId(barberId);
     setShowModal(true);
   };
 
+  const openEditModal = (appt) => {
+    setModalEditAppt(appt);
+    setModalBarberId(appt?.barberId ?? "");
+    setShowModal(true);
+  };
+
+  // Status change routed through provider; provider opens Complete/Cancel
+  // modals for those two statuses automatically. Flash the card briefly to
+  // acknowledge the change.
+  const handleStatusChange = async (id, next) => {
+    setRecentStatusId(id);
+    setTimeout(() => setRecentStatusId((cur) => (cur === id ? null : cur)), 900);
+    try {
+      await updateStatus(id, next);
+    } catch (e) {
+      // Silently ignore — provider polls in the background and will reconcile.
+    }
+    // Close the popup after non-modal transitions (pending/confirmed/in-progress/noshow).
+    // For completed/cancelled, provider opens its own modal; closing our popup here is fine.
+    setPopup(null);
+  };
+
+  // Quick actions from card hover:
+  //  - advance:  pending→confirmed, confirmed/in-progress→completed
+  //  - edit:     open ManualBookingModal for editing (booking modal handles both)
+  //  - delete:   confirm + delete
+  const handleQuickAction = async (kind, appt) => {
+    if (kind === "advance") {
+      if (appt.status === "pending") {
+        await updateStatus(appt.id, "confirmed").catch(() => {});
+      } else if (appt.status === "confirmed" || appt.status === "in-progress") {
+        // Triggers CompleteAppointmentModal via provider.
+        await updateStatus(appt.id, "completed").catch(() => {});
+      }
+      return;
+    }
+    if (kind === "edit") {
+      openEditModal(appt);
+      return;
+    }
+    if (kind === "delete") {
+      if (typeof window !== "undefined" && window.confirm(`"${appt.client}" randevusunu silmek istediğinize emin misiniz?`)) {
+        try {
+          await deleteAppointment(appt.id);
+        } catch (e) {
+          // ignore
+        }
+      }
+      return;
+    }
+  };
+
+  // Popup handlers
+  const handleOpenPopup = (appt, anchor) => setPopup({ appt, anchor });
+  const handleClosePopup = () => setPopup(null);
+
+  const handleEditFromPopup = (appt) => {
+    setPopup(null);
+    openEditModal(appt);
+  };
+
+  const handleDeleteFromPopup = async (appt) => {
+    setPopup(null);
+    if (typeof window !== "undefined" && window.confirm(`"${appt.client}" randevusunu silmek istediğinize emin misiniz?`)) {
+      try {
+        await deleteAppointment(appt.id);
+      } catch (e) {
+        // ignore
+      }
+    }
+  };
+
   const visibleBarbers = activeBarber === "all" ? barbers : barbers.filter(b => b.id === activeBarber);
-  // Normalize barber name field for components that expect .name
   const normalizedBarbers = visibleBarbers.map(b => ({ ...b, name: b.nameTr ?? b.name ?? "" }));
 
-  // Mobile agenda view
+  // Re-derive the currently-open appointment from state so status changes are
+  // reflected in the popup without needing to re-open it.
+  const activePopupAppt = popup ? appointments.find((a) => a.id === popup.appt.id) ?? popup.appt : null;
+
   const mobileView = (
     <MobileAgendaView
       date={date} setDate={setDate}
@@ -571,6 +688,8 @@ export default function CalendarView() {
       barbers={barbers}
     />
   );
+
+  const dateIsToday = isToday(date);
 
   return (
     <>
@@ -587,7 +706,6 @@ export default function CalendarView() {
 
         {/* Row 1: date nav + primary actions */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 16px", borderBottom: `1px solid ${C.border}`, flexWrap: "wrap" }}>
-          {/* Date nav */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, minWidth: 0 }}>
             <button
               onClick={() => setDate(d => addDays(d, -1))}
@@ -599,7 +717,7 @@ export default function CalendarView() {
               <span style={{ fontSize: "13px", color: C.primary, fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {new Date(date + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </span>
-              {isToday(date) && (
+              {dateIsToday && (
                 <span style={{ marginLeft: "8px", fontSize: "9px", color: C.primary, fontWeight: 600, letterSpacing: "0.08em", verticalAlign: "middle" }}>BUGÜN</span>
               )}
             </div>
@@ -609,7 +727,7 @@ export default function CalendarView() {
             >
               <ChevronRight size={14} />
             </button>
-            {!isToday(date) && (
+            {!dateIsToday && (
               <button
                 onClick={() => setDate(todayStr())}
                 style={{ height: "28px", padding: "0 10px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "6px", fontSize: "11px", color: C.secondary, cursor: "pointer" }}
@@ -619,7 +737,6 @@ export default function CalendarView() {
             )}
           </div>
 
-          {/* Stats pills */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "8px" }}>
             {[
               { label: `${totalToday} randevu`,          color: C.secondary },
@@ -638,7 +755,6 @@ export default function CalendarView() {
 
           <div style={{ flex: 1 }} />
 
-          {/* List view toggle */}
           <button
             onClick={() => setListOpen(v => !v)}
             style={{
@@ -654,12 +770,11 @@ export default function CalendarView() {
             Liste
           </button>
 
-          {/* New appointment */}
           <button
             onClick={() => openModal()}
             style={{
               display: "flex", alignItems: "center", gap: "6px",
-              background: C.primary, color: "#fff", border: "none",
+              background: C.primary, color: "var(--makas-bg)", border: "none",
               borderRadius: "6px", padding: "0 14px", height: "28px",
               fontSize: "11px", fontWeight: 600, cursor: "pointer", letterSpacing: "0.02em",
             }}
@@ -671,7 +786,6 @@ export default function CalendarView() {
 
         {/* Row 2: filters */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px", overflowX: "auto" }}>
-          {/* Barber filter */}
           <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
             {[{ id: "all", name: "Tümü", avatar: "T" }, ...barbers.map(b => ({ ...b, name: b.nameTr ?? b.name ?? "" }))].map(b => (
               <button
@@ -693,7 +807,6 @@ export default function CalendarView() {
 
           <div style={{ width: "1px", height: "16px", background: C.border, flexShrink: 0 }} />
 
-          {/* Status filter */}
           <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
             <button
               onClick={() => setStatusFilter("all")}
@@ -725,69 +838,161 @@ export default function CalendarView() {
 
         {/* Grid */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {/* Column headers */}
-          <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card }}>
-            <div style={{ width: `${TIME_COL_W}px`, flexShrink: 0, borderRight: `1px solid ${C.border}` }} />
-            {normalizedBarbers.map((barber) => {
-              const wh        = getBarberWH(barber, date);
-              const bAppts    = displayAppts.filter(a => a.barberId === barber.id);
-              const bRevenue  = bAppts.filter(a => a.status === "completed").reduce((s, a) => s + (a.price || 0), 0);
-              const bPending  = bAppts.filter(a => a.status === "pending").length;
-              const bConfirmed = bAppts.filter(a => a.status === "confirmed").length;
 
-              return (
-                <div
-                  key={barber.id}
-                  style={{
-                    flex: 1, minWidth: `${COL_MIN_W}px`,
-                    padding: "10px 14px",
-                    borderRight: `1px solid ${C.border}`,
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div style={{ width: "30px", height: "30px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                      {barber.avatar}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, lineHeight: 1.2 }}>
-                        {barber.name.split(" ")[0]}
-                        <span style={{ fontSize: "10px", color: C.secondary, fontWeight: 400 }}> {barber.name.split(" ")[1]}</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
-                        <span style={{ fontSize: "9px", color: wh ? C.muted : "#B45309" }}>
-                          {wh ? `${fmtHour(wh.start)}–${fmtHour(wh.end)}` : "Kapalı"}
-                        </span>
-                        {bAppts.length > 0 && (
-                          <>
-                            <span style={{ fontSize: "9px", color: C.muted }}>·</span>
-                            <span style={{ fontSize: "9px", color: "#15803D" }}>{bConfirmed} ona</span>
-                            {bPending > 0 && <span style={{ fontSize: "9px", color: "#B45309" }}>{bPending} bkl</span>}
-                            {bRevenue > 0 && <span style={{ fontSize: "9px", color: C.secondary }}>{fmtCurrency(bRevenue)}</span>}
-                          </>
+          {/* Scrollable grid with sticky headers inside */}
+          <div ref={gridRef} style={{ flex: 1, overflowY: "auto", overflowX: "auto", position: "relative" }}>
+            {/* Column headers — sticky at the top of the scrollable region */}
+            <div style={{
+              display: "flex",
+              borderBottom: `1px solid ${C.border}`,
+              background: C.card,
+              position: "sticky",
+              top: 0,
+              zIndex: 15,
+              minWidth: `${TIME_COL_W + normalizedBarbers.length * COL_MIN_W}px`,
+            }}>
+              <div style={{ width: `${TIME_COL_W}px`, flexShrink: 0, borderRight: `1px solid ${C.border}` }} />
+              {normalizedBarbers.map((barber) => {
+                const wh         = getBarberWH(barber, date);
+                const bAppts     = displayAppts.filter(a => a.barberId === barber.id);
+                const bPending   = bAppts.filter(a => a.status === "pending").length;
+                const bBreaks    = wh ? getBarberBreaks(barber, date) : [];
+                const hasBreaks  = bBreaks.length > 0;
+                const roleLabel  = barber.role === "OWNER"
+                  ? "Usta"
+                  : (barber.title ?? barber.roleLabel ?? "Kuaför");
+                const displayName = barber.name || "Berber";
+
+                return (
+                  <div
+                    key={barber.id}
+                    style={{
+                      flex: 1, minWidth: `${COL_MIN_W}px`,
+                      padding: "10px 14px",
+                      borderRight: `1px solid ${C.border}`,
+                      display: "flex", flexDirection: "column", gap: "6px",
+                      position: "relative",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      {/* Avatar */}
+                      <div style={{
+                        width: "36px", height: "36px",
+                        background: C.primary,
+                        borderRadius: "10px",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "12px", fontWeight: 700,
+                        color: "var(--makas-bg)",
+                        flexShrink: 0,
+                        overflow: "hidden",
+                      }}>
+                        {barber.avatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={barber.avatarUrl} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          initialsOf(barber.avatar || displayName)
                         )}
                       </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{
+                          fontSize: "13px", color: C.primary,
+                          fontWeight: 600, lineHeight: 1.2,
+                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        }}>
+                          {displayName}
+                        </div>
+                        <div style={{ fontSize: "11px", color: C.muted, marginTop: "1px" }}>
+                          {roleLabel}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => openModal(barber.id)}
+                        title={`${displayName} için yeni randevu`}
+                        style={{
+                          width: "24px", height: "24px",
+                          background: "rgba(17,17,17,0.08)",
+                          border: "1px solid rgba(17,17,17,0.18)",
+                          borderRadius: "6px",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          cursor: "pointer", color: C.primary, flexShrink: 0,
+                        }}
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                      <span style={{
+                        fontSize: "10px",
+                        color: wh ? C.secondary : "#B45309",
+                        fontFamily: "'DM Mono', monospace",
+                        background: "var(--makas-surface2)",
+                        padding: "1px 6px",
+                        borderRadius: "4px",
+                      }}>
+                        {wh ? `${fmtHour(wh.start)}–${fmtHour(wh.end)}` : "Kapalı"}
+                      </span>
+                      <span style={{
+                        fontSize: "10px",
+                        color: bAppts.length > 0 ? C.primary : C.muted,
+                        background: "var(--makas-surface2)",
+                        padding: "1px 6px",
+                        borderRadius: "4px",
+                        fontWeight: 600,
+                      }}>
+                        {bAppts.length} randevu
+                      </span>
+                      {bPending > 0 && (
+                        <span style={{
+                          fontSize: "10px",
+                          color: "#B45309",
+                          background: "rgba(180,83,9,0.12)",
+                          padding: "1px 6px",
+                          borderRadius: "4px",
+                          fontWeight: 600,
+                        }}>
+                          {bPending} bkl
+                        </span>
+                      )}
+                      {hasBreaks && (
+                        <span
+                          title="Mola planlı"
+                          style={{
+                            fontSize: "10px", color: C.muted,
+                            background: "var(--makas-surface2)",
+                            padding: "1px 6px",
+                            borderRadius: "4px",
+                            display: "inline-flex", alignItems: "center", gap: "3px",
+                          }}
+                        >
+                          <Coffee size={9} />
+                          Mola
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => openModal(barber.id)}
-                    style={{ width: "22px", height: "22px", background: "rgba(17,17,17,0.08)", border: "1px solid rgba(17,17,17,0.18)", borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.primary, flexShrink: 0 }}
-                  >
-                    <Plus size={11} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {/* Scrollable grid */}
-          <div ref={gridRef} style={{ flex: 1, overflowY: "auto", overflowX: "auto", position: "relative" }}>
-            <div style={{ display: "flex", minWidth: `${TIME_COL_W + visibleBarbers.length * COL_MIN_W}px`, height: `${TOTAL_H}px`, position: "relative" }}>
+            {/* Timeline body */}
+            <div style={{ display: "flex", minWidth: `${TIME_COL_W + normalizedBarbers.length * COL_MIN_W}px`, height: `${TOTAL_H}px`, position: "relative" }}>
 
               {/* Time gutter */}
-              <div style={{ width: `${TIME_COL_W}px`, flexShrink: 0, borderRight: `1px solid ${C.border}`, position: "relative", background: C.bg }}>
+              <div style={{
+                width: `${TIME_COL_W}px`, flexShrink: 0,
+                borderRight: `1px solid ${C.border}`,
+                position: "relative", background: C.bg,
+              }}>
                 {timeLabels.map(({ label, top }) => (
-                  <div key={label} style={{ position: "absolute", top: `${top - 7}px`, right: "6px", fontSize: "10px", color: C.muted, whiteSpace: "nowrap", lineHeight: 1, userSelect: "none" }}>
+                  <div key={label} style={{
+                    position: "absolute",
+                    top: `${top - 7}px`, right: "6px",
+                    fontSize: "10px", color: C.muted,
+                    whiteSpace: "nowrap", lineHeight: 1,
+                    userSelect: "none",
+                    fontFamily: "'DM Mono', monospace",
+                  }}>
                     {label}
                   </div>
                 ))}
@@ -798,22 +1003,62 @@ export default function CalendarView() {
                 const wh          = getBarberWH(barber, date);
                 const barberBreaks = wh ? getBarberBreaks(barber, date) : [];
                 const barberAppts  = displayAppts.filter(a => a.barberId === barber.id);
-                // wh=null → barber isn't scheduled that day; shade the entire column.
                 const offBeforeH   = wh ? Math.max(0, ((wh.start - DAY_START) * 2) * SLOT_H) : TOTAL_H;
                 const offAfterTop  = wh ? ((wh.end - DAY_START) * 2) * SLOT_H : TOTAL_H;
                 const offAfterH    = TOTAL_H - offAfterTop;
+                const isEmpty      = barberAppts.length === 0 && wh; // hide the placeholder for closed days
 
                 return (
                   <div
                     key={barber.id}
-                    style={{ flex: 1, minWidth: `${COL_MIN_W}px`, borderRight: `1px solid ${C.border}`, position: "relative" }}
+                    style={{
+                      flex: 1, minWidth: `${COL_MIN_W}px`,
+                      borderRight: `1px solid ${C.border}`,
+                      position: "relative",
+                      background: dateIsToday ? "rgba(37,99,235,0.03)" : "transparent",
+                    }}
                   >
-                    {/* Slot lines */}
-                    {Array.from({ length: TOTAL_SLOTS }).map((_, i) => (
-                      <div key={i} style={{ position: "absolute", top: `${i * SLOT_H}px`, left: 0, right: 0, height: "1px", background: i % 2 === 0 ? C.border : "rgba(17,17,17,0.03)" }} />
-                    ))}
+                    {/* Hour + half-hour lines (visually distinct) */}
+                    {Array.from({ length: TOTAL_SLOTS }).map((_, i) => {
+                      const isFullHour = i % 2 === 0;
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            position: "absolute",
+                            top: `${i * SLOT_H}px`,
+                            left: 0, right: 0,
+                            height: 0,
+                            borderTop: isFullHour
+                              ? `1px solid ${C.border}`
+                              : `1px dashed rgba(17,17,17,0.08)`,
+                            opacity: isFullHour ? 1 : 0.7,
+                            pointerEvents: "none",
+                          }}
+                        />
+                      );
+                    })}
 
-                    {/* Off-hours */}
+                    {/* Quarter-hour hairlines when a slot is tall enough */}
+                    {SLOT_H >= 48 && Array.from({ length: TOTAL_SLOTS * 2 }).map((_, i) => {
+                      if (i % 2 === 0) return null;
+                      const top = (i / 2) * SLOT_H;
+                      return (
+                        <div
+                          key={`q-${i}`}
+                          style={{
+                            position: "absolute",
+                            top: `${top}px`,
+                            left: 0, right: 0,
+                            height: 0,
+                            borderTop: `1px solid rgba(17,17,17,0.04)`,
+                            pointerEvents: "none",
+                          }}
+                        />
+                      );
+                    })}
+
+                    {/* Off-hours shading */}
                     {offBeforeH > 0 && (
                       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: `${offBeforeH}px`, background: "rgba(17,17,17,0.05)", zIndex: 2, pointerEvents: "none" }} />
                     )}
@@ -821,21 +1066,96 @@ export default function CalendarView() {
                       <div style={{ position: "absolute", top: `${offAfterTop}px`, left: 0, right: 0, height: `${offAfterH}px`, background: "rgba(17,17,17,0.05)", zIndex: 2, pointerEvents: "none" }} />
                     )}
 
+                    {/* Empty-column placeholder (only when the day is open and no appts) */}
+                    {isEmpty && (
+                      <div style={{
+                        position: "absolute",
+                        top: `${((wh.start - DAY_START) * 2 * SLOT_H) + 40}px`,
+                        left: 0, right: 0,
+                        display: "flex", justifyContent: "center",
+                        pointerEvents: "none",
+                        zIndex: 3,
+                      }}>
+                        <span style={{
+                          fontSize: "12px",
+                          color: "var(--makas-ink-muted)",
+                          opacity: 0.35,
+                          userSelect: "none",
+                          letterSpacing: "0.02em",
+                        }}>
+                          Randevu yok
+                        </span>
+                      </div>
+                    )}
+
                     {barberBreaks.map((brk, i) => <BreakBlock key={i} brk={brk} />)}
                     {barberAppts.map((appt) => (
-                      <AppointmentBlock key={appt.id} appt={appt} onStatusChange={updateStatus} />
+                      <AppointmentBlock
+                        key={appt.id}
+                        appt={appt}
+                        onOpen={handleOpenPopup}
+                        onQuickAction={handleQuickAction}
+                        isRecent={recentStatusId === appt.id}
+                      />
                     ))}
                   </div>
                 );
               })}
 
-              {/* Current time line */}
+              {/* Current time indicator — spans the entire content width */}
               {showNow && (
-                <div style={{ position: "absolute", top: `${nowTop}px`, left: `${TIME_COL_W}px`, right: 0, height: "1px", background: C.primary, zIndex: 20, pointerEvents: "none" }}>
-                  <div style={{ position: "absolute", left: "-22px", top: "-8px", fontSize: "9px", color: C.primary, fontWeight: 600, fontFamily: "'DM Mono', monospace", background: C.bg, padding: "1px 3px", borderRadius: "3px" }}>
-                    {nowLabel}
+                <div
+                  key={`now-${nowTick}`}
+                  style={{
+                    position: "absolute",
+                    top: `${nowTop}px`,
+                    left: 0, right: 0,
+                    height: 0,
+                    zIndex: 20, pointerEvents: "none",
+                  }}
+                >
+                  {/* Time label in the gutter */}
+                  <div style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "-8px",
+                    width: `${TIME_COL_W}px`,
+                    display: "flex", justifyContent: "flex-end", paddingRight: "6px",
+                  }}>
+                    <span style={{
+                      fontSize: "10px",
+                      color: "#dc2626",
+                      fontWeight: 700,
+                      fontFamily: "'DM Mono', monospace",
+                      background: C.bg,
+                      padding: "1px 4px",
+                      borderRadius: "3px",
+                      lineHeight: 1,
+                    }}>
+                      {nowLabel}
+                    </span>
                   </div>
-                  <div style={{ position: "absolute", left: "-4px", top: "-3px", width: "7px", height: "7px", background: C.primary, borderRadius: "50%" }} />
+
+                  {/* Red line across all barber columns */}
+                  <div style={{
+                    position: "absolute",
+                    left: `${TIME_COL_W}px`,
+                    right: 0,
+                    top: 0,
+                    height: 0,
+                    borderTop: "1.5px solid #dc2626",
+                  }} />
+
+                  {/* Dot at the start of the line */}
+                  <div style={{
+                    position: "absolute",
+                    left: `${TIME_COL_W - 3}px`,
+                    top: "-3px",
+                    width: "6px", height: "6px",
+                    borderRadius: "50%",
+                    background: "#dc2626",
+                    boxShadow: "0 0 0 2px var(--makas-bg)",
+                  }} />
                 </div>
               )}
             </div>
@@ -868,7 +1188,8 @@ export default function CalendarView() {
                       return (
                         <div
                           key={appt.id}
-                          style={{ padding: "10px 14px", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}
+                          onClick={(e) => handleOpenPopup(appt, { x: e.clientX, y: e.clientY })}
+                          style={{ padding: "10px 14px", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
                         >
                           <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
                             <span style={{ fontSize: "11px", color: sc.color, fontWeight: 600, fontFamily: "'DM Mono', monospace", minWidth: "36px", flexShrink: 0 }}>{appt.time}</span>
@@ -876,7 +1197,7 @@ export default function CalendarView() {
                               <div style={{ fontSize: "12px", color: C.primary, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.client}</div>
                               <div style={{ fontSize: "10px", color: C.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appt.service}</div>
                               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "3px" }}>
-                                <div style={{ width: "14px", height: "14px", background: `linear-gradient(135deg, ${C.primary}, #111111)`, borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "6px", fontWeight: 700, color: "#fff" }}>
+                                <div style={{ width: "14px", height: "14px", background: C.primary, borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "6px", fontWeight: 700, color: "var(--makas-bg)" }}>
                                   {barberInitials}
                                 </div>
                                 <span style={{ fontSize: "10px", color: C.muted }}>{appt.barber?.split(" ")[0]}</span>
@@ -891,7 +1212,6 @@ export default function CalendarView() {
                     })
                 )}
               </div>
-              {/* Daily total */}
               <div style={{ padding: "10px 14px", borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
                 <span style={{ fontSize: "11px", color: C.secondary }}>Toplam kasa</span>
                 <span style={{ fontSize: "13px", color: C.primary, fontWeight: 600 }}>{fmtCurrency(todayRevenue)}</span>
@@ -903,12 +1223,26 @@ export default function CalendarView() {
 
       </div>{/* end desktop flex */}
 
-      {/* Shared modal */}
+      {/* Popup — controlled by CalendarView so all cards share one instance */}
+      {activePopupAppt && (
+        <AppointmentPopup
+          appt={activePopupAppt}
+          barbers={barbers}
+          anchor={popup?.anchor}
+          onClose={handleClosePopup}
+          onStatusChange={handleStatusChange}
+          onEdit={handleEditFromPopup}
+          onDelete={handleDeleteFromPopup}
+        />
+      )}
+
+      {/* Shared modal (create/edit) */}
       {showModal && (
         <ManualBookingModal
           defaultBarberId={modalBarberId}
           initialDate={date}
-          onClose={() => setShowModal(false)}
+          editAppointment={modalEditAppt}
+          onClose={() => { setShowModal(false); setModalEditAppt(null); }}
         />
       )}
     </>

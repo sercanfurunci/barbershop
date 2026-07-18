@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Plus } from "lucide-react";
+import { Plus, UserCheck, UserX } from "lucide-react";
 import { C } from "@/lib/adminTheme";
 import { todayStr } from "@/lib/utils";
 import { ALL_STATUS, FLOW } from "./statusConstants";
@@ -30,7 +30,7 @@ export function BarberAppointmentsList({ barberId, appointments, onAction, onNew
         <div style={{ fontSize: "13px", color: C.secondary, marginBottom: "16px" }}>Yaklaşan randevu yok</div>
         <button
           onClick={onNewBooking}
-          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: C.primary, border: "none", borderRadius: "8px", padding: "10px 18px", fontSize: "13px", color: "#fff", cursor: "pointer", fontWeight: 600 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: C.primary, border: "none", borderRadius: "8px", padding: "10px 18px", fontSize: "13px", color: "var(--makas-bg)", cursor: "pointer", fontWeight: 600 }}
         >
           <Plus size={14} /> Randevu Ekle
         </button>
@@ -72,7 +72,22 @@ export function BarberAppointmentsList({ barberId, appointments, onAction, onNew
                           <span style={{ fontSize: "9px", padding: "2px 7px", borderRadius: "4px", background: sc.bg, color: sc.color, fontWeight: 600 }}>{sc.label}</span>
                         </div>
                       </div>
-                      {!["completed", "cancelled", "noshow"].includes(appt.status) && (
+                      {appt.status === "arrival-check" ? (
+                        <div style={{ display: "flex", gap: "6px", marginTop: "10px", paddingTop: "10px", borderTop: `1px solid ${C.border}` }}>
+                          <button onClick={() => onAction(appt.id, "in-progress")}
+                            style={{ flex: 1, minHeight: "36px", borderRadius: "10px", background: "rgba(21,128,61,0.08)", border: "1px solid rgba(21,128,61,0.25)", fontSize: "11px", color: "#15803D", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}
+                            onMouseEnter={e => { e.currentTarget.style.background = "#15803D"; e.currentTarget.style.color = "#fff"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = "rgba(21,128,61,0.08)"; e.currentTarget.style.color = "#15803D"; }}>
+                            <UserCheck size={12} /> Müşteri Geldi
+                          </button>
+                          <button onClick={() => onAction(appt.id, "noshow")}
+                            style={{ flex: 1, minHeight: "36px", borderRadius: "10px", background: "rgba(17,17,17,0.05)", border: "1px solid rgba(17,17,17,0.18)", fontSize: "11px", color: "#111111", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}
+                            onMouseEnter={e => { e.currentTarget.style.background = "#111111"; e.currentTarget.style.color = "#fff"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = "rgba(17,17,17,0.05)"; e.currentTarget.style.color = "#111111"; }}>
+                            <UserX size={12} /> Gelmedi
+                          </button>
+                        </div>
+                      ) : !["completed", "cancelled", "noshow"].includes(appt.status) && (
                         <div style={{ display: "flex", gap: "6px", marginTop: "10px", paddingTop: "10px", borderTop: `1px solid ${C.border}` }}>
                           {FLOW.filter(f => f.key !== appt.status).slice(0, 3).map(f => (
                             <button

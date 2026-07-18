@@ -13,7 +13,7 @@ export async function GET(request, { params }) {
     where: { id: appointmentId },
     include: {
       service: { select: { nameTr: true, duration: true } },
-      barber:  { select: { nameTr: true } },
+      barber:  { select: { nameTr: true, phone: true } },
       shop:    { select: { name: true, address: true, phone: true, status: true } },
     },
   }).catch(() => null);

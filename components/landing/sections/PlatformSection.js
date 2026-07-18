@@ -25,7 +25,7 @@ function scrollTo(id) {
 export default function PlatformSection() {
   return (
     <section
-      className="bg-foreground text-background"
+      className="theme-invert bg-foreground text-background"
       style={{ padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
     >
       <div className="mx-auto max-w-[1200px]">

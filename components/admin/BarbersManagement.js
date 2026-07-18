@@ -249,6 +249,13 @@ function BarberCard({ barber, lang, index, menuFor, setMenuFor, onEdit, onSchedu
 
       <div style={{ flex: 1 }} />
 
+      {barber.phone && (
+        <div className="mb-3">
+          <a href={`tel:+90${barber.phone}`} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
+            +90 {barber.phone.replace(/(\d{3})(\d{3})(\d{2})(\d{2})/, "$1 $2 $3 $4")}
+          </a>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2 pt-4 border-t border-border">
         {[
           { label: "Deneyim", value: `${barber.yearsExp} yıl` },
@@ -288,6 +295,7 @@ function EditBarberModal({ barber, onClose, onSaved }) {
     yearsExp:   barber.yearsExp ?? 1,
     specialties: (barber.specialties || []).join(", "),
     color:      barber.color || "#CC1A1A",
+    phone:      barber.phone ? `+90${barber.phone}` : "",
     paymentType:    barber.paymentType    || "PERCENTAGE",
     commissionRate: barber.commissionRate ?? 50,
     fixedSalary:    barber.fixedSalary    ?? "",
@@ -338,6 +346,9 @@ function EditBarberModal({ barber, onClose, onSaved }) {
           <Field label="Deneyim (yıl)"><input type="number" min={0} value={form.yearsExp} onChange={set("yearsExp")} className={inp} /></Field>
         </Row2>
         <Field label="Uzmanlıklar (virgülle ayır)"><input value={form.specialties} onChange={set("specialties")} placeholder="Fade, Sakal, Klasik Kesim" className={inp} /></Field>
+        <Field label="Telefon (opsiyonel)" hint="Kişisel numara — müşterilere gösterilmez, takvim ve iç işlemler için kullanılır">
+          <input type="tel" value={form.phone} onChange={set("phone")} placeholder="+90 5xx xxx xx xx" className={inp} />
+        </Field>
         <CommissionFields form={form} setForm={setForm} />
         {err && <ErrMsg>{err}</ErrMsg>}
         <FormActions onClose={onClose} busy={busy} label="Kaydet" />
@@ -456,7 +467,7 @@ function TimeInput({ value, onChange }) {
 /* ── Create Barber Modal ─────────────────────────────────────────────────── */
 function CreateBarberModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
-    slug: "", nameTr: "", titleTr: "", avatar: "", yearsExp: 1, specialties: "", email: "", password: "",
+    slug: "", nameTr: "", titleTr: "", avatar: "", yearsExp: 1, specialties: "", email: "", password: "", phone: "",
     paymentType: "PERCENTAGE", commissionRate: 50, fixedSalary: "",
   });
   const [busy, setBusy] = useState(false);
@@ -500,6 +511,9 @@ function CreateBarberModal({ onClose, onCreated }) {
           <Field label="Deneyim (yıl)"><input type="number" min={0} value={form.yearsExp} onChange={set("yearsExp")} className={inp} /></Field>
         </Row2>
         <Field label="Uzmanlıklar (virgülle ayır)"><input value={form.specialties} onChange={set("specialties")} placeholder="Fade, Sakal" className={inp} /></Field>
+        <Field label="Telefon (opsiyonel)" hint="Kişisel numara — müşterilere gösterilmez">
+          <input type="tel" value={form.phone} onChange={set("phone")} placeholder="+90 5xx xxx xx xx" className={inp} />
+        </Field>
         <Field label="Giriş E-postası *" hint="Şifre sıfırlama için gerçek mail girilmeli">
           <input required type="email" value={form.email} onChange={set("email")} placeholder="berber@gmail.com" className={inp} />
         </Field>

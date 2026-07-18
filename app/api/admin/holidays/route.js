@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { forbidden } from "@/lib/apiResponse";
 import { withRole } from "@/lib/middleware/withRole";
+import { cacheInvalidate } from "@/lib/ai/cache";
 
 const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "RECEPTIONIST"];
 
@@ -82,6 +83,7 @@ export const POST = withRole(["ADMIN", "RECEPTIONIST"], async (request, _ctx, pa
       })),
       skipDuplicates: true,
     });
+    cacheInvalidate(`dynctx:${payload.shopId}`);
     return NextResponse.json({ ok: true, count: dates.length }, { status: 201 });
   }
 
@@ -101,5 +103,6 @@ export const POST = withRole(["ADMIN", "RECEPTIONIST"], async (request, _ctx, pa
     include: { barber: { select: { id: true, nameTr: true } } },
   });
 
+  cacheInvalidate(`dynctx:${payload.shopId}`);
   return NextResponse.json(holiday, { status: 201 });
 });

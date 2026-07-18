@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, Calendar, Store } from "lucide-react";
@@ -21,8 +21,13 @@ const TABS = [
   { id: "rules",    label: "Randevu Kuralları",  icon: Clock    },
 ];
 
-export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("profile");
+export default function SettingsPage({ defaultTab }) {
+  const [activeTab, setActiveTab] = useState(defaultTab ?? "profile");
+
+  // When parent signals a sub-tab (e.g. clicking "Manage Working Hours" in KnowledgePage)
+  useEffect(() => {
+    if (defaultTab) setActiveTab(defaultTab);
+  }, [defaultTab]);
 
   return (
     <div>

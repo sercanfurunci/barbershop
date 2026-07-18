@@ -9,7 +9,7 @@ import { DEMOS } from "@/components/landing/data/landingData";
 
 export default function DemoShowcaseSection() {
   return (
-    <section id="demo" style={{ background: "white", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
+    <section id="demo" style={{ background: "var(--makas-bg)", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}>
       <div className="mx-auto max-w-[1100px]">
         <SectionHead
           eyebrow="Canlı örnekler"

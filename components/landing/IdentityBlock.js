@@ -507,7 +507,7 @@ const primaryBtn = {
   display: "inline-flex", alignItems: "center", gap: 8,
   padding: "12px 22px",
   background: "var(--makas-ink)",
-  color: "#fff",
+  color: "var(--makas-bg)",
   fontSize: 14, fontWeight: 600, letterSpacing: "0.01em",
   borderRadius: 10, textDecoration: "none",
   minHeight: 44, boxSizing: "border-box",

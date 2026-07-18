@@ -265,7 +265,7 @@ export default function ReviewPage() {
                   disabled={submitting}
                   style={{
                     width: "100%", padding: "14px",
-                    background: C.primary, color: "#fff",
+                    background: C.primary, color: "var(--makas-bg)",
                     border: "none", borderRadius: 9,
                     fontSize: 14, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
                     opacity: submitting ? 0.7 : 1,
@@ -349,7 +349,7 @@ function DoneState({ rating, googleUrl }) {
             rel="noopener noreferrer"
             style={{
               display: "inline-flex", alignItems: "center", gap: 8,
-              background: C.primary, color: "#fff",
+              background: C.primary, color: "var(--makas-bg)",
               padding: "13px 28px", borderRadius: 9,
               fontSize: 14, fontWeight: 700, textDecoration: "none",
             }}

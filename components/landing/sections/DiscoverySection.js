@@ -309,7 +309,7 @@ export default function DiscoverySection() {
   const showCTA     = geoState === "idle" || geoState === "locating";
 
   const bg1 = "var(--makas-bg)";
-  const bg2 = "white";
+  const bg2 = "var(--makas-surface)";
   const bg3 = "var(--makas-bg)";
 
   return (

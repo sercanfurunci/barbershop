@@ -120,12 +120,15 @@ function ReviewStars({ rating, size = 12 }) {
 // ── Stats row ─────────────────────────────────────────────────────────────────
 
 function StatsRow({ stats }) {
+  const totalSpentFmt = stats?.totalSpent > 0
+    ? `₺${Number(stats.totalSpent).toLocaleString("tr-TR")}`
+    : null;
   const items = [
     { label: "Yaklaşan",   value: stats?.upcoming,  Icon: Calendar,   color: "#3b82f6" },
     { label: "Tamamlanan", value: stats?.completed, Icon: Check,      color: "#10b981" },
+    { label: "Harcama",    value: totalSpentFmt,    Icon: TrendingUp, color: "#8b5cf6" },
     { label: "Favoriler",  value: stats?.favorites, Icon: Heart,      color: "#f43f5e" },
-    { label: "Yorumlar",   value: stats?.reviews,   Icon: MessageSquare, color: "#f59e0b" },
-    { label: "Ort. Puan",  value: stats?.avgRating != null ? `${stats.avgRating}★` : null, Icon: TrendingUp, color: "#8b5cf6" },
+    { label: "Ort. Puan",  value: stats?.avgRating != null ? `${stats.avgRating}★` : null, Icon: Star, color: "#f59e0b" },
   ];
 
   return (
@@ -166,7 +169,7 @@ function AccountSidebar({ tab, setTab, user, onLogout, stats }) {
       <div className="p-6 border-b border-border">
         <div className="w-[60px] h-[60px] rounded-[14px] flex items-center justify-center mb-4"
           style={{ background: "var(--makas-ink)" }}>
-          <span className="font-display font-light text-[24px] text-white">{initials}</span>
+          <span className="font-display font-light text-[24px] text-[var(--makas-bg)]">{initials}</span>
         </div>
         <h2 className="font-display font-semibold text-[19px] tracking-tight text-foreground leading-tight truncate">
           {user.displayName || "Müşteri"}
@@ -239,7 +242,7 @@ function SidebarItem({ label, Icon, active, onClick, badge }) {
       <span className="text-[13px] font-medium flex-1">{label}</span>
       {badge != null && (
         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
-          style={{ background: active ? "rgba(255,255,255,0.2)" : "var(--makas-ink)", color: "#fff" }}>
+          style={{ background: active ? "rgba(255,255,255,0.2)" : "var(--makas-ink)", color: "var(--makas-bg)" }}>
           {badge}
         </span>
       )}
@@ -374,6 +377,10 @@ function AppointmentsTab({ type, appointments, setAppointments }) {
     type === "upcoming" ? (a.date < b.date ? -1 : 1) : (a.date > b.date ? -1 : 1)
   );
 
+  // For history tab: split into completed vs cancelled/noshow
+  const completedAppts  = type === "history" ? sorted.filter(a => a.status === "COMPLETED") : null;
+  const cancelledAppts  = type === "history" ? sorted.filter(a => ["CANCELLED", "NOSHOW"].includes(a.status)) : null;
+
   async function cancelAppt(id) {
     if (!confirm("Randevuyu iptal etmek istiyor musunuz?")) return;
     const res = await fetch(`/api/customer/appointments/${id}`, { method: "DELETE" });
@@ -417,6 +424,75 @@ function AppointmentsTab({ type, appointments, setAppointments }) {
     );
   }
 
+  function renderCard(appt, i) {
+    const st = STATUS[appt.status] ?? STATUS.PENDING;
+    const d = new Date(appt.date);
+    const dayBg = appt.status === "COMPLETED" ? "#1a1a1a"
+      : appt.status === "CANCELLED" ? "#9ca3af"
+      : appt.status === "NOSHOW"    ? "#ef4444"
+      : "#3b82f6";
+    return (
+      <motion.div key={appt.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.24, delay: Math.min(i * 0.04, 0.3), ease }}>
+        <div className="flex gap-4 rounded-[16px] border border-border bg-card p-4 sm:p-5 transition-shadow hover:shadow-md"
+          style={{ boxShadow: "var(--shadow-card)" }}>
+          <div className="shrink-0 w-14 h-14 rounded-[12px] flex flex-col items-center justify-center"
+            style={{ background: dayBg }}>
+            <span className="text-[21px] font-bold text-white leading-none">{d.getDate()}</span>
+            <span className="text-[9px] font-bold text-white/75 uppercase tracking-wider mt-0.5">
+              {d.toLocaleDateString("tr-TR", { month: "short" }).replace(".", "").toUpperCase()}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2 flex-wrap">
+              <div className="min-w-0">
+                <p className="font-semibold text-[15px] text-foreground leading-snug truncate">{appt.shop?.name}</p>
+                <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
+                  {[appt.barber?.nameTr, appt.service?.nameTr].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <span className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full border"
+                style={{ background: st.bg, color: st.color, borderColor: st.border }}>
+                {st.label}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[12px] text-muted-foreground">
+              <span className="flex items-center gap-1"><Clock size={11} />{appt.time} · {appt.duration} dk</span>
+              {appt.price != null && <span className="font-semibold text-foreground">{Number(appt.price).toLocaleString("tr-TR")} ₺</span>}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              {["PENDING", "CONFIRMED"].includes(appt.status) && appt.date >= today && (
+                <button onClick={() => cancelAppt(appt.id)}
+                  className="text-[12px] font-medium text-red-600 border border-red-200 rounded-full px-3 py-1.5 hover:bg-red-50 transition-colors">
+                  İptal Et
+                </button>
+              )}
+              {appt.status === "COMPLETED" && !appt.reviewed && (
+                <button onClick={() => setReviewing(appt)}
+                  className="flex items-center gap-1 text-[12px] font-medium border border-border rounded-full px-3 py-1.5 hover:bg-secondary transition-colors">
+                  <Star size={11} /> Değerlendir
+                </button>
+              )}
+              {appt.status === "COMPLETED" && appt.reviewed && (
+                <span className="text-[12px] text-emerald-600 flex items-center gap-1">
+                  <Check size={11} /> Değerlendirildi
+                </span>
+              )}
+              {appt.shop?.slug && (
+                <Link href={`/${appt.shop.slug}`}
+                  className="ml-auto text-[12px] font-semibold rounded-full bg-foreground text-background px-3 py-1.5 no-underline hover:opacity-90 transition-opacity">
+                  Tekrar Al
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <div>
       {reviewing && (
@@ -432,90 +508,41 @@ function AppointmentsTab({ type, appointments, setAppointments }) {
         </AnimatePresence>
       )}
 
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="font-display font-semibold text-[22px] tracking-tight text-foreground">
-          {type === "upcoming" ? "Yaklaşan Randevular" : "Geçmiş Randevular"}
-        </h2>
-        <span className="text-[13px] text-muted-foreground">{sorted.length} randevu</span>
-      </div>
-
-      <div className="space-y-3">
-        {sorted.map((appt, i) => {
-          const st = STATUS[appt.status] ?? STATUS.PENDING;
-          const d = new Date(appt.date);
-          const dayBg = appt.status === "COMPLETED" ? "var(--makas-ink)"
-            : appt.status === "CANCELLED" ? "#9ca3af"
-            : appt.status === "NOSHOW"    ? "#ef4444"
-            : "#3b82f6";
-
-          return (
-            <motion.div key={appt.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.24, delay: Math.min(i * 0.04, 0.3), ease }}>
-              <div className="flex gap-4 rounded-[16px] border border-border bg-card p-4 sm:p-5 transition-shadow hover:shadow-md"
-                style={{ boxShadow: "var(--shadow-card)" }}>
-
-                {/* Date block */}
-                <div className="shrink-0 w-14 h-14 rounded-[12px] flex flex-col items-center justify-center"
-                  style={{ background: dayBg }}>
-                  <span className="text-[21px] font-bold text-white leading-none">{d.getDate()}</span>
-                  <span className="text-[9px] font-bold text-white/75 uppercase tracking-wider mt-0.5">
-                    {d.toLocaleDateString("tr-TR", { month: "short" }).replace(".", "").toUpperCase()}
-                  </span>
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-[15px] text-foreground leading-snug truncate">{appt.shop?.name}</p>
-                      <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
-                        {[appt.barber?.nameTr, appt.service?.nameTr].filter(Boolean).join(" · ")}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full border"
-                      style={{ background: st.bg, color: st.color, borderColor: st.border }}>
-                      {st.label}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[12px] text-muted-foreground">
-                    <span className="flex items-center gap-1"><Clock size={11} />{appt.time} · {appt.duration} dk</span>
-                    {appt.price != null && <span className="font-semibold text-foreground">{Number(appt.price).toLocaleString("tr-TR")} ₺</span>}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 mt-3">
-                    {["PENDING", "CONFIRMED"].includes(appt.status) && appt.date >= today && (
-                      <button onClick={() => cancelAppt(appt.id)}
-                        className="text-[12px] font-medium text-red-600 border border-red-200 rounded-full px-3 py-1.5 hover:bg-red-50 transition-colors">
-                        İptal Et
-                      </button>
-                    )}
-                    {appt.status === "COMPLETED" && !appt.reviewed && (
-                      <button onClick={() => setReviewing(appt)}
-                        className="flex items-center gap-1 text-[12px] font-medium border border-border rounded-full px-3 py-1.5 hover:bg-secondary transition-colors">
-                        <Star size={11} /> Değerlendir
-                      </button>
-                    )}
-                    {appt.status === "COMPLETED" && appt.reviewed && (
-                      <span className="text-[12px] text-emerald-600 flex items-center gap-1">
-                        <Check size={11} /> Değerlendirildi
-                      </span>
-                    )}
-                    {appt.shop?.slug && (
-                      <Link href={`/${appt.shop.slug}`}
-                        className="ml-auto text-[12px] font-semibold rounded-full bg-foreground text-background px-3 py-1.5 no-underline hover:opacity-90 transition-opacity">
-                        Tekrar Al
-                      </Link>
-                    )}
-                  </div>
-                </div>
+      {type === "history" ? (
+        <div className="space-y-8">
+          {/* Completed */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-semibold text-[20px] tracking-tight text-foreground">Tamamlanan</h2>
+              <span className="text-[13px] text-muted-foreground">{completedAppts.length} randevu</span>
+            </div>
+            {completedAppts.length === 0
+              ? <p className="text-[13px] text-muted-foreground py-4">Tamamlanmış randevu bulunamadı.</p>
+              : <div className="space-y-3">{completedAppts.map((a, i) => renderCard(a, i))}</div>
+            }
+          </div>
+          {/* Cancelled / No-show */}
+          {cancelledAppts.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display font-semibold text-[20px] tracking-tight text-muted-foreground">İptal & Gelmedi</h2>
+                <span className="text-[13px] text-muted-foreground">{cancelledAppts.length} randevu</span>
               </div>
-            </motion.div>
-          );
-        })}
-      </div>
+              <div className="space-y-3">{cancelledAppts.map((a, i) => renderCard(a, i))}</div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-display font-semibold text-[22px] tracking-tight text-foreground">Yaklaşan Randevular</h2>
+            <span className="text-[13px] text-muted-foreground">{sorted.length} randevu</span>
+          </div>
+          <div className="space-y-3">
+            {sorted.map((appt, i) => renderCard(appt, i))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1057,7 +1084,7 @@ function ProfileTab({ user, onUpdated }) {
         style={{ boxShadow: "var(--shadow-card)" }}>
         <div className="w-16 h-16 rounded-[14px] flex items-center justify-center shrink-0"
           style={{ background: "var(--makas-ink)" }}>
-          <span className="font-display font-light text-[24px] text-white">{initials}</span>
+          <span className="font-display font-light text-[24px] text-[var(--makas-bg)]">{initials}</span>
         </div>
         <div className="min-w-0">
           <p className="font-display font-semibold text-[20px] tracking-tight text-foreground truncate">

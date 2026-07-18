@@ -228,7 +228,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                     margin: "0 auto 16px",
                   }}
                 >
-                  <Check size={24} color="#fff" />
+                  <Check size={24} color="var(--makas-bg)" />
                 </motion.div>
                 <div style={{ fontSize: "16px", color: C.primary, fontWeight: 500 }}>Randevu Eklendi</div>
                 <div style={{ fontSize: "12px", color: C.secondary, marginTop: "4px" }}>
@@ -366,7 +366,7 @@ export default function ManualBookingModal({ onClose, defaultBarberId = "", init
                   disabled={busy}
                   style={{
                     width: "100%", height: "44px",
-                    background: C.primary, color: "#fff",
+                    background: C.primary, color: "var(--makas-bg)",
                     border: "none", borderRadius: "10px",
                     fontSize: "13px", fontWeight: 600,
                     cursor: busy ? "wait" : "pointer", letterSpacing: "0.03em",

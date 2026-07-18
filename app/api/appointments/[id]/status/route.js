@@ -5,24 +5,28 @@ import { queueNotifications, cancelPendingJobs } from "@/lib/notifications";
 import { createReviewRequest } from "@/lib/reviews";
 import { splitRevenue } from "@/lib/revenue";
 import { withAuth } from "@/lib/middleware/withRole";
+import { invalidateCustomerContext } from "@/lib/ai/customerContext";
 
 export const dynamic = "force-dynamic";
 
-const VALID_STATUSES   = ["PENDING","CONFIRMED","IN_PROGRESS","COMPLETED","CANCELLED","NOSHOW"];
+const VALID_STATUSES   = ["PENDING","CONFIRMED","ARRIVAL_CHECK","IN_PROGRESS","COMPLETED","CANCELLED","NOSHOW"];
 const PAYMENT_METHODS  = new Set(["CASH","CARD","TRANSFER"]);
 const CANCELLED_BY     = new Set(["client","shop","barber"]);
 
 // Allowed status transitions. COMPLETED → CANCELLED is a refund path (metrics
 // decremented in tx). CANCELLED can only re-open back to PENDING/CONFIRMED.
+// ARRIVAL_CHECK → IN_PROGRESS/NOSHOW is driven by barber alerts; admins can
+// also force transitions manually for edge cases.
 // ponytail: explicit map beats a list of forbidden pairs — wrong transitions
 // fail loudly instead of silently mutating revenue state.
 const TRANSITIONS = {
-  PENDING:     new Set(["CONFIRMED","IN_PROGRESS","COMPLETED","CANCELLED","NOSHOW"]),
-  CONFIRMED:   new Set(["PENDING","IN_PROGRESS","COMPLETED","CANCELLED","NOSHOW"]),
-  IN_PROGRESS: new Set(["CONFIRMED","COMPLETED","CANCELLED"]),
-  COMPLETED:   new Set(["CANCELLED"]),
-  CANCELLED:   new Set(["PENDING","CONFIRMED"]),
-  NOSHOW:      new Set(["PENDING","CONFIRMED"]),
+  PENDING:        new Set(["CONFIRMED","ARRIVAL_CHECK","IN_PROGRESS","COMPLETED","CANCELLED","NOSHOW"]),
+  CONFIRMED:      new Set(["PENDING","ARRIVAL_CHECK","IN_PROGRESS","COMPLETED","CANCELLED","NOSHOW"]),
+  ARRIVAL_CHECK:  new Set(["IN_PROGRESS","NOSHOW","CANCELLED"]),
+  IN_PROGRESS:    new Set(["COMPLETED","CANCELLED"]),
+  COMPLETED:      new Set(["CANCELLED"]),
+  CANCELLED:      new Set(["PENDING","CONFIRMED"]),
+  NOSHOW:         new Set(["PENDING","CONFIRMED"]),
 };
 
 export const PATCH = withAuth(async (request, { params }, payload) => {
@@ -37,7 +41,10 @@ export const PATCH = withAuth(async (request, { params }, payload) => {
 
   const appt = await prisma.appointment.findUnique({
     where: { id },
-    include: { barber: { select: { paymentType: true, commissionRate: true, fixedSalary: true } } },
+    include: {
+      barber:  { select: { paymentType: true, commissionRate: true, fixedSalary: true } },
+      client:  { select: { phone: true } },
+    },
   });
   if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
 
@@ -127,6 +134,7 @@ export const PATCH = withAuth(async (request, { params }, payload) => {
     const updated = result.updated ?? await prisma.appointment.findUnique({ where: { id } });
     if (!result.raced) {
       createReviewRequest(id).catch(() => {});
+      invalidateCustomerContext(appt.shopId, appt.client?.phone);
       writeAudit({ status: "COMPLETED", finalPrice, tipAmount, paymentMethod, barberAmount, shopAmount });
     }
     return NextResponse.json(updated);
@@ -171,6 +179,7 @@ export const PATCH = withAuth(async (request, { params }, payload) => {
 
     await cancelPendingJobs(id);
     queueNotifications(id, "CANCELLED").catch(() => {});
+    invalidateCustomerContext(appt.shopId, appt.client?.phone);
     writeAudit({ status: "CANCELLED", cancellationReason, cancelledBy });
     return NextResponse.json(updated);
   }
@@ -185,6 +194,7 @@ export const PATCH = withAuth(async (request, { params }, payload) => {
       });
       return u;
     });
+    invalidateCustomerContext(appt.shopId, appt.client?.phone);
     writeAudit({ status: "NOSHOW" });
     return NextResponse.json(updated);
   }
@@ -199,6 +209,7 @@ export const PATCH = withAuth(async (request, { params }, payload) => {
       });
       return u;
     });
+    invalidateCustomerContext(appt.shopId, appt.client?.phone);
     if (status === "CONFIRMED") queueNotifications(id, "CONFIRMED").catch(() => {});
     writeAudit({ status });
     return NextResponse.json(updated);

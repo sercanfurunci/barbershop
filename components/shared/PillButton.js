@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 const VARIANT = {
   primary:
-    "bg-[var(--makas-ink)] text-white border-transparent hover:bg-[var(--makas-ink-secondary)]",
+    "bg-[var(--makas-ink)] text-[var(--makas-bg)] border-transparent hover:bg-[var(--makas-ink-secondary)]",
   secondary:
     "bg-[var(--makas-surface)] text-[var(--makas-ink)] border-[var(--makas-border)] hover:bg-[var(--makas-surface2)]",
   ghost:

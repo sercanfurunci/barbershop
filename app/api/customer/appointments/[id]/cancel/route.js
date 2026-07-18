@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/middleware/withRole";
+import { invalidateCustomerContext } from "@/lib/ai/customerContext";
 
 // POST /api/customer/appointments/:id/cancel
 // Customers can only cancel PENDING or CONFIRMED appointments they own.
@@ -15,7 +16,7 @@ export const POST = withAuth(async (request, { params }, payload) => {
 
   const appt = await prisma.appointment.findUnique({
     where: { id },
-    select: { id: true, status: true, clientId: true, client: { select: { phone: true } } },
+    select: { id: true, status: true, clientId: true, shopId: true, client: { select: { phone: true } } },
   });
 
   if (!appt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
@@ -42,6 +43,8 @@ export const POST = withAuth(async (request, { params }, payload) => {
       cancellationReason: reason || null,
     },
   });
+
+  invalidateCustomerContext(appt.shopId, appt.client?.phone);
 
   return NextResponse.json({ ok: true });
 });

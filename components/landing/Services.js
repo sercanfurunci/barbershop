@@ -9,14 +9,14 @@ import { ArrowRight } from "lucide-react";
 
 const C = {
   bg:       "var(--makas-bg)",
-  bgSoft:   "#FDFBF7",
+  bgSoft:   "var(--makas-surface)",
   surface:  "var(--makas-surface2)",
   card:     "var(--makas-surface)",
   border:   "var(--makas-border)",
   primary:  "var(--makas-ink)",
   secondary:"var(--makas-ink-secondary)",
   muted:    "var(--makas-ink-muted)",
-  dim:      "#C5BEB5",
+  dim:      "var(--makas-thumb)",
 };
 
 export default function Services({ services = [] }) {

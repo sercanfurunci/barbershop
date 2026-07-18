@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { todayStr } from "@/lib/utils";
-import { C } from "@/lib/adminTheme";
+import { C, CA } from "@/lib/adminTheme";
 
 function Field({ label, hint, children }) {
   return (
@@ -151,7 +151,7 @@ export default function HolidaysTab() {
             <input type="date" value={date} onChange={e => setDate(e.target.value)} required
               min={today}
               style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "9px 14px", fontSize: "13px", color: C.primary, outline: "none", colorScheme: "dark", boxSizing: "border-box" }}
-              onFocus={e => e.target.style.borderColor = `${C.primary}60`}
+              onFocus={e => e.target.style.borderColor = CA.ink60}
               onBlur={e => e.target.style.borderColor = C.border}
             />
           </Field>
@@ -159,7 +159,7 @@ export default function HolidaysTab() {
           <Field label="Açıklama">
             <input type="text" placeholder="Örn: Kurban Bayramı" value={label} onChange={e => setLabel(e.target.value)}
               style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "9px 14px", fontSize: "13px", color: C.primary, outline: "none", boxSizing: "border-box" }}
-              onFocus={e => e.target.style.borderColor = `${C.primary}60`}
+              onFocus={e => e.target.style.borderColor = CA.ink60}
               onBlur={e => e.target.style.borderColor = C.border}
             />
           </Field>
@@ -178,7 +178,7 @@ export default function HolidaysTab() {
 
           <button type="submit" disabled={adding || !date}
             className="flex items-center justify-center gap-2 w-full"
-            style={{ background: adding || !date ? C.dim : C.primary, color: "#fff", border: "none", borderRadius: "8px", padding: "11px", fontSize: "13px", fontWeight: 600, cursor: adding || !date ? "not-allowed" : "pointer" }}
+            style={{ background: adding || !date ? C.dim : C.primary, color: "var(--makas-bg)", border: "none", borderRadius: "8px", padding: "11px", fontSize: "13px", fontWeight: 600, cursor: adding || !date ? "not-allowed" : "pointer" }}
           >
             <Plus size={14} />
             {adding ? "Ekleniyor…" : "Tatil Ekle"}

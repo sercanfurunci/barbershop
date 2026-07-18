@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, getIp } from "@/lib/rateLimit";
+import { invalidateCustomerContext } from "@/lib/ai/customerContext";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ export async function POST(request) {
     select: {
       id: true,
       status: true,
+      shopId: true,
       client: { select: { phone: true } },
     },
   });
@@ -64,6 +66,8 @@ export async function POST(request) {
       cancellationReason: typeof reason === "string" ? reason.trim().slice(0, 500) || null : null,
     },
   });
+
+  invalidateCustomerContext(appt.shopId, phone);
 
   return NextResponse.json({ ok: true });
 }

@@ -5,7 +5,7 @@ import SectionHead from "@/components/landing/shared/SectionHead";
 export default function WhyDifferentSection() {
   return (
     <section
-      style={{ background: "white", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
+      style={{ background: "var(--makas-bg)", padding: "clamp(80px, 11vw, 128px) clamp(20px, 4vw, 32px)" }}
     >
       <div className="mx-auto max-w-[820px]">
         <SectionHead

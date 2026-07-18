@@ -88,7 +88,7 @@ export default function SuperAdminLogin() {
           <button
             type="submit"
             disabled={loading || !identifier || !password}
-            style={{ background: loading || !identifier || !password ? "#1E1E1E" : C.primary, color: loading || !identifier || !password ? C.muted : "#fff", border: "none", borderRadius: "10px", padding: "14px", fontSize: "14px", fontWeight: 600, cursor: loading || !identifier || !password ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "background 0.2s" }}
+            style={{ background: loading || !identifier || !password ? "#1E1E1E" : C.primary, color: loading || !identifier || !password ? C.muted : "var(--makas-bg)", border: "none", borderRadius: "10px", padding: "14px", fontSize: "14px", fontWeight: 600, cursor: loading || !identifier || !password ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "background 0.2s" }}
           >
             {loading && <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />}
             {loading ? "Giriş yapılıyor…" : "Giriş Yap"}

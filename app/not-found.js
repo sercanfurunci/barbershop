@@ -37,7 +37,7 @@ export default function NotFound() {
         <Link
           href="/"
           className="inline-flex h-11 items-center px-6 rounded-full text-[14px] font-semibold no-underline transition-opacity hover:opacity-90"
-          style={{ background: "var(--makas-ink)", color: "#fff" }}
+          style={{ background: "var(--makas-ink)", color: "var(--makas-bg)" }}
         >
           Ana Sayfaya Dön
         </Link>

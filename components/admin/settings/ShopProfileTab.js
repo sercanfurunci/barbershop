@@ -155,7 +155,7 @@ function SortableTile({ url, busy, onRemove, isCover }) {
         <span style={{
           position: "absolute", bottom: 4, left: 4,
           padding: "2px 8px", borderRadius: 999,
-          background: C.primary, color: "#fff",
+          background: C.primary, color: "var(--makas-bg)",
           fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
         }}>
           KAPAK
@@ -417,7 +417,7 @@ function LocationPicker({ latitude, longitude, formattedAddress, placeId, fi, on
         {(results.length > 0 || searching) && (
           <div style={{
             position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20,
-            background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8,
+            background: "var(--makas-surface)", border: `1px solid ${C.border}`, borderRadius: 8,
             boxShadow: SHADOW, overflow: "hidden", marginTop: 4,
           }}>
             {searching && (
@@ -531,7 +531,7 @@ function QRSection({ slug }) {
           alt="Salon QR"
           width={120}
           height={120}
-          style={{ borderRadius: "8px", border: `1px solid ${C.border}`, background: "#fff" }}
+          style={{ borderRadius: "8px", border: `1px solid ${C.border}`, background: "var(--makas-surface)" }}
         />
         <div style={{ flex: 1, minWidth: "220px", display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ fontSize: "12px", color: C.muted }}>
@@ -544,17 +544,17 @@ function QRSection({ slug }) {
               wordBreak: "break-all",
             }}>{url}</code>
             <button type="button" onClick={copyLink}
-              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, background: "#fff", border: `1px solid ${C.border}`, borderRadius: "6px", cursor: "pointer", color: C.primary }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, background: "var(--makas-surface)", border: `1px solid ${C.border}`, borderRadius: "6px", cursor: "pointer", color: C.primary }}>
               <Copy size={12} /> {copied ? "Kopyalandı" : "Kopyala"}
             </button>
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             <a href={qrPng} download={`makas-${slug}-qr.png`} target="_blank" rel="noopener noreferrer"
-              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, background: C.primary, color: "#fff", borderRadius: "8px", textDecoration: "none" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, background: C.primary, color: "var(--makas-bg)", borderRadius: "8px", textDecoration: "none" }}>
               <Download size={13} /> QR İndir (PNG)
             </a>
             <a href={`/${slug}`} target="_blank" rel="noopener noreferrer"
-              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, background: "#fff", color: C.primary, border: `1px solid ${C.border}`, borderRadius: "8px", textDecoration: "none" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, background: "var(--makas-surface)", color: C.primary, border: `1px solid ${C.border}`, borderRadius: "8px", textDecoration: "none" }}>
               <QrCode size={13} /> Sayfayı Aç
             </a>
           </div>
@@ -871,7 +871,7 @@ export default function ShopProfileTab() {
         {/* Save bar */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <button type="submit" disabled={saving}
-            style={{ display: "flex", alignItems: "center", gap: "6px", background: saving ? C.dim : C.primary, color: "#fff", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "13px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: saving ? C.dim : C.primary, color: "var(--makas-bg)", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "13px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
             <Save size={14} />
             {saving ? "Kaydediliyor…" : "Kaydet"}
           </button>

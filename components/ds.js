@@ -126,17 +126,17 @@ export function DSAvatar({ src, name, size = 40, radius, shape = "square", class
 // ─── Badge ────────────────────────────────────────────────────────────────────
 
 const BADGE_MAP = {
-  default:  { bg: "var(--makas-surface2)",  color: "var(--makas-ink-secondary)", border: "var(--makas-border)" },
-  success:  { bg: "#D1FAE5", color: "#065F46", border: "#A7F3D0" },
-  warning:  { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A" },
-  danger:   { bg: "#FEE2E2", color: "#991B1B", border: "#FECACA" },
-  info:     { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE" },
-  purple:   { bg: "#EDE9FE", color: "#5B21B6", border: "#DDD6FE" },
-  trial:    { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE" },
-  active:   { bg: "#D1FAE5", color: "#065F46", border: "#A7F3D0" },
-  past_due: { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A" },
-  suspended:{ bg: "#FEE2E2", color: "#991B1B", border: "#FECACA" },
-  cancelled:{ bg: "var(--makas-surface2)", color: "var(--makas-ink-muted)", border: "var(--makas-border)" },
+  default:  { bg: "var(--makas-surface2)",        color: "var(--makas-ink-secondary)",  border: "var(--makas-border)" },
+  success:  { bg: "var(--status-success-bg)",      color: "var(--status-success-text)",  border: "var(--status-success-border)" },
+  warning:  { bg: "var(--status-warning-bg)",      color: "var(--status-warning-text)",  border: "var(--status-warning-border)" },
+  danger:   { bg: "var(--status-danger-bg)",       color: "var(--status-danger-text)",   border: "var(--status-danger-border)" },
+  info:     { bg: "var(--status-info-bg)",         color: "var(--status-info-text)",     border: "var(--status-info-border)" },
+  purple:   { bg: "var(--status-purple-bg)",       color: "var(--status-purple-text)",   border: "var(--status-purple-border)" },
+  trial:    { bg: "var(--status-info-bg)",         color: "var(--status-info-text)",     border: "var(--status-info-border)" },
+  active:   { bg: "var(--status-success-bg)",      color: "var(--status-success-text)",  border: "var(--status-success-border)" },
+  past_due: { bg: "var(--status-warning-bg)",      color: "var(--status-warning-text)",  border: "var(--status-warning-border)" },
+  suspended:{ bg: "var(--status-danger-bg)",       color: "var(--status-danger-text)",   border: "var(--status-danger-border)" },
+  cancelled:{ bg: "var(--makas-surface2)",         color: "var(--makas-ink-muted)",      border: "var(--makas-border)" },
 };
 
 export function DSBadge({ variant = "default", children, className }) {

@@ -81,7 +81,7 @@ export default function RulesTab() {
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         <button onClick={save}
           className="flex items-center justify-center gap-2 w-full"
-          style={{ background: C.primary, color: "#fff", border: "none", borderRadius: "8px", padding: "11px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+          style={{ background: C.primary, color: "var(--makas-bg)", border: "none", borderRadius: "8px", padding: "11px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
         >
           <Save size={14} />
           Kaydet

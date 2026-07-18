@@ -31,7 +31,8 @@ model Shop {
   formattedAddress  String?
   locationUpdatedAt DateTime?
   phone           String?
-  whatsappNumber  String? // E.164 — opens wa.me on landing
+  whatsappNumber        String? // E.164 — opens wa.me on landing
+  whatsappPhoneNumberId String? // Meta phone_number_id — used for multi-tenant webhook routing
   email           String?
   description     String?    @db.Text
   about           String?    @db.Text // long-form "Hakkımızda" copy, max 500 chars
@@ -139,9 +140,15 @@ model Shop {
   loyaltyPoints        LoyaltyPoint[]
   conversations        Conversation[]
   featureOverrides     ShopFeatureOverride[]
+  shopAiSettings       ShopAISettings?
   integrations         Integration[]
   webhookSubscriptions WebhookSubscription[]
   backgroundJobs       BackgroundJob[]
+  knowledgeEntries     KnowledgeEntry[]
+  aiRules              AiRule[]
+  customerMemories     CustomerMemory[]
+  promptVersions       PromptVersion[]
+  conversationFeedbacks ConversationFeedback[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -287,6 +294,7 @@ model Barber {
   yearsExp     Int      @default(1)
   available    Boolean  @default(true)
   specialties  String[]
+  phone        String?  // optional personal contact; 10-digit Turkish mobile (5xxxxxxxxx)
 
   // Earnings model. PERCENTAGE → commissionRate is the cut (e.g. 60 = barber
   // keeps 60% of finalPrice). FIXED → barber paid fixedSalary regardless; the
@@ -406,9 +414,12 @@ model Client {
 
   // Lifetime metrics — updated on appointment completion in a transaction.
   // Cheap to read; recomputing from Appointment scans is O(n) per client.
-  totalSpent    Int            @default(0)
-  visitCount    Int            @default(0)
-  lastVisitAt   DateTime?
+  totalSpent      Int     @default(0)
+  visitCount      Int     @default(0)
+  lastVisitAt     DateTime?
+  // Loyalty — reserved for future tier/points UI; update via BookingService on completion.
+  points          Int     @default(0)
+  membershipLevel String  @default("standard")
   appointments       Appointment[]
   notifications      Notification[]
   reviews            Review[]
@@ -510,6 +521,7 @@ model Appointment {
 enum AppointmentStatus {
   PENDING
   CONFIRMED
+  ARRIVAL_CHECK
   IN_PROGRESS
   COMPLETED
   CANCELLED
@@ -700,6 +712,7 @@ enum NotifEvent {
   REMINDER_48H
   REMINDER_3H
   FOLLOWUP
+  ARRIVAL_CHECK
 }
 
 enum NotifJobStatus {
@@ -900,10 +913,15 @@ model Conversation {
   user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   clientId   String?
   client     Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  status     String    @default("OPEN") // OPEN | RESOLVED | ABANDONED
-  metadata   Json?     // channel session data, resolved intent, handoff state
+  status         String    @default("OPEN") // OPEN | RESOLVED | ABANDONED
+  mode           String    @default("BOT")  // BOT | HUMAN — HUMAN skips AI auto-reply
+  assignedUserId String?                    // staff member ID who took over (HUMAN mode)
+  handoffAt      DateTime?                  // when mode switched to HUMAN
+  metadata       Json?     // channel session data, resolved intent, handoff state
   messages   Message[]
   auditLogs  AuditLog[]
+  summary    ConversationSummary?
+  feedback   ConversationFeedback?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
@@ -1016,6 +1034,74 @@ model WebhookDelivery {
   @@index([event])
 }
 
+// ─── Per-Shop AI Configuration ────────────────────────────────────────────────
+// Per-tenant overrides for AI behavior. Falls back to global env defaults when absent.
+model ShopAISettings {
+  id                   String   @id @default(cuid())
+  shopId               String   @unique
+  shop                 Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  enabled              Boolean  @default(true)
+  provider             String   @default("anthropic")  // anthropic | openai | gemini
+  model                String?                          // null = use global AI_MODEL env
+  temperature          Float    @default(0.3)
+  maxTokens            Int      @default(1024)
+  language             String   @default("tr")
+  personality          String   @default("professional") // professional | friendly | formal
+  greeting             String?  @db.Text
+  closing              String?  @db.Text
+  bookingStyle         String   @default("guided")       // guided | direct
+  systemPromptOverride String?  @db.Text                // replaces generated prompt entirely
+  // ── Personality v2 ────────────────────────────────────────────────────────
+  emojiUsage    String   @default("minimal")   // none | minimal | moderate | heavy
+  messageLength String   @default("medium")    // brief | medium | detailed
+  salesBehavior String   @default("neutral")   // passive | neutral | proactive
+  upsellEnabled Boolean  @default(false)
+  humorLevel    String   @default("none")      // none | light | moderate
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([shopId])
+}
+
+// ─── Conversation Summaries ───────────────────────────────────────────────────
+// When a conversation exceeds a threshold, Claude gets a summary + recent N messages
+// instead of the full history, drastically reducing token cost at scale.
+model ConversationSummary {
+  id             String       @id @default(cuid())
+  conversationId String       @unique
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  summary        String       @db.Text
+  messageCount   Int          // how many messages were summarized
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// ─── AI Usage Logs ────────────────────────────────────────────────────────────
+// Append-only log of every AI completion. Powers billing dashboards and cost monitoring.
+model AiUsageLog {
+  id               String   @id @default(cuid())
+  shopId           String?
+  conversationId   String?
+  channel          String?  // WHATSAPP | INSTAGRAM | AI_CHAT | etc.
+  provider         String   // anthropic | openai | gemini
+  model            String
+  inputTokens      Int      @default(0)
+  outputTokens     Int      @default(0)
+  totalTokens      Int      @default(0)
+  estimatedCostUsd Float?   // USD, null when pricing not available
+  latencyMs        Int
+  toolCallCount    Int      @default(0)
+  rounds           Int      @default(1)
+  success          Boolean  @default(true)
+  error            String?  @db.Text
+  createdAt        DateTime @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([provider, model, createdAt])
+  @@index([conversationId])
+  @@index([channel, createdAt])
+}
+
 // ─── Background Jobs ──────────────────────────────────────────────────────────
 // Generic job queue for tasks not covered by NotificationJob (birthday checks,
 // analytics refresh, Google sync, cache warm-up, cleanup, etc.).
@@ -1039,4 +1125,126 @@ model BackgroundJob {
   @@index([shopId, type])
   @@index([type])
   @@index([type, status])
+}
+
+// ─── AI Knowledge Base ────────────────────────────────────────────────────────
+// Per-shop knowledge entries injected into the AI system prompt.
+// Enables shop-specific FAQs, policies, and custom knowledge without
+// changing code — admin edits DB rows, AI picks them up on next request.
+
+enum KnowledgeCategory {
+  POLICY
+  FAQ
+  CAMPAIGN
+  WORKING_HOURS
+  HOLIDAY_RULES
+  PARKING
+  PAYMENT
+  PRODUCTS
+  STAFF_BIO
+  ABOUT
+  NOTES
+}
+
+model KnowledgeEntry {
+  id                String            @id @default(cuid())
+  shopId            String
+  shop              Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  category          KnowledgeCategory
+  title             String
+  content           String            @db.Text
+  tags              String[]
+  enabled           Boolean           @default(true)
+  sortOrder         Int               @default(0)
+  version           Int               @default(1)           // incremented on each edit
+  usageCount        Int               @default(0)
+  lastUsedAt        DateTime?
+  avgRelevanceScore Float?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([shopId, enabled])
+  @@index([shopId, category])
+  @@index([shopId, enabled, sortOrder])
+}
+
+// ─── AI Rule Engine ───────────────────────────────────────────────────────────
+// Ordered list of behavioral rules injected into every AI system prompt.
+// Priority: lower number = higher precedence.
+
+model AiRule {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  rule      String   @db.Text
+  type      String   @default("positive") // positive | negative
+  priority  Int      @default(100) // lower = more important
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shopId, enabled, priority])
+}
+
+// ─── Customer Memory ──────────────────────────────────────────────────────────
+// Persistent AI-maintained memory for returning customers.
+// Written by AI during conversations; read back on future interactions.
+// Separate from Client.notes (admin-written) — this is AI-curated context.
+
+model CustomerMemory {
+  id              String    @id @default(cuid())
+  shopId          String
+  shop            Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  senderPhone     String                        // E.164 without + or channel ID
+  favoriteBarber  String?                       // barberId
+  favoriteService String?                       // serviceId
+  preferredDays   String[]                      // ["monday", "wednesday"]
+  preferredTimes  String[]                      // ["morning", "afternoon"]
+  language        String    @default("tr")
+  hairNotes       String?   @db.Text            // style preferences, history
+  allergies       String?   @db.Text            // product allergies
+  communication   String    @default("standard") // standard | brief | detailed
+  lastUpdatedBy   String    @default("AI")      // AI | AGENT
+  expiresAt       DateTime?                     // null = never expires
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([shopId, senderPhone])
+  @@index([shopId])
+  @@index([expiresAt])
+}
+
+// ─── Prompt Version History ───────────────────────────────────────────────────
+// Snapshots of the AI system prompt saved when settings/rules/KB change,
+// so admins can review historical prompts and restore an older version.
+
+model PromptVersion {
+  id         String   @id @default(cuid())
+  shopId     String
+  shop       Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  version    Int
+  snapshot   String   @db.Text  // full system prompt at save time
+  changeNote String?             // "Updated personality", "Added rule #3", etc.
+  source     String   @default("SETTINGS") // SETTINGS | RULES | KNOWLEDGE | MANUAL
+  createdBy  String?             // userId
+  createdAt  DateTime @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([shopId, version])
+}
+
+// ─── Conversation Feedback ────────────────────────────────────────────────────
+// Admin/agent thumbs-up/down feedback on conversations, feeds AI improvement.
+
+model ConversationFeedback {
+  id             String       @id @default(cuid())
+  shopId         String
+  shop           Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  conversationId String       @unique
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  rating         String       // "helpful" | "not_helpful"
+  comment        String?      @db.Text
+  createdAt      DateTime     @default(now())
+
+  @@index([shopId, rating, createdAt])
 }

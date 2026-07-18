@@ -263,7 +263,7 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
               <p style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>Tüm salonlar, kullanıcılar ve gelir.</p>
             </div>
             <button onClick={onNew}
-              style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 500, background: C.ink, color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
+              style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 500, background: C.ink, color: "var(--makas-bg)", border: "none", cursor: "pointer", flexShrink: 0 }}>
               <Plus size={14} /> Yeni Salon
             </button>
           </div>
@@ -293,7 +293,7 @@ function DashboardContent({ stats, shops, filtered, loading, error, search, setS
           </div>
           {!showKpis && (
             <button onClick={onNew}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: C.ink, color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: C.ink, color: "var(--makas-bg)", border: "none", cursor: "pointer", flexShrink: 0 }}>
               <Plus size={13} /> Yeni Salon
             </button>
           )}
@@ -551,7 +551,7 @@ function CreateShopModal({ onClose, onCreated }) {
           {err && <div style={{ fontSize: 12, padding: "8px 10px", borderRadius: 7, color: "#B91C1C", background: "rgba(185,28,28,0.06)" }}>{err}</div>}
           <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
             <button type="button" onClick={onClose} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 13, color: C.ink, background: C.surface, border: "none", cursor: "pointer" }}>İptal</button>
-            <button type="submit" disabled={busy} style={{ flex: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: C.ink, color: "#fff", border: "none", cursor: "pointer", opacity: busy ? 0.7 : 1 }}>
+            <button type="submit" disabled={busy} style={{ flex: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: C.ink, color: "var(--makas-bg)", border: "none", cursor: "pointer", opacity: busy ? 0.7 : 1 }}>
               {busy && <Loader2 size={13} className="animate-spin" />} Oluştur
             </button>
           </div>
@@ -608,7 +608,7 @@ function EditShopModal({ shop, onClose, onSaved }) {
           {err && <div style={{ fontSize: 12, padding: "8px 10px", borderRadius: 7, color: "#B91C1C", background: "rgba(185,28,28,0.06)" }}>{err}</div>}
           <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
             <button type="button" onClick={onClose} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 13, color: C.ink, background: C.surface, border: "none", cursor: "pointer" }}>İptal</button>
-            <button type="submit" disabled={busy} style={{ flex: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: C.ink, color: "#fff", border: "none", cursor: "pointer", opacity: busy ? 0.7 : 1 }}>
+            <button type="submit" disabled={busy} style={{ flex: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: C.ink, color: "var(--makas-bg)", border: "none", cursor: "pointer", opacity: busy ? 0.7 : 1 }}>
               {busy && <Loader2 size={13} className="animate-spin" />} Kaydet
             </button>
           </div>
@@ -678,7 +678,7 @@ function BillingModal({ shop, onClose, onSaved }) {
               <div style={{ color: C.ink, marginTop: 2 }}>{fmtDate(shop.trialEndsAt)}</div>
               {!shop.trialEndsAt && (
                 <button onClick={() => submit({ startTrialDays: 14 })} disabled={busy}
-                  style={{ marginTop: 6, padding: "5px 9px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: C.ink, color: "#fff", border: "none", cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
+                  style={{ marginTop: 6, padding: "5px 9px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: C.ink, color: "var(--makas-bg)", border: "none", cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
                   14 gün başlat
                 </button>
               )}
@@ -699,7 +699,7 @@ function BillingModal({ shop, onClose, onSaved }) {
                 <option value="CANCELLED">İptal</option>
               </select>
             </Field>
-            <button type="submit" disabled={busy} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: C.ink, color: "#fff", border: "none", cursor: "pointer", opacity: busy ? 0.7 : 1 }}>
+            <button type="submit" disabled={busy} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: C.ink, color: "var(--makas-bg)", border: "none", cursor: "pointer", opacity: busy ? 0.7 : 1 }}>
               {busy && <Loader2 size={13} className="animate-spin" />} Kaydet
             </button>
           </form>
@@ -722,7 +722,7 @@ function BillingModal({ shop, onClose, onSaved }) {
               <input type="number" min="1" max="3650" placeholder="Özel gün sayısı" value={extendDays} onChange={(e) => setExtendDays(e.target.value)}
                 style={{ flex: 1, padding: "8px 10px", fontSize: 12, borderRadius: 7, background: C.surface, color: C.ink, border: `1px solid ${C.border}`, outline: "none" }} />
               <button type="submit" disabled={busy || !extendDays}
-                style={{ padding: "8px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600, background: C.ink, color: "#fff", border: "none", cursor: "pointer", opacity: (busy || !extendDays) ? 0.5 : 1 }}>
+                style={{ padding: "8px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600, background: C.ink, color: "var(--makas-bg)", border: "none", cursor: "pointer", opacity: (busy || !extendDays) ? 0.5 : 1 }}>
                 Ekle
               </button>
             </form>

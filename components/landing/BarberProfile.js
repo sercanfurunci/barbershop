@@ -9,7 +9,7 @@ import { useLang } from "@/contexts/LanguageContext";
 
 const C = {
   bg:        "var(--makas-bg)",
-  bgSoft:    "#FDFBF7",
+  bgSoft:    "var(--makas-surface)",
   card:      "var(--makas-surface)",
   surface:   "var(--makas-surface2)",
   border:    "var(--makas-border)",
@@ -267,7 +267,7 @@ export default function BarberProfile({ shop, barber, initialReviews }) {
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 8,
                   padding: "12px 22px", borderRadius: 999,
-                  background: C.primary, color: "#fff",
+                  background: C.primary, color: "var(--makas-bg)",
                   fontSize: 14, fontWeight: 600,
                   textDecoration: "none",
                   transition: "transform 0.15s ease, box-shadow 0.15s ease",
@@ -426,7 +426,7 @@ export default function BarberProfile({ shop, barber, initialReviews }) {
             style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               padding: "12px 22px", borderRadius: 999,
-              background: C.primary, color: "#fff",
+              background: C.primary, color: "var(--makas-bg)",
               fontSize: 14, fontWeight: 600,
               textDecoration: "none",
             }}

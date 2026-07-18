@@ -23,6 +23,7 @@ const Gallery        = dynamic(() => import("@/components/landing/Gallery"));
 const Testimonials   = dynamic(() => import("@/components/landing/Testimonials"));
 const FAQ            = dynamic(() => import("@/components/landing/FAQ"));
 const SalonInfo      = dynamic(() => import("@/components/landing/SalonInfo"));
+import ChatWidgetLoader from "@/components/chat/ChatWidgetLoader";
 
 export const revalidate = 300;
 
@@ -192,7 +193,7 @@ export default async function ShopHome({ params }) {
         where: {
           shopId: shop.id,
           date: { gte: todayDateStr, lte: weekAheadStr },
-          status: { in: ["PENDING", "CONFIRMED", "COMPLETED"] },
+          status: { notIn: ["CANCELLED", "NOSHOW"] },
         },
         select: { barberId: true, date: true, time: true, duration: true, status: true },
       }),
@@ -326,6 +327,16 @@ export default async function ShopHome({ params }) {
       </main>
       <StickyActionBar shop={shop} />
       <Footer />
+      {shop.aiChatEnabled && (
+        <ChatWidgetLoader
+          shopSlug={shopSlug}
+          widgetConfig={{
+            aiName: shop.name,
+            welcomeMessage: `Merhaba! Ben ${shop.name} asistanıyım. Size nasıl yardımcı olabilirim?`,
+            avatarUrl: shop.logo || null,
+          }}
+        />
+      )}
     </div>
   );
 }
